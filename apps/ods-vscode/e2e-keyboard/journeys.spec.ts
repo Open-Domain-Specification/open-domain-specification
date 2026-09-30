@@ -39,6 +39,52 @@ const active = (frame: Frame) =>
 
 type Stop = Awaited<ReturnType<typeof active>>;
 
+/**
+ * Asserts the element is PAINTED where a reader can see it, which
+ * `toBeVisible()` does not: it reads the box and the style, so an element
+ * moved off the window by a transformed ancestor, or clipped away by an
+ * ancestor's overflow, still passes. Its box lies inside the webview's
+ * viewport, and `document.elementFromPoint` at its centre and just inside its
+ * top-left corner answers with the element or a descendant.
+ */
+async function expectOnScreen(frame: Frame, selector: string, when: string) {
+	const seen = await frame
+		.locator(selector)
+		.first()
+		.evaluate((el) => {
+			const b = el.getBoundingClientRect();
+			const width = document.documentElement.clientWidth;
+			const height = document.documentElement.clientHeight;
+			const owns = (hit: Element | null) => hit !== null && el.contains(hit);
+			const label = (hit: Element | null) =>
+				hit === null ? null : `${hit.tagName.toLowerCase()}.${hit.className}`;
+			const centre = document.elementFromPoint(
+				b.left + b.width / 2,
+				b.top + b.height / 2,
+			);
+			const corner = document.elementFromPoint(b.left + 2, b.top + 2);
+			return {
+				box: { left: b.left, top: b.top, right: b.right, bottom: b.bottom },
+				viewport: { width, height },
+				inside:
+					b.width > 0 &&
+					b.height > 0 &&
+					b.left >= 0 &&
+					b.top >= 0 &&
+					b.right <= width &&
+					b.bottom <= height,
+				centre: label(centre),
+				corner: label(corner),
+				painted: owns(centre) && owns(corner),
+			};
+		});
+	expect(
+		seen.inside,
+		`${when}: inside the webview ${JSON.stringify(seen)}`,
+	).toBe(true);
+	expect(seen.painted, `${when}: painted ${JSON.stringify(seen)}`).toBe(true);
+}
+
 /** Presses `key` until the focused element satisfies `test`; fails with the trail. */
 async function pressUntil(
 	host: Host,
@@ -491,6 +537,7 @@ test.describe("Escape closes the innermost layer", () => {
 			await expect(frame.locator(PATTERN_TRIGGER).first()).toBeFocused();
 			const explanation = card.getByRole("tooltip");
 			await expect(explanation).toBeVisible();
+			await expectOnScreen(frame, ".layer", "the explanation in the card");
 
 			await host.window.keyboard.press("Escape");
 			await expect(explanation).toHaveCount(0);
@@ -557,6 +604,7 @@ test.describe("an explanation taller than the room", () => {
 				};
 			});
 		const contained = async (when: string) => {
+			await expectOnScreen(frame, ".layer", when);
 			const m = await measure();
 			expect(m.top, `${when}: top`).toBeGreaterThanOrEqual(0);
 			expect(m.bottom, `${when}: bottom`).toBeLessThanOrEqual(m.viewport);
