@@ -7,7 +7,8 @@ import Lockup from "./Lockup.svelte";
 const {
 	withCounts = true,
 	sized = false,
-}: { withCounts?: boolean; sized?: boolean } = $props();
+	size = 3,
+}: { withCounts?: boolean; sized?: boolean; size?: 1 | 2 | 3 } = $props();
 </script>
 
 <Heading level={1}><Lockup kind="aggregate" name="Pet" id="pet" detail="Aggregate" size="title" /></Heading>
@@ -22,7 +23,7 @@ const {
 <Heading level={2} id="invariants" lead="Rules that must hold after every change.">Invariants</Heading>
 <EmptyState text="No invariants stated. If nothing can go wrong, is this really an aggregate?" />
 
-{#if sized}<Heading level={2} size={3} id="sized">Roles</Heading>{/if}
+{#if sized}<Heading level={2} {size} id="sized">Roles</Heading>{/if}
 
 <style>
 	.description {

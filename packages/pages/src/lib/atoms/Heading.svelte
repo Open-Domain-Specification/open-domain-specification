@@ -33,9 +33,10 @@ const {
 	count?: number;
 	children: Snippet;
 } = $props();
+const classes = $derived(`heading h${size}`);
 </script>
 
-<svelte:element this={`h${level}`} {id} class="heading h{size}" tabindex="-1">
+<svelte:element this={`h${level}`} {id} class={classes} tabindex="-1">
 	{@render children()}{#if count}<span class="count">{count}</span>{/if}
 </svelte:element>
 {#if lead}<p class="lead">{lead}</p>{/if}
