@@ -70,6 +70,9 @@ const place = (layer: HTMLElement) => {
 	// concludes no cap is needed, and the assignment below clears it, so a card
 	// taller than the room grew past the viewport on every other placement.
 	// Offsets go too, because the card's width can depend on where it sits.
+	// Measuring it unconstrained resets its scroll to the top, so the reader's
+	// place in it is kept and put back (clamped by the browser to the new range).
+	const scrolled = layer.scrollTop;
 	layer.style.maxHeight = "";
 	layer.style.top = "";
 	layer.style.left = "";
@@ -84,6 +87,7 @@ const place = (layer: HTMLElement) => {
 	layer.style.top = `${at.top}px`;
 	layer.style.left = `${at.left}px`;
 	layer.style.maxHeight = at.maxHeight === undefined ? "" : `${at.maxHeight}px`;
+	layer.scrollTop = scrolled;
 };
 /**
  * Puts the card in the browser's top layer, then places it when it appears and

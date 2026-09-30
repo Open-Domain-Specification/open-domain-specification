@@ -274,6 +274,54 @@ describe("PatternHover", () => {
 		expect(container.querySelector(".hover-card")).toBeNull();
 	});
 
+	it("does not place the explanation again when its own content scrolls, focus being in it", async () => {
+		const { container } = show({ intent: intent({ comments: COMMENTS }) });
+		const term = container.querySelector(".pattern-hover") as HTMLElement;
+		screen.getByRole("button", { name: "ACL" }).focus();
+		await fireEvent.focusIn(term);
+		const layer = container.querySelector(".layer") as HTMLElement;
+		// A placement clears and reassigns the offsets, so a mark left in one is
+		// gone if the explanation was placed again.
+		layer.style.top = "77px";
+		// Focus moves to the citation in it, and the browser scrolls it into view.
+		const link = layer.querySelector("a") as HTMLElement;
+		link.focus();
+		await fireEvent.scroll(layer);
+		await fireEvent.scroll(link);
+		await tick();
+		expect(layer.style.top).toBe("77px");
+		expect(container.querySelector(".hover-card")).not.toBeNull();
+
+		// A scroll that is not in it is the keyword moving, and places it again.
+		await fireEvent.scroll(container);
+		await tick();
+		expect(layer.style.top).not.toBe("77px");
+	});
+
+	it("keeps the reader's place in a scrolled explanation when the keyword moves and it is placed again", async () => {
+		const { container } = show({ intent: intent({ comments: COMMENTS }) });
+		const term = container.querySelector(".pattern-hover") as HTMLElement;
+		screen.getByRole("button", { name: "ACL" }).focus();
+		await fireEvent.focusIn(term);
+		const layer = container.querySelector(".layer") as HTMLElement;
+		// jsdom does not scroll: stand in for a box that is scrolled 90px down,
+		// and record what placing it again puts back.
+		const writes: number[] = [];
+		let top = 90;
+		Object.defineProperty(layer, "scrollTop", {
+			get: () => top,
+			set: (value: number) => {
+				writes.push(value);
+				top = value;
+			},
+			configurable: true,
+		});
+		await fireEvent.scroll(container);
+		await tick();
+		expect(writes).toEqual([90]);
+		expect(layer.scrollTop).toBe(90);
+	});
+
 	it("gives the same cap every time it places a card taller than the room: repeated, and moved by a scroll", async () => {
 		// An 800x400 viewport and a keyword at top 200, bottom 220, over content
 		// that is naturally 500px tall.

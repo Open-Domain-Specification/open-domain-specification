@@ -77,6 +77,12 @@ export function createHover(root: () => HTMLElement | undefined): Hover {
 	 */
 	let moves = $state(0);
 	const onScroll = (event: Event) => {
+		// The reader scrolling the explanation's own content is neither the page
+		// leaving nor the keyword moving, so it is nobody's to act on: placing it
+		// again would measure it unconstrained, which resets its scroll to the
+		// top and takes a focused citation out of view.
+		const target = event.target as Node | null;
+		if (target && root()?.contains(target)) return;
 		if (!pinned && root()?.contains(document.activeElement)) {
 			moves += 1;
 			return;

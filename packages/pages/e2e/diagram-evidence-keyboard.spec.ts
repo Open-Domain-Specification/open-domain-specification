@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { arriveAt, openDiagram, tabUntil } from "./diagram-hosts";
-import { onScreen } from "./on-screen";
+import { measureCitation, onScreen, settle } from "./on-screen";
 
 /**
  * The badges on a context map disclose a relationship's evidence (card 150).
@@ -332,14 +332,84 @@ for (const host of ["viewer", "export"] as const) {
 				expect(again.cap, `after scroll ${i}: same cap`).toBe(first.cap);
 			}
 
-			// And it scrolls: the last of its content can be brought into view.
-			const scrolled = await page.evaluate(() => {
+			// And it scrolls: the last of its content can be brought into view, and
+			// is still there once scrolling and layout have settled (a read in the
+			// same callback comes before the scroll event and whatever it does).
+			await page.evaluate(() => {
 				const layer = document.querySelector(".layer") as HTMLElement;
 				layer.scrollTop = layer.scrollHeight;
-				return layer.scrollTop;
 			});
+			await settle(page);
+			const scrolled = await page.evaluate(
+				() => (document.querySelector(".layer") as HTMLElement).scrollTop,
+			);
 			expect(scrolled).toBeGreaterThan(0);
 		});
+
+		for (const height of [110, 300]) {
+			test(`Tab into a citation in an explanation that scrolls keeps it in view at 800x${height}, and a keyword that moves keeps the reader's place in it`, async ({
+				page,
+			}) => {
+				await page.setViewportSize({ width: 800, height });
+				const flow = await openDiagram(
+					page,
+					host,
+					"Sales BC context map",
+					SALES,
+				);
+				await arriveAt(flow);
+				expect(await tabUntil(page, BADGE)).toBe(true);
+				await page.keyboard.press("Enter");
+				await expect(flow.getByRole("dialog")).toBeVisible();
+				expect(await tabUntil(page, ".anchored .pattern-hover .trigger")).toBe(
+					true,
+				);
+				const layer = page.locator(LAYER);
+				await expect(layer).toBeVisible();
+
+				// Tab from the keyword into the citation at the foot of its explanation.
+				await page.keyboard.press("Tab");
+				await expect(page.locator(`${LAYER} a`).first()).toBeFocused();
+				await settle(page);
+				const seen = await measureCitation(page);
+				const said = JSON.stringify(seen);
+				expect(seen.focused, `focus is in the explanation ${said}`).toBe(true);
+				expect(seen.maxScroll, `it scrolls ${said}`).toBeGreaterThan(0);
+				expect(
+					seen.scrollTop,
+					`it scrolled to the citation ${said}`,
+				).toBeGreaterThan(0);
+				expect(
+					seen.inside,
+					`the citation is inside the explanation ${said}`,
+				).toBe(true);
+				expect(seen.hitIsCitation, `and is what is painted there ${said}`).toBe(
+					true,
+				);
+				await onScreen(layer, "the explanation");
+
+				// The keyword moves under it (a scroll of the container that holds
+				// it): the explanation is placed again, and the reader keeps their
+				// place in it.
+				await flow.evaluate((el) => {
+					const room = document.createElement("div");
+					room.style.cssText =
+						"position:absolute;left:0;top:0;width:4000px;height:1px;pointer-events:none";
+					el.appendChild(room);
+					el.scrollLeft += 40;
+				});
+				await settle(page);
+				const moved = await measureCitation(page);
+				const movedSaid = JSON.stringify(moved);
+				expect(moved.focused, `still focused ${movedSaid}`).toBe(true);
+				expect(
+					Math.abs(moved.scrollTop - seen.scrollTop),
+					`scroll kept ${movedSaid} from ${said}`,
+				).toBeLessThan(1);
+				expect(moved.inside, `still inside ${movedSaid}`).toBe(true);
+				expect(moved.hitIsCitation, `still painted ${movedSaid}`).toBe(true);
+			});
+		}
 
 		test("the pointer opens a keyword's explanation inside the card, painted on screen, and can cross into it", async ({
 			page,
