@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installXyflowTestEnv } from "../xyflow-test-env";
 import { createDiagramFit } from "./fit.svelte";
 import Harness from "./PanelFit.harness.svelte";
-import { crowded, fitPastPanels, NO_AIR } from "./panel-fit";
+import { crowded, FLOOR_ZOOM, fitPastPanels } from "./panel-fit";
 import { resetPanelChoices } from "./panel-state.svelte";
 
 vi.mock("./panel-fit", async (original) => ({
@@ -42,7 +42,6 @@ describe("PanelFit", () => {
 		expect(fitPastPanels).toHaveBeenCalledWith(
 			expect.objectContaining({ fitView: expect.any(Function) }),
 			container,
-			expect.any(Number),
 		);
 		unmount();
 	});
@@ -57,11 +56,7 @@ describe("PanelFit", () => {
 		expect(fit.step).toBe("legend");
 		expect(fit.legend.collapsed).toBe(true);
 		expect(fit.options.collapsed).toBe(false);
-		expect(fitPastPanels).toHaveBeenCalledWith(
-			expect.anything(),
-			container,
-			fit.air,
-		);
+		expect(fitPastPanels).toHaveBeenCalledWith(expect.anything(), container);
 		unmount();
 	});
 
@@ -74,23 +69,15 @@ describe("PanelFit", () => {
 		expect(fit.step).toBe("floor");
 		expect(fit.legend.collapsed).toBe(true);
 		expect(fit.options.collapsed).toBe(true);
-		expect(fit.air).toBe(NO_AIR);
-		expect(fitPastPanels).toHaveBeenCalledWith(
-			expect.anything(),
-			container,
-			NO_AIR,
-		);
+		expect(fit.minZoom).toBe(FLOOR_ZOOM);
+		expect(fitPastPanels).toHaveBeenCalledWith(expect.anything(), container);
 		unmount();
 	});
 
 	it("measures nothing and fits nothing without a container", async () => {
 		const { unmount } = render(Harness, {});
 		await settled();
-		expect(fitPastPanels).toHaveBeenCalledWith(
-			expect.anything(),
-			undefined,
-			expect.any(Number),
-		);
+		expect(fitPastPanels).toHaveBeenCalledWith(expect.anything(), undefined);
 		unmount();
 	});
 

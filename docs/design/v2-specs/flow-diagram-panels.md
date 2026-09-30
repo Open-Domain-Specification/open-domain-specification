@@ -165,3 +165,42 @@ with the minimap on a node; clear of it, it fits at 0.172, with the controls' co
 minimap's column reserved. Every NorthBank page at 1300x900 and 1150x700, in both themes, and
 the petstore in the viewer and the static export are held to the guarantee by
 `e2e/diagram-panel-fit.spec.ts`, measured once the fit has held still for a dozen frames.
+
+## Amendment, 2026-09-30: the air is gone, and the fit asks about the graph it draws (#89)
+
+The third step of relief, the air, is retired. The order is now the legend, the options panel,
+then the floor. The first two and the last are unchanged, and so is the guarantee.
+
+**Why.** The air was a tenth of each axis kept on every side no panel claimed, 76px either side
+of a 760px canvas, and it was given up only once a map fell under the readable floor. The page
+review of #89 found what that cost. At 1300x900, OnboardingApp's consumable map was fitted at
+0.267 with 77px of air left and right, and its labels could not be read. NorthBank's domain, context
+and workspace maps showed the same. Nothing under a readable scale should be spent on taste, and
+the rule above already says the air "is nothing but taste". So a side no panel claims keeps the
+12px gutter and nothing more, and along the axis that binds the graph it reaches the canvas, or
+the panel it clears, with only that inset. The page review asked for an 8px inset "the panel
+spec names"; the spec names none. The 12px gutter is the inset it does name, kept between the
+graph and a panel, and now the one between the graph and the canvas's edge too.
+
+**A correction the fit needed on the way.** The relief walk and the strip choice measured every
+node, but in the sketch style a context map's cluster nodes are hidden, the backdrop drawn in
+their place, and Svelte Flow's `fitView` leaves hidden nodes out. So the walk asked about a
+bigger graph than the one it then fitted. RiverMart's workspace map at 1280x720 gave way to the floor
+for a map that fitted at 0.209. Every question is now asked about the nodes the fit draws
+(`drawnBounds`).
+
+What it costs on the shipped models now, as the step `data-fit` records on the workspace's
+context map in the viewer. The table above is kept as measured on the day it was written:
+
+| Model      | 1280x720               | 1150x700               |
+| ---------- | ---------------------- | ---------------------- |
+| petstore   | nothing gives (0.468)  | nothing gives (0.346)  |
+| rivermart  | the options (0.209)    | the floor (0.158)      |
+| streamline | the legend (0.234)     | the options (0.206)    |
+| northbank  | the floor (0.166)      | the floor (0.125)      |
+
+The four panels (#90) cost the densest maps more than the air did, and the air's return goes to
+the maps that were small only because of it. NorthBank's OnboardingApp consumable map at
+1300x900 is fitted at 0.320 instead of 0.267. `e2e/diagram-panel-fit.spec.ts` holds every
+NorthBank page at 1300x900 and 1150x700, and the petstore in the viewer and the static export,
+to the gutter along the binding axis.

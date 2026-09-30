@@ -14,17 +14,17 @@
  *
  * 1. The legend collapses to its header row, and the fit reserves that.
  * 2. The options panel collapses to its own header row.
- * 3. The air the fit keeps on a side no panel claims drops to the gutter.
- * 4. Only then the zoom floor itself gives way, from `MIN_ZOOM` to
+ * 3. Only then the zoom floor itself gives way, from `MIN_ZOOM` to
  *    `FLOOR_ZOOM`, so the map is complete and clear even when nothing else
  *    left is worth giving.
  *
  * The order is what it costs the reader. A legend row is a term list they can
- * open again in a click; the options row is a control they were not using; the
- * air is nothing but taste. A node under a panel, or a map cropped out of the
- * canvas, is information they cannot get back, so it goes last. The controls
- * and the minimap never give way: they are small, and they are how a reader
- * moves round a map the fit has made small.
+ * open again in a click; the options row is a control they were not using. A
+ * node under a panel, or a map cropped out of the canvas, is information they
+ * cannot get back, so it goes last. The controls and the minimap never give
+ * way: they are small, and they are how a reader moves round a map the fit has
+ * made small. There is no air to give: a side no panel claims keeps the
+ * gutter and nothing more, so the graph reaches the canvas it is given.
  */
 
 /** The part of a `DOMRect` this module needs; a real `DOMRect` satisfies it. */
@@ -35,14 +35,11 @@ export type Rect = {
 	bottom: number;
 };
 
-/** Room left between a panel and the nearest node, in screen pixels. */
+/**
+ * Room left between the graph and a panel, or the canvas's edge, in screen
+ * pixels: the only inset a fit keeps.
+ */
 export const PANEL_GUTTER = 12;
-
-/** The fraction Svelte Flow is asked for when no panel constrains a side. */
-export const BASE_PADDING = 0.25;
-
-/** The air a fit keeps once step 3 has taken it: the gutter and nothing more. */
-export const NO_AIR = 0;
 
 /**
  * No side may eat more than this much of the canvas. A panel is only ever a
@@ -58,15 +55,6 @@ export type PanelPadding = {
 	bottom: `${number}px`;
 	left: `${number}px`;
 };
-
-/**
- * Svelte Flow reads a bare padding number as a fraction of the axis and turns
- * it into this many pixels per side. Mirrored here so a side with no panel on
- * it keeps exactly the room it had before.
- */
-export function basePadding(size: number, fraction = BASE_PADDING): number {
-	return Math.floor((size - size / (1 + fraction)) * 0.5);
-}
 
 const px = (n: number): `${number}px` => `${Math.floor(n)}px`;
 
@@ -117,26 +105,19 @@ function stripsFor(view: Rect, panel: Rect): Strip[] {
  * lets `bounds` fit at the largest zoom wins. With no size to fit — or when
  * nothing does better — each panel takes its cheaper strip, the tall, narrow
  * legend a column and the wide, flat options panel a band. A side no panel
- * claims keeps `fraction` of air, and never less than the gutter — at
- * `NO_AIR` the map is given everything but the room it needs to keep off the
- * edge.
+ * claims keeps the gutter and nothing more.
  */
 export function panelPadding(
 	view: Rect,
 	panels: Rect[],
 	bounds: Size = { width: 0, height: 0 },
-	fraction = BASE_PADDING,
 ): PanelPadding {
-	const width = view.right - view.left;
-	const height = view.bottom - view.top;
-	const air = (size: number) =>
-		Math.max(basePadding(size, fraction), PANEL_GUTTER);
 	const padded = (choice: Strip[]): PanelPadding => {
 		const pad = {
-			top: air(height),
-			bottom: air(height),
-			left: air(width),
-			right: air(width),
+			top: PANEL_GUTTER,
+			bottom: PANEL_GUTTER,
+			left: PANEL_GUTTER,
+			right: PANEL_GUTTER,
 		};
 		for (const { side, reserve } of choice)
 			pad[side] = Math.max(pad[side], reserve);
@@ -211,7 +192,7 @@ export function measurePanels(container: Element): {
 }
 
 /** The slice of the Svelte Flow instance this module drives. */
-export type Fitter<TNode> = Measurer<TNode> & {
+export type Fitter<TNode extends Shown> = Measurer<TNode> & {
 	fitView: (options: { padding: PanelPadding }) => Promise<boolean>;
 };
 
@@ -221,17 +202,14 @@ export type Fitter<TNode> = Measurer<TNode> & {
  * container: there is then nothing to measure, and the initial `fitView`
  * Svelte Flow does itself still stands.
  */
-export async function fitPastPanels<TNode>(
+export async function fitPastPanels<TNode extends Shown>(
 	flow: Fitter<TNode>,
 	container: Element | undefined | null,
-	fraction = BASE_PADDING,
 ): Promise<void> {
 	if (!container) return;
 	const { view, panels } = measurePanels(container);
-	const bounds = flow.getNodesBounds(flow.getNodes());
-	await flow.fitView({
-		padding: panelPadding(view, panels, bounds, fraction),
-	});
+	const bounds = drawnBounds(flow);
+	await flow.fitView({ padding: panelPadding(view, panels, bounds) });
 }
 
 /**
@@ -244,7 +222,7 @@ export const MIN_ZOOM = 0.2;
  * The floor of last resort, once every step of relief has been taken and the
  * map still does not clear `MIN_ZOOM`. Cards 20 and 56 dropped the only floor
  * there was to this number, which made every crowded map unreadable to save
- * the worst one; here it is the fourth thing to give way rather than the
+ * the worst one; here it is the last thing to give way rather than the
  * first, and it is what keeps the guarantee true — the whole map, no node
  * under a panel — for a map no canvas can hold at a readable size.
  */
@@ -263,7 +241,7 @@ export const FLOOR_ZOOM = 0.1;
 export const READABLE_ZOOM = 0.22;
 
 /** What the fit gives up, in the order it gives it. */
-export const RELIEF_STEPS = ["legend", "options", "air", "floor"] as const;
+export const RELIEF_STEPS = ["legend", "options", "floor"] as const;
 
 /** One step of that order. */
 export type ReliefStep = (typeof RELIEF_STEPS)[number];
@@ -292,8 +270,7 @@ export function fittedZoom(
 
 /**
  * Whether the fit has to take another step of relief: with the strips
- * `panels` claim inside `view` reserved and `fraction` of air kept, `bounds`
- * would fit below `floor`.
+ * `panels` claim inside `view` reserved, `bounds` would fit below `floor`.
  *
  * Pure, so the whole order is testable without a browser — hand it the
  * numbers a webview would have measured at each step and it answers. The
@@ -305,39 +282,40 @@ export function needsRelief(
 	view: Rect,
 	panels: Rect[],
 	bounds: Size,
-	fraction = BASE_PADDING,
 	floor = READABLE_ZOOM,
 ): boolean {
-	return (
-		fittedZoom(view, panelPadding(view, panels, bounds, fraction), bounds) <
-		floor
-	);
+	return fittedZoom(view, panelPadding(view, panels, bounds), bounds) < floor;
 }
 
+/** What the fit reads off a node: which one it is, and whether it is drawn at all. */
+export type Shown = { id: string; hidden?: boolean };
+
 /** The slice of the Svelte Flow instance the decision measures the graph with. */
-export type Measurer<TNode> = {
+export type Measurer<TNode extends Shown> = {
 	getNodes: () => TNode[];
 	getNodesBounds: (nodes: TNode[]) => Size;
 };
+
+/**
+ * The box of the nodes Svelte Flow fits: the ones it draws. A hidden node —
+ * a cluster in the sketch style, where the backdrop is drawn instead — is left
+ * out of `fitView`, so it is left out of every question asked about that fit.
+ */
+export function drawnBounds<TNode extends Shown>(flow: Measurer<TNode>): Size {
+	return flow.getNodesBounds(flow.getNodes().filter((node) => !node.hidden));
+}
 
 /**
  * The same question asked of a live diagram: the container gives the view and
  * the panels as they are now, the flow gives the bounds. Without a container
  * nothing has been measured and nothing has to give way.
  */
-export function crowded<TNode>(
+export function crowded<TNode extends Shown>(
 	flow: Measurer<TNode>,
 	container: Element | undefined | null,
-	fraction = BASE_PADDING,
 	floor = READABLE_ZOOM,
 ): boolean {
 	if (!container) return false;
 	const { view, panels } = measurePanels(container);
-	return needsRelief(
-		view,
-		panels,
-		flow.getNodesBounds(flow.getNodes()),
-		fraction,
-		floor,
-	);
+	return needsRelief(view, panels, drawnBounds(flow), floor);
 }

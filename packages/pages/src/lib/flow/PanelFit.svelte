@@ -13,8 +13,8 @@ import { crowded, MIN_ZOOM, PANEL_SELECTOR, RELIEF_STEPS } from "./panel-fit";
  * before then is left alone.
  *
  * When the room runs out it walks the order in `panel-fit.ts`: the legend
- * gives way, then the options panel, then the air, and only if the map still
- * will not clear `MIN_ZOOM` does the floor itself. Each step is followed by a
+ * gives way, then the options panel, and only if the map still will not clear
+ * `MIN_ZOOM` does the floor itself. Each step is followed by a
  * tick and a frame, so the box the next question is asked about is the
  * collapsed one, and each is taken only if the map still needs it. The
  * questions are asked with the panels at the size they are then, never twice
@@ -50,10 +50,10 @@ onMount(() => {
 		await frame();
 		await frame();
 		for (const step of RELIEF_STEPS) {
-			// The first three steps chase the readable floor; the fourth is the
-			// floor giving way, so it is asked about `MIN_ZOOM` itself.
+			// The panels give way to reach the readable floor; the last step is
+			// the floor giving way, so it is asked about `MIN_ZOOM` itself.
 			const floor = step === "floor" ? MIN_ZOOM : undefined;
-			if (!live || !crowded(flow, container, fit.air, floor)) break;
+			if (!live || !crowded(flow, container, floor)) break;
 			fit.give(step);
 			await settle();
 		}

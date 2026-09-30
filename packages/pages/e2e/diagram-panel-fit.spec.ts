@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { expectClear, settledFit } from "./diagram-fit";
+import { expectClear, expectFilled, settledFit } from "./diagram-fit";
 import { openPage } from "./diagram-hosts";
 import { REFERENCE_MODELS, serveModel } from "./helpers";
 
@@ -13,6 +13,11 @@ import { REFERENCE_MODELS, serveModel } from "./helpers";
  * When the room runs out something gives way, in one order (card 64,
  * `src/lib/flow/panel-fit.ts`), and the price it cost is the step recorded in
  * the diagram's `data-fit` attribute, which the failure messages carry.
+ *
+ * And the fit fills the canvas it is given (#89): along the axis that binds
+ * the graph, nothing is left between it and the canvas's edge, or the panel
+ * it clears, but the 12px gutter. It used to keep a tenth of each axis as
+ * air, and a map fitted at a quarter of its size could not spare it.
  *
  * Every measurement is of the settled fit (`diagram-fit.ts`): the viewport,
  * the nodes and the panels unchanged for a dozen frames, so a first frame
@@ -75,14 +80,16 @@ for (const colorScheme of ["light", "dark"] as const) {
 		test.describe(`NorthBank at ${at}`, () => {
 			test.use({ colorScheme, viewport: size });
 			for (const [name, ref] of NORTHBANK) {
-				test(`every diagram on ${name} fits clear of every panel`, async ({
+				test(`every diagram on ${name} fills its canvas clear of every panel`, async ({
 					page,
 				}) => {
 					const url = await serveModel(page, "northbank");
 					await page.goto(`/?url=${encodeURIComponent(url)}${ref}`);
-					const count = await eachDiagram(page, async (flow, caption) =>
-						expectClear(await settledFit(flow), `${caption} at ${at}`),
-					);
+					const count = await eachDiagram(page, async (flow, caption) => {
+						const fit = await settledFit(flow);
+						expectClear(fit, `${caption} at ${at}`);
+						expectFilled(fit, `${caption} at ${at}`);
+					});
 					expect(count).toBeGreaterThan(0);
 				});
 			}
@@ -95,13 +102,15 @@ for (const host of ["viewer", "export"] as const) {
 		test.describe(`the petstore in the ${host}, ${colorScheme}`, () => {
 			test.use({ colorScheme, viewport: { width: 1300, height: 900 } });
 			for (const ref of ["#", "#/boundedcontexts/sales_bc"]) {
-				test(`every diagram at ${ref} fits clear of every panel`, async ({
+				test(`every diagram at ${ref} fills its canvas clear of every panel`, async ({
 					page,
 				}) => {
 					await openPage(page, host, ref);
-					const count = await eachDiagram(page, async (flow, caption) =>
-						expectClear(await settledFit(flow), `${caption} in the ${host}`),
-					);
+					const count = await eachDiagram(page, async (flow, caption) => {
+						const fit = await settledFit(flow);
+						expectClear(fit, `${caption} in the ${host}`);
+						expectFilled(fit, `${caption} in the ${host}`);
+					});
 					expect(count).toBeGreaterThan(0);
 				});
 			}
@@ -145,6 +154,7 @@ test.describe("a panel the reader opens or closes", () => {
 				const fit = await settledFit(flow);
 				const where = `${name} after ${(await toggle.textContent())?.trim()} went from ${was}`;
 				expectClear(fit, where);
+				expectFilled(fit, where);
 			}
 		});
 	}

@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-	basePadding,
 	crowded,
+	drawnBounds,
 	FLOOR_ZOOM,
 	fitPastPanels,
 	fittedZoom,
 	MIN_ZOOM,
-	NO_AIR,
 	needsRelief,
 	PANEL_GUTTER,
 	PANEL_SELECTOR,
@@ -35,22 +34,16 @@ const tall = (left: number, right: number): Rect => ({
 	bottom: 300,
 });
 
-describe("basePadding", () => {
-	it("matches the pixels Svelte Flow derives from a fractional padding", () => {
-		// (size - size / 1.25) / 2, the formula in @xyflow/system's parsePadding.
-		expect(basePadding(800)).toBe(80);
-		expect(basePadding(400)).toBe(40);
-		expect(basePadding(800, 0.1)).toBe(36);
-	});
-});
+/** What a side no panel claims keeps: the gutter and nothing more. */
+const GUTTER = `${PANEL_GUTTER}px`;
 
 describe("panelPadding", () => {
-	it("keeps the default fraction on a side no panel claims", () => {
+	it("keeps only the gutter on a side no panel claims", () => {
 		expect(panelPadding(VIEW, [])).toEqual({
-			top: "40px",
-			bottom: "40px",
-			left: "80px",
-			right: "80px",
+			top: GUTTER,
+			bottom: GUTTER,
+			left: GUTTER,
+			right: GUTTER,
 		});
 	});
 
@@ -59,15 +52,15 @@ describe("panelPadding", () => {
 		// would cost three quarters of the height: the column is the cheap side.
 		const padding = panelPadding(VIEW, [tall(15, 215)]);
 		expect(padding.left).toBe(`${215 + PANEL_GUTTER}px`);
-		expect(padding.top).toBe("40px");
-		expect(padding.right).toBe("80px");
+		expect(padding.top).toBe(GUTTER);
+		expect(padding.right).toBe(GUTTER);
 	});
 
 	it("gives a wide flat panel its band instead of half the canvas", () => {
 		// The options panel spans most of the width but is only 80px deep.
 		const padding = panelPadding(VIEW, [rect(300, 780)]);
 		expect(padding.top).toBe(`${90 + PANEL_GUTTER}px`);
-		expect(padding.right).toBe("80px");
+		expect(padding.right).toBe(GUTTER);
 	});
 
 	it("reserves from the far side for a panel hugging the right or the bottom", () => {
@@ -80,7 +73,7 @@ describe("panelPadding", () => {
 		);
 	});
 
-	it("takes the widest claim per side and never less than the default", () => {
+	it("takes the widest claim per side, and a panel's gutter from the panel", () => {
 		const padding = panelPadding(VIEW, [
 			tall(15, 215),
 			tall(15, 120),
@@ -89,8 +82,10 @@ describe("panelPadding", () => {
 		]);
 		expect(padding.left).toBe(`${215 + PANEL_GUTTER}px`);
 		expect(padding.right).toBe(`${800 - 600 + PANEL_GUTTER}px`);
-		// A panel narrower than the default fraction leaves the fit as it was.
-		expect(panelPadding(VIEW, [tall(5, 40)]).left).toBe("80px");
+		// The gutter is kept from the panel's edge, not the canvas's.
+		expect(panelPadding(VIEW, [tall(5, 40)]).left).toBe(
+			`${40 + PANEL_GUTTER}px`,
+		);
 	});
 
 	it("caps a strip at 40% of its axis so a thin split still fits something", () => {
@@ -103,22 +98,12 @@ describe("panelPadding", () => {
 
 	it("reads a zero box as no claim at all, keeping only the gutter", () => {
 		const none: Rect = { left: 0, right: 0, top: 0, bottom: 0 };
-		const gutter = `${PANEL_GUTTER}px`;
 		expect(panelPadding(none, [none])).toEqual({
-			top: gutter,
-			bottom: gutter,
-			left: gutter,
-			right: gutter,
+			top: GUTTER,
+			bottom: GUTTER,
+			left: GUTTER,
+			right: GUTTER,
 		});
-	});
-
-	it("drops to the gutter on a side no panel claims once the air gives way", () => {
-		const padding = panelPadding(VIEW, [tall(15, 215)], undefined, NO_AIR);
-		expect(padding.top).toBe(`${PANEL_GUTTER}px`);
-		expect(padding.bottom).toBe(`${PANEL_GUTTER}px`);
-		expect(padding.right).toBe(`${PANEL_GUTTER}px`);
-		// The panel's own strip is not air and is reserved as it was.
-		expect(padding.left).toBe(`${215 + PANEL_GUTTER}px`);
 	});
 
 	it("clears a panel by whichever strip lets the map fit larger", () => {
@@ -128,11 +113,11 @@ describe("panelPadding", () => {
 		// A wide, flat map is held by the width: a band costs it nothing.
 		const wide = panelPadding(VIEW, [corner], { width: 1600, height: 200 });
 		expect(wide.bottom).toBe(`${400 - 305 + PANEL_GUTTER}px`);
-		expect(wide.right).toBe("80px");
+		expect(wide.right).toBe(GUTTER);
 		// A tall, narrow one is held by the height: a column costs it nothing.
 		const narrow = panelPadding(VIEW, [corner], { width: 200, height: 800 });
 		expect(narrow.right).toBe(`${800 - 665 + PANEL_GUTTER}px`);
-		expect(narrow.bottom).toBe("40px");
+		expect(narrow.bottom).toBe(GUTTER);
 	});
 
 	it("never takes a strip the cap has cut short while the other one clears", () => {
@@ -143,7 +128,7 @@ describe("panelPadding", () => {
 			height: 100,
 		});
 		expect(padding.left).toBe(`${215 + PANEL_GUTTER}px`);
-		expect(padding.top).toBe("40px");
+		expect(padding.top).toBe(GUTTER);
 	});
 
 	it("chooses for every panel together, so two corners can share one side", () => {
@@ -156,8 +141,8 @@ describe("panelPadding", () => {
 			height: 200,
 		});
 		expect(padding.bottom).toBe(`${400 - 300 + PANEL_GUTTER}px`);
-		expect(padding.left).toBe("80px");
-		expect(padding.right).toBe("80px");
+		expect(padding.left).toBe(GUTTER);
+		expect(padding.right).toBe(GUTTER);
 	});
 });
 
@@ -208,10 +193,10 @@ describe("fitPastPanels", () => {
 		await fitPastPanels(flow, container(VIEW, [tall(15, 215)]));
 		expect(flow.fitView).toHaveBeenCalledWith({
 			padding: {
-				top: "40px",
-				bottom: "40px",
+				top: GUTTER,
+				bottom: GUTTER,
 				left: `${215 + PANEL_GUTTER}px`,
-				right: "80px",
+				right: GUTTER,
 			},
 		});
 	});
@@ -226,7 +211,7 @@ describe("fitPastPanels", () => {
 		expect(flow.fitView).toHaveBeenCalledWith({
 			padding: expect.objectContaining({
 				top: `${140 + PANEL_GUTTER}px`,
-				left: "80px",
+				left: GUTTER,
 			}),
 		});
 	});
@@ -278,7 +263,7 @@ describe("fittedZoom", () => {
 
 describe("needsRelief", () => {
 	/** A dense map: fifteen contexts across, as NorthBank's is. */
-	const map = { width: 3000, height: 1300 };
+	const map = { width: 3000, height: 1400 };
 	/** The boxes the fit measures, before and after each panel gives way. */
 	const expandedLegend = tall(15, 215);
 	const collapsedLegend: Rect = { left: 15, right: 80, top: 10, bottom: 35 };
@@ -301,29 +286,38 @@ describe("needsRelief", () => {
 		expect(needsRelief(VIEW, [collapsedLegend, expandedOptions], map)).toBe(
 			true,
 		);
-		// 3. Both are rows; what is left to give is the air.
+		// 3. Both are rows, and the map clears the readable floor: it stops.
 		expect(needsRelief(VIEW, [collapsedLegend, collapsedOptions], map)).toBe(
-			true,
+			false,
 		);
-		// 4. With the air down to the gutter the map clears the floor: it stops.
-		expect(
-			needsRelief(VIEW, [collapsedLegend, collapsedOptions], map, NO_AIR),
-		).toBe(false);
 	});
 
 	it("gives the floor away last, and only for a map that still will not clear it", () => {
 		const huge = { width: 4000, height: 1800 };
 		const rows = [collapsedLegend, collapsedOptions];
 		// Everything given, and the map is still under the floor a map should keep.
-		expect(needsRelief(VIEW, rows, huge, NO_AIR, MIN_ZOOM)).toBe(true);
-		// The map of the step before was under the readable floor but over this one.
-		expect(needsRelief(VIEW, rows, map, NO_AIR, MIN_ZOOM)).toBe(false);
+		expect(needsRelief(VIEW, rows, huge, MIN_ZOOM)).toBe(true);
+		// A map that fits once the panels are rows is over it.
+		expect(needsRelief(VIEW, rows, map, MIN_ZOOM)).toBe(false);
 	});
 
 	it("keeps the three floors in their order", () => {
 		expect(READABLE_ZOOM).toBeGreaterThan(MIN_ZOOM);
 		expect(MIN_ZOOM).toBeGreaterThan(FLOOR_ZOOM);
-		expect(RELIEF_STEPS).toEqual(["legend", "options", "air", "floor"]);
+		expect(RELIEF_STEPS).toEqual(["legend", "options", "floor"]);
+	});
+});
+
+describe("drawnBounds", () => {
+	it("measures only the nodes Svelte Flow draws, as its fit does", () => {
+		const getNodesBounds = vi.fn(() => ({ width: 10, height: 10 }));
+		const shown = { id: "a" };
+		const drawn = { id: "b", hidden: false };
+		drawnBounds({
+			getNodes: () => [shown, { id: "cluster", hidden: true }, drawn],
+			getNodesBounds,
+		});
+		expect(getNodesBounds).toHaveBeenCalledWith([shown, drawn]);
 	});
 });
 
@@ -337,12 +331,11 @@ describe("crowded", () => {
 		const canvas = () => container(VIEW, [tall(15, 215)]);
 		expect(crowded(flow({ width: 4000, height: 900 }), canvas())).toBe(true);
 		expect(crowded(flow({ width: 400, height: 200 }), canvas())).toBe(false);
-		// The air and the floor are the caller's to name, step by step: this map
-		// is under the readable floor with the default air and over it without.
-		expect(crowded(flow({ width: 2400, height: 1000 }), canvas())).toBe(true);
-		expect(crowded(flow({ width: 2400, height: 1000 }), canvas(), NO_AIR)).toBe(
-			false,
-		);
+		// The floor is the caller's to name, step by step: this map is under
+		// the readable floor and over the one a map should keep.
+		const between = flow({ width: 2700, height: 1000 });
+		expect(crowded(between, canvas())).toBe(true);
+		expect(crowded(between, canvas(), MIN_ZOOM)).toBe(false);
 	});
 
 	it("has nothing to give way for without a container", () => {

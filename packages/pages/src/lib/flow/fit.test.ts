@@ -1,12 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDiagramFit, refit } from "./fit.svelte";
-import {
-	BASE_PADDING,
-	FLOOR_ZOOM,
-	MIN_ZOOM,
-	NO_AIR,
-	RELIEF_STEPS,
-} from "./panel-fit";
+import { FLOOR_ZOOM, MIN_ZOOM, RELIEF_STEPS } from "./panel-fit";
 import { resetPanelChoices } from "./panel-state.svelte";
 
 beforeEach(() => {
@@ -15,11 +9,10 @@ beforeEach(() => {
 });
 
 describe("diagram fit", () => {
-	it("starts with both panels open, the default air and the readable floor", () => {
+	it("starts with both panels open and the readable floor", () => {
 		const fit = createDiagramFit();
 		expect(fit.legend.collapsed).toBe(false);
 		expect(fit.options.collapsed).toBe(false);
-		expect(fit.air).toBe(BASE_PADDING);
 		expect(fit.minZoom).toBe(MIN_ZOOM);
 		expect(fit.step).toBe("none");
 	});
@@ -31,9 +24,6 @@ describe("diagram fit", () => {
 		expect(fit.options.collapsed).toBe(false);
 		fit.give("options");
 		expect(fit.options.collapsed).toBe(true);
-		expect(fit.air).toBe(BASE_PADDING);
-		fit.give("air");
-		expect(fit.air).toBe(NO_AIR);
 		expect(fit.minZoom).toBe(MIN_ZOOM);
 		fit.give("floor");
 		expect(fit.minZoom).toBe(FLOOR_ZOOM);

@@ -180,36 +180,30 @@ export function expectClear(fit: SettledFit, where: string): void {
 
 /**
  * How far the graph stops short of what bounds it, side by side: the canvas's
- * edge, or the facing edge of a panel on that side of the canvas that the
- * graph has been kept clear of. The nearest such edge short of the graph
- * counts.
+ * edge, or the facing edge of a panel the graph would run into by growing
+ * that way — one beside it, overlapping it across the other axis once the
+ * gutter is counted. A panel the graph clears by passing above or below it
+ * does not bound it sideways, and the other way round.
  */
 export function gaps(fit: SettledFit): Box {
 	const { view: v, graph: g } = fit;
-	const cx = (v.left + v.right) / 2;
-	const cy = (v.top + v.bottom) / 2;
+	const reach = GUTTER - 2;
 	const panels = Object.values(fit.panels);
-	const nearest = (edges: number[], from: number, sign: 1 | -1) =>
+	const acrossRows = panels.filter(
+		(p) => p.top < g.bottom + reach && g.top - reach < p.bottom,
+	);
+	const acrossColumns = panels.filter(
+		(p) => p.left < g.right + reach && g.left - reach < p.right,
+	);
+	const nearest = (from: number, edges: number[], sign: 1 | -1) =>
 		Math.min(...edges.map((e) => (from - e) * sign).filter((d) => d >= -0.5));
 	return {
-		left: nearest(
-			[v.left, ...panels.filter((p) => p.left < cx).map((p) => p.right)],
-			g.left,
-			1,
-		),
-		right: nearest(
-			[v.right, ...panels.filter((p) => p.right > cx).map((p) => p.left)],
-			g.right,
-			-1,
-		),
-		top: nearest(
-			[v.top, ...panels.filter((p) => p.top < cy).map((p) => p.bottom)],
-			g.top,
-			1,
-		),
+		left: nearest(g.left, [v.left, ...acrossRows.map((p) => p.right)], 1),
+		right: nearest(g.right, [v.right, ...acrossRows.map((p) => p.left)], -1),
+		top: nearest(g.top, [v.top, ...acrossColumns.map((p) => p.bottom)], 1),
 		bottom: nearest(
-			[v.bottom, ...panels.filter((p) => p.bottom > cy).map((p) => p.top)],
 			g.bottom,
+			[v.bottom, ...acrossColumns.map((p) => p.top)],
 			-1,
 		),
 	};

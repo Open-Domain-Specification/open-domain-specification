@@ -10,13 +10,12 @@
  */
 import type { Viewport } from "@xyflow/svelte";
 import {
-	BASE_PADDING,
 	type Fitter,
 	FLOOR_ZOOM,
 	fitPastPanels,
 	MIN_ZOOM,
-	NO_AIR,
 	type ReliefStep,
+	type Shown,
 } from "./panel-fit";
 import { createPanelState, type PanelState } from "./panel-state.svelte";
 
@@ -25,9 +24,7 @@ export type DiagramFit = {
 	readonly legend: PanelState;
 	/** The options panel, top right. */
 	readonly options: PanelState;
-	/** The air kept on a side no panel claims, as a fraction of the axis. */
-	readonly air: number;
-	/** The floor the canvas clamps to: `MIN_ZOOM` until step four. */
+	/** The floor the canvas clamps to: `MIN_ZOOM` until the last step. */
 	readonly minZoom: number;
 	/** The last step taken, or `none` while the map fits as it is. */
 	readonly step: ReliefStep | "none";
@@ -47,16 +44,12 @@ export type DiagramFit = {
 export function createDiagramFit(): DiagramFit {
 	const legend = createPanelState("legend");
 	const options = createPanelState("options");
-	let air = $state(BASE_PADDING);
 	let minZoom = $state(MIN_ZOOM);
 	let step = $state<ReliefStep | "none">("none");
 	let drawn: Viewport | undefined;
 	return {
 		legend,
 		options,
-		get air() {
-			return air;
-		},
 		get minZoom() {
 			return minZoom;
 		},
@@ -67,7 +60,6 @@ export function createDiagramFit(): DiagramFit {
 			step = next;
 			if (next === "legend") legend.crowd();
 			else if (next === "options") options.crowd();
-			else if (next === "air") air = NO_AIR;
 			else minZoom = FLOOR_ZOOM;
 		},
 		landed(view) {
@@ -90,11 +82,11 @@ export function createDiagramFit(): DiagramFit {
  * changing size, the Fit View control — so each one hands the view back to
  * the fit.
  */
-export async function refit<TNode>(
+export async function refit<TNode extends Shown>(
 	fit: DiagramFit,
 	flow: Fitter<TNode> & { getViewport: () => Viewport },
 	container: Element | undefined | null,
 ): Promise<void> {
-	await fitPastPanels(flow, container, fit.air);
+	await fitPastPanels(flow, container);
 	fit.landed(flow.getViewport());
 }

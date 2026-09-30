@@ -29,7 +29,6 @@ describe("FitViewButton", () => {
 		expect(fitPastPanels).toHaveBeenCalledWith(
 			expect.objectContaining({ fitView: expect.any(Function) }),
 			container,
-			fit.air,
 		);
 		await vi.waitFor(() =>
 			expect(fit.owns({ x: 0, y: 0, zoom: 1 })).toBe(true),
