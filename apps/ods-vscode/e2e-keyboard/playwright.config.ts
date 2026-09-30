@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { defineConfig } from "@playwright/test";
 
 /**
@@ -12,6 +13,14 @@ export default defineConfig({
 	timeout: 120_000,
 	workers: 1,
 	retries: 0,
-	reporter: [["list"]],
+	reporter: process.env.ODS_RESULTS_DIR
+		? [
+				["list"],
+				[
+					"json",
+					{ outputFile: join(process.env.ODS_RESULTS_DIR, "keyboard.json") },
+				],
+			]
+		: [["list"]],
 	outputDir: "../test-results-keyboard",
 });

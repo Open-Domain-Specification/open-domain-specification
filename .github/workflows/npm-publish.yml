@@ -26,6 +26,8 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm test
+      # The checker the real-vscode job judges its results with.
+      - run: npm run test:scripts
       - name: Package the VS Code extension
         run: |
           mkdir -p artifacts
@@ -74,9 +76,118 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  # Both real-VS-Code suites, in a real VS Code 1.96.4 under a virtual display:
+  # `npm run test:vscode` (mocha, inside an Extension Development Host) and
+  # `npm run test:vscode:keyboard` (Playwright driving Electron with real key
+  # events). They run one after the other in this checkout and nothing else runs
+  # here while a host is up: the extension writes `.ods/schema.json` into the
+  # fixture folders, and two hosts would race on them. The job name is the
+  # status-check context a maintainer can require in the branch rules; keep it.
+  real-vscode:
+    name: real-vscode
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      VSCODE_VERSION: '1.96.4'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Fresh per run and inside the runner's temp dir, which is cleaned below.
+      # Set here because the runner context is not available to job-level env.
+      - name: Name the scratch and result directories
+        run: |
+          {
+            echo "ODS_EVIDENCE=$RUNNER_TEMP/ods-evidence"
+            echo "ODS_RESULTS_DIR=$RUNNER_TEMP/ods-evidence/results"
+            echo "ODS_LOGS_DIR=$RUNNER_TEMP/ods-evidence/keyboard"
+            echo "ODS_VSCODE_USER_DATA=$RUNNER_TEMP/ods-vscode-user-data"
+            echo "ODS_TMP=$RUNNER_TEMP/ods-tmp"
+          } >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      # Every workspace: the extension bundles the pages, graphviz and doc builds.
+      - run: npm run build
+      - name: Cache VS Code
+        uses: actions/cache@v4
+        with:
+          path: apps/ods-vscode/.vscode-test
+          key: ${{ runner.os }}-vscode-${{ env.VSCODE_VERSION }}
+      # Unconditional apt: a cache hit still needs the libraries Electron links
+      # against. The t64 names are Ubuntu 24.04's.
+      - name: Install Electron's system libraries and Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth dbus-x11 libasound2t64 libgbm1 libgtk-3-0t64 libnss3 \
+            libxss1 libxtst6 libatk-bridge2.0-0t64 libatk1.0-0t64 libcups2t64 \
+            libdrm2 libxkbfile1 libsecret-1-0 libxkbcommon0 libxdamage1 \
+            libxrandr2 libxcomposite1 libpango-1.0-0 libcairo2
+          # Ubuntu 24.04 refuses unprivileged user namespaces to unconfined
+          # binaries, which is what Electron's sandbox needs.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      # A prerequisite, checked before either suite: the download and the display.
+      - name: Get VS Code and check the virtual display
+        working-directory: apps/ods-vscode
+        run: |
+          node -e "require('@vscode/test-electron').downloadAndUnzipVSCode({ version: process.env.VSCODE_VERSION, cachePath: '.vscode-test' }).then((p) => console.log('VS Code at', p))"
+          xvfb-run -a bash -c 'test -n "$DISPLAY" && echo "display $DISPLAY is up"'
+      - name: Prepare fresh scratch and result directories
+        run: |
+          mkdir -p "$ODS_RESULTS_DIR" "$ODS_LOGS_DIR" "$ODS_VSCODE_USER_DATA" "$ODS_TMP"
+          # The keyboard harness makes its scratch dirs under the temp dir.
+          echo "TMPDIR=$ODS_TMP" >> "$GITHUB_ENV"
+      - name: Run the extension suite (test:vscode)
+        id: vscode
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          xvfb-run -a npm run test:vscode --workspace ods-vscode 2>&1 | tee "$ODS_EVIDENCE/vscode-test.log"
+      - name: Stop anything the first suite left running
+        if: always()
+        run: pkill -f "$GITHUB_WORKSPACE/apps/ods-vscode/.vscode-test" || true
+      - name: Run the keyboard suite (test:vscode:keyboard)
+        id: keyboard
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          xvfb-run -a npm run test:vscode:keyboard --workspace ods-vscode 2>&1 | tee "$ODS_EVIDENCE/keyboard.log"
+      # The one verdict. Either suite red, a suite that never reported, zero
+      # tests, or a skip that is not an allowed screenshot ends the job red, and
+      # the first suite failing never stopped the second from running.
+      - name: Judge the results
+        if: always()
+        run: >-
+          node scripts/check-real-host-results.mjs "$ODS_RESULTS_DIR"
+          --vscode-outcome='${{ steps.vscode.outcome }}'
+          --keyboard-outcome='${{ steps.keyboard.outcome }}'
+      - name: Gather failure evidence
+        if: always()
+        run: |
+          mkdir -p "$ODS_EVIDENCE/vscode-test-logs"
+          cp -r "$ODS_VSCODE_USER_DATA/logs/." "$ODS_EVIDENCE/vscode-test-logs/" 2>/dev/null || true
+          cp -r apps/ods-vscode/test-results-keyboard "$ODS_EVIDENCE/" 2>/dev/null || true
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-vscode-evidence
+          path: ${{ runner.temp }}/ods-evidence
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Clean up
+        if: always()
+        run: |
+          pkill -f "$GITHUB_WORKSPACE/apps/ods-vscode/.vscode-test" || true
+          pkill -f Xvfb || true
+          rm -rf "$ODS_EVIDENCE" "$ODS_VSCODE_USER_DATA" "$ODS_TMP"
+
   publish:
     runs-on: ubuntu-latest
-    needs: [test, e2e]
+    needs: [test, e2e, real-vscode]
     # Never on a push. Lerna decides the version from the commits, so a merge to
     # main used to publish whatever had accumulated; releasing is now something
     # somebody asks for, from main, with the release input set.

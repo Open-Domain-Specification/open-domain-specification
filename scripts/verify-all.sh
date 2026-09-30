@@ -13,6 +13,13 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SUMMARY_FILE="$(mktemp)"
 trap 'rm -f "$SUMMARY_FILE"' EXIT
 
+# How CI relates to this gate: the gate stays the local landing check and keeps
+# refusing to start while any extension host runs (below). The two suites that
+# drive a real VS Code are not part of it; CI runs them in the `real-vscode` job
+# (.github/workflows/npm-publish.yml), and locally they are run by hand with
+# `npm run test:vscode` and `npm run test:vscode:keyboard` in apps/ods-vscode,
+# never while this gate runs. A check blocks a merge only when a maintainer
+# requires it in the branch rules.
 if pgrep -f extensionDevelopmentPath >/dev/null 2>&1; then
 	echo "refusing to start: a VS Code extension development host is running (pgrep -f extensionDevelopmentPath found one)" >&2
 	exit 1
@@ -104,6 +111,8 @@ echo "==> checking pages (svelte-check)"
 
 run_vitest "apps/docs" apps/docs
 run_vitest "apps/ods-vscode" apps/ods-vscode
+# The checker the CI job real-vscode judges both real-host suites with.
+run_vitest "scripts (real-host checker)" scripts
 
 # --- pages e2e fit spec ---
 if ! npx --prefix "$ROOT/packages/pages" playwright --version >/dev/null 2>&1; then

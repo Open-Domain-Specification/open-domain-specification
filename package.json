@@ -20,6 +20,7 @@
 		"format": "npx @biomejs/biome check --write",
 		"build": "lerna run build --stream",
 		"test": "lerna run build --stream && lerna run test --stream",
+		"test:scripts": "vitest run --root scripts",
 		"verify": "bash scripts/verify-all.sh"
 	},
 	"devDependencies": {
