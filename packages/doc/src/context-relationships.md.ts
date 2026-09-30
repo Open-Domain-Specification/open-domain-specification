@@ -1,7 +1,15 @@
-import { type ODSContextMap, PATTERNS } from "@open-domain-specification/core";
+import {
+	type ODSContextMap,
+	PATTERNS,
+	withAgreementName,
+} from "@open-domain-specification/core";
 import { markdownTable } from "./lib/markdown-table";
 
-/** A table of the declared and implied relationships on a context map. */
+/**
+ * A table of the declared and implied relationships on a context map. A named
+ * agreement's name follows its type, as on the map's stereotype badge, so two
+ * agreements between one pair read apart (#74).
+ */
 export const contextRelationshipsMd = (map: ODSContextMap) =>
 	markdownTable(
 		[
@@ -13,7 +21,10 @@ export const contextRelationshipsMd = (map: ODSContextMap) =>
 		],
 		Array.from(map.edges.values()).map((edge) => [
 			edge.source.name,
-			edge.implied ? `${edge.type} (implied by ${edge.implied})` : edge.type,
+			// An implied edge is no declared agreement, so it has no name to add.
+			edge.implied
+				? `${edge.type} (implied by ${edge.implied})`
+				: withAgreementName(edge.type, edge.name),
 			edge.target.name,
 			edge.upstreamRoles.join(", ") || "-",
 			edge.downstreamRoles.join(", ") || "-",

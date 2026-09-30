@@ -12,23 +12,31 @@ import type { Snippet } from "svelte";
  * platform, the badge is not drawn at zero: it means "there are N", its
  * absence means none, and the empty sentence under the heading already says
  * so in words.
+ *
+ * `size` draws a heading at another level's scale where the outline needs one
+ * level and the page's look another: a block that stands alone under its own
+ * `h1` and is also expanded under a dialog's `h2` keeps one look in both
+ * (#81). It defaults to `level`.
  */
 const {
 	level,
+	size = level,
 	id,
 	lead,
 	count,
 	children,
 }: {
 	level: 1 | 2 | 3;
+	size?: 1 | 2 | 3;
 	id?: string;
 	lead?: string;
 	count?: number;
 	children: Snippet;
 } = $props();
+const classes = $derived(`heading h${size}`);
 </script>
 
-<svelte:element this={`h${level}`} {id} class="heading h{level}" tabindex="-1">
+<svelte:element this={`h${level}`} {id} class={classes} tabindex="-1">
 	{@render children()}{#if count}<span class="count">{count}</span>{/if}
 </svelte:element>
 {#if lead}<p class="lead">{lead}</p>{/if}

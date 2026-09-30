@@ -4,7 +4,6 @@ import {
 	type DownstreamRole,
 	isSymmetricRelationship,
 	PATTERNS,
-	relationshipArrow,
 	type UpstreamRole,
 } from "@open-domain-specification/core";
 import Comments from "../atoms/Comments.svelte";
@@ -23,22 +22,25 @@ import { crossingConsumables, relationshipLinks } from "../evidence/derive";
 import { LINK_KIND_LABELS } from "../evidence/labels";
 import { roleLabel } from "../flow/roles";
 import { consumableIcon, useModel } from "../model";
-import ContextLockup from "../molecules/ContextLockup.svelte";
 import Joined from "../molecules/Joined.svelte";
 import PatternHover from "../molecules/PatternHover.svelte";
+import RelationshipTitle from "../molecules/RelationshipTitle.svelte";
 
 /**
  * Everything known about one context relationship, intent and evidence
  * together (RFC-002 section 4.3). The card v1 drew around it — and the two
  * cards inside it that held nothing but a name — are gone: the title is the
- * two context lockups with the arrow between them, the roles are a definition
+ * relationship as core titles it, two context lockups with the arrow between
+ * them and a named agreement's name, the roles are a definition
  * list, the crossings are a table and the links are a definition list keyed by
  * what each one points at.
  *
  * The same block is the expanded row of a strategic position table and a page
- * of its own, so `heading` picks the level of the title; everything inside it
- * stays at the level-3 scale either way, and each part keeps its id so a table
- * of contents can point at it.
+ * of its own, so `heading` picks the level of the title. Its parts sit one
+ * level under the title in the outline: `h2` under a page's `h1`, `h3` beside
+ * the title inside a dialog, whose own `h2` they sit under (#81). They keep the
+ * level-3 scale either way, and each part keeps its id so a table of contents
+ * can point at it.
  */
 const {
 	relationship: r,
@@ -50,6 +52,12 @@ const {
 
 const model = useModel();
 const level = $derived<1 | 3>(heading === "h1" ? 1 : 3);
+/**
+ * A part's outline level: under a page's title, or beside a dialog's. Inside
+ * the modal the parts stay the title's `h3` siblings, as they always were;
+ * both sit under the dialog's `h2`, so the outline has no gap (#81).
+ */
+const partLevel = $derived<2 | 3>(heading === "h1" ? 2 : 3);
 const symmetric = $derived(isSymmetricRelationship(r.type));
 const crossings = $derived(crossingConsumables(r, model.workspace));
 const links = $derived(relationshipLinks(r, crossings));
@@ -76,9 +84,7 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 
 <div class="relationship-detail">
 	<Heading {level}>
-		<ContextLockup context={r.source} />
-		<span class="arrow">{relationshipArrow(r.type)}</span>
-		<ContextLockup context={r.target} />
+		<RelationshipTitle relationship={r} />
 		<PatternHover pattern={r.type} label={r.type} intent={r} />
 		<Disposition disposition={r.disposition} />
 	</Heading>
@@ -90,7 +96,7 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 	{/if}
 
 	<section id="roles">
-		<Heading level={3}>Roles</Heading>
+		<Heading level={partLevel} size={3}>Roles</Heading>
 		<!-- Neither side of a symmetric relationship plays a role, so the pattern
 		     is stated once rather than twice. -->
 		{#if symmetric}
@@ -100,12 +106,20 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 				{#each sides as side (side.term)}
 					<Definition term={side.term}>
 						<Lockup kind="boundedcontext" name={side.context.name} ref={side.context.ref} />
-						{#each side.roles as role (role)}
-							<PatternHover pattern={role} mono intent={r} />
-							<span class="summary">{patternLine(role)}</span>
+						<!-- Each role is its own item, code then name and summary, so two
+						     roles on one side never run together (#84). -->
+						{#if side.roles.length}
+							<ul class="roles">
+								{#each side.roles as role (role)}
+									<li>
+										<PatternHover pattern={role} mono intent={r} />
+										<span class="summary">{patternLine(role)}</span>
+									</li>
+								{/each}
+							</ul>
 						{:else}
 							<span class="summary">{PATTERNS[r.type].summary}</span>
-						{/each}
+						{/if}
 					</Definition>
 				{/each}
 			</DefinitionList>
@@ -113,12 +127,12 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 	</section>
 
 	<section id="comments">
-		<Heading level={3} count={r.comments.length}>Comments</Heading>
+		<Heading level={partLevel} size={3} count={r.comments.length}>Comments</Heading>
 		<Comments comments={r.comments} empty="No comments recorded for this relationship yet." />
 	</section>
 
 	<section id="crossings">
-		<Heading level={3} count={crossings.length}>Consumables crossing this boundary</Heading>
+		<Heading level={partLevel} size={3} count={crossings.length}>Consumables crossing this boundary</Heading>
 		<DataTable
 			{columns}
 			rows={crossings}
@@ -153,7 +167,7 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 	</section>
 
 	<section id="links">
-		<Heading level={3}>Links</Heading>
+		<Heading level={partLevel} size={3}>Links</Heading>
 		{#if links.length}
 			<DefinitionList>
 				{#each links as link (link.url)}
@@ -174,11 +188,26 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 	.relationship-detail section {
 		margin: 0;
 	}
-	.arrow,
 	.summary {
 		color: var(--vscode-descriptionForeground);
 	}
 	.summary {
 		margin: 0;
+	}
+	/* A side's roles with no bullet, the code leading each as a term leads its
+	   definition. The first follows its context on the same line, as a lone
+	   role always has, so a side with one role costs no extra line; every
+	   further role starts a line of its own. */
+	.roles {
+		display: inline;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.roles > li {
+		display: block;
+	}
+	.roles > li:first-child {
+		display: inline;
 	}
 </style>

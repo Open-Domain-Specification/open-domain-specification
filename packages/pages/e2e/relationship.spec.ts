@@ -1,11 +1,13 @@
+import AxeBuilder from "@axe-core/playwright";
 import { PATTERNS } from "@open-domain-specification/core";
-import { expect, test } from "@playwright/test";
+import { expect, type Locator, test } from "@playwright/test";
 import {
 	EXPORT_ORIGIN,
 	expectNoSidewaysScroll,
 	expectProseRow,
 	expectScrollOnlyAtTheFloor,
 	growColumn,
+	serveModel,
 	servePetstore,
 	viewerAt,
 	WORKSPACE_NAME,
@@ -470,4 +472,196 @@ test("a relationship ref opens the relationship as its own page", async ({
 	// Its crumbs lead back to both contexts it joins.
 	await page.locator(`main .crumbs a[data-ref="${SALES_REF}"]`).click();
 	await expect(page.locator("main h1")).toContainText("Sales BC");
+});
+
+/**
+ * Issue #81. The page's parts are `h2` under its `h1`, so the outline has no
+ * gap, and they keep the look they have as `h3` in the Strategic position
+ * modal, whose own `h2` they sit under there. On the viewer and the export.
+ */
+for (const [origin, name] of [
+	["viewer", undefined],
+	["export", EXPORT],
+] as const) {
+	test(`${origin}: the relationship page's headings nest in order and its parts look as they do in the modal (#81)`, async ({
+		browser,
+		baseURL,
+	}) => {
+		const context = await browser.newContext({
+			viewport: BESIDE_THE_TREE,
+			baseURL: name ?? baseURL,
+		});
+		const page = await context.newPage();
+		const go = async (ref: string) => {
+			if (name) {
+				await page.goto("/");
+				await page.getByRole("link", { name: WORKSPACE_NAME }).click();
+				await page.evaluate((r) => {
+					location.hash = r;
+				}, ref);
+			} else {
+				await servePetstore(page);
+				await page.goto(viewerAt(ref));
+			}
+		};
+		/** What a reader sees of a heading: its size, weight, leading and space above. */
+		const looks = (headings: Locator) =>
+			headings.evaluateAll((els) =>
+				els.map((e) => {
+					const s = getComputedStyle(e);
+					return [s.fontSize, s.fontWeight, s.lineHeight, s.marginTop].join(
+						" ",
+					);
+				}),
+			);
+
+		await go(CATALOG_SALES_REF);
+		const detail = page.locator("main .relationship-detail");
+		await expect(detail.locator("h1")).toContainText("Catalog BC");
+		const parts = detail.locator("section > .heading");
+		await expect(parts).toHaveCount(4);
+		expect(await parts.evaluateAll((els) => els.map((e) => e.tagName))).toEqual(
+			["H2", "H2", "H2", "H2"],
+		);
+		const outline = await page
+			.locator("main")
+			.evaluate((m) =>
+				[...m.querySelectorAll("h1, h2, h3, h4, h5, h6")].map((h) =>
+					Number(h.tagName[1]),
+				),
+			);
+		for (let i = 1; i < outline.length; i += 1)
+			expect(outline[i] - outline[i - 1]).toBeLessThanOrEqual(1);
+		const axe = await new AxeBuilder({ page })
+			.include("main")
+			.withRules(["heading-order"])
+			.analyze();
+		expect(axe.violations).toEqual([]);
+		const onPage = await looks(parts);
+
+		// The same parts in the modal: the same look, a level under its `h2`.
+		await go(SALES_REF);
+		await page
+			.locator(".strategic-position")
+			.getByRole("button", { name: "Evidence for Catalog BC and Sales BC" })
+			.click();
+		const inModal = page.locator("#relationship-modal section > .heading");
+		await expect(inModal).toHaveCount(4);
+		expect(
+			await inModal.evaluateAll((els) => els.map((e) => e.tagName)),
+		).toEqual(["H3", "H3", "H3", "H3"]);
+		expect(await looks(inModal)).toEqual(onPage);
+		await context.close();
+	});
+}
+
+/**
+ * Issue #84. NorthBank's Customer & KYC is upstream of Branch & Contact Centre
+ * with two roles, and they read "…an upstream context.PL Published Language".
+ * Each role is now its own list item, code then name and summary, on a line of
+ * its own: on the relationship page and in the Strategic position modal.
+ */
+const NB_BRANCH = "#/boundedcontexts/branch_&_contact_centre";
+const NB_KYC_BRANCH =
+	"#/relationships/customer_&_kyc~upstream-downstream~branch_&_contact_centre";
+const UPSTREAM_ROLES = ["open-host-service", "published-language"] as const;
+
+/** The upstream side's roles as a reader meets them: one list, one item a role. */
+async function expectRolesApart(roles: Locator) {
+	const upstream = roles.locator("dd").first();
+	const items = upstream.getByRole("list").getByRole("listitem");
+	await expect(items).toHaveCount(UPSTREAM_ROLES.length);
+	for (const [i, role] of UPSTREAM_ROLES.entries()) {
+		const { abbreviation, name, summary } = PATTERNS[role];
+		await expect(items.nth(i)).toHaveText(
+			`${abbreviation} ${name} — ${summary}`,
+			{ useInnerText: true },
+		);
+	}
+	// On lines of their own: the second starts below the whole of the first.
+	const [first, second] = await Promise.all([
+		items.nth(0).boundingBox(),
+		items.nth(1).boundingBox(),
+	]);
+	expect(second?.y ?? 0).toBeGreaterThanOrEqual(
+		(first?.y ?? 0) + (first?.height ?? 0) - 0.5,
+	);
+}
+
+test("each of a side's two roles reads as its own item on the page and in the modal (#84)", async ({
+	page,
+}) => {
+	await page.setViewportSize(BESIDE_THE_TREE);
+	const url = await serveModel(page, "northbank");
+	await page.goto(`/?url=${encodeURIComponent(url)}${NB_KYC_BRANCH}`);
+	await expect(page.locator("main h1")).toContainText(
+		"Branch & Contact Centre",
+	);
+	await expectRolesApart(page.locator("main #roles"));
+
+	await page.goto(`/?url=${encodeURIComponent(url)}${NB_BRANCH}`);
+	await expect(page.locator("main h1")).toContainText(
+		"Branch & Contact Centre",
+	);
+	await page
+		.locator(".strategic-position")
+		.getByRole("button", {
+			name: "Evidence for Customer & KYC and Branch & Contact Centre",
+		})
+		.click();
+	await expectRolesApart(page.locator("#relationship-modal #roles"));
+});
+
+/**
+ * Issue #74 beside the tree. RiverMart's Warehouse holds two named agreements
+ * with Vendor Purchasing (legacy), and each row names its own under the type.
+ * The name wraps rather than setting the Type column, so the Strategic position
+ * keeps card 42's rule: its frame scrolls only when the prose is at its floor,
+ * and the page never does. Where an exchange names its agreement, the
+ * Warehouse API's consumes table stays usable at 800 and 390.
+ */
+test("a named agreement's row names it without widening the Strategic position, and narrow pages never scroll sideways (#74)", async ({
+	page,
+}) => {
+	const url = await serveModel(page, "rivermart");
+	for (const width of [1300, 1600]) {
+		await page.setViewportSize({ width, height: 900 });
+		await page.goto(
+			`/?url=${encodeURIComponent(url)}#/boundedcontexts/warehouse`,
+		);
+		const table = page.locator(".strategic-position");
+		await expect(table.locator(".agreement")).toHaveText([
+			"purchase order lookup",
+			"legacy stock feed",
+		]);
+		// The type keyword, not the name under it, is what the column is as wide as.
+		const [column, keyword] = await table
+			.locator("td", { has: page.locator(".agreement") })
+			.first()
+			.evaluate((td) => [
+				td.getBoundingClientRect().width,
+				Math.max(
+					...[...(td.closest("table")?.querySelectorAll("td") ?? [])]
+						.filter(
+							(c) => c.cellIndex === (td as HTMLTableCellElement).cellIndex,
+						)
+						.map(
+							(c) =>
+								c.querySelector(".pattern-hover")?.getBoundingClientRect()
+									.width ?? 0,
+						),
+				),
+			]);
+		expect(column).toBeLessThanOrEqual(keyword + 16 + 1);
+		await expectScrollOnlyAtTheFloor(table);
+		await expectNoSidewaysScroll(page);
+	}
+	for (const width of [800, 390]) {
+		await page.setViewportSize({ width, height: 900 });
+		await page.goto(
+			`/?url=${encodeURIComponent(url)}#/boundedcontexts/warehouse/services/warehouse_api`,
+		);
+		await expect(page.locator("main h1")).toContainText("WarehouseAPI");
+		await expectNoSidewaysScroll(page);
+	}
 });

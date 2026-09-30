@@ -4,7 +4,11 @@ import Heading from "./Heading.svelte";
 import Lockup from "./Lockup.svelte";
 
 /** The three levels in the order a page uses them, with a lead and a count where a page would carry one. */
-const { withCounts = true }: { withCounts?: boolean } = $props();
+const {
+	withCounts = true,
+	sized = false,
+	size = 3,
+}: { withCounts?: boolean; sized?: boolean; size?: 1 | 2 | 3 } = $props();
 </script>
 
 <Heading level={1}><Lockup kind="aggregate" name="Pet" id="pet" detail="Aggregate" size="title" /></Heading>
@@ -18,6 +22,8 @@ const { withCounts = true }: { withCounts?: boolean } = $props();
 
 <Heading level={2} id="invariants" lead="Rules that must hold after every change.">Invariants</Heading>
 <EmptyState text="No invariants stated. If nothing can go wrong, is this really an aggregate?" />
+
+{#if sized}<Heading level={2} {size} id="sized">Roles</Heading>{/if}
 
 <style>
 	.description {

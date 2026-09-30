@@ -36,4 +36,22 @@ describe("RelationshipPage", () => {
 		expect(title.querySelectorAll(".context")).toHaveLength(2);
 		expect(container.querySelector("#roles")).toBeInTheDocument();
 	});
+
+	it("nests its parts as h2 under the h1, at the level-3 scale (#81)", () => {
+		const model = petstoreModel();
+		const { container } = render(Harness, {
+			model,
+			component: RelationshipPage,
+			args: { relationship: model.workspace.relationships[0] },
+		});
+		const parts = [...container.querySelectorAll("section > .heading")];
+		expect(parts.map((h) => h.id || h.parentElement?.id)).toEqual(
+			sections.map((s) => s.id),
+		);
+		for (const h of parts) {
+			expect(h.tagName).toBe("H2");
+			expect(h).toHaveClass("h3");
+		}
+		expect(container.querySelector("h3")).toBeNull();
+	});
 });

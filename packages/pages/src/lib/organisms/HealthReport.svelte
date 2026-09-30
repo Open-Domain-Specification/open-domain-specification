@@ -1,5 +1,5 @@
 <script lang="ts">
-import { PATTERNS, relationshipArrow } from "@open-domain-specification/core";
+import { PATTERNS } from "@open-domain-specification/core";
 import Comments from "../atoms/Comments.svelte";
 import type { Column, Group } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
@@ -9,7 +9,7 @@ import Heading from "../atoms/Heading.svelte";
 import Keyword from "../atoms/Keyword.svelte";
 import { type EvidenceRow, health, healthCounts } from "../evidence/derive";
 import { useModel } from "../model";
-import ContextLockup from "../molecules/ContextLockup.svelte";
+import RelationshipTitle from "../molecules/RelationshipTitle.svelte";
 
 /**
  * The workspace read of the evidence layer (RFC-002 section 4.5): what is
@@ -94,9 +94,7 @@ const refactorGroups = $derived<Group<EvidenceRow>[]>(
 		{#snippet cell(entry, col)}
 			{@const r = entry.relationship}
 			{#if col.key === "intent"}
-				<ContextLockup context={r.source} />
-				<span class="arrow">{relationshipArrow(r.type)}</span>
-				<ContextLockup context={r.target} />
+				<span class="intent"><RelationshipTitle relationship={r} /></span>
 			{:else if col.key === "type"}
 				<Keyword text={r.type} title={PATTERNS[r.type].summary} />
 			{:else}
@@ -111,8 +109,7 @@ const refactorGroups = $derived<Group<EvidenceRow>[]>(
 {/snippet}
 
 <style>
-	.arrow {
-		color: var(--vscode-descriptionForeground);
+	.intent :global(.arrow) {
 		margin: 0 4px;
 	}
 	/* The chevron a pane header uses for a section that is collapsed; the

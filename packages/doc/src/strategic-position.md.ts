@@ -5,6 +5,7 @@ import {
 	isSymmetricRelationship,
 	narrativeText,
 	relationshipNarrative,
+	withAgreementName,
 } from "@open-domain-specification/core";
 import { commentsMd } from "./comments.md";
 import { patternNotesMd } from "./context-relationships.md";
@@ -30,10 +31,11 @@ const description = (r: ContextRelationship, bc: BoundedContext) =>
 		? (r.description as string)
 		: `*${narrativeText(relationshipNarrative(r, bc))}* (generated)`;
 
+/** The type carries a named agreement's name, so two rows with one counterpart read apart (#74). */
 const row = (r: ContextRelationship, bc: BoundedContext) => [
 	counterpartOf(r, bc).name,
 	description(r, bc),
-	r.type,
+	withAgreementName(r.type, r.name),
 	r.upstreamRoles.join(", ") || "-",
 	r.downstreamRoles.join(", ") || "-",
 ];
@@ -47,11 +49,12 @@ const HEADERS = [
 ];
 
 /**
- * The counterpart names which row a comment bullet belongs to, and the type
- * tells two relationships between the same pair of contexts apart.
+ * The counterpart names which row a comment bullet belongs to, and the type,
+ * with a named agreement's name, tells two relationships between the same
+ * pair of contexts apart: one pair may hold two agreements of one type (#74).
  */
 const commentTitle = (r: ContextRelationship, bc: BoundedContext) =>
-	`**${counterpartOf(r, bc).name}** (${r.type})`;
+	`**${counterpartOf(r, bc).name}** (${withAgreementName(r.type, r.name)})`;
 
 const group = (
 	label: string,
