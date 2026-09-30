@@ -7,8 +7,10 @@
  *
  * Run from the repository root:
  * `node apps/ods-vscode/src/test/fixtures/cross-surface/generate.ts`.
- * The JSON is committed; the expectations every harness asserts are in
- * `expected.ts`, beside it.
+ * The JSON is committed, never edited by hand; the expectations every harness
+ * asserts are in `expected.ts`, beside it. Given a folder as its argument, the
+ * script writes there instead, which is how `src/cross-surface-fixture.test.ts`
+ * checks that the committed JSON is still what this script writes.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -211,7 +213,8 @@ customer.includes(gatewayRef, "is known to the gateway as", "1");
 customer.includes(registryRef, "is known to the registry as", "1");
 customer.includes(mainframeRef, "is known to the mainframe as", "1");
 
-const out = join(dirname(fileURLToPath(import.meta.url)), ".ods");
+const out =
+	process.argv[2] ?? join(dirname(fileURLToPath(import.meta.url)), ".ods");
 mkdirSync(out, { recursive: true });
 writeFileSync(
 	join(out, `${workspace.id}.json`),
