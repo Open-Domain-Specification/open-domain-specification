@@ -39,6 +39,27 @@ describe("Ref", () => {
 		expect(icon.style.color).toContain("symbolIcon-classForeground");
 	});
 
+	it("holds an icon and its label together as one lockup, and a plain link wraps as text (#85)", () => {
+		const { unmount } = render(Ref, {
+			ref: "#/x",
+			label: "CustomerVerified",
+			icon: "radio-tower",
+			kind: "event",
+		});
+		const lockup = screen
+			.getByRole("link", { name: "CustomerVerified" })
+			.querySelector(".ref-lockup");
+		expect(lockup?.querySelector(".codicon-radio-tower")).toBeInTheDocument();
+		expect(lockup).toHaveTextContent("CustomerVerified");
+		unmount();
+		render(Ref, { ref: "#/x", label: "A plain link" });
+		expect(
+			screen
+				.getByRole("link", { name: "A plain link" })
+				.querySelector(".ref-lockup"),
+		).toBeNull();
+	});
+
 	it("draws an icon in the plain icon colour when the link has no kind", () => {
 		const { container } = render(Ref, { ref: "#/x", label: "x", icon: "code" });
 		const icon = container.querySelector(".codicon-code") as HTMLElement;

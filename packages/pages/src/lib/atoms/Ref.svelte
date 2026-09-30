@@ -9,6 +9,10 @@ import { iconColor, type Kind } from "./kinds";
  * the focus ring in `focusBorder`. An icon, when given, takes the kind's
  * symbol colour rather than the link colour so the glyph reads as a kind
  * mark and the text as the link.
+ *
+ * With an icon the link is a lockup, and a lockup never breaks inside itself
+ * (design language, principle 6): a narrow table cell may wrap between it and
+ * what follows, never between the icon and the name (#85).
  */
 const {
 	ref,
@@ -37,13 +41,18 @@ const {
 	rel={external ? "external noreferrer" : undefined}
 	{title}
 	aria-current={current}
->{#if icon}<i class={`codicon codicon-${icon}`} style:color={iconColor(kind)} aria-hidden="true"></i>{/if}{label}{#if external}<i class="codicon codicon-link-external" aria-hidden="true"></i>{/if}</a>
+>{#if icon}<span class="ref-lockup"><i class={`codicon codicon-${icon}`} style:color={iconColor(kind)} aria-hidden="true"></i>{label}</span>{:else}{label}{/if}{#if external}<i class="codicon codicon-link-external" aria-hidden="true"></i>{/if}</a>
 
 <style>
 	.ref {
 		color: var(--vscode-textLink-foreground);
 		text-decoration: none;
 		border-radius: 2px;
+	}
+	/* Inside the link rather than on it, so a separator a list draws on the
+	   link itself (`Joined`'s comma) is still somewhere a cell can wrap. */
+	.ref-lockup {
+		white-space: nowrap;
 	}
 	.ref:hover {
 		color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground));
