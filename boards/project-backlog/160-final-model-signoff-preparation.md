@@ -91,4 +91,4 @@ Exact head reviewed: `771a44e0dd02a76f9692912e3acb239963bc21a9`. Both reviews we
 - **Astra, APPROVE:** no unresolved semantic disagreement; the six capability rulings accepted as deliberate costs. It did not launch the renderer hosts.
 - **Lead ruling:** the reproduced defect overrides the approval, as in the first round.
 - **Follow-up:** issue #112, card 162 (one core helper read by Markdown and pages, the browser regression). The Opus report's second finding, stale generated Markdown pages, is issue #113 and is not part of it. Both reviews repeat on the corrected exact head after the local gate; no final approval is recorded.
-
+- **Opus, second finding (not blocking):** `models/petstore/docs/.../identity_bc/aggregates/user/*` and `models/clinic/docs/.../triage/services/triage_assessment/*` were tracked but no longer generated, because the build wrote without cleaning. The Clinic page still said a domain service "calls out" to Records. Neither was linked from a regenerated page. Issue #113, card 163: the generator now replaces `docs/`, a regression asserts the file set equals `toDoc`'s keys, and the five orphan files are gone by rebuild.

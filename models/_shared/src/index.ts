@@ -15,10 +15,16 @@ const require = createRequire(import.meta.url);
  * under `docs/`, and `.ods/<file>.json` with `$schema` pointing at a copy of
  * core's JSON schema written beside it as `.ods/schema.json` -- what the VS
  * Code extension and the pages viewer open.
+ *
+ * `docs/` is replaced, not added to: the site is written beside it first and
+ * swapped in once `toDoc` has succeeded, so a page for an element the model no
+ * longer has cannot outlive it, and a failed `toDoc` leaves the old site
+ * untouched. `root` is the package directory the outputs go under; it defaults
+ * to the working directory, where each model's `build` script runs.
  */
 export async function generate(
 	workspace: Workspace,
-	{ file }: { file: string },
+	{ file, root = "." }: { file: string; root?: string },
 ): Promise<void> {
 	const diagnostics = workspace.validate();
 	console.log(`${workspace.name}: ${diagnostics.length} diagnostic(s)`);
@@ -27,15 +33,21 @@ export async function generate(
 	}
 
 	const docs = await toDoc(workspace);
+	const docsDir = path.join(root, "docs");
+	const nextDir = path.join(root, "docs.next");
+	fs.rmSync(nextDir, { recursive: true, force: true });
 	for (const [docFile, content] of Object.entries(docs)) {
-		const target = path.join("docs", docFile);
+		const target = path.join(nextDir, docFile);
 		fs.mkdirSync(path.dirname(target), { recursive: true });
 		fs.writeFileSync(target, content, "utf-8");
 	}
+	fs.rmSync(docsDir, { recursive: true, force: true });
+	fs.renameSync(nextDir, docsDir);
 
-	fs.mkdirSync(".ods", { recursive: true });
+	const odsDir = path.join(root, ".ods");
+	fs.mkdirSync(odsDir, { recursive: true });
 	fs.writeFileSync(
-		path.join(".ods", `${file}.json`),
+		path.join(odsDir, `${file}.json`),
 		JSON.stringify(
 			{ $schema: "./schema.json", ...workspace.toSchema() },
 			null,
@@ -47,7 +59,7 @@ export async function generate(
 	const coreSchema = require.resolve(
 		"@open-domain-specification/core/dist/workspace.schema.json",
 	);
-	fs.copyFileSync(coreSchema, path.join(".ods", "schema.json"));
+	fs.copyFileSync(coreSchema, path.join(odsDir, "schema.json"));
 }
 
 /**
