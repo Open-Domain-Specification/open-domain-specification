@@ -490,8 +490,12 @@
 			"downstream": {
 				"$ref": "#/boundedcontexts/warehouse"
 			},
-			"upstreamRoles": ["published-language"],
-			"downstreamRoles": ["anti-corruption-layer"],
+			"upstreamRoles": [
+				"published-language"
+			],
+			"downstreamRoles": [
+				"anti-corruption-layer"
+			],
 			"description": "The nightly purchase file."
 		},
 		{
@@ -503,8 +507,12 @@
 			"downstream": {
 				"$ref": "#/boundedcontexts/warehouse"
 			},
-			"upstreamRoles": ["open-host-service"],
-			"downstreamRoles": ["anti-corruption-layer"],
+			"upstreamRoles": [
+				"open-host-service"
+			],
+			"downstreamRoles": [
+				"anti-corruption-layer"
+			],
 			"description": "One read endpoint for a vendor's price."
 		}
 	],

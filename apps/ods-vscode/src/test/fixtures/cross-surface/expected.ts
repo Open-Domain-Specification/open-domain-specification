@@ -84,6 +84,16 @@ export const EXPECTED = {
 		{ context: "Legacy Mainframe", stereotype: "big ball of mud" },
 	],
 
-	/** The diagnostics the fixture carries on purpose. */
-	diagnostics: ["consumption-agreement"],
+	/**
+	 * Issue #75: every diagnostic the fixture carries, all on purpose. The one
+	 * warning is on the consumption above that names no agreement: the pair has
+	 * two in that direction, so core cannot pick one for it.
+	 */
+	diagnostics: [
+		{
+			severity: "warning",
+			rule: "consumption-agreement",
+			ref: "#/boundedcontexts/warehouse/services/warehouse_api/consumes/boundedcontexts~vendor~services~vendor_api~provides~stock_checked",
+		},
+	],
 } as const;

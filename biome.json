@@ -15,6 +15,7 @@
 			"!**/.handovers",
 			"!models/*/.ods",
 			"!models/*/docs",
+			"!apps/ods-vscode/src/test/fixtures/cross-surface/.ods",
 			"!packages/skill/src/bundle.generated.ts",
 			"!packages/skill/skill/references",
 			"!boards/**/.config.json"
