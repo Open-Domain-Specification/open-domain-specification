@@ -4,7 +4,7 @@ labels: [ci, vscode]
 priority: medium
 agent: developer
 live: true
-updatedAt: 2026-09-30T11:27:16Z
+updatedAt: 2026-09-30T13:11:33Z
 ---
 # The real VS Code suites run in CI
 
@@ -45,3 +45,4 @@ Issue #69. The two suites that drive a real VS Code 1.96.4, `npm run test:vscode
   - locally on macOS 27 arm64 with VS Code 1.96.4, `npm run test:vscode` passed three runs out of three (9 passing and 4 pending screenshots; hostile-links 1; cross-surface 4), and `npm run test:vscode:keyboard` passed three out of three (23 passed);
   - CI push run 36707942927 is green (`test`, `e2e`, `real-vscode`).
 No branch protection or ruleset exists on develop or main. The check becomes merge-blocking only when a maintainer requires the status check `real-vscode`.
+- **developer** (2026-09-30T13:11:33Z): Owner review of PR #95 found two cases where the checker said success against its own policy; both fixed in 9cecda7a. (1) A Mocha test that failed its first attempt and passed its retry was recorded as a clean pass, because Mocha emits `retry`, not `fail`, for an attempt it will repeat. The reporter (now plain CommonJS, `src/test/results-reporter.cjs`, so the scripts tests run it unbuilt) records `retry` events and each pass's `currentRetry()`; the checker rejects any test with either, naming the config and the test. (2) A Playwright `test.fail()` test that fails reports outcome `expected` with `expectedStatus: failed`, and was counted as a pass. A journey now counts as passed only when its outcome is `expected`, `expectedStatus` is `passed` and it has exactly one attempt with status `passed`; expected failures, `test.fixme`, unallowlisted skips, flaky passes, and missing or unrecognised statuses, results or record shapes (Mocha side too) are rejected. Regression tests use records from a real Mocha 11 run (`this.retries(1)`: clean accepted, retry-only rejected, terminal failure rejected) and from a real `@playwright/test` run of a fixture spec (pass accepted; failure, `test.fail()` and fixme rejected, each named). The old checker on the same real records accepted the retry-only pass and counted the `test.fail()` failure as 1 passed; the new one rejects both. `npm run test:scripts` is 31 tests (was 22). CI run 36719041633 on 9cecda7a is green (`test`, `e2e`, `real-vscode`) with the same counts: petstore 9 and 4 skipped, hostile-links 1, cross-surface 4, keyboard 23.
