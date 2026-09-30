@@ -6,6 +6,13 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
+Model finality, first correction: issue #107, card 157, on `codex/model-fidelity-northbank` from `origin/develop` `a0e88e97`. It is committed locally, not pushed, and has no PR. The owner's priority is to finalise the model and get independent OpenAI and Claude approval before any tooling work. The lead gets both reviews of the exact committed head first.
+- NorthBank's interview names two co-owners of `@northbank/money`: Accounts and Ledger. The model had invented a Shared Kernel Team and context, with six shared-kernel relationships that made Payments, Cards, Lending and Reporting co-owners. Money and AccountNumber now live in Ledger. Accounts shares a pairwise kernel with Ledger. The other four borrow over directed relationships: Payments and Lending as customers, Reporting and Cards as conformists. Cards' relationship is new, and its use of the library is marked as assumed.
+- The existing metamodel expresses this, with no core, validator or renderer change. NorthBank's three pinned diagnostics are identical in rule, ref and message.
+- Decision 16 has an amendment of 2026-09-30 and a refreshed current position: a shared kernel joins co-owners only. The playbook, translation table, preferences, reconciliation guide, SKILL.md, the petstore example and the strategic and tactical pages now ask "who changes it?". DISCOVERY.md appends a card 157 revision with three open questions for the next session.
+- Named cost, with its reopening condition in decision 16: three or more co-owners plus a context that only uses the kernel cannot be modelled without a `context-serves-subdomain` warning on the kernel context. No reference model has that shape.
+- Separate defect, not fixed here: Markdown's "Used by" column on a context page lists local holders only. The pages' value-object page lists every user in the workspace. This gap existed before the change and makes no false ownership claim.
+
 Epic #96 / #75 landed in PR #97. Codex reviewed head `a0c66214`, which passed the full landing gate. It merged to `develop` as `da49e1f5` at 2026-09-30 16:52:54 UTC. Post-merge CI run 36747429416 passed `test`, `e2e` and `real-vscode`; #75 and #96 are closed and card 153 is `done`.
 - The drift was real. Before the change, running `generate.ts` gave a different file from the committed `cross_surface.json`: a biome pass had collapsed four one-item role arrays. The fixture is now the generator's output, and biome skips its `.ods` folder, as it already skips `models/*/.ods`.
 - A new vitest test, `apps/ods-vscode/src/cross-surface-fixture.test.ts`, runs the generator into a temporary folder and compares the output byte for byte with the committed JSON. It then compares the fixture's diagnostics (severity, rule, ref) with the exact list in `expected.ts`: one `consumption-agreement` warning, on the Warehouse API's `StockChecked` consumption, the one that names no agreement. The generator takes an optional output folder for this; no metamodel or validator rule changed.
@@ -55,7 +62,7 @@ Before epic 60: The sixteenth round held on the card 135 head and the lead answe
 
 ## Next
 
-Epic #102, diagram fitting: diagrams fit the available canvas without hiding nodes. It is next, and it gets one PR to `develop`, independent Codex review, the full landing gate and post-merge CI before close-out. #103, the intermittent diagram drag browser check (`diagrams-sketch.spec.ts:112`), remains a separate open follow-up; check it for a shared geometry cause while working on #102. Merge enforcement of `real-vscode` remains a separate repository-admin task; the passing job is currently not a required check. Possible follow-up: `apps/ods-vscode/src/test/fixtures/long-evidence/.ods/long_evidence.json` has no committed generator, and biome still formats it.
+Card 157 / #107: the lead gets independent OpenAI and Claude reviews of the committed head. If both approve, push, open one PR to `develop`, and land after CI. Parked PR #106 (card 156, diagram fitting) is untouched. Epic #102, diagram fitting: diagrams fit the available canvas without hiding nodes. Its PR #106 is parked, and it gets one PR to `develop`, independent Codex review, the full landing gate and post-merge CI before close-out. #103, the intermittent diagram drag browser check (`diagrams-sketch.spec.ts:112`), remains a separate open follow-up; check it for a shared geometry cause while working on #102. Merge enforcement of `real-vscode` remains a separate repository-admin task; the passing job is currently not a required check. Possible follow-up: `apps/ods-vscode/src/test/fixtures/long-evidence/.ods/long_evidence.json` has no committed generator, and biome still formats it.
 
 ## Later
 
@@ -77,4 +84,4 @@ Epic #102, diagram fitting: diagrams fit the available canvas without hiding nod
 
 ## Working state
 
-Updated: 2026-09-30 18:55 UTC. `origin/develop` is at `046db881`, the epic #98 merge, before this close-out documentation commit. The managed worktree is on `codex/epic-98-closeout` from that merge commit, and the epic branch is kept. The main checkout's unrelated `biome.json` edit and `media/promo/` directory remain untouched.
+Updated: 2026-09-30 22:20 UTC. The worktree `.codex/worktrees/relationship-pages` is on `codex/model-fidelity-northbank`, from `origin/develop` `a0e88e97`. It has card 157's commits, is not pushed, and has no PR. The landing gate runs on the head that carries this STATUS and card update, and that head's result is reported with it. The parked diagram PR #106 and the main checkout are untouched.
