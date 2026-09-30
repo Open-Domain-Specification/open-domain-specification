@@ -97,9 +97,8 @@ describe("PanelFit after the fit lands", () => {
 	let observers: { report: () => void; watched: Element[] }[];
 	/** The one watching the panels, which is PanelFit's; Svelte Flow makes its own. */
 	const panels = (container: Element) => {
-		const found = observers.find((o) =>
-			o.watched.includes(container.children[0]),
-		);
+		const legend = container.querySelector(".diagram-legend");
+		const found = observers.find((o) => legend && o.watched.includes(legend));
 		if (!found) throw new Error("nothing watches the panels");
 		return found;
 	};
@@ -116,7 +115,9 @@ describe("PanelFit after the fit lands", () => {
 				observe(el: Element) {
 					this.watched.push(el);
 				}
-				disconnect() {}
+				disconnect() {
+					this.watched.length = 0;
+				}
 			},
 		);
 		vi.mocked(fitPastPanels).mockClear();
@@ -133,10 +134,12 @@ describe("PanelFit after the fit lands", () => {
 	const withPanels = () => {
 		const container = document.createElement("div");
 		container.innerHTML = [
+			'<div class="svelte-flow">',
 			'<div class="diagram-legend"></div>',
 			'<div class="diagram-options"></div>',
 			'<div class="svelte-flow__controls"></div>',
 			'<div class="svelte-flow__minimap"></div>',
+			"</div>",
 		].join("");
 		return container;
 	};
@@ -145,7 +148,31 @@ describe("PanelFit after the fit lands", () => {
 		const container = withPanels();
 		const { unmount } = render(Harness, { container });
 		await bound();
-		expect(panels(container).watched).toEqual([...container.children]);
+		expect(panels(container).watched).toEqual([
+			...container.querySelectorAll(".svelte-flow > *"),
+		]);
+		unmount();
+	});
+
+	it("watches a panel that arrives later, as a legend does when the model gains terms", async () => {
+		const container = withPanels();
+		const canvas = container.querySelector(".svelte-flow") as Element;
+		canvas.querySelector(".diagram-legend")?.remove();
+		const { unmount } = render(Harness, { container });
+		await bound();
+		const legend = document.createElement("div");
+		legend.className = "diagram-legend";
+		canvas.append(legend);
+		await vi.waitFor(() => expect(panels(container).watched).toContain(legend));
+		unmount();
+	});
+
+	it("watches nothing new in a diagram with no canvas drawn", async () => {
+		const container = document.createElement("div");
+		const { unmount } = render(Harness, { container });
+		await bound();
+		container.append(document.createElement("div"));
+		expect(fitPastPanels).not.toHaveBeenCalled();
 		unmount();
 	});
 
@@ -176,11 +203,12 @@ describe("PanelFit after the fit lands", () => {
 		const { unmount } = render(Harness, { container });
 		await bound();
 		// The walk collapses panels before it lands: those resizes are its own.
-		panels(container).report();
+		const observer = panels(container);
+		observer.report();
 		expect(fitPastPanels).not.toHaveBeenCalled();
 		await walked();
 		unmount();
-		panels(container).report();
+		observer.report();
 		expect(fitPastPanels).toHaveBeenCalledTimes(1);
 	});
 });

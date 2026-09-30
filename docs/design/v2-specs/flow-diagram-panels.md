@@ -200,7 +200,7 @@ for a map that fitted at 0.209. Every question is now asked about the nodes the 
 (`drawnBounds`).
 
 What it costs on the shipped models now, as the step `data-fit` records on the workspace's
-context map in the viewer. The table above is kept as measured on the day it was written:
+context map in the viewer. The earlier table, in the card-64 record, is kept as measured on the day it was written:
 
 | Model      | 1280x720               | 1150x700               |
 | ---------- | ---------------------- | ---------------------- |

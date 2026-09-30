@@ -47,6 +47,10 @@ let {
 } = $props();
 const flow = useSvelteFlow();
 const store = useStore();
+/** Redraws the fit, unless the reader has taken the view. */
+const follow = () => {
+	if (fit.owns(flow.getViewport())) void refit(fit, flow, container);
+};
 /** Svelte Flow has already measured the canvas at the size it has now, so no new measure is coming. */
 const measured = () =>
 	store.domNode?.clientWidth === store.width &&
@@ -57,15 +61,12 @@ $effect(() => {
 		fit.reclaim();
 		// An overlay the size the canvas already was brings no new measure to
 		// wait for, so the view handed back is fitted now.
-		if (measured() && fit.owns(flow.getViewport()))
-			void refit(fit, flow, container);
+		if (measured()) follow();
 	});
 });
 $effect(() => {
 	void [store.width, store.height];
-	untrack(() => {
-		if (fit.owns(flow.getViewport())) void refit(fit, flow, container);
-	});
+	untrack(follow);
 });
 const frame = () =>
 	new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -77,14 +78,22 @@ onMount(() => {
 		await frame();
 	};
 	const resized = new ResizeObserver(() => {
-		if (live && fit.owns(flow.getViewport())) void refit(fit, flow, container);
+		if (live) follow();
 	});
+	/** Watches the panels there are now: a legend comes and goes with its terms as the model is edited. */
+	const watch = () => {
+		resized.disconnect();
+		for (const panel of container?.querySelectorAll(PANEL_SELECTOR) ?? [])
+			resized.observe(panel);
+	};
+	const arrived = new MutationObserver(watch);
 	void (async () => {
 		await tick();
 		// The parent binds `container` as it mounts, after this component's own
 		// mount has run, so the panels are looked for once the tick has landed.
-		for (const panel of container?.querySelectorAll(PANEL_SELECTOR) ?? [])
-			resized.observe(panel);
+		watch();
+		const canvas = container?.querySelector(".svelte-flow");
+		if (canvas) arrived.observe(canvas, { childList: true });
 		await frame();
 		await frame();
 		for (const step of RELIEF_STEPS) {
@@ -100,6 +109,7 @@ onMount(() => {
 	return () => {
 		live = false;
 		resized.disconnect();
+		arrived.disconnect();
 	};
 });
 </script>

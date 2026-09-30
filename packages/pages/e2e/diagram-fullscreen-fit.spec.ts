@@ -43,11 +43,14 @@ async function drive(
 /** The overlay is up and covers the window. */
 async function expectOverlay(flow: Locator, page: Page, where: string) {
 	const fit = await settledFit(flow);
-	const size = page.viewportSize() ?? SCREEN;
+	const screen = await page.evaluate(() => [
+		document.documentElement.clientWidth,
+		document.documentElement.clientHeight,
+	]);
 	expect(
 		[fit.view.left, fit.view.top, fit.view.right, fit.view.bottom],
 		`the fullscreen canvas covers the window, ${where}`,
-	).toEqual([0, 0, size.width, size.height]);
+	).toEqual([0, 0, ...screen]);
 	expectClear(fit, `fullscreen, ${where}`);
 	expectFilled(fit, `fullscreen, ${where}`);
 	return fit;
