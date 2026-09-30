@@ -14,4 +14,12 @@ describe("Crumbs", () => {
 		expect(container.querySelectorAll(".sep")).toHaveLength(1);
 		expect(container.querySelector("a")).toHaveAttribute("href", "#");
 	});
+
+	it("is a navigation landmark named Breadcrumb, with no crumb marked current", () => {
+		const { container, getByRole } = render(Crumbs, {
+			crumbs: [["#", "Swagger Petstore (v3)"]] as [string, string][],
+		});
+		expect(getByRole("navigation", { name: "Breadcrumb" })).toBeInTheDocument();
+		expect(container.querySelector("[aria-current]")).toBeNull();
+	});
 });

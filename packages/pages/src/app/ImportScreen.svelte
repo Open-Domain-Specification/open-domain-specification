@@ -5,9 +5,12 @@ import type { Example } from "../protocol";
 /** Import by URL (query parameter or form), by file upload, or from an example card; the last URL is remembered. */
 let {
 	onload,
+	onopened,
 	examples = [],
 }: {
 	onload: (schema: unknown, fileLabel: string) => void;
+	/** Called after a load the reader asked for has been handed to `onload`. */
+	onopened?: () => void;
 	examples?: Example[];
 } = $props();
 const KEY = "ods-viewer-url";
@@ -37,27 +40,63 @@ function remembered(): string {
 	}
 }
 
-async function fromUrl() {
+const NEXT = "Choose a workspace file from a project's .ods folder.";
+
+/** A load that failed says what went wrong and what to do about it, since it is read aloud with nothing else on screen to point at. */
+async function fromUrl(asked = false) {
 	const target = toAbsoluteUrl(url);
 	url = target;
 	loading = true;
 	error = undefined;
 	try {
-		const res = await fetch(target);
+		let res: Response;
+		try {
+			res = await fetch(target);
+		} catch {
+			throw new Error(
+				`Could not reach ${target}. Check the address and your connection, and that the host allows cross-origin requests, then choose Load to try again.`,
+			);
+		}
 		if (!res.ok)
 			throw new Error(
-				`Failed to fetch workspace from ${target} (${res.status})`,
+				`The server answered ${res.status} for ${target}. Check the address is correct and the file is public, then choose Load to try again.`,
 			);
-		const schema = await res.json();
+		let schema: unknown;
+		try {
+			schema = await res.json();
+		} catch {
+			throw new Error(
+				`${target} is not valid JSON. Point it at the workspace file in a project's .ods folder, not at a web page, then choose Load.`,
+			);
+		}
+		const label = target.split("/").pop() || target;
 		try {
 			localStorage.setItem(KEY, target);
 		} catch {}
-		onload(schema, target.split("/").pop() || target);
+		open(schema, label, asked);
 	} catch (e) {
-		error = e instanceof Error ? e.message : String(e);
+		// Every path above throws an Error of its own, so the message is always one to show.
+		error = (e as Error).message;
 	} finally {
 		loading = false;
 	}
+}
+
+/**
+ * Hands the parsed JSON to the host; a throw means it was valid JSON but not a
+ * workspace. `asked` is true when the reader did it (Load, Enter in the field,
+ * a file choice, an example card) and false for the `?url=` deep link that
+ * loads by itself, and only an asked load tells the host it has opened.
+ */
+function open(schema: unknown, label: string, asked: boolean) {
+	try {
+		onload(schema, label);
+	} catch {
+		throw new Error(
+			`${label} is valid JSON but is not an Open Domain Specification workspace: it does not match the workspace schema. ${NEXT}`,
+		);
+	}
+	if (asked) onopened?.();
 }
 
 async function fromFile(e: Event) {
@@ -65,15 +104,21 @@ async function fromFile(e: Event) {
 	if (!file) return;
 	error = undefined;
 	try {
-		onload(JSON.parse(await file.text()), file.name);
+		let schema: unknown;
+		try {
+			schema = JSON.parse(await file.text());
+		} catch {
+			throw new Error(`${file.name} is not valid JSON. ${NEXT}`);
+		}
+		open(schema, file.name, true);
 	} catch (err) {
-		error = err instanceof Error ? err.message : String(err);
+		error = (err as Error).message;
 	}
 }
 
 function fromExample(example: Example) {
 	url = toAbsoluteUrl(example.url);
-	fromUrl();
+	fromUrl(true);
 }
 
 if (new URLSearchParams(location.search).get("url")) fromUrl();
@@ -83,7 +128,7 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 	<main class="import">
 		<h1 class="brand"><Logo size={32} /> Open a workspace</h1>
 		<p class="lead">Load an Open Domain Specification workspace file to browse it.</p>
-		<form onsubmit={(e) => { e.preventDefault(); fromUrl(); }}>
+		<form onsubmit={(e) => { e.preventDefault(); fromUrl(true); }}>
 			<label for="url">From a URL</label>
 			<div class="row">
 				<input
@@ -103,7 +148,8 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 		</form>
 		<label for="file">From a file</label>
 		<input id="file" type="file" accept=".json,application/json" onchange={fromFile} />
-		{#if error}<p class="problems error">{error}</p>{/if}
+		<div role="status" class="status dim">{#if loading}Loading the workspace…{/if}</div>
+		<div role="alert">{#if error}<p class="problems error">{error}</p>{/if}</div>
 		{#if examples.length}
 			<h2 class="examples-title">Or try an example</h2>
 			<div class="grid examples">

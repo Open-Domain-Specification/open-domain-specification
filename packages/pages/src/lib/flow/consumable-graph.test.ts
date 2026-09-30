@@ -112,6 +112,7 @@ describe("consumableGraph", () => {
 			{ name: "Pet Status Changed", type: "requires", identity: false },
 		]);
 		expect(checkout.icon).toBe(ICONS.service);
+		expect(checkout.kind).toBe("service");
 		expect(checkout.groupPath).toBeUndefined();
 		expect(checkout.slots).toEqual([]);
 		expect(checkout.requires).toEqual([

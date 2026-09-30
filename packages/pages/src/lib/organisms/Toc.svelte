@@ -1,29 +1,38 @@
 <script lang="ts">
+import { focusArrival } from "../focus";
+import { scrollBehavior } from "../motion.svelte";
+
 /**
  * The page's own sections, as the Outline lists a file's symbols: a title in
  * plain secondary text (v1 tracked it in capitals), 22px rows against a
  * hairline left rule, and the link colour with a 2px marker on the row the
  * pointer is on. Clicking scrolls rather than navigates, so the reader keeps
- * their place in the page.
+ * their place in the page and history is untouched; it also moves focus to
+ * the section's heading, so the next Tab is the next control in that section
+ * and a screen reader starts reading at it. The scroll is smooth unless the
+ * reader has asked for less motion.
  */
 const { sections }: { sections: { id: string; label: string }[] } = $props();
 
 const jump = (id: string) => (e: Event) => {
 	e.preventDefault();
-	document
-		.getElementById(id)
-		?.scrollIntoView({ behavior: "smooth", block: "start" });
+	const section = document.getElementById(id);
+	if (!section) return;
+	section.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+	focusArrival(section.querySelector<HTMLElement>(".heading") ?? section, {
+		preventScroll: true,
+	});
 };
 </script>
 
-<aside class="toc">
-	<p class="toc-title">On this page</p>
+<nav class="toc" aria-label="On this page">
+	<p class="toc-title" aria-hidden="true">On this page</p>
 	<ul>
 		{#each sections as s (s.id)}
 			<li><a href={`#${s.id}`} onclick={jump(s.id)}>{s.label}</a></li>
 		{/each}
 	</ul>
-</aside>
+</nav>
 
 <style>
 	.toc {

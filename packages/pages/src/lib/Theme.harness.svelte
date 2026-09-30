@@ -62,7 +62,7 @@ const bodyClass = $derived(
 		--vscode-symbolIcon-methodForeground: #652d90;
 		--vscode-symbolIcon-functionForeground: #652d90;
 		--vscode-symbolIcon-fieldForeground: #007acc;
-		--vscode-symbolIcon-eventForeground: #007acc;
+		--vscode-symbolIcon-eventForeground: #d67e00;
 	}
 	.theme.dark {
 		--vscode-foreground: #cccccc;
@@ -94,7 +94,7 @@ const bodyClass = $derived(
 		--vscode-symbolIcon-methodForeground: #b180d7;
 		--vscode-symbolIcon-functionForeground: #b180d7;
 		--vscode-symbolIcon-fieldForeground: #75beff;
-		--vscode-symbolIcon-eventForeground: #75beff;
+		--vscode-symbolIcon-eventForeground: #ee9d28;
 	}
 	.theme.hc {
 		--vscode-foreground: #ffffff;
@@ -126,6 +126,6 @@ const bodyClass = $derived(
 		--vscode-symbolIcon-methodForeground: #b180d7;
 		--vscode-symbolIcon-functionForeground: #b180d7;
 		--vscode-symbolIcon-fieldForeground: #75beff;
-		--vscode-symbolIcon-eventForeground: #75beff;
+		--vscode-symbolIcon-eventForeground: #ee9d28;
 	}
 </style>

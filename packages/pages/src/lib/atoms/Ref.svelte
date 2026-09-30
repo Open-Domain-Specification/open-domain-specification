@@ -17,6 +17,7 @@ const {
 	kind,
 	external = false,
 	title,
+	current,
 }: {
 	ref: string;
 	label: string;
@@ -24,6 +25,8 @@ const {
 	kind?: Kind;
 	external?: boolean;
 	title?: string;
+	/** `aria-current="page"` for the one link to the page being read. */
+	current?: "page";
 } = $props();
 </script>
 
@@ -33,6 +36,7 @@ const {
 	data-ref={external ? undefined : ref}
 	rel={external ? "external noreferrer" : undefined}
 	{title}
+	aria-current={current}
 >{#if icon}<i class={`codicon codicon-${icon}`} style:color={iconColor(kind)} aria-hidden="true"></i>{/if}{label}{#if external}<i class="codicon codicon-link-external" aria-hidden="true"></i>{/if}</a>
 
 <style>

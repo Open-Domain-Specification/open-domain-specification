@@ -7,6 +7,7 @@ const bare: GraphNode = {
 	id: "#/a",
 	type: "context",
 	label: "A",
+	kind: "node",
 	icon: "symbol-field",
 };
 

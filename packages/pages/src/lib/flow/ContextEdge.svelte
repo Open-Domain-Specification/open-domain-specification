@@ -81,14 +81,14 @@ const titleFor = (text: string) =>
 {#if params && path}
 	<BaseEdge {id} path={path[0]} {markerEnd} style={edgeStyle} class="context-edge" />
 	{#if label}
-		<PortBadge class="stereotype" x={path[1]} y={path[2]} label={stereotype} title={stereotypeTitle} {mark} onclick={data?.onBadgeClick} />
+		<PortBadge class="stereotype" x={path[1]} y={path[2]} label={stereotype} title={stereotypeTitle} {mark} onclick={data?.onBadgeClick} disclosedBy={data?.disclosedBy} controls={data?.cardId} />
 	{/if}
 	{#if data?.sourceLabel}
 		{@const at = portCentre(params.sourceX, params.sourceY, params.sourcePosition)}
-		<PortBadge class="role upstream" x={at.x} y={at.y} label={data.sourceLabel} title={titleFor(data.sourceLabel)} {mark} onclick={data.onBadgeClick} />
+		<PortBadge class="role upstream" x={at.x} y={at.y} label={data.sourceLabel} title={titleFor(data.sourceLabel)} {mark} onclick={data.onBadgeClick} disclosedBy={data.disclosedBy} controls={data.cardId} />
 	{/if}
 	{#if data?.targetLabel}
 		{@const at = portCentre(params.targetX, params.targetY, params.targetPosition)}
-		<PortBadge class="role downstream" x={at.x} y={at.y} label={data.targetLabel} title={titleFor(data.targetLabel)} {mark} onclick={data.onBadgeClick} />
+		<PortBadge class="role downstream" x={at.x} y={at.y} label={data.targetLabel} title={titleFor(data.targetLabel)} {mark} onclick={data.onBadgeClick} disclosedBy={data.disclosedBy} controls={data.cardId} />
 	{/if}
 {/if}

@@ -35,3 +35,11 @@ describe("Heading", () => {
 		expect(bare.container.querySelector(".count")).toBeNull();
 	});
 });
+
+describe("Heading as a focus target", () => {
+	it("can be focused by script and is never a tab stop", () => {
+		const { container } = render(Demo);
+		for (const heading of container.querySelectorAll(".heading"))
+			expect(heading).toHaveAttribute("tabindex", "-1");
+	});
+});

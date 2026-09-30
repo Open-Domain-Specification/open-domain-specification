@@ -72,6 +72,7 @@ export function flowGraph(map: ODSFlowMap, focus?: string): Graph {
 		id: n.id,
 		type: "flow",
 		label: n.name,
+		kind: n.type === "command" ? "operation" : n.type,
 		description: n.description,
 		icon: stepIcon(n.type),
 		step: n.type,

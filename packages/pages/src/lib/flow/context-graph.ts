@@ -50,6 +50,13 @@ function contextNode(n: ODSContextMapNode): ContextNodeData {
 		id: n.id,
 		type: "context",
 		label: n.name ?? n.id,
+		kind: n.external
+			? "external system"
+			: n.bigBallOfMud
+				? "big ball of mud"
+				: n.boundaryOnly
+					? "boundary-only bounded context"
+					: "bounded context",
 		icon: ICONS.boundedcontext,
 		groupPath: groupPathOf(n.namespace),
 		groupId: deepestGroup(n.namespace),

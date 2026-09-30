@@ -8,7 +8,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
 import { consumableGraph, contextGraph, relationGraph } from "../flow/graph";
 import { diagramOptions } from "../flow/options.svelte";
-import { installXyflowTestEnv } from "../xyflow-test-env";
+import { installXyflowTestEnv, stubReducedMotion } from "../xyflow-test-env";
 import InteractiveDiagram from "./InteractiveDiagram.svelte";
 
 installXyflowTestEnv();
@@ -87,13 +87,206 @@ describe("InteractiveDiagram", () => {
 	});
 });
 
+describe("InteractiveDiagram and reduced motion", () => {
+	/** d3-zoom keeps its listeners on the element as `__on`; the double-click one is what eases. */
+	const doubleClickZoom = (container: HTMLElement) =>
+		(
+			(
+				container.querySelector(".svelte-flow__zoom") as unknown as {
+					__on: { type: string; name: string }[];
+				}
+			).__on ?? []
+		).some((l) => l.type === "dblclick" && l.name === "zoom");
+	const drawn = async () => {
+		const view = render(InteractiveDiagram, {
+			graph: contextGraph(ODSContextMap.fromWorkspace(workspace)),
+		});
+		await waitFor(() =>
+			expect(view.container.querySelector(".context-node")).toBeTruthy(),
+		);
+		return view.container;
+	};
+
+	it("zooms on a double click, which the library eases, only while motion is allowed", async () => {
+		stubReducedMotion(false);
+		expect(doubleClickZoom(await drawn())).toBe(true);
+	});
+
+	const transform = (container: HTMLElement) =>
+		(container.querySelector(".svelte-flow__viewport") as HTMLElement).style
+			.transform;
+	const doubleClick = (target: Element, init: MouseEventInit = {}) =>
+		target.dispatchEvent(
+			new MouseEvent("dblclick", {
+				bubbles: true,
+				clientX: 40,
+				clientY: 30,
+				...init,
+			}),
+		);
+
+	it("hands the double click back at once under reduced motion: the pane zooms in without a transition, Shift zooms out, and nothing else does", async () => {
+		stubReducedMotion(true);
+		const container = await drawn();
+		const before = transform(container);
+		const pane = container.querySelector(".svelte-flow__pane") as HTMLElement;
+		// A double click on a node or a control is theirs, not the pane's.
+		doubleClick(container.querySelector(".svelte-flow__node") as Element);
+		doubleClick(container.querySelector(".svelte-flow__controls") as Element);
+		expect(transform(container)).toBe(before);
+		doubleClick(pane);
+		await waitFor(() => expect(transform(container)).not.toBe(before));
+		const scale = (t: string) => Number(/scale\(([\d.]+)\)/.exec(t)?.[1]);
+		const zoomedIn = scale(transform(container));
+		expect(zoomedIn).toBeGreaterThan(scale(before));
+		doubleClick(pane, { shiftKey: true });
+		await waitFor(() =>
+			expect(scale(transform(container))).toBeLessThan(zoomedIn),
+		);
+	});
+
+	it("leaves the double click to the library while motion is allowed", async () => {
+		stubReducedMotion(false);
+		const container = await drawn();
+		const before = transform(container);
+		doubleClick(container.querySelector(".svelte-flow__pane") as Element);
+		// The library's gesture is d3's, which needs a real pointer; ours must not have fired.
+		expect(transform(container)).toBe(before);
+	});
+
+	it("drops the library's double-click zoom for a reader who has asked for less motion, and follows the setting while the page is open", async () => {
+		const motion = stubReducedMotion(true);
+		const container = await drawn();
+		expect(doubleClickZoom(container)).toBe(false);
+		motion.set(false);
+		await waitFor(() => expect(doubleClickZoom(container)).toBe(true));
+	});
+});
+
+describe("InteractiveDiagram from the keyboard", () => {
+	const graph = () => contextGraph(ODSContextMap.fromWorkspace(workspace));
+	const salesNode = (container: HTMLElement) =>
+		container.querySelector(`[data-id="${sales.ref}"]`) as HTMLElement;
+
+	it("names each node for what it is, makes it a focusable link and explains the keys truthfully", async () => {
+		const { container } = render(InteractiveDiagram, { graph: graph() });
+		await waitFor(() => expect(salesNode(container)).toBeTruthy());
+		const node = salesNode(container);
+		expect(node.getAttribute("aria-label")).toBe("Sales BC, bounded context");
+		expect(node.getAttribute("role")).toBe("link");
+		expect(node.tabIndex).toBe(0);
+		// A region is neither named nor a stop.
+		const region = container.querySelector(
+			".svelte-flow__node-cluster",
+		) as HTMLElement;
+		expect(region.hasAttribute("tabindex")).toBe(false);
+		// The description a node points at says what the keys do here, not what
+		// they do on a diagram whose nodes can be selected and deleted.
+		const description = container.querySelector(
+			`#${node.getAttribute("aria-describedby")}`,
+		) as HTMLElement;
+		expect(description.textContent?.trim()).toBe(
+			"Press enter or space to open its page.",
+		);
+	});
+
+	it("opens the focused node's page on Enter and on Space, and takes the key so the page does not scroll", async () => {
+		location.hash = "";
+		const { container } = render(InteractiveDiagram, { graph: graph() });
+		await waitFor(() => expect(salesNode(container)).toBeTruthy());
+		const enter = new KeyboardEvent("keydown", {
+			key: "Enter",
+			bubbles: true,
+			cancelable: true,
+		});
+		salesNode(container).dispatchEvent(enter);
+		expect(location.hash).toBe(sales.ref);
+		expect(enter.defaultPrevented).toBe(true);
+
+		location.hash = "";
+		const space = new KeyboardEvent("keydown", {
+			key: " ",
+			bubbles: true,
+			cancelable: true,
+		});
+		salesNode(container).dispatchEvent(space);
+		expect(location.hash).toBe(sales.ref);
+		expect(space.defaultPrevented).toBe(true);
+	});
+
+	it("leaves every other key, and a key on something inside a node, alone", async () => {
+		location.hash = "";
+		const { container } = render(InteractiveDiagram, { graph: graph() });
+		await waitFor(() => expect(salesNode(container)).toBeTruthy());
+		const tab = new KeyboardEvent("keydown", {
+			key: "Tab",
+			bubbles: true,
+			cancelable: true,
+		});
+		salesNode(container).dispatchEvent(tab);
+		expect(tab.defaultPrevented).toBe(false);
+		// Enter on a control inside the card is that control's, not the card's.
+		const inner = salesNode(container).querySelector(
+			".flow-card",
+		) as HTMLElement;
+		inner.dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+		);
+		// Nor does a key on the canvas itself open anything.
+		(container.querySelector(".interactive") as HTMLElement).dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+		);
+		expect(location.hash).toBe("");
+	});
+
+	it("does not open a node that is not a page", async () => {
+		location.hash = "";
+		const { container } = render(InteractiveDiagram, {
+			graph: {
+				nodes: [
+					{
+						id: "plain",
+						type: "context",
+						label: "P",
+						kind: "thing",
+						icon: "boundedcontext",
+					},
+				],
+				edges: [],
+			},
+		});
+		await waitFor(() =>
+			expect(container.querySelector('[data-id="plain"]')).toBeTruthy(),
+		);
+		const node = container.querySelector('[data-id="plain"]') as HTMLElement;
+		expect(node.getAttribute("role")).toBe("group");
+		node.dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+		);
+		await fireEvent.click(node);
+		expect(location.hash).toBe("");
+	});
+});
+
 describe("InteractiveDiagram with a bare graph", () => {
 	it("draws ungrouped nodes at the top level and dashed, directed edges", async () => {
 		const { container } = render(InteractiveDiagram, {
 			graph: {
 				nodes: [
-					{ id: "#/a", type: "context", label: "A", icon: "boundedcontext" },
-					{ id: "#/b", type: "context", label: "B", icon: "boundedcontext" },
+					{
+						id: "#/a",
+						type: "context",
+						label: "A",
+						kind: "bounded context",
+						icon: "boundedcontext",
+					},
+					{
+						id: "#/b",
+						type: "context",
+						label: "B",
+						kind: "bounded context",
+						icon: "boundedcontext",
+					},
 				],
 				edges: [
 					{

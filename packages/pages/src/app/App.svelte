@@ -1,7 +1,8 @@
 <script lang="ts">
 import { Workspace } from "@open-domain-specification/core";
-import { onMount, untrack } from "svelte";
+import { onMount, tick, untrack } from "svelte";
 import EmptyState from "../lib/atoms/EmptyState.svelte";
+import { focusArrival } from "../lib/focus";
 import ModelProvider from "../lib/ModelProvider.svelte";
 import type { Model } from "../lib/model";
 import Sidebar from "../lib/organisms/Sidebar.svelte";
@@ -37,6 +38,13 @@ function load(w: WorkspacePayload): Model {
 		fileLabel: w.fileLabel,
 		diagnostics: w.diagnostics ?? workspace.validate(),
 	};
+}
+
+/** The reader imported a workspace, whose heading names it, so focus goes there. A `?url=` deep link and the host's model message never call this. */
+function opened() {
+	tick().then(() =>
+		focusArrival(document.querySelector("main h1") as HTMLElement),
+	);
 }
 
 onMount(() => {
@@ -92,7 +100,7 @@ $effect(() => {
 		<ModelProvider {model}>
 			<div class="site" class:embedded={embedded}>
 				{#if !embedded}<div class="site-nav"><Sidebar current={router.ref} /></div>{/if}
-				<div class="site-page"><Page ref={router.ref} /></div>
+				<div class="site-page"><Page ref={router.ref} arrivals={router.arrivals} /></div>
 			</div>
 		</ModelProvider>
 	{/key}
@@ -101,7 +109,7 @@ $effect(() => {
 {:else if models.length > 1}
 	<WorkspacePicker {models} onpick={(i) => (chosen = i)} />
 {:else}
-	<ImportScreen examples={initial?.examples ?? []} onload={(schema, fileLabel) => { models = [load({ schema, fileLabel })]; chosen = 0; }} />
+	<ImportScreen examples={initial?.examples ?? []} onload={(schema, fileLabel) => { models = [load({ schema, fileLabel })]; chosen = 0; }} onopened={opened} />
 {/if}
 
 <style>

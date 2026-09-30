@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { Snippet } from "svelte";
+import { openLayer } from "../layers";
 
 /**
  * The centred panel a page opens for disclosure too big for a hover.
@@ -76,6 +77,12 @@ $effect(() => {
 	(panel as HTMLElement).focus();
 });
 
+/** While it is open the modal is a layer Escape closes, above anything under it. */
+$effect(() => {
+	if (showing === undefined) return;
+	return openLayer({ dismiss: onclose });
+});
+
 /**
  * A modal is a mode: the page under it stays exactly where it was until it
  * closes, on all three ways out (Escape, the close button, a scrim click),
@@ -100,16 +107,14 @@ $effect(() => {
 });
 
 /**
- * Escape closes; Tab cycles inside the panel. A modal that let Tab walk out
+ * Tab cycles inside the panel. (Escape closes it too, as a layer in the stack
+ * that Escape closes innermost first, so a pattern explanation inside the
+ * modal goes before the modal does.) A modal that let Tab walk out
  * of itself would leave a keyboard reader typing into a page they cannot see,
  * so the two ends of the ring are joined here. Focus starts on the panel,
  * which is outside the ring, so a Shift+Tab from there wraps as well.
  */
 const onkeydown = (e: KeyboardEvent) => {
-	if (e.key === "Escape") {
-		onclose();
-		return;
-	}
 	if (e.key !== "Tab") return;
 	const inside = panel as HTMLElement;
 	const ring = [...inside.querySelectorAll<HTMLElement>(FOCUSABLE)];

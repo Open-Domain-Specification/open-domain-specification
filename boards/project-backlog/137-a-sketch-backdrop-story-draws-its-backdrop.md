@@ -4,7 +4,7 @@ labels: [bug, frontend, testing]
 priority: medium
 agent: developer
 live: false
-updatedAt: 2026-09-29T21:00:00.000Z
+updatedAt: 2026-09-29T21:20:52.000Z
 ---
 # A sketch backdrop story draws its backdrop, and the Storybook check refuses a canvas that painted nothing
 
@@ -32,3 +32,4 @@ Issue 41, a child of epic 60. All four `Flow/SketchBackdrop` stories painted not
 - **developer** (2026-09-29T14:10:00.000Z): Checks, run against a separate Playwright config that starts only the Storybook server on 4176 (the full config holds 4173, which the lead's gate owns): `npx storybook build` green, `storybook.spec.ts` 235 passed; pages vitest 768 passed, 1 skipped, and `src/site.test.ts` failing only because `packages/pages/app` was not built in this worktree. `npx @biomejs/biome check` on the three touched source files reported no findings; both gates stay unchecked until the lead runs them.
 - **lead** (2026-09-29T15:30:00.000Z): Reviewed. Reworded the harness comment, which described the missing args as a one-tick delay (`packages/pages/src/lib/flow/SketchBackdrop.harness.svelte:17-19`), and appended the real cause to vsc-extension card 21. Gate green on 47c73ede. The card stays in `doing` until the PR merges; issue 41 stays open until then.
 - **lead** (2026-09-29T21:00:00.000Z): Landed. PR #72 was merged into develop by the owner as c26ca28 after review, and post-merge CI run 36583350831 is green (test, e2e). Issue #41 closed; the card moves to `done`.
+- **lead** (2026-09-29T21:20:52.000Z): Correction. The lead's entries above carry timestamps the lead wrote by hand, not the times the events happened. From repository evidence: the entry stamped 2026-09-29T15:30:00.000Z was committed at 2026-09-29T13:06:38Z (commit 5002703f); the entry stamped 2026-09-29T21:00:00.000Z was committed at 2026-09-29T14:39:35Z (commit 8d4751c1). PR #72 merged at 2026-09-29T14:31:45Z (GitHub's record). The commit times are when each entry was written. When the gate runs they report actually ran cannot be reconstructed, beyond falling before the commit that records them. The entries stay as written.

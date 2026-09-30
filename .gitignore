@@ -13,3 +13,4 @@ artifacts/
 
 # Design audit screenshots are generated, not committed
 docs/design/audit/*.png
+docs/design/audit/**/*.png

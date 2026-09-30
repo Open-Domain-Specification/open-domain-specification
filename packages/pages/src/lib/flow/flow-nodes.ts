@@ -22,8 +22,15 @@ export type ContextEdgeData = {
 	disposition?: Disposition;
 	/** One-line hover text, appended to the role names on the end badges. */
 	summary?: string;
-	/** Given the badge's flow coordinates, so the card can be anchored to it. */
-	onBadgeClick?: (at: { x: number; y: number }) => void;
+	/**
+	 * Given the badge's flow coordinates, so the card can be anchored to it, and
+	 * the badge itself, so focus can go back to it when the card is dismissed.
+	 */
+	onBadgeClick?: (at: { x: number; y: number }, invoker: HTMLElement) => void;
+	/** The element id of the card a badge opens, for the badge's `aria-controls`. */
+	cardId?: string;
+	/** The badge whose card is open right now, if any: the one that reads as expanded. */
+	disclosedBy?: () => Element | undefined;
 	/**
 	 * On a consumable edge, the consumer's own operations or policies behind the
 	 * consumption; the edge shows them when the line is hovered.
@@ -42,6 +49,13 @@ export type FlowNodeOptions = {
 	/** Nodes may be dragged out of their cluster; the backdrop follows them. */
 	free: boolean;
 };
+
+/**
+ * Whether a node stands for a page: its id is a ref, and clicking it goes
+ * there. Enter and Space do the same, so this one test decides both what the
+ * node is announced as and what the keys do.
+ */
+export const opensPage = (id: string) => id.startsWith("#");
 
 /** How many groups sit above a group; the shade lightens with it. */
 export const depthOf = (positioned: Positioned, id: string | undefined) => {
@@ -91,6 +105,8 @@ export function flowNodes(
 			draggable: false,
 			selectable: false,
 			connectable: false,
+			// A region is decoration behind the nodes, not something to stop on.
+			focusable: false,
 		};
 	});
 	return [
@@ -104,6 +120,10 @@ export function flowNodes(
 			data:
 				n.type === "context" ? { ...n, floating, sketch } : { ...n, floating },
 			draggable: true,
+			// "<name>, <kind>": what a reader who cannot see the card hears it as.
+			ariaLabel: `${n.label}, ${n.kind}`,
+			// A node that opens a page is a link, and is announced as one.
+			...(opensPage(n.id) && { ariaRole: "link" }),
 		})),
 	];
 }

@@ -40,6 +40,33 @@ async function embeddedApp() {
 }
 
 describe("App (standalone host)", () => {
+	it("moves focus to the workspace heading after an import the reader asked for, and not for a deep link", async () => {
+		const file = new File([JSON.stringify(petstore)], "petstore.json", {
+			type: "application/json",
+		});
+		const { unmount } = render(App, {});
+		await fireEvent.change(document.getElementById("file") as HTMLElement, {
+			target: { files: [file] },
+		});
+		await waitFor(() =>
+			expect(document.activeElement).toBe(document.querySelector("main h1")),
+		);
+		unmount();
+		document.body.focus();
+
+		history.replaceState(null, "", "/?url=https://example.com/petstore.json");
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockResolvedValue({ ok: true, json: async () => petstore }),
+		);
+		render(App, {});
+		await waitFor(() =>
+			expect(document.querySelector("main h1")).toBeInTheDocument(),
+		);
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(document.activeElement).toBe(document.body);
+	});
+
 	it("renders the workspace page with a sidebar for a single workspace", async () => {
 		const initial: Bootstrap = { workspaces: [payload()] };
 		render(App, { initial });

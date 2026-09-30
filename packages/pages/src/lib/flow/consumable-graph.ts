@@ -94,6 +94,7 @@ export function consumableGraph(map: ODSConsumableMap): Graph {
 			id: n.id,
 			type: "consumable",
 			label: n.name ?? n.id,
+			kind: n.type,
 			description: n.description,
 			icon: n.type === "service" ? ICONS.service : ICONS.aggregate,
 			groupPath: groupPathOf(n.namespace),

@@ -334,6 +334,18 @@ h1 {
 	padding: 0;
 	cursor: pointer;
 }
+/* Keyboard focus on the map, drawn as the workbench draws it everywhere else. A node is a
+   link to its page and a badge is a button that opens its evidence; both take Tab, and the
+   browser's own ring is a different colour in every host. The ring goes on the node's box
+   rather than the card so the octagon of a big ball of mud is not clipped out of it. */
+.svelte-flow .svelte-flow__node:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder, var(--accent));
+	outline-offset: 2px;
+}
+.svelte-flow .svelte-flow__edge-label.port button.port-label:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder, var(--accent));
+	outline-offset: 3px;
+}
 /* Fixed handles are small dots in the card colours. The diagrams are read-only: a handle only
    ever receives an edge Svelte Flow lays out, so it must never start one, and it takes on the
    node's own pointer cursor rather than the library's crosshair. `isConnectable={false}` on the
@@ -431,4 +443,37 @@ h1 {
 	font-size: 10px;
 	background: transparent;
 	color: var(--muted);
+}
+
+/* A reader who has asked for less motion gets none (card 151). Three things move in these
+   pages by stylesheet: the flash on the element a ref lands on, the dashes marching along
+   every diagram edge, and whatever a library adds (a spinner, a transition). The flash keeps
+   its mark and loses its fade: the reader still has to be shown where they landed, so the wash
+   stays put instead. The dashes stop where they are; the dash pattern still says which way an
+   edge runs. The last rule is the net for anything not named above, a duration too short to
+   see rather than `none` so that an `animationend` a script waits on still arrives.
+   Programmatic motion (smooth scrolling, viewport easing) cannot be reached from here and asks
+   `src/lib/motion.svelte.ts` instead. */
+@media (prefers-reduced-motion: reduce) {
+	.flash {
+		animation: none;
+		background: var(--vscode-list-hoverBackground, var(--card));
+	}
+	.svelte-flow .svelte-flow__edge.animated .svelte-flow__edge-path,
+	.svelte-flow .svelte-flow__edge.animated.dashed .svelte-flow__edge-path,
+	.svelte-flow .svelte-flow__edge.animated .svelte-flow__edge-path.dashed {
+		animation: none;
+	}
+	*,
+	*::before,
+	*::after {
+		/* biome-ignore lint/complexity/noImportantStyles: the net has to beat a library's own, more specific, animation and transition rules, which `*` never would. */
+		animation-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: the net has to beat a library's own, more specific, animation and transition rules, which `*` never would. */
+		animation-iteration-count: 1 !important;
+		/* biome-ignore lint/complexity/noImportantStyles: the net has to beat a library's own, more specific, animation and transition rules, which `*` never would. */
+		transition-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: the net has to beat a library's own, more specific, animation and transition rules, which `*` never would. */
+		scroll-behavior: auto !important;
+	}
 }

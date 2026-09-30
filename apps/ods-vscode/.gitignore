@@ -3,3 +3,4 @@ schema.json
 out/
 .vscode-test/
 LICENSE.md
+test-results-keyboard/

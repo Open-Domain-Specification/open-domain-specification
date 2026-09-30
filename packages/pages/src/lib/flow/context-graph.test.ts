@@ -97,6 +97,14 @@ describe("contextGraph", () => {
 			chips: ["boundary only"],
 		});
 	});
+	it.each([
+		[{}, "bounded context"],
+		[{ external: true }, "external system"],
+		[{ bigBallOfMud: true }, "big ball of mud"],
+		[{ boundaryOnly: true }, "boundary-only bounded context"],
+	] as const)("names a context %j %s for a screen reader", (flags, kind) => {
+		expect(contextGraph(mapOf([node(flags)])).nodes[0].kind).toBe(kind);
+	});
 	it("leaves cluster, team and description unset when the context has none", () => {
 		const [n] = contextGraph(mapOf([node()])).nodes as ContextNodeData[];
 		expect(n).toMatchObject({

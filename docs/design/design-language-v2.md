@@ -96,6 +96,14 @@ the parts that bind a page rendered in an editor tab:
 - Follow the accessibility guidance: colour contrast, ARIA labels, keyboard
   navigation. Sortable headers are buttons with `aria-sort`; a hover card has
   `role="tooltip"`; every link is focusable with a visible ring.
+- The viewer's import screen speaks as well as shows: a polite `role="status"`
+  region says the workspace is loading and a `role="alert"` region carries a
+  failure, both always in the page so their text arrives as a change. A failure
+  message is "cause, then next step": what went wrong (unreachable, an HTTP
+  status, not JSON, not a workspace) and what to do about it, never the
+  runtime's own error text. After an import the reader asked for, focus goes to
+  the workspace's heading, which names it; a `?url=` deep link or the host's
+  model message takes none.
 - Use command actions in the toolbar and in the view rather than inventing
   chrome. The page's only chrome is the existing toolbar.
 - Do not repeat existing functionality and do not use a webview for what a
@@ -221,11 +229,11 @@ high contrast (and at density where rows are laid out), and a `*.test.ts` at
 | Primitive         | Replaces in v1                                    | What it is                                                                                         |
 | ----------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `Keyword`         | `Chip`, `ConsumableChips`, `Dim`                   | A classifying word in the secondary colour; `mono` for codes; `warn`/`error` tone only for a diagnostic meaning; a `title` is its hover text. |
-| `Lockup`          | `RefLink` + `IdChip` + the crumb kind eyebrow      | Kind icon in its symbol colour, name (a `Ref` when it has one), then id and detail in the secondary colour. `size="title"` for the h1. One token: it never breaks inside itself, so a narrow cell breaks after it (a context's `big ball of mud` drops under the name). |
-| `Ref`             | `RefLink`                                          | The link. `external` adds `rel` and the trailing `link-external` codicon.                          |
+| `Lockup`          | `RefLink` + `IdChip` + the crumb kind eyebrow      | Kind icon in its symbol colour, name (a `Ref` when it has one), then id and detail in the secondary colour. `size="title"` for the h1. One token: it never breaks inside itself, so a narrow cell breaks after it (a context's `big ball of mud` drops under the name). `current` is handed to its `Ref`. |
+| `Ref`             | `RefLink`                                          | The link. `external` adds `rel` and the trailing `link-external` codicon. `current="page"` sets `aria-current="page"` on the anchor.                          |
 | `DefinitionList`, `Definition` | `Fact`, `.facts`, single-fact `Card`s    | Term beside value in an aligned grid at 22px rows.                                                  |
-| `DataTable`       | `table`, `Grid` of `Card`s, `ProvidesTable`, `ConsumesTable`, `AttributeTable`, `StrategicPositionTable`'s table | Native-looking rows with hover, sentence-case secondary header, optional groups and sortable columns; cells are the caller's snippet and align to the top. One column `grow`s — it takes the width the others do not need and is the only one that wraps as prose, with a floor of 24ch; the last column grows when none is named, so a table whose prose is not its last column must name it. Three widths, measured on the table's own frame because the tree and the contents column make the viewport meaningless: at full width every other cell is one line; under 900px a run of tokens in a cell breaks between tokens, never inside one; when that still cannot give the prose its floor, the frame scrolls sideways. |
-| `Heading`         | `h1`, `h2`, `h3`, `Section` header, `.toc-title`   | The three levels; `lead` under a level 2; `count` draws the pane badge.                            |
+| `DataTable`       | `table`, `Grid` of `Card`s, `ProvidesTable`, `ConsumesTable`, `AttributeTable`, `StrategicPositionTable`'s table | Native-looking rows with hover, sentence-case secondary header, optional groups and sortable columns; cells are the caller's snippet and align to the top. One column `grow`s — it takes the width the others do not need and is the only one that wraps as prose, with a floor of 24ch; the last column grows when none is named, so a table whose prose is not its last column must name it. Three widths, measured on the table's own frame because the tree and the contents column make the viewport meaningless: at full width every other cell is one line; under 900px a run of tokens in a cell breaks between tokens, never inside one; when that still cannot give the prose its floor, the frame scrolls sideways. The floor is 24ch, about 197px in the 13px font, so at 1300px beside the tree the strategic position table's prose sits at it and its frame scrolls by the couple of pixels the floor needs (issue 42); the regression test is in `e2e/relationship.spec.ts`. |
+| `Heading`         | `h1`, `h2`, `h3`, `Section` header, `.toc-title`   | The three levels; `lead` under a level 2; `count` draws the pane badge. Every heading has `tabindex="-1"`: it is where focus is sent on arrival (a followed link, a contents entry, history, an import the reader asked for), never a tab stop, and shows a `focusBorder` ring only after a keyboard arrival.                            |
 | `Comments`        | `CommentList`                                      | Comment codicon in a gutter, statement, citation as an external `Ref` with a kind icon.            |
 | `Disposition`     | `DispositionChip`                                  | Problems-panel treatment: `warning` codicon in the warning colour for refactor, `info` in the secondary colour for tolerated, nothing for by design. |
 | `EmptyState`      | `Empty`                                            | One secondary sentence at row height, optional action.                                             |
@@ -340,9 +348,9 @@ harness files follow their component.
 | `PageHeader.svelte`             | replace  | Crumbs as `Ref`s, `Heading` 1 with a title `Lockup` whose detail is the kind word, description, `DefinitionList` of facts. |
 | `RelationshipDetail.svelte`     | restyle  | No outer card; heading, type keyword, disposition; roles as a definition list per side; comments; crossings table; links list. |
 | `Section.svelte`                | restyle  | `Heading` 2 with lead and count, problems inline, then children.             |
-| `Sidebar.svelte`                | restyle  | Active row uses `list.activeSelection*`; no uppercase brand title.           |
+| `Sidebar.svelte`                | restyle  | Active row uses `list.activeSelection*`; no uppercase brand title. It is `nav` "Workspace elements"; only the row of the page actually displayed has `aria-current="page"` (a ref that is an anchor inside a page marks its owner's row; a dedicated page with no row, such as an entity, marks nothing); the ancestor rows are highlighted by the wash and carry no `aria-current`, because an ancestor is not the current item and one item in the set is marked. The wash and the mark are two separate facts. A page with no row marks nothing.           |
 | `StrategicPositionTable.svelte` | restyle  | Grouped `DataTable`; keywords for type and roles; `Disposition`; the disclosure moved from an expanded row to the `Modal`. |
-| `Toc.svelte`                    | restyle  | Drop the uppercase title; otherwise the same left-rule list.                 |
+| `Toc.svelte`                    | restyle  | Drop the uppercase title; otherwise the same left-rule list. It is `nav` "On this page" (its visible title is `aria-hidden`, being the name), and an entry moves focus to its section's heading. The page has one `main`, which is why it is unnamed.                 |
 
 ### Templates (`packages/pages/src/lib/templates/`) and the layout
 

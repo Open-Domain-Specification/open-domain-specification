@@ -3,6 +3,7 @@ import type { Kind } from "../atoms/kinds";
 import Lockup from "../atoms/Lockup.svelte";
 import Logo from "../atoms/Logo.svelte";
 import { useModel } from "../model";
+import { resolvePage } from "../resolve";
 
 /**
  * The static site's navigation, standing in for the extension's tree view.
@@ -51,16 +52,29 @@ const items = $derived<Item[]>([
 		kind: "team" as Kind,
 	})),
 ]);
-const active = (ref: string) =>
+const onTheWay = (ref: string) =>
 	current === ref || current.startsWith(`${ref}/`);
+/**
+ * The page actually displayed, as the router resolves it: an anchor inside a
+ * page (a consumption row) resolves to its owner, a dedicated page (an entity)
+ * to itself. The current row is the one whose ref is exactly that page's; a
+ * page with no row leaves every row unmarked.
+ */
+const here = $derived(resolvePage(workspace, current).pageRef);
+/*
+ * Two separate facts. The wash (`.active`) is drawn on the page's row and on
+ * the rows above it, so the reader sees the path. `aria-current="page"` is
+ * semantic and goes on the one link for the page being read; ancestors are not
+ * the current item, so they carry none.
+ */
 </script>
 
 {#snippet list(entries: Item[])}
 	<ul>
 		{#each entries as i (i.ref)}
 			<li>
-				<span class="item" class:active={active(i.ref)}>
-					<Lockup kind={i.kind} name={i.label} ref={i.ref} />
+				<span class="item" class:active={onTheWay(i.ref)}>
+					<Lockup kind={i.kind} name={i.label} ref={i.ref} current={i.ref === here ? "page" : undefined} />
 				</span>
 				{#if i.children?.length}{@render list(i.children)}{/if}
 			</li>
@@ -68,7 +82,7 @@ const active = (ref: string) =>
 	</ul>
 {/snippet}
 
-<nav class="tree">
+<nav class="tree" aria-label="Workspace elements">
 	<p class="brand"><Logo size={16} /><a href="#/">{workspace.name}</a></p>
 	{@render list(items)}
 </nav>

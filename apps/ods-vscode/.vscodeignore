@@ -10,3 +10,5 @@ tsconfig.test.json
 vitest.config.ts
 **/*.map
 .gitignore
+e2e-keyboard/**
+test-results-keyboard/**

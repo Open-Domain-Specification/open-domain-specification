@@ -31,6 +31,17 @@ const TONES: Record<ODSRelationMapNode["type"], GraphNode["tone"]> = {
 	big_ball_of_mud_context: "muted",
 };
 
+/** What each kind of box is called, for its accessible name. */
+const KIND_OF: Record<ODSRelationMapNode["type"], string> = {
+	entity_root: "root entity",
+	entity: "entity",
+	valueobject: "value object",
+	foreign_valueobject: "value object",
+	external_context: "external system",
+	boundary_only_context: "boundary-only bounded context",
+	big_ball_of_mud_context: "big ball of mud",
+};
+
 /** The icon each kind of box carries. */
 const ICON_OF: Record<ODSRelationMapNode["type"], string> = {
 	entity_root: ICONS.entity,
@@ -55,6 +66,7 @@ function relationNode(n: ODSRelationMapNode): RelationNodeData {
 		id: n.id,
 		type: "relation",
 		label: n.name ?? n.id,
+		kind: KIND_OF[n.type],
 		icon: ICON_OF[n.type],
 		groupPath: groupPathOf(n.namespace),
 		groupId: n.namespace.length

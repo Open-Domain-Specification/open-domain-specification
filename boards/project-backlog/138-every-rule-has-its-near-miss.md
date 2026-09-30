@@ -4,7 +4,7 @@ labels: [backend, ddd]
 priority: high
 agent: developer
 live: false
-updatedAt: 2026-09-29T21:00:00.000Z
+updatedAt: 2026-09-29T21:20:52.000Z
 ---
 # Every validator rule has the smallest model that trips it and the nearest model that must stay clean
 
@@ -139,3 +139,4 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - **developer** (2026-09-29T18:50:00.000Z): Closing entry: all 70 catalogue rules are covered, each with a trigger and a nearest-valid case in a `rule-cases.<family>.test.ts` file, and the table above has no row left todo. The near-misses never edit a pinned list, a reference model or an existing assertion, and no rule was changed: `git diff` of `packages/core/src/validate.ts` against the start of the branch is empty. No validator defect was found in any of the ten families; every consequence that a hostile model cannot avoid tripping beside its rule is named in that pair's `fires` so the smallest fixture is pinned. The gates stay unchecked: `bash scripts/verify-all.sh` and the biome check across the touched files are the code lead's to run and tick.
 - **lead** (2026-09-29T19:20:00.000Z): Reviewed. The branch adds only test files and this card; `validate.ts`, the loader and `models/` are untouched, so every reference model's diagnostics are as pinned. Corrected the title and intro, which still described slice 1. Gate green on c841e4e7. The card stays in `doing` until the PR merges.
 - **lead** (2026-09-29T21:00:00.000Z): Landed. PR #72 was merged into develop by the owner as c26ca28 after review, and post-merge CI run 36583350831 is green (test, e2e). Issue #57 closed; the card moves to `done`.
+- **lead** (2026-09-29T21:20:52.000Z): Correction. The lead's entries above carry timestamps the lead wrote by hand, not the times the events happened. From repository evidence: the entry stamped 2026-09-29T19:20:00.000Z was committed at 2026-09-29T13:26:56Z (commit a77b15cb); the entry stamped 2026-09-29T21:00:00.000Z was committed at 2026-09-29T14:39:35Z (commit 8d4751c1). PR #72 merged at 2026-09-29T14:31:45Z (GitHub's record). The commit times are when each entry was written. When the gate runs they report actually ran cannot be reconstructed, beyond falling before the commit that records them. The entries stay as written.
