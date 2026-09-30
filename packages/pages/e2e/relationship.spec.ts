@@ -7,6 +7,7 @@ import {
 	expectProseRow,
 	expectScrollOnlyAtTheFloor,
 	growColumn,
+	serveModel,
 	servePetstore,
 	viewerAt,
 	WORKSPACE_NAME,
@@ -553,3 +554,60 @@ for (const [origin, name] of [
 		await context.close();
 	});
 }
+
+/**
+ * Issue #84. NorthBank's Customer & KYC is upstream of Branch & Contact Centre
+ * with two roles, and they read "…an upstream context.PL Published Language".
+ * Each role is now its own list item, code then name and summary, on a line of
+ * its own: on the relationship page and in the Strategic position modal.
+ */
+const NB_BRANCH = "#/boundedcontexts/branch_&_contact_centre";
+const NB_KYC_BRANCH =
+	"#/relationships/customer_&_kyc~upstream-downstream~branch_&_contact_centre";
+const UPSTREAM_ROLES = ["open-host-service", "published-language"] as const;
+
+/** The upstream side's roles as a reader meets them: one list, one item a role. */
+async function expectRolesApart(roles: Locator) {
+	const upstream = roles.locator("dd").first();
+	const items = upstream.getByRole("list").getByRole("listitem");
+	await expect(items).toHaveCount(UPSTREAM_ROLES.length);
+	for (const [i, role] of UPSTREAM_ROLES.entries()) {
+		const { abbreviation, name, summary } = PATTERNS[role];
+		await expect(items.nth(i)).toHaveText(
+			`${abbreviation} ${name} — ${summary}`,
+			{ useInnerText: true },
+		);
+	}
+	// On lines of their own: the second starts below the whole of the first.
+	const [first, second] = await Promise.all([
+		items.nth(0).boundingBox(),
+		items.nth(1).boundingBox(),
+	]);
+	expect(second?.y ?? 0).toBeGreaterThanOrEqual(
+		(first?.y ?? 0) + (first?.height ?? 0) - 0.5,
+	);
+}
+
+test("each of a side's two roles reads as its own item on the page and in the modal (#84)", async ({
+	page,
+}) => {
+	await page.setViewportSize(BESIDE_THE_TREE);
+	const url = await serveModel(page, "northbank");
+	await page.goto(`/?url=${encodeURIComponent(url)}${NB_KYC_BRANCH}`);
+	await expect(page.locator("main h1")).toContainText(
+		"Branch & Contact Centre",
+	);
+	await expectRolesApart(page.locator("main #roles"));
+
+	await page.goto(`/?url=${encodeURIComponent(url)}${NB_BRANCH}`);
+	await expect(page.locator("main h1")).toContainText(
+		"Branch & Contact Centre",
+	);
+	await page
+		.locator(".strategic-position")
+		.getByRole("button", {
+			name: "Evidence for Customer & KYC and Branch & Contact Centre",
+		})
+		.click();
+	await expectRolesApart(page.locator("#relationship-modal #roles"));
+});

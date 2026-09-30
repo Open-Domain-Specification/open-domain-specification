@@ -7,7 +7,12 @@ import {
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import Harness from "../evidence/WithModel.harness.svelte";
-import { edgeCaseModel, petstoreModel, rivermartModel } from "../fixtures";
+import {
+	edgeCaseModel,
+	petstoreModel,
+	referenceModels,
+	rivermartModel,
+} from "../fixtures";
 import RelationshipDetail from "./RelationshipDetail.svelte";
 
 const model = petstoreModel();
@@ -91,6 +96,44 @@ describe("RelationshipDetail", () => {
 		).toEqual(["Upstream", "Downstream"]);
 		expect(roles.querySelector(".keyword.mono")).toBeInTheDocument();
 		expect(roles.querySelector(".summary")).toHaveTextContent("—");
+	});
+
+	it("lists each of a side's roles as its own item, code, name and summary, as NorthBank's two upstream roles show (#84)", () => {
+		const northbank = referenceModels().find(
+			(m) => m.workspace.name === "NorthBank",
+		) as ReturnType<typeof referenceModels>[number];
+		const relationship = northbank.workspace.relationships.find(
+			(r) =>
+				r.ref ===
+				"#/relationships/customer_&_kyc~upstream-downstream~branch_&_contact_centre",
+		) as ContextRelationship;
+		expect(relationship.upstreamRoles).toEqual([
+			"open-host-service",
+			"published-language",
+		]);
+		const { container } = render(Harness, {
+			model: northbank,
+			component: RelationshipDetail,
+			args: { relationship },
+		});
+		const [upstream, downstream] = container.querySelectorAll("#roles dd");
+		const items = [...upstream.querySelectorAll("ul.roles > li")];
+		expect(items).toHaveLength(2);
+		items.forEach((item, i) => {
+			const role = relationship.upstreamRoles[i];
+			const { abbreviation, name, summary } = PATTERNS[role];
+			expect(item.querySelector(".keyword.mono")).toHaveTextContent(
+				abbreviation,
+			);
+			expect(item.querySelector(".summary")).toHaveTextContent(
+				`${name} — ${summary}`,
+			);
+			// Nothing of the other role's code, name or summary is in this item.
+			const other = PATTERNS[relationship.upstreamRoles[1 - i]];
+			expect(item.textContent).not.toContain(other.name);
+			expect(item.textContent).not.toContain(other.summary);
+		});
+		expect(downstream.querySelectorAll("ul.roles > li")).toHaveLength(1);
 	});
 
 	it("discloses the pattern and this relationship's evidence from the type and role keywords", async () => {

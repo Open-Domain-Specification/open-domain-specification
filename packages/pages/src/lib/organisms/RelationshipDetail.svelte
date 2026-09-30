@@ -106,12 +106,20 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 				{#each sides as side (side.term)}
 					<Definition term={side.term}>
 						<Lockup kind="boundedcontext" name={side.context.name} ref={side.context.ref} />
-						{#each side.roles as role (role)}
-							<PatternHover pattern={role} mono intent={r} />
-							<span class="summary">{patternLine(role)}</span>
+						<!-- Each role is its own item, code then name and summary, so two
+						     roles on one side never run together (#84). -->
+						{#if side.roles.length}
+							<ul class="roles">
+								{#each side.roles as role (role)}
+									<li>
+										<PatternHover pattern={role} mono intent={r} />
+										<span class="summary">{patternLine(role)}</span>
+									</li>
+								{/each}
+							</ul>
 						{:else}
 							<span class="summary">{PATTERNS[r.type].summary}</span>
-						{/each}
+						{/if}
 					</Definition>
 				{/each}
 			</DefinitionList>
@@ -185,5 +193,21 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 	}
 	.summary {
 		margin: 0;
+	}
+	/* A side's roles with no bullet, the code leading each as a term leads its
+	   definition. The first follows its context on the same line, as a lone
+	   role always has, so a side with one role costs no extra line; every
+	   further role starts a line of its own. */
+	.roles {
+		display: inline;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.roles > li {
+		display: block;
+	}
+	.roles > li:first-child {
+		display: inline;
 	}
 </style>
