@@ -236,3 +236,33 @@ Expected: the `error` codicon in the error colour in a gutter, then the message 
 ### Issues raised (lead, 2026-09-29T22:00:28Z)
 
 New-1 to New-7 are raised as #87, #88, #89, #90, #91, #92 and #93, in that order. The two polish items are #94. None blocks epic #61. The shared wash on the current row and its ancestors stays as the Sidebar spec draws it; only the current row carries `aria-current` (#50).
+
+## Incremental hover and evidence recheck on the final code (lead, 2026-09-30T01:29:11Z)
+
+This is not a repeat of the page-family review above. That review was captured on 29048949 and stands. This recheck covers only the states the owner's second review of PR #76 affected: the pattern explanation, and the evidence card around it.
+
+**Code under test.** The build was of 6ceda834. Its product source is identical to 4d658b37 (`fix(pages): a pattern explanation opened inside a transformed or clipped frame is painted on screen (#48)`), the last commit that changes product code. Every commit after 4d658b37 changes only e2e harnesses, specs and cards (`git diff --name-only 4d658b37 1672315f`: `apps/ods-vscode/e2e-keyboard/host.ts`, `journeys.spec.ts`, `packages/pages/e2e/reduced-motion.spec.ts`, and cards 150 and 151). The recheck therefore holds for the final head. Browser: Playwright Chromium 151, headless. Hosts: the viewer (vite preview) and the static export (`exportSite`, served over HTTP). The real VS Code webview's behaviour is covered by `apps/ods-vscode/e2e-keyboard/journeys.spec.ts`, not by these captures.
+
+**A defect found by this recheck, and fixed before it was completed.** On 8aeb0cb6, a keyword's explanation inside the evidence card was not painted:
+- The card's `.anchored` has a `transform` and `overflow: auto`, so the `position: fixed` layer was placed against the card and clipped by it.
+- At 1300×900 the layer measured left 1231, top 831 and width 209, and `elementFromPoint` at its centre was null.
+- `toBeVisible()` and the rect-only containment checks still passed.
+
+Fixed in 4d658b37 under #48: the layer is a manual popover in the browser's top layer. The same commit makes the card `pointer-events: auto`, because its controls had not been mouse-reachable. The regressions now assert what is painted, via `packages/pages/e2e/on-screen.ts`: the box is inside the viewport, and `elementFromPoint` at its centre and at its top-left returns the layer.
+
+**Captured and inspected** (keyboard: Tab to the tolerated evidence badge on the petstore Sales BC context map, Enter, Tab to the `upstream-downstream` keyword inside the card):
+
+| State | Viewport | Hosts × themes | Measured (layer rect; inside viewport; centre and corner hit; top layer) | Seen |
+| --- | --- | --- | --- | --- |
+| Explanation in the evidence card | 1300×900 | viewer, export × light, dark | 801..1292 × 594..805; inside; hit, hit; top layer | Painted below the keyword at full size and readable, over the card |
+| Explanation in the card, fullscreen | 1300×900 | viewer, export × light, dark | 595..1086 × 258..469; inside; hit, hit; top layer | Painted over the fullscreen diagram and readable |
+| Explanation in the card, height-constrained, after 5 scroll-driven placements | 800×110 | viewer, export × light, dark | 301..792 × 8..81; inside; hit, hit; top layer; inline `max-height: 73.07px`, identical after each placement; scrolls | Capped at the cap, clipped content scrolls, stays inside the viewport |
+| Strategic-table pattern hover (the control) | 1300×900 | viewer, export-http × light, dark (harness `hover-pattern`) | — | Unchanged from 29048949 |
+| Relationship evidence modal | 1300×900 | viewer, export-http × light, dark (harness `modal-relationship-evidence`) | — | Unchanged; #84 (roles run together) still present, already raised |
+| Fullscreen diagram | 1300×900 | viewer, export-http × light, dark (harness `diagram-fullscreen`) | — | Unchanged; #86 still present, already raised |
+
+That is 24 screenshots in all (12 from the harness and 12 from the targeted captures), kept in the lead's scratchpad and not committed, as with every PNG under `docs/design/audit/`.
+
+**Findings.** The on-screen defect above is fixed within #48. No new defect. Nothing blocks the epic.
+
+**Not covered by this recheck.** Screen readers; VS Code high-contrast themes; `forced-colors`; the webview's appearance (its behaviour is covered by the Playwright-Electron journeys, which assert the same on-screen conditions inside the webview frame).
