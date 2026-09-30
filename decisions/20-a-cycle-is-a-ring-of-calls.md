@@ -12,7 +12,7 @@ Accepted
 
 The decision's sentence that `partnership-backed` was specified as traffic both ways no longer holds; see the second amendment of 2026-09-07 (cards 63 and 69): traffic in at least one direction. The message no longer claims a runtime wait (amendment of 2026-09-07, card 49) and offers an ACL, a partnership or an event as repairs (card 82).
 
-The context's reliance on "delivery fixed by type" is qualified: decision 15's second amendment of 2026-09-10 (card 120) says type is kind, not delivery, most operations are awaited and this rule assumes so, and a queued command on a ring is answered by an ACL, a comment, or modelling it as the event it is (note of 2026-09-09, card 100). The lifecycle exemptions on `reaction-cycle` are decision 23's.
+The context's reliance on "delivery fixed by type" is qualified: decision 15's second amendment of 2026-09-10 (card 120) says type is kind, not delivery. The correction of 2026-09-30 below clarifies that this rule reads contract dependency regardless of delivery: a comment documents a queued command but does not clear the warning, and changing a command to an event is valid only when the source describes a fact. The lifecycle exemptions on `reaction-cycle` are decision 23's.
 
 ## Context
 
@@ -57,3 +57,7 @@ A declared partnership clears a ring that is nothing but the partnered pair, bec
 ## Note (2026-09-10, second)
 
 The context above says decision 15 fixes delivery by type; decision 15's second amendment of 2026-09-10 withdrew that: type is kind, not delivery. This rule still assumes a call binds at the moment of the call, which is true of most operations, and a queued command that trips it says so in the consumption's comment.
+
+## Correction (2026-09-30, card 160)
+
+The note of 2026-09-09 and the current position's former summary offered a comment as an answer to a queued command on a ring. That was misleading: the rule warns about dependency on another context's contract, which a queued command still creates. A comment records delivery for the reader but does not clear or exempt the warning. An anti-corruption layer may remove the dependency by translating it, a partnership may state that the two teams plan as one, and an event may replace a step only if the source says it is a fact rather than an intent. The checker already behaves this way; the fix text and decision 15 were clarified on card 160.
