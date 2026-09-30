@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { expectClear, expectFilled, GUTTER, settledFit } from "./diagram-fit";
+import { expectClear, expectFilled, settledFit } from "./diagram-fit";
 import { openPage } from "./diagram-hosts";
 import { REFERENCE_MODELS, serveModel } from "./helpers";
 
@@ -36,10 +36,17 @@ const NORTHBANK = [
 	],
 ] as const;
 
-/** A reader's window, and an editor split the size of a VS Code tab. */
+/**
+ * A reader's window, an editor split the size of a VS Code tab, and one a
+ * little narrower. At 1100x700 Ledger's open legend needs more of the canvas
+ * than a strip may take, on any machine's fonts; at 1150x700 it needs exactly
+ * the cap on macOS and a pixel more on Linux, where CI found it covering
+ * Sovereign Core (legacy).
+ */
 const SIZES = [
 	{ width: 1300, height: 900 },
 	{ width: 1150, height: 700 },
+	{ width: 1100, height: 700 },
 ] as const;
 
 /** Every interactive diagram on the page, each scrolled to before it is measured. */

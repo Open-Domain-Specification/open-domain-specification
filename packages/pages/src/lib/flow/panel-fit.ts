@@ -42,9 +42,10 @@ export type Rect = {
 export const PANEL_GUTTER = 12;
 
 /**
- * No side may eat more than this much of the canvas. A panel is only ever a
+ * The most of the canvas a panel's strip should take. A panel is only ever a
  * couple of hundred pixels, but a webview split thin enough would otherwise
- * leave the fit no width to work with.
+ * leave the fit no width to work with, so a panel that needs more is asked
+ * to give way instead (`needsRelief`).
  */
 const MAX_SIDE = 0.4;
 
@@ -64,21 +65,14 @@ type Side = keyof PanelPadding;
 /** A strip of the canvas reserved to clear one panel: its side and its depth in pixels. */
 type Strip = { side: Side; reserve: number };
 
-/**
- * The strips that can clear `panel`: the column between it and the side it
- * hugs, and the band between it and the edge above (or below) it, each with
- * the gutter added. Either keeps every node out from under it, the cheaper
- * one — as a share of its axis — listed first. A strip deeper than `MAX_SIDE`
- * of its axis is cut to that and no longer clears the panel, so it is offered
- * only when neither strip can: then the cheaper one, cut, is all there is.
- */
-function stripsFor(view: Rect, panel: Rect): Strip[] {
+/** The two strips beside `panel`, the cheaper as a share of its axis first, before any cap. */
+function stripsBeside(view: Rect, panel: Rect) {
 	const width = view.right - view.left;
 	const height = view.bottom - view.top;
 	const strip = (side: Side, depth: number, of: number) => ({
 		side,
-		reserve: Math.min(depth + PANEL_GUTTER, of * MAX_SIDE),
-		clears: depth + PANEL_GUTTER <= of * MAX_SIDE,
+		reserve: depth + PANEL_GUTTER,
+		of,
 		cost: depth / of,
 	});
 	const across =
@@ -89,9 +83,36 @@ function stripsFor(view: Rect, panel: Rect): Strip[] {
 		(panel.top + panel.bottom) / 2 < (view.top + view.bottom) / 2
 			? strip("top", panel.bottom - view.top, height)
 			: strip("bottom", view.bottom - panel.top, height);
-	const both = across.cost <= down.cost ? [across, down] : [down, across];
-	const clearing = both.filter((s) => s.clears);
-	return clearing.length ? clearing : both.slice(0, 1);
+	return across.cost <= down.cost ? [across, down] : [down, across];
+}
+
+/**
+ * Whether `panel` can be cleared by a strip no deeper than `MAX_SIDE` of its
+ * axis. One that cannot is crowding the canvas however the map is fitted, so
+ * the fit asks it to give way (`needsRelief`) before drawing round it.
+ */
+export function clearsWithinCap(view: Rect, panel: Rect): boolean {
+	return stripsBeside(view, panel).some((s) => s.reserve <= s.of * MAX_SIDE);
+}
+
+/**
+ * The strips that can clear `panel`: the column between it and the side it
+ * hugs, and the band between it and the edge above (or below) it, each with
+ * the gutter added. Either keeps every node out from under it, the cheaper
+ * one — as a share of its axis — listed first. Strips within `MAX_SIDE` of
+ * their axis are offered first. A panel neither of those clears, one the
+ * reader opened on a canvas too small for it, is still cleared, by a strip
+ * past the cap, as long as it leaves the map some room beyond the far
+ * gutter: a node under a panel is the one thing the fit never trades. Only
+ * a panel as big as the canvas gets the cheaper strip cut to the cap.
+ */
+function stripsFor(view: Rect, panel: Rect): Strip[] {
+	const both = stripsBeside(view, panel);
+	const within = both.filter((s) => s.reserve <= s.of * MAX_SIDE);
+	if (within.length) return within;
+	const roomy = both.filter((s) => s.reserve < s.of - PANEL_GUTTER);
+	if (roomy.length) return roomy;
+	return [{ side: both[0].side, reserve: both[0].of * MAX_SIDE }];
 }
 
 /**
@@ -272,8 +293,9 @@ export function fittedZoom(
 }
 
 /**
- * Whether the fit has to take another step of relief: with the strips
- * `panels` claim inside `view` reserved, `bounds` would fit below `floor`.
+ * Whether the fit has to take another step of relief: a panel no strip
+ * within the cap can clear, or, with the strips `panels` claim inside `view`
+ * reserved, `bounds` fitting below `floor`.
  *
  * Pure, so the whole order is testable without a browser — hand it the
  * numbers a webview would have measured at each step and it answers. The
@@ -287,7 +309,10 @@ export function needsRelief(
 	bounds: Size,
 	floor = READABLE_ZOOM,
 ): boolean {
-	return fittedZoom(view, panelPadding(view, panels, bounds), bounds) < floor;
+	return (
+		!panels.every((panel) => clearsWithinCap(view, panel)) ||
+		fittedZoom(view, panelPadding(view, panels, bounds), bounds) < floor
+	);
 }
 
 /** What the fit reads off a node: which one it is, and whether it is drawn at all. */

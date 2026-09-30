@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+	clearsWithinCap,
 	crowded,
 	drawnBounds,
 	FLOOR_ZOOM,
@@ -129,6 +130,16 @@ describe("panelPadding", () => {
 		});
 		expect(padding.left).toBe(`${215 + PANEL_GUTTER}px`);
 		expect(padding.top).toBe(GUTTER);
+	});
+
+	it("clears a panel past the cap rather than leave it over the map, when nothing within the cap does", () => {
+		// A legend the reader opened on a canvas too small for it: its column
+		// (347px) and its band (312px) are both past the cap. The map is drawn
+		// smaller, but beside it rather than under it.
+		const deep: Rect = { left: 15, right: 335, top: 10, bottom: 300 };
+		expect(panelPadding(VIEW, [deep], { width: 100, height: 100 }).left).toBe(
+			`${335 + PANEL_GUTTER}px`,
+		);
 	});
 
 	it("chooses for every panel together, so two corners can share one side", () => {
@@ -292,6 +303,16 @@ describe("needsRelief", () => {
 		);
 	});
 
+	it("asks a panel no strip within the cap can clear to give way, however well the map fits", () => {
+		const canvas: Rect = { left: 0, right: 560, top: 0, bottom: 420 };
+		const legend: Rect = { left: 15, right: 232, top: 15, bottom: 187 };
+		const small = { width: 100, height: 100 };
+		expect(needsRelief(canvas, [legend], small)).toBe(true);
+		// Collapsed to its row, the same legend clears and nothing more gives.
+		const row: Rect = { left: 15, right: 83, top: 15, bottom: 40 };
+		expect(needsRelief(canvas, [row], small)).toBe(false);
+	});
+
 	it("gives the floor away last, and only for a map that still will not clear it", () => {
 		const huge = { width: 4000, height: 1800 };
 		const rows = [collapsedLegend, collapsedOptions];
@@ -305,6 +326,18 @@ describe("needsRelief", () => {
 		expect(READABLE_ZOOM).toBeGreaterThan(MIN_ZOOM);
 		expect(MIN_ZOOM).toBeGreaterThan(FLOOR_ZOOM);
 		expect(RELIEF_STEPS).toEqual(["legend", "options", "floor"]);
+	});
+});
+
+describe("clearsWithinCap", () => {
+	it("says whether a strip no deeper than the cap clears the panel", () => {
+		expect(clearsWithinCap(VIEW, tall(15, 215))).toBe(true);
+		expect(clearsWithinCap(VIEW, rect(300, 780))).toBe(true);
+		// Ledger's expanded legend at 1100x700 on develop: 217x172 in a 560x420
+		// canvas, its column 244px against a 224px cap and its band 199 against 168.
+		const canvas: Rect = { left: 0, right: 560, top: 0, bottom: 420 };
+		const legend: Rect = { left: 15, right: 232, top: 15, bottom: 187 };
+		expect(clearsWithinCap(canvas, legend)).toBe(false);
 	});
 });
 
