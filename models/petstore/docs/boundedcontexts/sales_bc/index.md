@@ -46,10 +46,10 @@ Open-host service for /store/order endpoints
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| OrderPlaced | - | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | OrderPlaced |
-| PlaceOrder | Request body for placing an order | petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | PlaceOrder |
-| OrderId | - | **orderId**: `int64` | OrderApproved, OrderDelivered, OrderDeleted, ApproveOrder, DeliverOrder, GetOrderById, DeleteOrder, ConfirmDelivery, ReservePet, MarkPetSold, CheckPetAvailable |
-| OrderDetail | One order, as GET /store/order/{orderId} answers with it | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus` | GetOrderById |
+| OrderPlaced | - | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | [OrderPlaced](aggregates/order/index.md) (event) |
+| PlaceOrder | Request body for placing an order | petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | [PlaceOrder](services/order_app/index.md) (operation) |
+| OrderId | - | **orderId**: `int64` | [OrderApproved](aggregates/order/index.md) (event), [OrderDelivered](aggregates/order/index.md) (event), [OrderDeleted](aggregates/order/index.md) (event), [ApproveOrder](aggregates/order/index.md) (operation), [DeliverOrder](aggregates/order/index.md) (operation), [GetOrderById](services/order_app/index.md) (operation), [DeleteOrder](services/order_app/index.md) (operation), [ConfirmDelivery](services/order_app/index.md) (operation), [ReservePet](services/order_app/index.md) (operation), [MarkPetSold](services/order_app/index.md) (operation), [CheckPetAvailable](services/order_app/index.md) (operation) |
+| OrderDetail | One order, as GET /store/order/{orderId} answers with it | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus` | [GetOrderById](services/order_app/index.md) (operation) |
 
 
 ## Policies

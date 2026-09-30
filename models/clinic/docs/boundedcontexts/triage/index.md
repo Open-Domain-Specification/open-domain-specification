@@ -48,12 +48,12 @@ Rules that hold across this context's instances and aggregates; each names the o
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| Referral Details | A referral, translated out of the GP practice system's own shape into ours. | gpReferralReference: `string` (identifies [GP Practice System](../gp_practice_system/index.md)), requestedSpecialty: `string`, urgency: `string`, clinicalSummary: `string` | Register Referral, Referral Registered |
-| Referral Accepted Details | Which case was accepted, and for which patient. | - | Referral Accepted, Accept Referral |
-| Information Request Details | What further information triage is asking the GP for. | details: `string` | Request More Information, More Information Requested |
-| Consultant Assignment Details | Which consultant an accepted case has been handed to. | consultantId: `string` | Assign Consultant, Case Assigned To Consultant |
-| Lab Test Request Details | The test triage wants run, in our own terms. | testCode: `string` | Send Referral For Testing |
-| Lab Result Details | A lab result, translated out of the lab's own report shape into ours. | resultCode: `string` | Record Lab Result |
+| Referral Details | A referral, translated out of the GP practice system's own shape into ours. | gpReferralReference: `string` (identifies [GP Practice System](../gp_practice_system/index.md)), requestedSpecialty: `string`, urgency: `string`, clinicalSummary: `string` | [Register Referral](aggregates/referral_case/index.md) (operation), [Referral Registered](aggregates/referral_case/index.md) (event) |
+| Referral Accepted Details | Which case was accepted, and for which patient. | - | [Referral Accepted](aggregates/referral_case/index.md) (event), [Accept Referral](services/referral_intake/index.md) (operation) |
+| Information Request Details | What further information triage is asking the GP for. | details: `string` | [Request More Information](aggregates/referral_case/index.md) (operation), [More Information Requested](aggregates/referral_case/index.md) (event) |
+| Consultant Assignment Details | Which consultant an accepted case has been handed to. | consultantId: `string` | [Assign Consultant](aggregates/referral_case/index.md) (operation), [Case Assigned To Consultant](aggregates/referral_case/index.md) (event) |
+| Lab Test Request Details | The test triage wants run, in our own terms. | testCode: `string` | [Send Referral For Testing](services/lab_ordering/index.md) (operation) |
+| Lab Result Details | A lab result, translated out of the lab's own report shape into ours. | resultCode: `string` | [Record Lab Result](aggregates/referral_case/index.md) (operation) |
 
 
 ## Policies

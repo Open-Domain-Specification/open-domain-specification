@@ -36,8 +36,8 @@ Open-host service for /store/inventory: a projection is a service that provides 
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| InventoryCounts | How many pets stand in each status right now | available: `int32`, pending: `int32`, sold: `int32` | GetInventory |
-| InventoryUpdatedPayload | Which status's count changed | status: `PetStatus` | InventoryUpdated |
+| InventoryCounts | How many pets stand in each status right now | available: `int32`, pending: `int32`, sold: `int32` | [GetInventory](services/inventory_query/index.md) (operation) |
+| InventoryUpdatedPayload | Which status's count changed | status: `PetStatus` | [InventoryUpdated](services/inventory_query/index.md) (event) |
 
 
 ## Policies

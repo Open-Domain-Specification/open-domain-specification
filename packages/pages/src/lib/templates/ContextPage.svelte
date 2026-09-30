@@ -21,6 +21,8 @@ import {
 	ODSContextMap,
 	ODSFlowMap,
 	type ProcessTrigger,
+	type SchemaUser,
+	usersOfSchema,
 	usersOfValueObject,
 	type ValueObjectUser,
 	valueObjectsUsedBy,
@@ -100,10 +102,14 @@ const countOf = (kind: "operation" | "event", a: Aggregate) =>
 	[...a.consumables.values()].filter((c) => c.type === kind).length;
 
 /**
- * A user of a value object, as the Used by cell names it: a user from another
- * context says which, and a nested value object or schema says what it is.
+ * A user of a value object or schema, as its Used by cell names it: a user
+ * from another context says which, and a nested value object or schema says
+ * what it is.
  */
-const userLabel = (declaring: BoundedContext, user: ValueObjectUser) =>
+const userLabel = (
+	declaring: BoundedContext,
+	user: ValueObjectUser | SchemaUser,
+) =>
 	user.boundedcontext === declaring
 		? user.owner.name
 		: `${user.boundedcontext.name} / ${user.owner.name}`;
@@ -379,14 +385,15 @@ const termColumns: Column[] = [
 	{#each schemas as s (s.ref)}
 		<Heading level={3} id={s.ref}>
 			<Lockup kind="schema" name={s.name} ref={s.ref} />
-			{#if s.consumables.length}
-				<span class="carried">carried by</span>
-				<Joined>{#each s.consumables as c (c.ref)}<Ref
-							ref={c.ref}
-							label={c.name}
-							icon={consumableIcon(c)}
-							kind={c.type === "event" ? "event" : "command"}
-						/>{/each}</Joined>
+			{@const users = usersOfSchema(s)}
+			{#if users.length}
+				<span class="carried">used by</span>
+				<Joined>{#each users as user (`${user.kind}:${user.owner.ref}`)}{#if user.kind === "consumable"}<Ref
+							ref={user.owner.ref}
+							label={userLabel(bc, user)}
+							icon={consumableIcon(user.owner)}
+							kind={user.owner.type === "event" ? "event" : "command"}
+						/>{:else}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner.ref} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{/if}{/each}</Joined>
 			{:else}
 				<Keyword text="unused" />
 			{/if}

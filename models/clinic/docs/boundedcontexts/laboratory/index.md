@@ -33,9 +33,9 @@ What the lab offers us, and what it publishes back.
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| Test Order Request | The order, in the lab's own terms. | **orderReference**: `string`, testCode: `string`, clinicalNotes: `string` (optional) | Order Test |
-| Test Order Accepted | The lab's acknowledgement that it has taken the order. | **orderReference**: `string` | Order Test |
-| Lab Result Message | The result, in the lab's own report format. | **orderReference**: `string`, resultCode: `string`, reportText: `string` | Test Result Reported |
+| Test Order Request | The order, in the lab's own terms. | **orderReference**: `string`, testCode: `string`, clinicalNotes: `string` (optional) | [Order Test](services/lab_interface/index.md) (operation) |
+| Test Order Accepted | The lab's acknowledgement that it has taken the order. | **orderReference**: `string` | [Order Test](services/lab_interface/index.md) (operation) |
+| Lab Result Message | The result, in the lab's own report format. | **orderReference**: `string`, resultCode: `string`, reportText: `string` | [Test Result Reported](services/lab_interface/index.md) (event) |
 
 
 ## Policies

@@ -243,18 +243,18 @@ describe("toDoc", () => {
 		expect(contextDoc).toContain("## Schemas");
 		// The nested schema is linked from the type, so a reader can open it.
 		expect(contextDoc).toContain(
-			"| Order Summary | What an order looks like | **orderId**: `string`, total: `number`, lines: [`OrderLine[]`](./index.md#schemas) | Order Placed, Approve Order |",
+			"| Order Summary | What an order looks like | **orderId**: `string`, total: `number`, lines: [`OrderLine[]`](./index.md#schemas) | [Order Placed](aggregates/order/index.md) (event), [Approve Order](aggregates/order/index.md) (operation) |",
 		);
 		// An invariant that names an operation reads on the aggregate too.
 		expect(aggregateDoc).toContain("| Approved once |  | Approve Order |");
 		// A schema nothing sends and nothing answers with is still used: it is
 		// what Approve Order says no with.
 		expect(contextDoc).toContain(
-			"| Approval Refused | Why an approval was declined | reason: `string` | Approve Order, Import Orders, Validate Orders |",
+			"| Approval Refused | Why an approval was declined | reason: `string` | [Approve Order](aggregates/order/index.md) (operation), [Import Orders](aggregates/order/index.md) (operation), [Validate Orders](aggregates/order/index.md) (operation) |",
 		);
 		// A schema nothing sends is still used: Approve Order answers with it.
 		expect(contextDoc).toContain(
-			"| Order Receipt | What an approval answers with | approvedAt: `string` | Approve Order |",
+			"| Order Receipt | What an approval answers with | approvedAt: `string` | [Approve Order](aggregates/order/index.md) (operation) |",
 		);
 		expect(contextDoc).toContain(
 			"| Auto approve |  | Order Placed | Approve Order |",

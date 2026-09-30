@@ -40,7 +40,7 @@ Open-host service for /user endpoints
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| User | The legacy user record, as GET /user/{username} answers with it | **username**: `string`, email: `string`, userStatus: `UserStatus` | GetUserByUsername, CreateUsersWithList |
+| User | The legacy user record, as GET /user/{username} answers with it | **username**: `string`, email: `string`, userStatus: `UserStatus` | [GetUserByUsername](services/user_app/index.md) (operation), [CreateUsersWithList](services/user_app/index.md) (operation) |
 
 
 ## Policies

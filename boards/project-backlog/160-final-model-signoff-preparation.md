@@ -92,3 +92,7 @@ Exact head reviewed: `771a44e0dd02a76f9692912e3acb239963bc21a9`. Both reviews we
 - **Lead ruling:** the reproduced defect overrides the approval, as in the first round.
 - **Follow-up:** issue #112, card 162 (one core helper read by Markdown and pages, the browser regression). The Opus report's second finding, stale generated Markdown pages, is issue #113 and is not part of it. Both reviews repeat on the corrected exact head after the local gate; no final approval is recorded.
 - **Opus, second finding (not blocking):** `models/petstore/docs/.../identity_bc/aggregates/user/*` and `models/clinic/docs/.../triage/services/triage_assessment/*` were tracked but no longer generated, because the build wrote without cleaning. The Clinic page still said a domain service "calls out" to Records. Neither was linked from a regenerated page. Issue #113, card 163: the generator now replaces `docs/`, a regression asserts the file set equals `toDoc`'s keys, and the five orphan files are gone by rebuild.
+
+## Journal: pre-review finding (issue #114)
+
+Before the second-round rerun, the lead found that eight reference schemas nested by another schema read "unused" on the context page and `-` in Markdown's "Used by" column (RiverMart `SearchHit`, `OrderLine`, `ReturnLine`, `SponsoredSlot`, `PurchaseOrderLine`; StreamLine `HomepageRow`, `AdSlot`; NorthBank Ledger `PostingLine`). This is the lead's own finding, not a reviewer verdict, and no approval is implied. The fix is issue #114, card 164; the exact-head signoff must be rerun on a head that includes it.

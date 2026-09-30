@@ -47,13 +47,13 @@ Open-host service for /pet endpoints
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| PetRegistered | What the outside learns when a pet joins the catalog | **petId**: `int64`, name: `string`, category: `Category` | PetRegistered |
-| PetStatusChanged | - | **petId**: `int64`, from: `PetStatus`, to: `PetStatus` | PetStatusChanged, ChangePetStatus |
-| RegisterPet | Request body for adding a pet | name: `string`, category: `Category` | AddPet |
-| PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetReserved, PetSold, PetDeleted, ReservePet, MarkPetSold, GetPetById, UploadImage, DeletePet, GetPetSummary, ReservePetForOrder, MarkPetSoldForOrder |
-| Pet | The full pet resource, as GET /pet/{petId} answers with it | **petId**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` | GetPetById |
-| PetSummary | The slim read of a pet other contexts are allowed to hold | **petId**: `int64`, name: `string`, status: `PetStatus` | FindPetsByStatus, GetPetSummary |
-| PetUnavailable | Why the pet could not be held: it is already pending or sold | **petId**: `int64`, status: `PetStatus` | ReservePetForOrder |
+| PetRegistered | What the outside learns when a pet joins the catalog | **petId**: `int64`, name: `string`, category: `Category` | [PetRegistered](aggregates/pet/index.md) (event) |
+| PetStatusChanged | - | **petId**: `int64`, from: `PetStatus`, to: `PetStatus` | [PetStatusChanged](aggregates/pet/index.md) (event), [ChangePetStatus](aggregates/pet/index.md) (operation) |
+| RegisterPet | Request body for adding a pet | name: `string`, category: `Category` | [AddPet](services/pet_app/index.md) (operation) |
+| PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | [PetUpdated](aggregates/pet/index.md) (event), [PetReserved](aggregates/pet/index.md) (event), [PetSold](aggregates/pet/index.md) (event), [PetDeleted](aggregates/pet/index.md) (event), [ReservePet](aggregates/pet/index.md) (operation), [MarkPetSold](aggregates/pet/index.md) (operation), [GetPetById](services/pet_app/index.md) (operation), [UploadImage](services/pet_app/index.md) (operation), [DeletePet](services/pet_app/index.md) (operation), [GetPetSummary](services/pet_app/index.md) (operation), [ReservePetForOrder](services/pet_app/index.md) (operation), [MarkPetSoldForOrder](services/pet_app/index.md) (operation) |
+| Pet | The full pet resource, as GET /pet/{petId} answers with it | **petId**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` | [GetPetById](services/pet_app/index.md) (operation) |
+| PetSummary | The slim read of a pet other contexts are allowed to hold | **petId**: `int64`, name: `string`, status: `PetStatus` | [FindPetsByStatus](services/pet_app/index.md) (operation), [GetPetSummary](services/pet_app/index.md) (operation) |
+| PetUnavailable | Why the pet could not be held: it is already pending or sold | **petId**: `int64`, status: `PetStatus` | [ReservePetForOrder](services/pet_app/index.md) (operation) |
 
 
 ## Policies

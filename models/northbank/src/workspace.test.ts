@@ -248,6 +248,23 @@ describe("NorthBank reference workspace", () => {
 		);
 	}, 60_000);
 
+	// A schema's "Used by" promises every user, not only the consumables that
+	// carry it (issue 114). Ledger's PostingLine is sent and answered by no
+	// consumable: PostEntry and EntryPosted nest it, and those are what carry it.
+	// The old column read the carrier-only list and printed "-".
+	it("lists the schemas that nest PostingLine in its Used by column, not a dash", async () => {
+		const docs = await assertDocSite(workspace);
+		const page = docs["boundedcontexts/ledger/index.md"];
+		const row = page
+			.split("\n")
+			.find((line) => line.startsWith("| PostingLine |"));
+		expect(row).toBeTruthy();
+		const usedBy = (row ?? "").split(/ \| /).pop() ?? "";
+		expect(usedBy).not.toMatch(/^-\s*\|?$/);
+		expect(usedBy).toContain("[PostEntry](./index.md#schemas) (schema)");
+		expect(usedBy).toContain("[EntryPosted](./index.md#schemas) (schema)");
+	}, 60_000);
+
 	// Rendering every diagram through graphviz-wasm takes tens of seconds on
 	// the larger models, so this one test gets a generous timeout.
 	it("generates a complete docsify site with no broken links", async () => {

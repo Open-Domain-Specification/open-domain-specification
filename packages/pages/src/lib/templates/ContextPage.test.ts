@@ -155,11 +155,11 @@ describe("ContextPage", () => {
 		expect(words.filter((w) => w.classList.contains("warn"))).toHaveLength(2);
 	});
 
-	it("makes each schema a subsection with its attribute table, naming what carries it", () => {
+	it("makes each schema a subsection with its attribute table, naming what uses it", () => {
 		const { model, context } = petstoreSales();
 		const { container } = page(model, context);
 		const schemas = container.querySelector("#schemas") as HTMLElement;
-		expect(schemas.querySelector(".carried")).toHaveTextContent("carried by");
+		expect(schemas.querySelector(".carried")).toHaveTextContent("used by");
 		expect(schemas.querySelectorAll("h3").length).toBeGreaterThan(0);
 		expect(schemas.querySelector("table")).toBeInTheDocument();
 	});
