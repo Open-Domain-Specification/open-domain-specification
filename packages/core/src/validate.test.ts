@@ -856,7 +856,7 @@ describe("Workspace.validate", () => {
 		).toEqual([
 			[
 				"warning",
-				'"Cards" declares itself a conformist of "Scheme", but it names none of "Scheme"\'s schemas or value objects and consumes nothing "Scheme" provides, so there is nothing here to conform to',
+				'"Cards" declares itself a conformist of "Scheme", but it names or specialises none of "Scheme"\'s schemas or value objects and consumes nothing "Scheme" provides, so there is nothing here to conform to',
 				relationship.ref,
 			],
 		]);
@@ -3095,7 +3095,7 @@ describe("consumption-agreement", () => {
 		// until the crossing says it belongs to them.
 		expect(backed(ws).map((d) => d.message)).toEqual([
 			'"Warehouse" is declared open-host-service to "Shop", but nothing "Shop" consumes from "Warehouse" carries that upstream role',
-			'"Shop" is declared conformist to "Warehouse", but no consumption of "Shop" from "Warehouse" declares that downstream role, and nothing in it carries one of "Warehouse"\'s schemas or value objects',
+			'"Shop" is declared conformist to "Warehouse", but no consumption of "Shop" from "Warehouse" declares that downstream role, and nothing in it carries or specialises one of "Warehouse"\'s schemas or value objects',
 		]);
 	});
 
@@ -3261,7 +3261,7 @@ describe("relationship-roles-backed", () => {
 		expect(backedRules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"warning",
-				'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role, and nothing in "Down" carries one of its schemas or value objects',
+				'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role, and nothing in "Down" carries or specialises one of its schemas or value objects',
 				relationship.ref,
 			],
 		]);
@@ -3375,7 +3375,7 @@ describe("relationship-roles-backed", () => {
 		const { ws, relationship } = conformsToStandard();
 		expect(backedRules(ws).map((d) => [d.message, d.ref])).toEqual([
 			[
-				'"Clinical" is declared conformist to "FHIR", but no consumption of "Clinical" from "FHIR" declares that downstream role, and nothing in it carries one of "FHIR"\'s schemas or value objects',
+				'"Clinical" is declared conformist to "FHIR", but no consumption of "Clinical" from "FHIR" declares that downstream role, and nothing in it carries or specialises one of "FHIR"\'s schemas or value objects',
 				relationship.ref,
 			],
 		]);
@@ -5938,7 +5938,7 @@ describe("shared-kernel-backed", () => {
 		expect(backed(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"warning",
-				'"A" and "B" declare a shared kernel, but neither types an attribute by a value object the other declares, carries one of its schemas or calls one of its operations, so nothing is in the kernel',
+				'"A" and "B" declare a shared kernel, but neither types an attribute by a value object the other declares, specialises one, carries one of its schemas or calls one of its operations, so nothing is in the kernel',
 				relationship.ref,
 			],
 		]);
@@ -5996,6 +5996,98 @@ describe("shared-kernel-backed", () => {
 		const a = ws.addBoundedContext("A", { description: "" });
 		a.partnerOf(ws.addBoundedContext("B", { description: "" }));
 		expect(backed(ws)).toEqual([]);
+	});
+});
+
+describe("a value object that specialises another context's is borrowing (issue #111)", () => {
+	const BACKING = [
+		"shared-kernel-backed",
+		"conformist-backed",
+		"relationship-roles-backed",
+		"specialisation-in-boundary",
+	];
+	const routes: [string, (up: BoundedContext, down: BoundedContext) => void][] =
+		[
+			["a shared kernel", (up, down) => void up.sharesKernelWith(down)],
+			[
+				"a conformist",
+				(up, down) =>
+					void up.upstreamOf(down, {
+						upstreamRoles: ["published-language"],
+						downstreamRoles: ["conformist"],
+					}),
+			],
+			[
+				"a customer-supplier pair",
+				(up, down) =>
+					void up.upstreamOf(down, {
+						type: "customer-supplier",
+						upstreamRoles: ["published-language"],
+					}),
+			],
+		];
+
+	/** Two contexts whose only link is that Down's value object is a kind of Up's. */
+	function specialising(
+		declare?: (up: BoundedContext, down: BoundedContext) => void,
+	) {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const money = up.addValueObject("Money", { description: "" });
+		money.addAttribute("amount", { type: "decimal" });
+		down.addValueObject("Fee", { description: "", specialises: money });
+		declare?.(up, down);
+		return ws;
+	}
+	const findings = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => BACKING.includes(d.rule))
+			.map((d) => [d.rule, d.message]);
+	const roundTripped = (ws: Workspace) =>
+		Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema())));
+
+	for (const [name, declare] of routes) {
+		it(`counts as the borrowing ${name} is backed by, with nothing else shared`, () => {
+			const ws = specialising(declare);
+			expect(findings(ws)).toEqual([]);
+			expect(findings(roundTripped(ws))).toEqual([]);
+		});
+	}
+
+	it("still breaks the boundary when no relationship permits it", () => {
+		const ws = specialising();
+		expect(findings(ws).map(([rule]) => rule)).toEqual([
+			"specialisation-in-boundary",
+		]);
+		expect(findings(roundTripped(ws)).map(([rule]) => rule)).toEqual([
+			"specialisation-in-boundary",
+		]);
+	});
+
+	it("still warns about a shared kernel where nothing is specialised or shared", () => {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		up.addValueObject("Money", { description: "" });
+		down.addValueObject("Fee", { description: "" });
+		up.sharesKernelWith(down);
+		expect(findings(ws).map(([rule]) => rule)).toEqual([
+			"shared-kernel-backed",
+		]);
+	});
+
+	it("does not count a kind of the borrower's own value object", () => {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const own = down.addValueObject("Money", { description: "" });
+		down.addValueObject("Fee", { description: "", specialises: own });
+		up.sharesKernelWith(down);
+		expect(findings(ws).map(([rule]) => rule)).toEqual([
+			"shared-kernel-backed",
+		]);
 	});
 });
 
@@ -6721,7 +6813,7 @@ describe("relationship-roles-backed and published languages", () => {
 		expect(
 			backedRules(crossingWithSchema(false)).map((d) => d.message),
 		).toEqual([
-			'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role, and nothing in "Down" carries one of its schemas or value objects',
+			'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role, and nothing in "Down" carries or specialises one of its schemas or value objects',
 		]);
 	});
 

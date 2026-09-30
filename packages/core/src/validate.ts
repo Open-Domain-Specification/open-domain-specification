@@ -2700,7 +2700,7 @@ const relationshipRolesBacked: Rule = (workspace) => {
 				continue;
 			const alsoBorrowed =
 				role === "published-language"
-					? `, and nothing in "${downstream.name}" carries one of its schemas or value objects`
+					? `, and nothing in "${downstream.name}" carries or specialises one of its schemas or value objects`
 					: "";
 			diagnostics.push({
 				severity: "warning",
@@ -2719,7 +2719,7 @@ const relationshipRolesBacked: Rule = (workspace) => {
 				continue;
 			const alsoBorrows =
 				role === "conformist"
-					? `, and nothing in it carries one of "${upstream.name}"'s schemas or value objects`
+					? `, and nothing in it carries or specialises one of "${upstream.name}"'s schemas or value objects`
 					: `, and nothing it offers "${upstream.name}" is in "${upstream.name}"'s own shapes`;
 			diagnostics.push({
 				severity: "warning",
@@ -2922,16 +2922,24 @@ function* attributesOf(bc: BoundedContext): Iterable<Attribute> {
 
 /**
  * Whether anything in `borrower` is typed by a value object `owner` declares,
- * nests one of its schemas, or carries one on a consumable — sent, answered or
- * refused: the ways a kernel is shared, and the evidence that one context has
- * taken another's language.
+ * is a kind of one, nests one of its schemas, or carries one on a consumable —
+ * sent, answered or refused: the ways a kernel is shared, and the evidence that
+ * one context has taken another's language.
  *
  * All three payload fields count, because all three are the owner's shape in
  * the borrower's hands. Reading `schema` and `returns` and not `rejects` left
  * a context whose only borrowing is the refusal it passes on unaccounted for
  * (card 98).
+ *
+ * A value object that specialises one of the owner's counts too: it takes the
+ * owner's value object as its parent and inherits every attribute, which is
+ * the borrowing `specialisation-in-boundary` admits over these same routes. It
+ * is the borrowing even when the kind declares nothing of its own (decision 22;
+ * issue #111).
  */
 function borrowsFrom(borrower: BoundedContext, owner: BoundedContext): boolean {
+	for (const valueobject of borrower.valueobjects.values())
+		if (valueobject.specialises?.boundedcontext === owner) return true;
 	for (const attribute of attributesOf(borrower)) {
 		if (attribute.valueobject?.boundedcontext === owner) return true;
 		if (attribute.schema?.boundedcontext === owner) return true;
@@ -2978,7 +2986,7 @@ const sharedKernelBacked: Rule = (workspace) => {
 		diagnostics.push({
 			severity: "warning",
 			rule: "shared-kernel-backed",
-			message: `"${source.name}" and "${target.name}" declare a shared kernel, but neither types an attribute by a value object the other declares, carries one of its schemas or calls one of its operations, so nothing is in the kernel`,
+			message: `"${source.name}" and "${target.name}" declare a shared kernel, but neither types an attribute by a value object the other declares, specialises one, carries one of its schemas or calls one of its operations, so nothing is in the kernel`,
 			ref: relationship.ref,
 		});
 	}
@@ -3044,7 +3052,7 @@ const conformistBacked: Rule = (workspace) => {
 		diagnostics.push({
 			severity: "warning",
 			rule: "conformist-backed",
-			message: `"${downstream.name}" declares itself a conformist of "${upstream.name}", but it names none of "${upstream.name}"'s schemas or value objects and consumes nothing "${upstream.name}" provides, so there is nothing here to conform to`,
+			message: `"${downstream.name}" declares itself a conformist of "${upstream.name}", but it names or specialises none of "${upstream.name}"'s schemas or value objects and consumes nothing "${upstream.name}" provides, so there is nothing here to conform to`,
 			ref: relationship.ref,
 		});
 	}
@@ -5683,9 +5691,9 @@ const RULES: CataloguedRule[] = [
 		rule: "relationship-roles-backed",
 		severities: ["warning"],
 		summary:
-			"A directed relationship's declared roles are carried by the crossings that belong to it — or, for published language and for either downstream role, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the agreement it belongs to.",
+			"A directed relationship's declared roles are carried by the crossings that belong to it — or, for published language and for either downstream role, by the downstream borrowing the upstream's shapes, including by specialising its value objects — and a crossing consumption's role is declared on the agreement it belongs to.",
 		why: "The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.",
-		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a shape — sent, answered or refused — since a published language is a data shape rather than a second flag, and equally by the downstream naming one of the upstream's schemas or value objects: a standards body publishes a language and offers nothing to consume, so the shapes borrowed from it are the whole of what it provides. The two downstream roles are backed by different things, because they are different acts. A conformist is backed by that same borrowing: a context naming one of the upstream's schemas or value objects has taken its language. An anti-corruption layer is not a borrowing at all — the model behind it stays the downstream's own — so it is backed either by a consumption that declares the role or, where the upstream is the caller and nothing crosses the other way, by the one consumable that caller reaches carrying the caller's own shape, which is the boundary the layer translates at. Where one pair holds two agreements in the same direction, each is read against its own traffic: a crossing counts for the agreement its relationship names, or for the pair's only one where it names none. A crossing that names neither is consumption-agreement's to report and says nothing about either agreement until it does.",
+		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a shape — sent, answered or refused — since a published language is a data shape rather than a second flag, and equally by the downstream naming one of the upstream's schemas or value objects, or specialising one of its value objects: a standards body publishes a language and offers nothing to consume, so the shapes borrowed from it are the whole of what it provides. The two downstream roles are backed by different things, because they are different acts. A conformist is backed by that same borrowing: a context naming one of the upstream's schemas or value objects, or specialising one of its value objects, has taken its language. An anti-corruption layer is not a borrowing at all — the model behind it stays the downstream's own — so it is backed either by a consumption that declares the role or, where the upstream is the caller and nothing crosses the other way, by the one consumable that caller reaches carrying the caller's own shape, which is the boundary the layer translates at. Where one pair holds two agreements in the same direction, each is read against its own traffic: a crossing counts for the agreement its relationship names, or for the pair's only one where it names none. A crossing that names neither is consumption-agreement's to report and says nothing about either agreement until it does.",
 		check: relationshipRolesBacked,
 	},
 	{
@@ -5737,18 +5745,18 @@ const RULES: CataloguedRule[] = [
 		rule: "shared-kernel-backed",
 		severities: ["warning"],
 		summary:
-			"Two contexts declaring a shared kernel share something across it: a value object, a schema, or an operation one of them calls on the other.",
+			"Two contexts declaring a shared kernel share something across it: a value object (typed by it or specialised), a schema, or an operation one of them calls on the other.",
 		why: "A shared kernel is a piece of model two teams agree to keep in step, and it costs them the freedom to change it alone. Declaring one with nothing in it pays that price for nothing, and it stands in the model as the warrant for a sharing nobody has made: it is one of the two declarations over which a value object or a payload schema may be borrowed, and the only symmetric one — a conformist borrows downstream from its upstream and nothing comes back. Shapes are not the whole kernel, though. Anything in it with identity and behaviour is an aggregate of a kernel context both sides reach through its operations rather than a value either side copies, so calling one of those operations is the sharing too (decision 16).",
-		fix: "Type an attribute by a value object the other context declares, nest one of its schemas in an attribute, carry one on a consumable, or consume one of its operations; or replace the shared kernel with the relationship the two contexts really have.",
+		fix: "Type an attribute by a value object the other context declares, specialise one, nest one of its schemas in an attribute, carry one on a consumable, or consume one of its operations; or replace the shared kernel with the relationship the two contexts really have.",
 		check: sharedKernelBacked,
 	},
 	{
 		rule: "conformist-backed",
 		severities: ["warning"],
 		summary:
-			"A downstream that declares the conformist role takes something of its upstream's: a schema or value object named here, or anything the upstream provides consumed here.",
+			"A downstream that declares the conformist role takes something of its upstream's: a schema or value object named or specialised here, or anything the upstream provides consumed here.",
 		why: "Conformist is the strongest thing a downstream can say about itself: it gives up its own language for the upstream's and accepts every change the upstream makes. It is also what lets this context name the upstream's schemas and value objects at all, so a reader takes it as the warrant for a borrowing. Declared between two contexts that exchange nothing at all, it is a claim on the map with nothing under it, exactly as an empty shared kernel or an unbacked partnership is. What the rule does not ask is that the conforming show in the shapes: whether a downstream subscribing to a published event translates it or takes it as it comes is not something the model records, so asking for a borrowed schema would report every event-driven conformist there is. It does not ask for a payload either: a consumed event whose name is the whole of it is still the upstream's language, and demanding a schema on the event reported the conformists of contexts that publish bare notifications.",
-		fix: "Consume something the upstream provides, of any kind and with or without a payload, or name one of its schemas or value objects here; or drop the conformist role if the two contexts really exchange nothing.",
+		fix: "Consume something the upstream provides, of any kind and with or without a payload, or name or specialise one of its schemas or value objects here; or drop the conformist role if the two contexts really exchange nothing.",
 		check: conformistBacked,
 	},
 	{

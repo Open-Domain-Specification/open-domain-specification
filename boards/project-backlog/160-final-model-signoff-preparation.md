@@ -4,7 +4,7 @@ labels: [docs, model]
 priority: high
 agent: claude
 live: false
-status: Preparation committed locally; awaiting one exact-head Claude Opus 5.5 high and OpenAI Astra low signoff
+status: First signoff round ran on 31486646 (Astra BLOCK, Opus APPROVE); fix is card 161 (issue #111); second round pending
 progress: 75
 clean-code-swept: true
 updatedAt: 2026-10-01T00:00:00Z
@@ -22,8 +22,8 @@ Issue #108. The owner wants the model complete before one exact-head review by C
 - [x] Hand-written skill preferences and the tactical page read against it: each says a comment says how a message travels, which stays true; none changed
 - [x] Evidence table below for #35, #36, #37, #38, #39, #40
 - [ ] The exact-head signoff: one Claude Opus 5.5 high and one OpenAI Astra low review of the same commit, each answering whether this is a correct, clean and detailed DDD specification, reproduced defects kept apart from named preferences (the lead)
-- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head
-- [ ] Journal: prompts, models, head, verdicts, rulings (after the reviews)
+- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (first round: one defect, #111 / card 161; rerun pending)
+- [x] Journal, first round: prompt, models, head, verdicts, ruling and the four wording follow-ups (below); second round pending
 
 ## Gates
 
@@ -49,3 +49,31 @@ No issue here is closed or relabelled, and none is accepted as a schema change. 
 - **lead** (2026-09-30): Corrected the new delivery amendment's heading and two false implications: a queued reply is not automatically an event, and changing a command into an event is valid only when the source describes a fact. Decision 20 now appends a correction to its earlier suggestion that a comment resolves the warning. The checker and generated rule text remain as built.
 - **lead** (2026-09-30): The unmodified local landing gate passed on `ff8e8436`, the integrated model tree before the gate-result journal update. No GitHub CI minutes were used.
 - **lead** (2026-09-30): Outgoing change and clean-code audit across cards 157–160: checked source fidelity, cross-context borrowing, local scorecard call, Markdown users and links, generated outputs, tests, validator advice, SRP, DRY, naming, coupling, dead code, simplicity, boundaries and reachable failures. No introduced finding above 0.5 or blocking correctness issue. The existing separate doc/pages value-object scans serve different output shapes and need no broader core refactor for this correction.
+
+## Journal: first signoff round (head `31486646`)
+
+Exact head reviewed: `31486646b6a4e330b1e14c3d7697bcd2da20040f`, based on `origin/develop` `a0e88e97`. Both reviews were read-only. Health stays pending; nothing here is approval.
+
+| Reviewer | Model | Verdict |
+| --- | --- | --- |
+| OpenAI | `gpt-6-astra`, low | **BLOCK** |
+| Claude | `claude-opus-5-5`, high | **APPROVE** |
+
+Prompt given to both (verbatim from `/tmp/ods-final-model-review-31486646.txt`):
+
+```text
+You are an independent final reviewer of the Open Domain Specification metamodel and its reference models. Review the exact committed head 31486646b6a4e330b1e14c3d7697bcd2da20040f in this checkout, based on origin/develop a0e88e97. This is a read-only review: make no edits, commits, issue or PR comments, pushes, or agent delegations. Do not run the full verify-all.sh gate; it has passed locally on this exact head. Check the head and clean worktree before reasoning.
+
+The owner's question: Is this a correct, clean, detailed specification for modelling software systems the Domain-Driven Design way, with the metamodel, validator, reference models, and all four permanent reading surfaces telling the same truth? Give an explicit APPROVE or BLOCK verdict on this exact head. Approval requires no unresolved semantic defect; it does not require every possible DDD construct. Deliberate model preferences are allowed when their costs and source-backed reopening conditions are honest.
+
+Read AGENTS.md, STATUS.md's current state, the current-position paragraphs and relevant amendments of decisions 15, 16, 17, 18, 20, 21 and 23, the card 160 evidence table, and the source notes in the five reference models. Inspect the core schema, DSL, validator, derived maps/reaction walk, generated JSON schema, authoring skill, documentation site, pages renderer for VS Code/viewer/static export, and Markdown writer as needed. Review the changes from a0e88e97 through HEAD adversarially, especially NorthBank kernel ownership (#107), its structured Scorecard call (#109), Markdown value-object users (#110), and final decision/validator wording (#108). Challenge the conditional capability rulings for #35, #36, #37, #38, #39, #40 against source-backed cases and the code's actual behavior. Check that pinned diagnostics and generated outputs still mean what they claim; do not edit them.
+
+For each blocking finding, give a concrete source-backed or runnable counterexample, the actual behavior, expected behavior, exact file/line evidence, and the smallest regression test that would prove the correction. Separate reproduced semantic defects and cross-surface lies from deliberate named costs, optional improvements, and uncertain source questions. If you cannot substantiate an objection, state the uncertainty rather than treating it as a blocker. Note any meaningful limit of your inspection.
+
+End with: VERDICT: APPROVE or VERDICT: BLOCK; the exact HEAD; and a concise answer to the owner's question. Do not approve an older head.
+```
+
+- **Astra, BLOCK:** a value object in context B that specialises a value object of context A is accepted by `specialisation-in-boundary` through a shared kernel, a conformist or a customer-supplier relationship, but `borrowsFrom` ignores `specialises`. So `shared-kernel-backed` says "nothing is in the kernel", and the conformist variant draws two `relationship-roles-backed` warnings and a `conformist-backed` warning; the customer-supplier variant draws a false published-language backing warning. The existing positive case in `rule-cases.boundary.test.ts` hid it with an unrelated attribute. It also confirmed #107, #108, #109, #110 and all five pinned diagnostic lists.
+- **Opus, APPROVE:** no blocker found, and four wording follow-ups: (1) decision 18's current position omits customer-supplier borrowing; (2) decision 15's new value-behaviour and queued-command costs are missing from `preferences.md` and the tactical page; (3) decision 16 and `reconciliation.md` blame an anti-corruption layer for carrying no borrowing, when an ACL is a per-consumption role and borrowing follows the relationship type (NorthBank's Payments and Lending are valid customers with ACL calls); (4) decision 15's delivery reopening condition claims delivery alone can falsify `relationship-cycle`, which decision 20 says it cannot.
+- **Lead ruling:** the reproduced defect overrides the approval. Opus did not find it, and a reviewer who misses a defect does not outweigh a runnable counterexample. Astra's BLOCK stands until the fix lands and both reviews repeat on the new head. The four wording items are accepted as written and are fixed with it.
+- **Follow-up:** issue #111, card 161 (fix, regression tests, the four corrections). Both reviews must be rerun on the corrected exact head after the local gate; the first-round verdicts count toward nothing.

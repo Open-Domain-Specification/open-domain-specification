@@ -94,6 +94,19 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
 - **`raises` says may, not which combination.** An operation that raises two events may raise
   either or both, and the flow map draws every edge the same way; which combination happens on a
   given call is the operation's description, not the model.
+- **A change to a value's behaviour shows nowhere.** A value object has attributes and
+  invariants, so changing an attribute of `Money` shows on its page, in `usagesOf` and in the
+  Used-by column of every context that holds it, while changing how `Money` rounds names no
+  consumer. Reopens when a source states a value's behaviour with a named input, result or
+  refusal, another element's contract depends on it, the model's form loses the change and a
+  domain-service operation was tried (decision 15).
+- **A ring of queued commands is warned about even when neither sender waits.** The model
+  records who called and who receives the answer, not the queue or the timing, so a command
+  carried over a queue still makes the sender depend on the receiver's contract and
+  `relationship-cycle` reads it as a step. A comment on the consumption says how it travels and
+  does not exempt it; the repair is an anti-corruption layer, a partnership or an event. Reopens
+  when delivery changes an answer route or a reaction, or makes a `reaction-cycle` finding false
+  that no repair states truthfully (decision 15).
 - **A consumption's ref moves.** The ref is computed from the pair it joins and only carries a
   caller's name once a second consumption of the same pair exists, so adding that second
   consumption changes the first one's ref.
