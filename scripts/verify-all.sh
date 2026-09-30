@@ -111,6 +111,8 @@ echo "==> checking pages (svelte-check)"
 
 run_vitest "apps/docs" apps/docs
 run_vitest "apps/ods-vscode" apps/ods-vscode
+# The checker the CI job real-vscode judges both real-host suites with.
+run_vitest "scripts (real-host checker)" scripts
 
 # --- pages e2e fit spec ---
 if ! npx --prefix "$ROOT/packages/pages" playwright --version >/dev/null 2>&1; then
