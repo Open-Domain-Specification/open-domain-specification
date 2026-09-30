@@ -1,6 +1,6 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import {
 	type ElectronApplication,
 	_electron as electron,
@@ -102,6 +102,10 @@ export async function launchVSCode(options: LaunchOptions): Promise<Host> {
 	});
 	// Added before any webview exists, so each one is counted from its start.
 	await app.context().addInitScript(COUNT_HOST_FOCUS);
+	if (process.env.ODS_LOGS_DIR)
+		await app
+			.context()
+			.tracing.start({ screenshots: true, snapshots: true, sources: false });
 	const window = await app.firstWindow();
 	await window.waitForSelector(".monaco-workbench", { timeout: 60_000 });
 	// `.monaco-workbench` is there long before the window takes keys: a key sent
@@ -119,7 +123,25 @@ export async function launchVSCode(options: LaunchOptions): Promise<Host> {
 		app,
 		window,
 		close: async () => {
+			// CI names a folder to keep evidence in, since the scratch dir below
+			// is removed: a trace and the last screenshot of this launch, then
+			// VS Code's own logs, which explain a launch that never came up.
+			const keep = process.env.ODS_LOGS_DIR;
+			const name = basename(scratch);
+			if (keep) {
+				mkdirSync(keep, { recursive: true });
+				await window
+					.screenshot({ path: join(keep, `${name}.png`) })
+					.catch(() => undefined);
+				await app
+					.context()
+					.tracing.stop({ path: join(keep, `${name}-trace.zip`) })
+					.catch(() => undefined);
+			}
 			await app.close().catch(() => undefined);
+			const logs = join(scratch, "user", "logs");
+			if (keep && existsSync(logs))
+				cpSync(logs, join(keep, `${name}-logs`), { recursive: true });
 			rmSync(scratch, { recursive: true, force: true });
 		},
 	};
