@@ -6,6 +6,8 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
+Model finality, second correction: issue #109, card 158, committed locally on `codex/model-fidelity-northbank` after #107. NorthBank's `Decide` now consumes the Scorecard's internal `ScoreApplication` (`by: [Decide]`, no pattern, no schema, no `returns`), so the flow map, reaction walk and Markdown show the step the interview and description state. The source does not say what the scorecard returns, so no answer is recorded; open question in `DISCOVERY.md`'s card 158 revision. No core, validator or renderer change; the three pinned diagnostics are identical. The full unmodified gate is deferred to the integrated head.
+
 Model finality, first correction: issue #107, card 157, on `codex/model-fidelity-northbank` from `origin/develop` `a0e88e97`. It is committed locally, not pushed, and has no PR. The owner's priority is to finalise the model and get independent OpenAI and Claude approval before any tooling work. The lead gets both reviews of the exact committed head first.
 - NorthBank's interview names two co-owners of `@northbank/money`: Accounts and Ledger. The model had invented a Shared Kernel Team and context, with six shared-kernel relationships that made Payments, Cards, Lending and Reporting co-owners. Money and AccountNumber now live in Ledger. Accounts shares a pairwise kernel with Ledger. The other four borrow over directed relationships: Payments and Lending as customers, Reporting and Cards as conformists. Cards' relationship is new, and its use of the library is marked as assumed.
 - The existing metamodel expresses this, with no core, validator or renderer change. NorthBank's three pinned diagnostics are identical in rule, ref and message.

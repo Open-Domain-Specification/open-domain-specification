@@ -2748,11 +2748,18 @@ const scorecard = decisioningBC.addService("Scorecard", {
 		"The bank's own model; a domain service because it is tuned across the whole book",
 	type: "domain",
 });
-scorecard.provides("ScoreApplication", {
+const scoreApplication = scorecard.provides("ScoreApplication", {
 	description: "Run the scorecard over an application and its bureau report",
 	type: "operation",
 	internal: true,
 });
+// `Decide` runs the scorecard once it holds the bureau report: the interview's
+// "pull a bureau report, run the scorecard, and check affordability". The
+// front makes the call (decision 17: a domain service holds no outbound port
+// and is called by its own context's front). No contract is invented: the
+// source says the scorecard is run, not what it hands back, so the call
+// carries no schema and no `returns` (card 158).
+decisioningApp.consumes(scoreApplication, { by: [decide] });
 decisioningApp.consumes(getCustomer, {
 	pattern: "anti-corruption-layer",
 	by: [decide],

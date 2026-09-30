@@ -3943,6 +3943,16 @@
             },
             {
               "consumable": {
+                "$ref": "#/boundedcontexts/credit_decisioning/services/scorecard/provides/score_application"
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
+                }
+              ]
+            },
+            {
+              "consumable": {
                 "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
               },
               "pattern": "anti-corruption-layer",

@@ -317,7 +317,9 @@ function markdownPages(docs: Record<string, string>): [string, string][] {
  * any `index.html` are link targets, never sources. External `http(s)` and
  * `mailto:` links are skipped.
  */
-export async function assertDocSite(workspace: Workspace): Promise<void> {
+export async function assertDocSite(
+	workspace: Workspace,
+): Promise<Record<string, string>> {
 	const docs = await toDoc(workspace);
 	const files = new Set(Object.keys(docs));
 
@@ -342,4 +344,5 @@ export async function assertDocSite(workspace: Workspace): Promise<void> {
 		expectedSidebar(workspace),
 		"_sidebar.md does not navigate the workspace tree depth-first",
 	);
+	return docs;
 }

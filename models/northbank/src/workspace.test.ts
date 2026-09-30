@@ -1,4 +1,9 @@
 import {
+	callsOut,
+	ODSFlowMap,
+	Workspace,
+} from "@open-domain-specification/core";
+import {
 	assertDocSite,
 	assertStressTestWorkspace,
 } from "@open-domain-specification/model-tools";
@@ -105,6 +110,70 @@ describe("NorthBank reference workspace", () => {
 			expect(routes, `${user} borrows Money from Ledger`).toHaveLength(1);
 		}
 	});
+
+	// The interview says Credit Decisioning pulls a bureau report, runs the
+	// scorecard and checks affordability, and `Decide` says it hands the report
+	// to the scorecard. The model records that run as a local consumption of the
+	// internal `ScoreApplication`, made by `Decide`, with no contract the source
+	// does not give: no pattern, no schema, no answer (card 158).
+	it("records Decide's run of the scorecard as a structured local call", async () => {
+		const context = [...workspace.boundedcontexts.values()].find(
+			(bc) => bc.name === "Credit Decisioning",
+		);
+		const app = context?.services.get("decisioning_app");
+		const decide = app?.consumables.get("decide");
+		const score = context?.services
+			.get("scorecard")
+			?.consumables.get("score_application");
+		expect(decide && score).toBeTruthy();
+		if (!decide || !score) return;
+
+		const consumption = app?.consumptions.find((c) => c.consumable === score);
+		expect(consumption?.by).toEqual([decide]);
+		expect(consumption?.pattern).toBeUndefined();
+		expect(score.internal).toBe(true);
+		expect(score.returns).toBeUndefined();
+		expect(score.schema).toBeUndefined();
+		expect(callsOut(decide).map((c) => c.name)).toEqual([
+			"PullBureauReport",
+			"ScoreApplication",
+			"GetCustomer",
+		]);
+
+		// It survives the JSON the surfaces read.
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(workspace.toSchema())),
+		);
+		const again = [...rebuilt.boundedcontexts.values()]
+			.find((bc) => bc.name === "Credit Decisioning")
+			?.services.get("decisioning_app");
+		expect(
+			again?.consumptions.map((c) => [
+				c.consumable.name,
+				c.by.map((b) => b.name),
+			]),
+		).toContainEqual(["ScoreApplication", ["Decide"]]);
+
+		// The flow map draws the step between the two operations.
+		const edges = [...ODSFlowMap.fromWorkspace(workspace).edges.values()];
+		expect(
+			edges.some(
+				(e) =>
+					e.source.name === "Decide" && e.target.name === "ScoreApplication",
+			),
+		).toBe(true);
+
+		// And it reaches Markdown, on the front's page and the context's table.
+		const docs = await assertDocSite(workspace);
+		expect(
+			docs[
+				"boundedcontexts/credit_decisioning/services/decisioning_app/index.md"
+			],
+		).toMatch(/### ScoreApplication[\s\S]*?\*\*Made by\*\*: Decide/);
+		expect(docs["boundedcontexts/credit_decisioning/index.md"]).toContain(
+			"| Decide | - | Scorecard | ScoreApplication | - |",
+		);
+	}, 60_000);
 
 	// Rendering every diagram through graphviz-wasm takes tens of seconds on
 	// the larger models, so this one test gets a generous timeout.

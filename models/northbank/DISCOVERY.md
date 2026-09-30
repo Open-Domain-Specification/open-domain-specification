@@ -960,3 +960,26 @@ aggregate, invariant, event, operation or policy changed. The deliberate diagnos
 section 7 are untouched: the same three, for the same reasons, with the same refs and
 messages.
 
+
+## Revision (card 158): `Decide` runs the scorecard through a recorded call
+
+The Head of Credit Risk said: "pull a bureau report no older than thirty days, run the
+scorecard, and check affordability". `Decide`'s description says it hands the report to the
+scorecard and runs it, and `Scorecard` provides the internal `ScoreApplication`. The model
+recorded `Decide` pulling the bureau report and fetching the customer, and recorded no call
+to `ScoreApplication`. The flow map, the reaction walk and Markdown's consumption tables
+therefore left out a step the prose says happens (issue #109).
+
+`DecisioningApp` now consumes `ScoreApplication`, with `by: [Decide]`: a local consumption,
+inside one context, which decision 17 allows and which is how a domain service is reached (its
+front makes the call; the service holds no outbound port). It carries no pattern, because
+nothing crosses a boundary, no schema and no `returns`, because the interview says the
+scorecard is run and never says what it hands back. `CreditScore`, the scorecard's output
+with reason codes, already exists as a value object of the decision, but no source says
+`ScoreApplication` answers with it, so the model does not wire them. The call reads as
+"completed" for an answer's purposes, and nothing listens for it.
+
+Still uncertain, for the next session to ask: what the scorecard hands back, and whether the
+decision's reasons come from it. If the answer is a score with reason codes, `returns:
+CreditScore` is the one-line addition. No rule was weakened and no construct added; the
+deliberate diagnostics of section 7 are untouched: the same three, for the same reasons.
