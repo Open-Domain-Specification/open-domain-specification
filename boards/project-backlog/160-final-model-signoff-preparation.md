@@ -77,3 +77,18 @@ End with: VERDICT: APPROVE or VERDICT: BLOCK; the exact HEAD; and a concise answ
 - **Opus, APPROVE:** no blocker found, and four wording follow-ups: (1) decision 18's current position omits customer-supplier borrowing; (2) decision 15's new value-behaviour and queued-command costs are missing from `preferences.md` and the tactical page; (3) decision 16 and `reconciliation.md` blame an anti-corruption layer for carrying no borrowing, when an ACL is a per-consumption role and borrowing follows the relationship type (NorthBank's Payments and Lending are valid customers with ACL calls); (4) decision 15's delivery reopening condition claims delivery alone can falsify `relationship-cycle`, which decision 20 says it cannot.
 - **Lead ruling:** the reproduced defect overrides the approval. Opus did not find it, and a reviewer who misses a defect does not outweigh a runnable counterexample. Astra's BLOCK stands until the fix lands and both reviews repeat on the new head. The four wording items are accepted as written and are fixed with it.
 - **Follow-up:** issue #111, card 161 (fix, regression tests, the four corrections). Both reviews must be rerun on the corrected exact head after the local gate; the first-round verdicts count toward nothing.
+
+## Second round
+
+Exact head reviewed: `771a44e0dd02a76f9692912e3acb239963bc21a9`. Both reviews were read-only. Health stays pending; nothing here is approval.
+
+| Reviewer | Model | Verdict |
+| --- | --- | --- |
+| OpenAI | `gpt-6-astra`, low | APPROVE |
+| Claude | `claude-opus-5-5`, high | **BLOCK** |
+
+- **Opus, BLOCK:** reproduced on a static export of NorthBank: Ledger's context page shows `AccountNumber` as held by "nothing" in the warning tone, although Markdown lists `CustomerLedgerAccount (value object)` and `Accounts / Account`, and Ledger's `Money` shows only `JournalEntry` where Markdown lists users in five contexts. The pages component served the VS Code webview, the viewer and the export, so three of four surfaces lied. Everything else held: #111, the pinned diagnostics, the generated outputs, #107, #109 and #108's wording.
+- **Astra, APPROVE:** no unresolved semantic disagreement; the six capability rulings accepted as deliberate costs. It did not launch the renderer hosts.
+- **Lead ruling:** the reproduced defect overrides the approval, as in the first round.
+- **Follow-up:** issue #112, card 162 (one core helper read by Markdown and pages, the browser regression). The Opus report's second finding, stale generated Markdown pages, is issue #113 and is not part of it. Both reviews repeat on the corrected exact head after the local gate; no final approval is recorded.
+

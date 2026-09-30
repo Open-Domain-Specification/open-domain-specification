@@ -21,9 +21,10 @@ import {
 	ODSContextMap,
 	ODSFlowMap,
 	type ProcessTrigger,
-	type ValueObject,
+	usersOfValueObject,
+	type ValueObjectUser,
+	valueObjectsUsedBy,
 } from "@open-domain-specification/core";
-import { valueObjectsOf } from "../elements";
 import { consumableGraph, contextGraph, flowGraph } from "../flow/graph";
 import { FLOW_MAP_EMPTY, flowMapCaption } from "../flow/flow-graph";
 import {
@@ -98,9 +99,14 @@ const flowCaption = $derived(flowMapCaption(bc.name));
 const countOf = (kind: "operation" | "event", a: Aggregate) =>
 	[...a.consumables.values()].filter((c) => c.type === kind).length;
 
-/** The aggregates of this context that hold a value object. */
-const holdersOf = (v: ValueObject) =>
-	aggregates.filter((a) => valueObjectsOf(a).includes(v));
+/**
+ * A user of a value object, as the Used by cell names it: a user from another
+ * context says which, and a nested value object or schema says what it is.
+ */
+const userLabel = (declaring: BoundedContext, user: ValueObjectUser) =>
+	user.boundedcontext === declaring
+		? user.owner.name
+		: `${user.boundedcontext.name} / ${user.owner.name}`;
 
 const aggregateColumns: Column[] = [
 	{ key: "name", label: "Aggregate" },
@@ -115,7 +121,7 @@ const aggregateColumns: Column[] = [
 const valueObjectColumns: Column[] = [
 	{ key: "name", label: "Value object" },
 	{ key: "attributes", label: "Attributes", numeric: true },
-	{ key: "heldby", label: "Held by" },
+	{ key: "usedby", label: "Used by" },
 	{ key: "description", label: "Description" },
 ];
 const serviceColumns: Column[] = [
@@ -227,7 +233,7 @@ const termColumns: Column[] = [
 			{:else if col.key === "entities"}
 				{a.entities.size}
 			{:else if col.key === "valueobjects"}
-				{valueObjectsOf(a).length}
+				{valueObjectsUsedBy(a).length}
 			{:else if col.key === "invariants"}
 				{a.invariants.size}
 			{:else if col.key === "operations"}
@@ -272,7 +278,7 @@ const termColumns: Column[] = [
 <Section
 	id="values"
 	title="Value objects"
-	lead="The values this context defines once. Any of its aggregates may hold one, so a change to a value object is a change everywhere it is held."
+	lead="The values this context defines once. Any of its aggregates may hold one, so a change to a value object is a change everywhere it is used, in this context or any other."
 	count={valueobjects.length}
 	problems={valueobjects.flatMap((v) => problemsUnder(model, v.ref))}
 >
@@ -287,8 +293,8 @@ const termColumns: Column[] = [
 				<Lockup kind="valueobject" name={v.name} ref={v.ref} />
 			{:else if col.key === "attributes"}
 				{v.attributes.size}
-			{:else if col.key === "heldby"}
-				<Joined>{#each holdersOf(v) as a (a.ref)}<Lockup kind="aggregate" name={a.name} ref={a.ref} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+			{:else if col.key === "usedby"}
+				<Joined>{#each usersOfValueObject(v) as user (`${user.kind}:${user.owner.ref}`)}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner.ref} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else}
 				{v.description}
 			{/if}

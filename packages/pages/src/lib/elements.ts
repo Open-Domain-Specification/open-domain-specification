@@ -1,13 +1,12 @@
-import {
-	type Aggregate,
-	type Attribute,
-	type Consumable,
-	Entity,
-	type GlossaryTerm,
-	type Policy,
-	type Process,
-	type ValueObject,
-	type Workspace,
+import type {
+	Aggregate,
+	Attribute,
+	Consumable,
+	GlossaryTerm,
+	Policy,
+	Process,
+	ValueObject,
+	Workspace,
 } from "@open-domain-specification/core";
 
 /**
@@ -56,22 +55,6 @@ export function* consumablesOf(ws: Workspace): Iterable<Consumable> {
 
 export function* termsOf(ws: Workspace): Iterable<GlossaryTerm> {
 	for (const bc of ws.boundedcontexts.values()) yield* bc.glossary.values();
-}
-
-/**
- * The value objects an aggregate holds: the ones typing its entities'
- * attributes or targeted by their relations. A value object belongs to the
- * context (decision 16), so this is what the aggregate uses of it.
- */
-export function valueObjectsOf(aggregate: Aggregate): ValueObject[] {
-	const used = new Set<ValueObject>();
-	for (const e of aggregate.entities.values()) {
-		for (const a of e.attributes.values())
-			if (a.valueobject) used.add(a.valueobject);
-		for (const r of e.relations)
-			if (!(r.target instanceof Entity)) used.add(r.target);
-	}
-	return [...used].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Attributes anywhere in the workspace whose type is this value object. */

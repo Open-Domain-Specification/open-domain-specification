@@ -11,6 +11,7 @@ import {
 	type Process,
 	type ProcessTrigger,
 	type Service,
+	usersOfValueObject,
 	type ValueObject,
 } from "@open-domain-specification/core";
 import { attributeListMd } from "./attributes.md";
@@ -23,7 +24,6 @@ import {
 	pathToFlowMapSvg,
 	pathToIndexMd,
 } from "./lib/paths";
-import { usersOfValueObject } from "./lib/value-objects";
 import type { Options } from "./options";
 import { strategicPositionMd } from "./strategic-position.md";
 import { teamLinkMd } from "./team.md";
@@ -90,13 +90,18 @@ const schemaSection = (schema: DataSchema) => [
  */
 const usedByMd = (valueObject: ValueObject) =>
 	usersOfValueObject(valueObject)
-		.map((it) => {
-			const foreign = it.boundedcontext !== valueObject.boundedcontext;
+		.map(({ kind, boundedcontext, owner }) => {
+			const foreign = boundedcontext !== valueObject.boundedcontext;
 			const label = foreign
-				? `${it.boundedcontext.name} / ${it.name}`
-				: it.name;
-			const href = `${pathToIndexMd(it.path, valueObject.boundedcontext.path)}${it.anchor}`;
-			return `[${label}](${href})${it.kind === "aggregate" ? "" : ` (${it.kind})`}`;
+				? `${boundedcontext.name} / ${owner.name}`
+				: owner.name;
+			// An aggregate has a page of its own; a nested value object or schema is
+			// a section of its context's page.
+			const href =
+				kind === "aggregate"
+					? pathToIndexMd(owner.path, valueObject.boundedcontext.path)
+					: `${pathToIndexMd(boundedcontext.path, valueObject.boundedcontext.path)}#${kind === "schema" ? "schemas" : "value-objects"}`;
+			return `[${label}](${href})${kind === "aggregate" ? "" : ` (${kind})`}`;
 		})
 		.join(", ") || "-";
 

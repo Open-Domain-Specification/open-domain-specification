@@ -14,8 +14,8 @@ import {
 	type Consumable,
 	ODSConsumableMap,
 	ODSRelationMap,
+	valueObjectsUsedBy,
 } from "@open-domain-specification/core";
-import { valueObjectsOf } from "../elements";
 import { consumableGraph, relationGraph } from "../flow/graph";
 import { problemsUnder, useModel } from "../model";
 import Definition from "../atoms/Definition.svelte";
@@ -42,7 +42,7 @@ const entities = $derived(
 );
 // A value object belongs to the context, so the aggregate lists the ones it
 // holds rather than owning any (decision 16).
-const valueobjects = $derived(valueObjectsOf(a));
+const valueobjects = $derived(valueObjectsUsedBy(a));
 const invariants = $derived([...a.invariants.values()]);
 const consumables = $derived([...a.consumables.values()]);
 const operations = $derived(consumables.filter((c) => c.type === "operation"));

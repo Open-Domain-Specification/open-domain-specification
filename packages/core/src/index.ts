@@ -12,6 +12,7 @@ export * from "./relation-map";
 export * from "./relationship";
 export * from "./schema";
 export * from "./validate";
+export * from "./value-object-users";
 export * from "./visitable";
 export * from "./visitor";
 export * from "./workspace";

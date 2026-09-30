@@ -87,6 +87,82 @@ for (const [host, open] of hosts) {
 			).toBeVisible();
 	});
 
+	test(`${host}: Ledger's page lists every user of AccountNumber and Money, here and elsewhere`, async ({
+		page,
+	}) => {
+		await open(page, LEDGER);
+		const values = page.getByRole("main").locator("#values");
+		const row = (name: string) =>
+			values
+				.getByRole("row")
+				.filter({ has: page.getByRole("link", { name, exact: true }) });
+		const link = (name: string) =>
+			page.getByRole("link", { name, exact: true });
+
+		// AccountNumber: a foreign aggregate and a nested value object of Ledger's
+		// own, where the old page said nothing held it.
+		const accountNumber = row("AccountNumber");
+		await expect(
+			accountNumber.getByRole("link", {
+				name: "Accounts / Account",
+				exact: true,
+			}),
+		).toHaveAttribute("href", "#/boundedcontexts/accounts/aggregates/account");
+		await expect(
+			accountNumber.getByRole("link", {
+				name: "CustomerLedgerAccount",
+				exact: true,
+			}),
+		).toHaveAttribute(
+			"href",
+			"#/boundedcontexts/ledger/valueobjects/customer_ledger_account",
+		);
+		await expect(accountNumber).toContainText("value object");
+		await expect(accountNumber).not.toContainText("nothing");
+
+		// Money: its own aggregate, four other contexts' aggregates, and nested
+		// value objects and schemas that type it.
+		const money = row("Money");
+		for (const [name, href] of [
+			["JournalEntry", "#/boundedcontexts/ledger/aggregates/journal_entry"],
+			["Accounts / Account", "#/boundedcontexts/accounts/aggregates/account"],
+			[
+				"Accounts / OverdraftLimit",
+				"#/boundedcontexts/accounts/valueobjects/overdraft_limit",
+			],
+			[
+				"Payments Hub / PaymentInstruction",
+				"#/boundedcontexts/payments_hub/aggregates/payment_instruction",
+			],
+			["Cards / Card", "#/boundedcontexts/cards/aggregates/card"],
+			[
+				"Lending / LoanApplication",
+				"#/boundedcontexts/lending/aggregates/loan_application",
+			],
+			[
+				"Regulatory Reporting / RegulatoryReturn",
+				"#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return",
+			],
+			[
+				"Accounts / AvailableBalance",
+				"#/boundedcontexts/accounts/schemas/available_balance",
+			],
+		])
+			await expect(
+				money.getByRole("link", { name, exact: true }),
+			).toHaveAttribute("href", href);
+		await expect(money).toContainText("schema");
+		await expect(money).not.toContainText("nothing");
+		// A value nobody uses still says so: the empty state is for that alone.
+		await expect(row("NominalLedgerAccount")).toContainText("nothing");
+
+		// A link lands on the user's page.
+		await link("Accounts / Account").first().click();
+		await expect(
+			page.getByRole("main").getByRole("heading", { level: 1 }),
+		).toContainText("Account");
+	});
+
 	test(`${host}: the one shared kernel joins Accounts and Ledger`, async ({
 		page,
 	}) => {

@@ -5,6 +5,7 @@ import {
 	type Invariant,
 	ODSRelationGraph,
 	type ValueObject,
+	valueObjectsUsedBy,
 } from "@open-domain-specification/core";
 import { attributeListMd } from "./attributes.md";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
@@ -16,7 +17,6 @@ import {
 	pathToIndexMd,
 	pathToRelationMapSvg,
 } from "./lib/paths";
-import { valueObjectsUsedBy } from "./lib/value-objects";
 import type { Options } from "./options";
 
 /**
