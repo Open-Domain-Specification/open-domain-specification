@@ -6,7 +6,7 @@ agent: claude
 live: false
 status: Fix and focused tests committed locally; awaiting the lead's integrated gate and second-round signoff reviews
 progress: 85
-clean-code-swept: false
+clean-code-swept: true
 updatedAt: 2026-09-30T23:59:00Z
 ---
 # A specialised value object counts as relationship backing
@@ -34,3 +34,4 @@ Issue #111. On the first signoff head `31486646`, OpenAI Astra low reproduced th
 ## Journal
 
 - **claude** (2026-09-30T23:59:00Z): Picked up from `31486646`. The fix is one loop at the top of `borrowsFrom`. Every message that said "carries one of" now says "carries or specialises one of", so no rule text implies attribute or contract is the only evidence. Pinned model diagnostics are unchanged; none of the five models carries the changed messages. No agents, reviewers, push, PR or full gate were run.
+- **lead** (2026-09-30): Clean-code and truthfulness pass on the corrected diff. `borrowsFrom` remains one focused predicate with no new shared state or unchecked input. I made the messages explicitly say that a value object, rather than a schema, is specialised. I also corrected the skill and tactical cost text to locate the Used by column on the declaring context, qualify event conversion by the source, and say an ACL translates a particular call's payload rather than banning all borrowed types in the downstream domain. Core 1049 tests, skill 62 with drift, builds, typecheck and biome passed after the rule-text edits; the final full gate is still pending.

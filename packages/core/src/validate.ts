@@ -2700,7 +2700,7 @@ const relationshipRolesBacked: Rule = (workspace) => {
 				continue;
 			const alsoBorrowed =
 				role === "published-language"
-					? `, and nothing in "${downstream.name}" carries or specialises one of its schemas or value objects`
+					? `, and nothing in "${downstream.name}" carries one of its schemas or value objects or specialises one of its value objects`
 					: "";
 			diagnostics.push({
 				severity: "warning",
@@ -2719,7 +2719,7 @@ const relationshipRolesBacked: Rule = (workspace) => {
 				continue;
 			const alsoBorrows =
 				role === "conformist"
-					? `, and nothing in it carries or specialises one of "${upstream.name}"'s schemas or value objects`
+					? `, and nothing in it carries one of "${upstream.name}"'s schemas or value objects or specialises one of its value objects`
 					: `, and nothing it offers "${upstream.name}" is in "${upstream.name}"'s own shapes`;
 			diagnostics.push({
 				severity: "warning",
@@ -3052,7 +3052,7 @@ const conformistBacked: Rule = (workspace) => {
 		diagnostics.push({
 			severity: "warning",
 			rule: "conformist-backed",
-			message: `"${downstream.name}" declares itself a conformist of "${upstream.name}", but it names or specialises none of "${upstream.name}"'s schemas or value objects and consumes nothing "${upstream.name}" provides, so there is nothing here to conform to`,
+			message: `"${downstream.name}" declares itself a conformist of "${upstream.name}", but it names none of "${upstream.name}"'s schemas or value objects, specialises none of its value objects, and consumes nothing "${upstream.name}" provides, so there is nothing here to conform to`,
 			ref: relationship.ref,
 		});
 	}
@@ -5754,9 +5754,9 @@ const RULES: CataloguedRule[] = [
 		rule: "conformist-backed",
 		severities: ["warning"],
 		summary:
-			"A downstream that declares the conformist role takes something of its upstream's: a schema or value object named or specialised here, or anything the upstream provides consumed here.",
+			"A downstream that declares the conformist role takes something of its upstream's: a schema or value object named here, a value object specialised here, or anything the upstream provides consumed here.",
 		why: "Conformist is the strongest thing a downstream can say about itself: it gives up its own language for the upstream's and accepts every change the upstream makes. It is also what lets this context name the upstream's schemas and value objects at all, so a reader takes it as the warrant for a borrowing. Declared between two contexts that exchange nothing at all, it is a claim on the map with nothing under it, exactly as an empty shared kernel or an unbacked partnership is. What the rule does not ask is that the conforming show in the shapes: whether a downstream subscribing to a published event translates it or takes it as it comes is not something the model records, so asking for a borrowed schema would report every event-driven conformist there is. It does not ask for a payload either: a consumed event whose name is the whole of it is still the upstream's language, and demanding a schema on the event reported the conformists of contexts that publish bare notifications.",
-		fix: "Consume something the upstream provides, of any kind and with or without a payload, or name or specialise one of its schemas or value objects here; or drop the conformist role if the two contexts really exchange nothing.",
+		fix: "Consume something the upstream provides, of any kind and with or without a payload, name one of its schemas or value objects here, or specialise one of its value objects here; or drop the conformist role if the two contexts really exchange nothing.",
 		check: conformistBacked,
 	},
 	{

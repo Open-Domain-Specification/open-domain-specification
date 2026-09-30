@@ -104,8 +104,8 @@ Each of these costs something, and the cost is named rather than hidden:
   description, not the model (decision 15).
 - **A change to a value's behaviour shows nowhere.** A value object has
   attributes and invariants, so changing an attribute of `Money` shows on its
-  page, in `usagesOf` and in the Used-by column of every context that holds it,
-  while changing how `Money` rounds names no consumer. It reopens when a source
+  page, in `usagesOf` and in the Used by column on its declaring context's page,
+  which lists borrowers; changing how `Money` rounds names no consumer. It reopens when a source
   states a value's behaviour with a named input, result or refusal, another
   element's contract depends on it, the model's form loses the change and a
   domain-service operation was tried (decision 15).
@@ -114,8 +114,8 @@ Each of these costs something, and the cost is named rather than hidden:
   queue or the timing, so a command carried over a queue still makes the sender
   depend on the receiver's contract and `relationship-cycle` reads it as a
   step. A comment on the consumption says how it travels and does not exempt
-  it; the repair is an anti-corruption layer, a partnership or an event. It
-  reopens when delivery changes an answer route or a reaction, or makes a
+  it; the repair is an anti-corruption layer, a partnership or an event when
+  the source says it is a fact. It reopens when delivery changes an answer route or a reaction, or makes a
   `reaction-cycle` finding false that no repair states truthfully (decision 15).
 - **A consumption's ref moves.** The ref is computed from the pair it joins
   and only carries a caller's name once a second consumption of the same
