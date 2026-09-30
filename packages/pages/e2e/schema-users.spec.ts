@@ -18,6 +18,7 @@ import { serveModel } from "./helpers";
 const LEDGER = "#/boundedcontexts/ledger";
 
 let exportDir: string;
+let riverMartExportDir: string;
 
 test.beforeAll(async () => {
 	const schema = JSON.parse(
@@ -38,10 +39,31 @@ test.beforeAll(async () => {
 		],
 		outDir: exportDir,
 	});
+	const riverMartSchema = JSON.parse(
+		readFileSync(
+			join(__dirname, "../../../models/rivermart/.ods/rivermart.json"),
+			"utf8",
+		),
+	);
+	riverMartExportDir = await mkdtemp(
+		join(tmpdir(), "ods-rivermart-schema-users-"),
+	);
+	await exportSite({
+		appDir: join(__dirname, "../app"),
+		sources: [
+			{
+				workspace: Workspace.fromSchema(riverMartSchema),
+				fileLabel: "rivermart.json",
+				diagnostics: [],
+			},
+		],
+		outDir: riverMartExportDir,
+	});
 });
 
 test.afterAll(async () => {
 	await rm(exportDir, { recursive: true, force: true });
+	await rm(riverMartExportDir, { recursive: true, force: true });
 });
 
 const hosts: [string, (page: Page, ref: string) => Promise<void>][] = [
@@ -88,5 +110,36 @@ for (const [host, open] of hosts) {
 		await expect(
 			page.getByRole("main").getByRole("heading", { level: 1 }),
 		).toContainText("PostEntry");
+	});
+}
+
+for (const [host] of hosts) {
+	test(`${host}: ProviderPayment names its identity user without claiming Capture carries the shape`, async ({
+		page,
+	}) => {
+		if (host === "viewer") {
+			const url = await serveModel(page, "rivermart");
+			await page.goto(
+				`/?url=${encodeURIComponent(url)}#/boundedcontexts/payment_provider`,
+			);
+		} else {
+			await page.goto(
+				`${pathToFileURL(join(riverMartExportDir, "index.html")).href}#/boundedcontexts/payment_provider`,
+			);
+		}
+		const schemas = page.getByRole("main").locator("#schemas");
+		const heading = schemas
+			.getByRole("heading", { level: 3 })
+			.filter({ has: page.getByRole("link", { name: "ProviderPayment" }) });
+		await expect(heading).toContainText("used by");
+		await expect(heading).not.toContainText("unused");
+		await expect(heading).toContainText("identity");
+		await expect(
+			heading.getByRole("link", { name: "Payments / Payment", exact: true }),
+		).toHaveAttribute("href", "#/boundedcontexts/payments/aggregates/payment");
+		await heading.getByRole("link", { name: "ProviderPayment" }).click();
+		await expect(page.getByRole("main").locator("#carriers")).toContainText(
+			"No consumable names this schema directly.",
+		);
 	});
 }

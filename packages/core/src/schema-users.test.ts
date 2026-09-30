@@ -10,7 +10,7 @@ function makeWs() {
 	const ledger = subdomain.addBoundedcontext("Ledger", { description: "" });
 	const sales = subdomain.addBoundedcontext("Sales", { description: "" });
 	const line = ledger.addSchema("PostingLine");
-	return { ledger, sales, line };
+	return { ws, ledger, sales, line };
 }
 
 const describeUsers = (users: ReturnType<typeof usersOfSchema>) =>
@@ -69,5 +69,29 @@ describe("usersOfSchema", () => {
 		other.addAttribute("text", { type: "PostingLine" });
 
 		expect(usersOfSchema(line)).toEqual([]);
+	});
+
+	it("counts an identity naming an external schema without calling it a carried shape", () => {
+		const { ws, sales } = makeWs();
+		const provider = ws.addBoundedContext("Payment Provider", {
+			description: "",
+			external: true,
+		});
+		const payment = provider.addSchema("ProviderPayment");
+		const aggregate = sales.addAggregate("Payment", { description: "" });
+		const capture = aggregate.addEntity("Capture", {
+			description: "",
+			root: true,
+		});
+		capture.addAttribute("providerPaymentId", {
+			type: "string",
+			identifies: payment,
+		});
+
+		expect(payment.consumables).toEqual([]);
+		expect(describeUsers(usersOfSchema(payment))).toEqual([
+			["aggregate", "Sales", "Payment"],
+		]);
+		expect(usersOfSchema(payment)[0]).toMatchObject({ use: "identity" });
 	});
 });

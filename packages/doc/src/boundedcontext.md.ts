@@ -104,8 +104,11 @@ const usedByMd = (
 					: kind === "aggregate"
 						? pathToIndexMd(owner.path, declaring.path)
 						: `${pathToIndexMd(boundedcontext.path, declaring.path)}#${kind === "schema" ? "schemas" : "value-objects"}`;
-			const mark =
+			const kindMark =
 				kind === "consumable" ? owner.type : kind === "aggregate" ? "" : kind;
+			const identityMark =
+				"use" in user && user.use !== "shape" ? user.use : "";
+			const mark = [kindMark, identityMark].filter(Boolean).join(", ");
 			return `[${label}](${href})${mark ? ` (${mark})` : ""}`;
 		})
 		.join(", ") || "-";

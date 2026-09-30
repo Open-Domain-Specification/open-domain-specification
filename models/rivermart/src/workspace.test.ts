@@ -36,8 +36,15 @@ describe("RiverMart reference workspace", () => {
 
 	// Rendering every diagram through graphviz-wasm takes tens of seconds on
 	// the larger models, so this one test gets a generous timeout.
-	it("generates a complete docsify site with no broken links", async () => {
-		await assertDocSite(workspace);
+	it("generates a complete docsify site and names the provider payment's identity user", async () => {
+		const docs = await assertDocSite(workspace);
+		const page = docs["boundedcontexts/payment_provider/index.md"];
+		const row = page
+			.split("\n")
+			.find((line) => line.startsWith("| ProviderPayment |"));
+		expect(row).toContain(
+			"[Payments / Payment](../payments/aggregates/payment/index.md) (identity)",
+		);
 	}, 60_000);
 });
 

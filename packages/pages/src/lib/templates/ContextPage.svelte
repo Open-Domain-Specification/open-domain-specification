@@ -378,7 +378,7 @@ const termColumns: Column[] = [
 <Section
 	id="schemas"
 	title="Schemas"
-	lead="Payload shapes this context publishes or accepts. They are part of its published language, so a change here is a change for every consumer."
+	lead="Named shapes this context publishes or accepts. An external schema may also name the kind an identity points to. The users below show who depends on each one."
 	count={schemas.length}
 	problems={schemas.flatMap((s) => problemsUnder(model, s.ref))}
 >
@@ -393,7 +393,7 @@ const termColumns: Column[] = [
 							label={userLabel(bc, user)}
 							icon={consumableIcon(user.owner)}
 							kind={user.owner.type === "event" ? "event" : "command"}
-						/>{:else}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner.ref} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{/if}{/each}</Joined>
+						/>{:else}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner.ref} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{#if user.use !== "shape"} <Keyword text={user.use} />{/if}{/if}{/each}</Joined>
 			{:else}
 				<Keyword text="unused" />
 			{/if}
