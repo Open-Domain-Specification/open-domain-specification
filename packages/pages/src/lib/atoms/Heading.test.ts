@@ -36,6 +36,15 @@ describe("Heading", () => {
 	});
 });
 
+describe("Heading at another level's scale", () => {
+	it("keeps its outline level and takes the scale it is given (#81)", () => {
+		const { container } = render(Demo, { sized: true });
+		const sized = container.querySelector("h2#sized") as HTMLElement;
+		expect(sized).toHaveClass("heading", "h3");
+		expect(sized).not.toHaveClass("h2");
+	});
+});
+
 describe("Heading as a focus target", () => {
 	it("can be focused by script and is never a tab stop", () => {
 		const { container } = render(Demo);

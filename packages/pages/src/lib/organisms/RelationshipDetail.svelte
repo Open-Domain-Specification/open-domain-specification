@@ -36,9 +36,11 @@ import RelationshipTitle from "../molecules/RelationshipTitle.svelte";
  * what each one points at.
  *
  * The same block is the expanded row of a strategic position table and a page
- * of its own, so `heading` picks the level of the title; everything inside it
- * stays at the level-3 scale either way, and each part keeps its id so a table
- * of contents can point at it.
+ * of its own, so `heading` picks the level of the title. Its parts sit one
+ * level under the title in the outline: `h2` under a page's `h1`, `h3` beside
+ * the title inside a dialog, whose own `h2` they sit under (#81). They keep the
+ * level-3 scale either way, and each part keeps its id so a table of contents
+ * can point at it.
  */
 const {
 	relationship: r,
@@ -50,6 +52,12 @@ const {
 
 const model = useModel();
 const level = $derived<1 | 3>(heading === "h1" ? 1 : 3);
+/**
+ * A part's outline level: under a page's title, or beside a dialog's. Inside
+ * the modal the parts stay the title's `h3` siblings, as they always were;
+ * both sit under the dialog's `h2`, so the outline has no gap (#81).
+ */
+const partLevel = $derived<2 | 3>(heading === "h1" ? 2 : 3);
 const symmetric = $derived(isSymmetricRelationship(r.type));
 const crossings = $derived(crossingConsumables(r, model.workspace));
 const links = $derived(relationshipLinks(r, crossings));
@@ -88,7 +96,7 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 	{/if}
 
 	<section id="roles">
-		<Heading level={3}>Roles</Heading>
+		<Heading level={partLevel} size={3}>Roles</Heading>
 		<!-- Neither side of a symmetric relationship plays a role, so the pattern
 		     is stated once rather than twice. -->
 		{#if symmetric}
@@ -111,12 +119,12 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 	</section>
 
 	<section id="comments">
-		<Heading level={3} count={r.comments.length}>Comments</Heading>
+		<Heading level={partLevel} size={3} count={r.comments.length}>Comments</Heading>
 		<Comments comments={r.comments} empty="No comments recorded for this relationship yet." />
 	</section>
 
 	<section id="crossings">
-		<Heading level={3} count={crossings.length}>Consumables crossing this boundary</Heading>
+		<Heading level={partLevel} size={3} count={crossings.length}>Consumables crossing this boundary</Heading>
 		<DataTable
 			{columns}
 			rows={crossings}
@@ -151,7 +159,7 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 	</section>
 
 	<section id="links">
-		<Heading level={3}>Links</Heading>
+		<Heading level={partLevel} size={3}>Links</Heading>
 		{#if links.length}
 			<DefinitionList>
 				{#each links as link (link.url)}

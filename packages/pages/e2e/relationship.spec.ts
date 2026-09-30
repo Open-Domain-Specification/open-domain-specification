@@ -1,5 +1,6 @@
+import AxeBuilder from "@axe-core/playwright";
 import { PATTERNS } from "@open-domain-specification/core";
-import { expect, test } from "@playwright/test";
+import { expect, type Locator, test } from "@playwright/test";
 import {
 	EXPORT_ORIGIN,
 	expectNoSidewaysScroll,
@@ -471,3 +472,84 @@ test("a relationship ref opens the relationship as its own page", async ({
 	await page.locator(`main .crumbs a[data-ref="${SALES_REF}"]`).click();
 	await expect(page.locator("main h1")).toContainText("Sales BC");
 });
+
+/**
+ * Issue #81. The page's parts are `h2` under its `h1`, so the outline has no
+ * gap, and they keep the look they have as `h3` in the Strategic position
+ * modal, whose own `h2` they sit under there. On the viewer and the export.
+ */
+for (const [origin, name] of [
+	["viewer", undefined],
+	["export", EXPORT],
+] as const) {
+	test(`${origin}: the relationship page's headings nest in order and its parts look as they do in the modal (#81)`, async ({
+		browser,
+		baseURL,
+	}) => {
+		const context = await browser.newContext({
+			viewport: BESIDE_THE_TREE,
+			baseURL: name ?? baseURL,
+		});
+		const page = await context.newPage();
+		const go = async (ref: string) => {
+			if (name) {
+				await page.goto("/");
+				await page.getByRole("link", { name: WORKSPACE_NAME }).click();
+				await page.evaluate((r) => {
+					location.hash = r;
+				}, ref);
+			} else {
+				await servePetstore(page);
+				await page.goto(viewerAt(ref));
+			}
+		};
+		/** What a reader sees of a heading: its size, weight, leading and space above. */
+		const looks = (headings: Locator) =>
+			headings.evaluateAll((els) =>
+				els.map((e) => {
+					const s = getComputedStyle(e);
+					return [s.fontSize, s.fontWeight, s.lineHeight, s.marginTop].join(
+						" ",
+					);
+				}),
+			);
+
+		await go(CATALOG_SALES_REF);
+		const detail = page.locator("main .relationship-detail");
+		await expect(detail.locator("h1")).toContainText("Catalog BC");
+		const parts = detail.locator("section > .heading");
+		await expect(parts).toHaveCount(4);
+		expect(await parts.evaluateAll((els) => els.map((e) => e.tagName))).toEqual(
+			["H2", "H2", "H2", "H2"],
+		);
+		const outline = await page
+			.locator("main")
+			.evaluate((m) =>
+				[...m.querySelectorAll("h1, h2, h3, h4, h5, h6")].map((h) =>
+					Number(h.tagName[1]),
+				),
+			);
+		for (let i = 1; i < outline.length; i += 1)
+			expect(outline[i] - outline[i - 1]).toBeLessThanOrEqual(1);
+		const axe = await new AxeBuilder({ page })
+			.include("main")
+			.withRules(["heading-order"])
+			.analyze();
+		expect(axe.violations).toEqual([]);
+		const onPage = await looks(parts);
+
+		// The same parts in the modal: the same look, a level under its `h2`.
+		await go(SALES_REF);
+		await page
+			.locator(".strategic-position")
+			.getByRole("button", { name: "Evidence for Catalog BC and Sales BC" })
+			.click();
+		const inModal = page.locator("#relationship-modal section > .heading");
+		await expect(inModal).toHaveCount(4);
+		expect(
+			await inModal.evaluateAll((els) => els.map((e) => e.tagName)),
+		).toEqual(["H3", "H3", "H3", "H3"]);
+		expect(await looks(inModal)).toEqual(onPage);
+		await context.close();
+	});
+}

@@ -67,6 +67,16 @@ describe("RelationshipDetail", () => {
 		expect(new Set(titles).size).toBe(2);
 	});
 
+	it("keeps its parts at h3 where it is not a page's title, as in a dialog under its h2 (#81)", () => {
+		const { container } = detail(asymmetric);
+		const parts = [...container.querySelectorAll("section > .heading")];
+		expect(parts).toHaveLength(4);
+		for (const h of parts) {
+			expect(h.tagName).toBe("H3");
+			expect(h).toHaveClass("h3");
+		}
+	});
+
 	it("gives an unnamed relationship no agreement name", () => {
 		const { container } = detail(asymmetric);
 		expect(asymmetric.name).toBeUndefined();
