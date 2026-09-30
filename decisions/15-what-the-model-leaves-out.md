@@ -4,7 +4,13 @@ date: 2026-09-06
 ---
 # Decision 15 — What the model deliberately leaves out, and why
 
-## Current position (2026-09-10)
+## Current position (2026-09-30)
+
+Correction of 2026-09-30 (card 160, issue #108): the Consequences line "Each section names the condition under which it would be reopened" was never true of every section, and it stays below as written on the day. Some sections name a condition and some name none; the amendment of 2026-09-30 at the foot lists which, and gives the two the open model-capability stories most press on, a value object's operations (#38) and explicit delivery (#40), a condition that a source-backed case can meet or fail. Two earlier conditions were not testable as worded and are replaced there: "when a reference model needs a value's operation as a step in a reaction walk" (a value object has no operations, so no case could ever put one in a walk) and, for delivery, none at all.
+
+Also corrected: the second amendment's sentence that a consumption's comment "explains" a `relationship-cycle` finding does not mean it clears it. A queued command is still an operation and still a step on the ring; the comment documents delivery and the warning stands (validator fix text, card 160).
+
+The rest of this current position is as of 2026-09-10.
 
 This record lists the model's preferences, not DDD's laws, and the second amendment of 2026-09-10 (card 120) widened the list to: no modules, no actors, no read-model element, no operations on a value object, an entity has one home (decision 16), and a context invariant records the check, not the store (decision 27).
 
@@ -181,3 +187,37 @@ An unknown key is an `unknown-field` diagnostic and is dropped on save (card 121
 ### The problem space is two levels deep
 
 A domain holds subdomains and a subdomain holds nothing below it; a bank's map "Payments, International, SWIFT" flattens to compound subdomain names. No record discussed depth and no rule reads it; named by the architect's sixteenth round, and reopened when a reference model cannot name its problem space in two levels.
+
+## Amendment (2026-09-30)
+
+Card 160 (issue #108, final model sign-off) re-read this record against the claim in its Consequences that each section names the condition under which it would be reopened. The claim is false, and the sentence stands above as history. What holds is this.
+
+Sections that name a condition: versions are names; time inside an attribute; identity names one kind of thing; a context has no modules; the ubiquitous language lives in the bounded context; policy statefulness; comments and dispositions on the seam; the rules-carry-no-comments and translation-across-a-boundary notes; lifecycle states; there is no extension field; the problem space's depth; the exemptions. Sections that name none, and are preferences stated with their reason only: commands and operations are one thing; attribute types are free text; anonymous structures in a type string; read models are query services; context maps cluster by primary subdomain; an aggregate is a boundary; the aggregate tree is a tree of instances; a relation carries one multiplicity; a relationship is between two contexts; a policy issues operations; array order is meaning; a value object relates to no entity; people are not modelled. These are closed by their reasoning, not by a trigger; a reviewer who wants one reopened should bring a source-backed case that their reason does not answer, and the record then names a condition. Two sections had a condition that was circular or absent, and they are the ones below.
+
+### A value object has no operations: how it would reopen
+
+Current behaviour: a value object declares attributes and invariants, and nothing else. A value's behaviour, combining two amounts, normalising an address, working out a period, is prose in its description and the invariants that constrain it; where it needs a home in the model, it is an operation of a domain service or an application service of the same context that takes the value as a request field. A borrowing context uses the value by reference and cannot consume that behaviour across the boundary, because a value crosses no boundary as a call; it borrows a library.
+
+Cost: a reader of the model cannot see that a context depends on a value's behaviour, as distinct from its shape. Changing an attribute of `Money` shows on the value object's page, in `usagesOf` and in Markdown's Used by column, in every context that holds it. Changing how `Money` rounds shows nowhere, and the consumers in other contexts are not named by anything.
+
+The former condition, "when a reference model needs a value's operation as a step in a reaction walk", was circular: a value object has no operations, so no case could put one in a walk, and the condition could never be met. It is replaced by this one. The record reopens when a source (an interview, an ADR, a library's published contract or a regulation) states, for one value, a behaviour with a named input, a named result or a named refusal, and all three of these hold:
+
+1. **A second element's contract depends on that behaviour.** Another element's precondition, invariant or rejection is stated in terms of what the value's behaviour returns or refuses, for example a payment's precondition that a conversion succeeds, or a consumer that handles the refusal.
+2. **The model's current form loses it.** With the behaviour written as a domain-service operation taking the value, or as prose, the model cannot tell which contexts or elements are affected when that behaviour changes, or two contexts hold different versions of it with nothing to reveal the difference. The proof is a change to the behaviour, stated in the source, that no page, no `usagesOf` row and no diagnostic reports, where the same change to an attribute of the value would be reported.
+3. **The domain-service form was tried.** The case shows the operation could not sit in a domain service of the owning context without misattributing it, for instance because the value's owners are two teams and the service would have one.
+
+A source that merely names a value's behaviour ("Money can be added") does not meet this, and neither does an author's preference for seeing the behaviour beside the value. If it is met, the smallest change is an `operations` list on a value object restricted to internal operations, with the existing contract shapes and no consumption from another context, and it is weighed against the cost that every reader of the value object's page learns a second kind of member. No reference model meets it today: NorthBank, RiverMart and StreamLine each hold several Moneys, Addresses and periods as structure and invariants, and their sources name no dependence on their behaviour.
+
+### Delivery is type, not a structured field: how it would reopen
+
+Current behaviour: an operation is an intent and an event is a fact; the model records no delivery. `relationship-cycle` reads every consumed operation as a step, including a command carried over a queue, because a queued command still makes the sender depend on the receiver's contract. A comment on the consumption says how the message is delivered and helps the reader who finds the warning, but it does not exempt the step. The fix is the rule's own: an anti-corruption layer on the consumption, a partnership between neighbours that move as one, or modelling the message as the event it is. Answer routing follows the `by` chain and assumes the answer comes back to the caller (decision 21); a reactor hears a fact when it is raised.
+
+Cost: a ring of queued commands is warned about, and the author either models it as events, which says what the system does in another word, or accepts the warning with a comment beside it. A request and its reply over two queues is an operation and an event, and the model does not say they are one exchange.
+
+The condition is stated on what changes, not on what is mentioned. The record reopens when a source (an interview, an architecture document, a runbook or a contract) gives a case in which delivery or timing changes an answer the model already gives, in one of three ways, and the reference model carrying it shows the wrong answer:
+
+1. **An answer route.** The reply to an operation does not return to its caller along the local `by` chain, for instance it arrives later on another channel and is heard by a different reactor, so the route the walk draws is not the route in the source.
+2. **A reaction.** Whether an event is heard, and by whom, depends on timing or delivery: a fact published inside the raising operation's transaction and discarded if it rolls back, or a fact handled at most once after a retry, so the reaction walk reports or omits a reaction the source does not support.
+3. **A validator truth.** A `relationship-cycle` or `reaction-cycle` finding that two readers of the source agree is false, and only delivery explains why, and no repair the rule offers (an anti-corruption layer, a partnership, an event) says what the source says without misstating it.
+
+The mention of a queue, a broker or a retry in a source does not meet this, and StreamLine's Encoding queue, which names one and changes no route, reaction or finding, is the model of a case that does not. A case that meets it decides the smallest change: an optional `delivery` on a consumption, with kind unchanged and an unspecified default, read by the answer route, the reaction walk and the two cycle rules. No reference model meets it today, and nothing here changes the schema.
