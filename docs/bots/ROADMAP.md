@@ -4,7 +4,7 @@ Kept by the lead. Milestones in order, with why. Work items are RepoDoc cards un
 
 ## Current delivery sequence (2026-09-30)
 
-Epic #96 / #75 first: pin the generated cross-surface fixture and its intended diagnostic, so subsequent page work rests on reproducible evidence. Then batch the related relationship-page findings #74, #81, #84 and #85. Reassess the remaining usability findings before starting the identity and reference-heavy capability epics #63 to #65; those epics must not run together. See [sprint 03](sprints/2026-09-30-sprint-03.md).
+Epic #96 / #75 landed in PR #97: the shared fixture is reproducible and its intended diagnostic pinned. Next, epic #100 / #99 repairs the required gate on supported Node 26. Epic #98 then groups relationship-page findings #74, #81, #84 and #85. Reassess the remaining usability findings before starting the identity and reference-heavy capability epics #63 to #65; those epics must not run together. See [sprint 03](sprints/2026-09-30-sprint-03.md).
 
 ## 1. Intent and evidence (shipped, 0.3.0)
 

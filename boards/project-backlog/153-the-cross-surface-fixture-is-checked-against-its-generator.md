@@ -1,11 +1,11 @@
 ---
-column: doing
+column: done
 labels: [infra, bug]
 priority: medium
 agent: lead
-live: true
+live: false
 clean-code-swept: true
-updatedAt: 2026-09-30T16:31:00Z
+updatedAt: 2026-09-30T17:05:39Z
 ---
 # The cross-surface fixture is checked against its generator
 
@@ -28,8 +28,8 @@ Issue #75, epic #96. `apps/ods-vscode/src/test/fixtures/cross-surface/.ods/cross
 - [x] Focused: `npx vitest run` in `apps/ods-vscode`, and the Markdown cross-surface test in `packages/doc`
 - [x] Clean-code sweep
 - [x] `bash scripts/verify-all.sh` green on 96faad37, the commit that changes code (the Codex lead's run)
-- [ ] `bash scripts/verify-all.sh` green on the final integrated head (Codex's integrated review)
-- [ ] One PR to `develop` for epic #96, reviewed by Codex; #75 and #96 stay open until it is merged and post-merge CI is green
+- [x] `bash scripts/verify-all.sh` green on the final integrated head (Codex's integrated review)
+- [x] One PR to `develop` for epic #96, reviewed by Codex; #75 and #96 closed after merge and green post-merge CI
 
 ## Comments
 
@@ -45,3 +45,5 @@ Issue #75, epic #96. `apps/ods-vscode/src/test/fixtures/cross-surface/.ods/cross
 - **lead** (2026-09-30T16:31:00Z): Focused: `apps/ods-vscode` vitest 18 passed (3 new); `packages/doc` `src/cross-surface.test.ts` 3 passed. `expected.ts` stays import-free and no consumer read `EXPECTED.diagnostics`, so the pages e2e, the real-VS-Code mocha suite and the Markdown test compile and read the same fixture unchanged.
 - **lead** (2026-09-30T16:31:00Z): Independent review (a Sonnet reviewer, read-only): approve, no blocking findings. Low: the sibling `long-evidence` fixture has no generator and is still biome-formatted, which is out of #75's scope and noted in STATUS as a possible follow-up. Low: test 3 partly checks `EXPECTED` against itself but ties the ref to the model. Info: the test reads core's built dist, so after a core change a bare local run needs a core build first; the gate and CI build first. An independent clean-code audit (Codex) found no introduced violations.
 - **lead** (2026-09-30T16:31:00Z): My own gate run was stopped partway through, after the models and before pages finished, and is not evidence. The Codex lead ran `bash scripts/verify-all.sh` on 96faad37 with `NODE_OPTIONS=--no-experimental-webstorage` (Node 26.8.1 otherwise gives jsdom a broken global `localStorage`, and unrelated pages tests fail): green, with core 1040, graphviz 35, doc 44, skill 62, northbank 3, petstore 23, rivermart 6, streamline 3, clinic 7, models/_shared 9, pages 994, apps/docs 24, apps/ods-vscode 18, scripts 31, ESM imports ok, schema match, pages e2e 408 passed and 20 skipped. The card stays `doing` until the PR is merged and post-merge CI is green.
+- **lead** (2026-09-30T17:05:39Z): Codex reviewed the final integrated head `a0c66214d7e774c428a4b8d469c75a54ee521070` against #75 and #96; no blocking finding. `NODE_OPTIONS=--no-experimental-webstorage bash scripts/verify-all.sh` passed on that exact head. The Node 26 gate environment defect is tracked separately as #99 (epic #100).
+- **lead** (2026-09-30T17:05:39Z): The single epic PR, #97, passed `test`, `e2e` and `real-vscode` on both its push run 36745827576 and PR run 36745832927; Cloudflare previews passed. Codex confirmed its head still matched `a0c66214` and merged it to `develop` as `da49e1f55f94aa3428ef5173252c931b7dd23770` at 2026-09-30T16:52:54Z. Post-merge run 36747429416 on that exact merge commit completed successfully (`test`, `e2e`, `real-vscode`; `publish` skipped). #75 and #96 are closed. The card is `done`.

@@ -6,11 +6,13 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
-Epic #96 / #75, card 153 (`doing`): implemented and gate-green on the branch `codex/epic-96-cross-surface-fixture`, awaiting Codex's integrated review. Nothing is pushed and no PR is open yet; #75 and #96 stay open until the PR is merged and post-merge CI is green.
+Epic #96 / #75 landed in PR #97. Codex reviewed head `a0c66214`, which passed the full landing gate. It merged to `develop` as `da49e1f5` at 2026-09-30 16:52:54 UTC. Post-merge CI run 36747429416 passed `test`, `e2e` and `real-vscode`; #75 and #96 are closed and card 153 is `done`.
 - The drift was real. Before the change, running `generate.ts` gave a different file from the committed `cross_surface.json`: a biome pass had collapsed four one-item role arrays. The fixture is now the generator's output, and biome skips its `.ods` folder, as it already skips `models/*/.ods`.
 - A new vitest test, `apps/ods-vscode/src/cross-surface-fixture.test.ts`, runs the generator into a temporary folder and compares the output byte for byte with the committed JSON. It then compares the fixture's diagnostics (severity, rule, ref) with the exact list in `expected.ts`: one `consumption-agreement` warning, on the Warehouse API's `StockChecked` consumption, the one that names no agreement. The generator takes an optional output folder for this; no metamodel or validator rule changed.
 - The failure cases were shown with temporary edits, each restored afterwards. The old committed fixture, a generator change left uncommitted and a hand-edited fixture each fail the byte comparison. A regenerated fixture whose warning moved away, or that gained an `aggregate-root` warning, fails the pinned list.
-- The Codex lead ran the landing gate on 96faad37 with `NODE_OPTIONS=--no-experimental-webstorage`, and it passed in full: `apps/ods-vscode` 18 tests, pages 994, pages e2e 408 passed and 20 skipped, ESM imports and the schema comparison ok. That option is needed because Node 26.8.1 hands jsdom a broken global `localStorage`, which makes unrelated pages tests fail. An independent review and a clean-code audit found no blocking issue.
+- The gate passed on final head `a0c66214` with `NODE_OPTIONS=--no-experimental-webstorage`: `apps/ods-vscode` 18 tests, pages 994, pages e2e 408 passed and 20 skipped, ESM imports and the schema comparison ok. The option is needed because Node 26.8.1 hands jsdom an unavailable `localStorage`; issue #99 and epic #100 track the repair. An independent review and clean-code audit found no blocking issue.
+
+Epic #100 / #99 is next: make the required gate run under supported Node 26 without a caller-supplied override. Epic #98 / #74, #81, #84, #85 follows: named agreement identity, heading order, role separation and intact consumable lockups on the relationship page. Both epics are open and their children are linked. Claude Code's OAuth session expired during #96 close-out; its browser sign-in was denied by the app's security policy, so the owner has been asked to sign in from their terminal before implementation delegation resumes. The lead completed #96's administrative close-out independently.
 
 Epic 61 (accessible navigation across the viewer, export and extension) landed on 2026-09-30: the owner merged PR 76 into develop as `395c859a` at 10:25:39 UTC, after three review rounds and a passing re-review at 073e65fd. Post-merge CI run 36702357346 is green (test, e2e). Before the merge, the landing gate was green on cac9ac6f, and so were both real-VS-Code suites (`test:vscode:keyboard` 23 of 23, three consecutive runs; `test:vscode`). Epic 61 and issues 42, 45, 46, 47, 48, 50, 51, 52 and 53 are closed, and cards 145 to 151 and vsc-extension cards 42 and 83 are `done`. Not verified: screen readers, VS Code high-contrast themes, `forced-colors`, and the webview's appearance.
 - #45, card 145: the import screen announces loading in a status region and failure in an alert, and each failure names the cause and the next step. After an import the reader asked for, focus lands on the workspace heading.
@@ -33,7 +35,7 @@ Epic 62 (faithful relationship and identity views) landed on 2026-09-29: PR 73 m
 
 Design: `docs/design/v2-specs/relationship-provenance-and-agreements.md`, the designer's spec with the lead's rulings. Open follow-ups from epic 62, each its own issue:
 - #74: a named agreement's own page does not say its name. The exchange links already name the exact agreement and reach distinct pages.
-- #75: the cross-surface fixture is not regenerated and compared against its generator, and its deliberate diagnostics are not pinned.
+- #75: closed in epic #96; the cross-surface fixture is regenerated and compared against its generator, and its deliberate diagnostic is pinned.
 
 Epic 60 (safe model rendering and dependable verification) landed on 2026-09-29. The owner reviewed PR 72 and merged it into develop as `c26ca28`, and post-merge CI run 36583350831 is green (test, e2e). The landing gate and `npm run test:vscode` were green on the merged head `39a12662` before the merge. Issues 41, 49, 57 and 58 and epic 60 are closed, and cards 136 to 139 and vsc-extension card 21 are `done`.
 - #49, card 136: a description link is a link only for http, https, mailto and in-model refs. Verified on the hosted viewer and the static export in Playwright, and in a real VS Code 1.96.4 webview through a test probe (`npm run test:vscode`, run by hand).
@@ -47,7 +49,7 @@ Before epic 60: The sixteenth round held on the card 135 head and the lead answe
 
 ## Next
 
-Codex reviews the integrated branch and runs its gate. Then one PR to `develop` for epic #96, and after the merge and green post-merge CI, #75 and #96 close and card 153 moves to `done`. After that, recheck and batch the related relationship-page issues #74, #81, #84 and #85. Merge enforcement of `real-vscode` remains a separate repository-admin task; the passing job is currently not a required check. Possible follow-up, not in this epic: `apps/ods-vscode/src/test/fixtures/long-evidence/.ods/long_evidence.json` has no committed generator, and biome still formats it.
+Resume Claude Code after the owner signs in. Delegate epic #100 / #99 first, then epic #98 / #74, #81, #84, #85. Each gets one PR to `develop`, independent Codex review, the full landing gate and post-merge CI before close-out. Merge enforcement of `real-vscode` remains a separate repository-admin task; the passing job is currently not a required check. Possible follow-up: `apps/ods-vscode/src/test/fixtures/long-evidence/.ods/long_evidence.json` has no committed generator, and biome still formats it.
 
 ## Later
 
@@ -69,4 +71,4 @@ Codex reviews the integrated branch and runs its gate. Then one PR to `develop` 
 
 ## Working state
 
-Updated: 2026-09-30 16:31 UTC. Branch `codex/epic-96-cross-surface-fixture`: the lead's planning commit `b09b76c8` on `origin/develop` `fef6d993`, then the #75 change `96faad37`, then this docs commit. Not pushed. The Claude Code session that implemented it was signed in and authorized; the earlier note that it was signed out is superseded. Main checkout remains at `a1eb80f` with unrelated local edits in `biome.json` and `media/promo/`; this branch also adds one line to `biome.json`, which may need a trivial merge against that edit.
+Updated: 2026-09-30 17:05 UTC. `origin/develop` is at `da49e1f5` before this close-out documentation commit. The managed worktree is on `codex/epic-96-closeout` from that merge commit; the original epic branch is preserved. The main checkout's unrelated `biome.json` edit and `media/promo/` directory remain untouched. Claude's implementation session requires the owner's terminal sign-in before the next epic can be delegated.
