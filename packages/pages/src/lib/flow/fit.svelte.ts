@@ -1,5 +1,5 @@
 /**
- * One diagram's fit: the two panels it floats, the air it keeps, the zoom
+ * One diagram's fit: the two panels it floats that can give way, the zoom
  * floor in force, how far down the order of relief it had to go, and whether
  * the view on screen is still the one it drew.
  *

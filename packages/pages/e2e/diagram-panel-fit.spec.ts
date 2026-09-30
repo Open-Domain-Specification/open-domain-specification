@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { expectClear, expectFilled, settledFit } from "./diagram-fit";
+import { expectClear, expectFilled, GUTTER, settledFit } from "./diagram-fit";
 import { openPage } from "./diagram-hosts";
 import { REFERENCE_MODELS, serveModel } from "./helpers";
 
@@ -96,6 +96,31 @@ for (const colorScheme of ["light", "dark"] as const) {
 		});
 	}
 }
+
+test.describe("the map #89 was reported on", () => {
+	test.use({ viewport: { width: 1300, height: 900 } });
+
+	test("OnboardingApp's consumable map reaches both sides of its frame", async ({
+		page,
+	}) => {
+		const url = await serveModel(page, "northbank");
+		await page.goto(
+			`/?url=${encodeURIComponent(url)}#/boundedcontexts/customer_&_kyc/services/onboarding_app`,
+		);
+		const figure = page.locator("figure.diagram", {
+			hasText: "consumable map",
+		});
+		await figure.scrollIntoViewIfNeeded();
+		const fit = await settledFit(figure.locator(".svelte-flow"));
+		// It used to span four fifths of the frame's width, a tenth of each
+		// side kept as air. Now it reaches the gutter along whichever axis holds
+		// it, and spans nearly the whole width either way.
+		expectFilled(fit, "OnboardingApp's consumable map");
+		const width = fit.view.right - fit.view.left;
+		expect((fit.graph.right - fit.graph.left) / width).toBeGreaterThan(0.9);
+		expectClear(fit, "OnboardingApp's consumable map");
+	});
+});
 
 for (const host of ["viewer", "export"] as const) {
 	for (const colorScheme of ["light", "dark"] as const) {

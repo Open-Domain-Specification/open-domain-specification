@@ -5,6 +5,15 @@
 `packages/pages/src/lib/flow/panel-fit.ts`, its effects in `fit.svelte.ts` and
 each panel's open state in `panel-state.svelte.ts`. Card 64.
 
+**Current position (2026-09-30).** The order is the legend, then the options panel, then the
+zoom floor; the air step is retired and a side no panel claims keeps only the 12px gutter (#89).
+The guarantee covers four panels, the legend, the options, the zoom controls and the minimap,
+each cleared by whichever strip fits the map largest (#90). The fit is redone when a panel or the
+canvas changes size while the view is still the fit's, and entering or leaving fullscreen hands
+the view back to the fit (#86). The dated amendments at the end say why; the sections before them
+are the record as written for card 64, and where they name the air, four steps or the table of
+costs, the amendments supersede them.
+
 This card settled the give-way order; the panels' frame is a separate,
 still-open touch tracked in `organism-interactive-diagram.md` rather than
 here — both panels still carry the rounded `editorWidget` frame that doc
@@ -179,8 +188,9 @@ and workspace maps showed the same. Nothing under a readable scale should be spe
 the rule above already says the air "is nothing but taste". So a side no panel claims keeps the
 12px gutter and nothing more, and along the axis that binds the graph it reaches the canvas, or
 the panel it clears, with only that inset. The page review asked for an 8px inset "the panel
-spec names"; the spec names none. The 12px gutter is the inset it does name, kept between the
-graph and a panel, and now the one between the graph and the canvas's edge too.
+spec names"; the spec names none, and 8px is deliberately not adopted. The 12px gutter is the
+inset the spec does name, kept between the graph and a panel, and now the one between the graph
+and the canvas's edge too, so there is one inset rather than two.
 
 **A correction the fit needed on the way.** The relief walk and the strip choice measured every
 node, but in the sketch style a context map's cluster nodes are hidden, the backdrop drawn in
@@ -199,9 +209,17 @@ context map in the viewer. The table above is kept as measured on the day it was
 | streamline | the legend (0.234)     | the options (0.206)    |
 | northbank  | the floor (0.166)      | the floor (0.125)      |
 
-The four panels (#90) cost the densest maps more than the air did, and the air's return goes to
-the maps that were small only because of it. NorthBank's OnboardingApp consumable map at
-1300x900 is fitted at 0.320 instead of 0.267. `e2e/diagram-panel-fit.spec.ts` holds every
+The four panels (#90) cost the densest maps more than the air did, and removing the air gives
+the room back to the maps that were small only because of it. NorthBank's OnboardingApp
+consumable map at 1300x900 is fitted at 0.320 instead of 0.267. RiverMart at 1150x700 went the
+other way: it gave way "to the air" before and lands at the floor now, 0.158, because the minimap
+and the controls it used to be drawn under are reserved.
+
+Two things are drawn outside the nodes and can now reach the gutter's edge: the sketch
+backdrop's regions, drawn 36 flow units round their clusters, and an edge's label where an edge
+leaves the outermost node. The guarantee is about nodes; a sliver of backdrop or a label clipped
+by the canvas is decoration, and the reader who wants it has fullscreen and the zoom controls.
+`e2e/diagram-panel-fit.spec.ts` holds every
 NorthBank page at 1300x900 and 1150x700, and the petstore in the viewer and the static export,
 to the gutter along the binding axis.
 

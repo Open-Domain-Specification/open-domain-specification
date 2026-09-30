@@ -46,6 +46,9 @@ export const PANELS: Record<Panel, string> = {
 /** The gutter the fit keeps between the graph and an edge or a panel (`PANEL_GUTTER`). */
 export const GUTTER = 12;
 
+/** Svelte Flow's zoom ceiling, which the diagram never overrides. */
+const MAX_ZOOM = 2;
+
 /** How long the fit must hold still before it counts as settled. */
 const STILL_FRAMES = 12;
 
@@ -216,6 +219,9 @@ export function gaps(fit: SettledFit): Box {
  * then has room to spare, which is the graph's shape, not the fit's.
  */
 export function expectFilled(fit: SettledFit, where: string): void {
+	// A small graph at Svelte Flow's zoom ceiling is as large as it will draw,
+	// with room to spare on both axes: there is nothing more to fill.
+	if (fit.zoom >= MAX_ZOOM) return;
 	const g = gaps(fit);
 	const tight = (a: number, b: number) =>
 		Math.max(a, b) <= GUTTER + 1.5 && Math.min(a, b) >= GUTTER - 1.5;

@@ -236,7 +236,10 @@ export const FLOOR_ZOOM = 0.1;
  * once it is pressed against it — but only just before. Further above the
  * floor and the panels close on maps that were perfectly readable: at a
  * quarter, the middle two reference workspaces both lost their legend and
- * their options panel at editor size, which is a rule helping nobody.
+ * their options panel at editor size, which is a rule helping nobody. That
+ * was measured while the fit still kept a tenth of each axis as air; without
+ * it (#89) maps land higher, so the floor is if anything more cautious now,
+ * and it is left where it was.
  */
 export const READABLE_ZOOM = 0.22;
 
