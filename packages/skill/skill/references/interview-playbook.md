@@ -70,10 +70,12 @@ job is to get the model out of their head without making them learn the vocabula
   Yes → `customer-supplier`.
 - "Do those two teams plan and release together, as one?" → `partnership`.
 - "Do they share actual code or tables that both change?" → `shared-kernel`, declared
-  directly between the two. If more than two contexts share the same library, model the
-  library as a bounded context of its own and give each sharer its own `shared-kernel`
-  relationship with that context — six sharers is six relationships to one kernel, not
-  fifteen among themselves.
+  directly between the two. Ask who changes it, not who uses it: a kernel joins only the
+  teams that change it together. A context that only compiles against it borrows over a
+  directed relationship with the context that declares it — a conformist if it takes each
+  release as it comes, a customer-supplier downstream if it is consulted first. If three or
+  more teams change the same library together, model the library as a bounded context of its
+  own and give each co-owner its own `shared-kernel` relationship with that context.
 - "Are there two parts that you have decided, on purpose, should never integrate?" →
   `separate-ways`.
 - "How does the downstream side take the data: as it comes, or does it copy and reshape it
@@ -99,9 +101,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   value is genuinely the same in a neighbouring context, that is a `shared-kernel`
   relationship, or a conformist one if this context only follows the other's language; either
   is a way one context may name another's value object. If the
-  same value is genuinely the same in several contexts, it is not declared in any of them:
-  it belongs to a kernel context of its own, and each sharer borrows it over its own
-  `shared-kernel` relationship with that context.
+  same value is genuinely the same in several contexts, ask who changes it. The teams that
+  change it together co-own it: two share a kernel directly and declare it in one of them, and
+  three or more give it a kernel context of its own. Every context that only uses it borrows
+  it from the context that declares it, over a directed relationship, and is not a co-owner.
 - "What identifies it: an order number, an email?" → an attribute with `identity: true`.
 - "What details does it carry?" → attributes, with `type` in the user's words.
 - "Are there kinds of this that differ in what they hold?" → ask when an attribute applies

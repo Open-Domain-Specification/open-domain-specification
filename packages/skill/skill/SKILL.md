@@ -139,7 +139,7 @@ The model is a claim about a real system. When the user asks you to check it —
 actually exist", "reconcile the model with the code" — walk the intents that carry no comments
 (the health report's "No comments" list, or `intentsWithoutComments(workspace)`) and go looking.
 An anti-corruption layer means an adapter or translator on the downstream side; an open host
-service means a published contract; a shared kernel means a shared package both sides depend on;
+service means a published contract; a shared kernel means a shared package both sides change;
 a conformist consumption means the upstream's own types used directly. Full search recipes and
 the shape of a comment are in `references/reconciliation.md`.
 

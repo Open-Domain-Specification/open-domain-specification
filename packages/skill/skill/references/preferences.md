@@ -47,10 +47,11 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
   context's own `by` chain, through as many local fronts as it takes, and no further: what the
   neighbour calls next is the neighbour's chain and nothing here has spoken for it, so a process
   hears the answer to the call its own context made and not the one behind it.
-- **A kernel context loses the pairwise fact.** Many contexts sharing a kernel is drawn as a
-  third context they all consume, which gains an honest owner and loses Evans's reading of a
-  kernel as code inside each sharer; two contexts sharing one borrow each other's value objects
-  and schemas directly instead.
+- **A kernel context loses the pairwise fact.** Three or more co-owners of a kernel are drawn
+  as a third context they all consume, which gains one declaration and loses Evans's reading of
+  a kernel as code inside each sharer; two co-owners borrow each other's value objects and
+  schemas directly instead, and a context that only uses the kernel borrows over a directed
+  relationship and is not drawn as a co-owner.
 - **Union answers and aggregate timers each wait on a named condition.** An operation answers
   with one shape, so an either-or that is not a refusal has no form yet; and a deadline belongs
   to a process, so an aggregate that expires on its own clock is watched by a process or by a
@@ -96,9 +97,16 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
 - **A consumption's ref moves.** The ref is computed from the pair it joins and only carries a
   caller's name once a second consumption of the same pair exists, so adding that second
   consumption changes the first one's ref.
-- **A kernel's co-owners are not listed, and a context keeps one team.** The kernel's team field
-  names whoever keeps it, not the sharers who jointly own it, because the model gives every
-  context exactly one team.
+- **A kernel's co-owners are not listed, and a context keeps one team.** A kernel context's team
+  field names whoever keeps it, not the sharers who jointly own it, because the model gives every
+  context exactly one team; its co-owners are its `shared-kernel` sharers. A pairwise kernel's
+  shapes are declared in one of the two co-owners, so their page names that context and its team,
+  and the co-ownership reads on the relationship.
+- **A kernel context with users loses its exemption.** A context that uses a kernel context's
+  shapes without co-owning them stands downstream of it, so the kernel context's relationships are
+  no longer all shared-kernel and `context-serves-subdomain` asks it for a subdomain. Reopens when a
+  model's source names three or more co-owners of one shared part and a context that only uses
+  it.
 - **A lifecycle has no transition table, and a deadline is never a fixed date.** A status's
   values, and the operations that move them, are the author's prose on an invariant, and a
   deadline is always an interval counted from a named trigger, never a date held in an attribute.
