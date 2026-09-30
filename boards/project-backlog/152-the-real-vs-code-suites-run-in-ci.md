@@ -4,7 +4,7 @@ labels: [ci, vscode]
 priority: medium
 agent: developer
 live: true
-updatedAt: 2026-09-30T11:06:14Z
+updatedAt: 2026-09-30T11:27:16Z
 ---
 # The real VS Code suites run in CI
 
@@ -26,11 +26,22 @@ Issue #69. The two suites that drive a real VS Code 1.96.4, `npm run test:vscode
 
 ## Gates
 
-- [ ] CI `real-vscode` green (and `test`, `e2e`) on the final head
-- [ ] Failure propagation demonstrated for each suite (a temporary failing commit per suite: the job ends red, the other suite still reports)
-- [ ] `bash scripts/verify-all.sh` green
+- [x] CI `real-vscode` green (and `test`, `e2e`) on a15bef32, the last commit that changes code: push run 36707942927. The PR records the final head's run
+- [x] Failure propagation demonstrated for each suite (a temporary failing commit per suite: the job ends red, the other suite still reports): 46584f1f broke `test:vscode`, run 36707268430 red; e2c5d7f7 broke `test:vscode:keyboard`, run 36707274645 red; restored in a15bef32, whose tree equals 99d23fbd
+- [x] `bash scripts/verify-all.sh` green on a15bef32 (11:20:57–11:23:07Z), including the new `scripts (real-host checker)` step with 22 tests
 
 ## Comments
 
 - **developer** (2026-09-30T11:06:14Z): Green on run 36705744230, head b21a39ce, runner image `ubuntu24` 20260920.314.1, VS Code 1.96.4. Executed: petstore 9 passed and 4 skipped (the screenshots), hostile-links 1, cross-surface 4, keyboard 23 of 23. The first green took three pushes: the runner context is not available to job-level `env` (the workflow was invalid), then the reporter required `mocha` 12, an ES module the extension host cannot `require`, so it now takes the spec reporter from `@vscode/test-cli`'s own Mocha 11.
 - **developer** (2026-09-30T11:06:14Z): Nothing Linux-specific failed. The install step sets `kernel.apparmor_restrict_unprivileged_userns=0` for Electron's sandbox on Ubuntu 24.04 as a precaution; whether the suites need it was not tested. The D-Bus connection errors in the log are harmless in a headless host.
+- **lead** (2026-09-30T11:27:16Z): Added the checker's tests to the landing gate (99d23fbd), so the gate still runs every suite.
+- **lead** (2026-09-30T11:27:16Z): Failure propagation, one temporary commit per suite, each on its own CI run:
+  - 46584f1f changed the hostile-links expected href. Run 36707268430: `real-vscode` failure. `test:vscode` hostile-links had 1 failing, while the keyboard suite still ran and passed 23. The judge printed `the vscode suite step ended failure` and named the failing test.
+  - e2c5d7f7 restored that and changed a #47 node name. Run 36707274645: `real-vscode` failure. The keyboard suite had 22 passed and 1 failed, while `test:vscode` passed. The judge named the #47 journey.
+  - `test` and `e2e` stayed green in both. The `real-vscode-evidence` artifact uploaded on both red runs, at about 142–149 MB each (a trace per keyboard launch, kept 7 days).
+  - a15bef32 restores the assertion. Its tree is identical to 99d23fbd, and no failure marker remains.
+- **lead** (2026-09-30T11:27:16Z): On a15bef32:
+  - the landing gate is green (core 1040, pages 994, apps/ods-vscode 15, the real-host checker 22, pages e2e 408 passed and 20 skipped);
+  - locally on macOS 27 arm64 with VS Code 1.96.4, `npm run test:vscode` passed three runs out of three (9 passing and 4 pending screenshots; hostile-links 1; cross-surface 4), and `npm run test:vscode:keyboard` passed three out of three (23 passed);
+  - CI push run 36707942927 is green (`test`, `e2e`, `real-vscode`).
+No branch protection or ruleset exists on develop or main. The check becomes merge-blocking only when a maintainer requires the status check `real-vscode`.
