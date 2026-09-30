@@ -38,10 +38,10 @@ Open-host service for /pet endpoints
 ## Value Objects
 | Name | Description | Attributes | Invariants | Used by |
 | --- | --- | --- | --- | --- |
-| Category | The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category | id: `int64`, name: `string` | - | Pet |
-| Tag | Free-form label on a pet | name: `string` | - | Pet |
-| PhotoUrl | Where a photo of the pet can be fetched | url: `string (URL)` | - | Pet |
-| PetStatus | Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values | value: `'available' | 'pending' | 'sold'` | - | Pet |
+| Category | The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category | id: `int64`, name: `string` | - | [Pet](aggregates/pet/index.md), [PetRegistered](./index.md#schemas) (schema), [RegisterPet](./index.md#schemas) (schema), [Pet](./index.md#schemas) (schema) |
+| Tag | Free-form label on a pet | name: `string` | - | [Pet](aggregates/pet/index.md), [Pet](./index.md#schemas) (schema) |
+| PhotoUrl | Where a photo of the pet can be fetched | url: `string (URL)` | - | [Pet](aggregates/pet/index.md), [Pet](./index.md#schemas) (schema) |
+| PetStatus | Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values | value: `'available' | 'pending' | 'sold'` | - | [Pet](aggregates/pet/index.md), [PetStatusChanged](./index.md#schemas) (schema), [Pet](./index.md#schemas) (schema), [PetSummary](./index.md#schemas) (schema), [PetUnavailable](./index.md#schemas) (schema), [Inventory BC / InventoryUpdatedPayload](../inventory_bc/index.md#schemas) (schema) |
 
 
 ## Schemas

@@ -26,7 +26,7 @@ Publishes the national clinical coding standard every clinical record must follo
 ## Value Objects
 | Name | Description | Attributes | Invariants | Used by |
 | --- | --- | --- | --- | --- |
-| Clinical Code | A single code from the current published coding standard, and the version of the standard it was taken from. | code: `string`, codeSetVersion: `string` | Code Belongs To The Published Standard: A clinical code is only ever one the regulator's current coding standard actually lists. | - |
+| Clinical Code | A single code from the current published coding standard, and the version of the standard it was taken from. | code: `string`, codeSetVersion: `string` | Code Belongs To The Published Standard: A clinical code is only ever one the regulator's current coding standard actually lists. | [Triage / Referral Case](../triage/aggregates/referral_case/index.md) |
 
 
 ## Schemas

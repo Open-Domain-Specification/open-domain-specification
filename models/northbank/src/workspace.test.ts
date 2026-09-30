@@ -175,6 +175,79 @@ describe("NorthBank reference workspace", () => {
 		);
 	}, 60_000);
 
+	// A value object's "Used by" on the context page promises every user in the
+	// workspace, as the viewer's value-object page does, not only the home
+	// context's (issue 110). Ledger declares Money, and Accounts, Payments Hub,
+	// Cards, Lending and Regulatory Reporting borrow it. Nested value objects and
+	// schemas typed by it are users too, each saying which it is.
+	it("lists every user of Money on Ledger's page, qualified by context and linked", async () => {
+		const docs = await assertDocSite(workspace);
+		const ledger = [...workspace.boundedcontexts.values()].find(
+			(bc) => bc.name === "Ledger",
+		);
+		const money = ledger?.valueobjects.get("money");
+		expect(money).toBeTruthy();
+		if (!ledger || !money) return;
+
+		// What the model says, read off the attributes and relations themselves.
+		const expected: string[] = [];
+		for (const bc of workspace.boundedcontexts.values()) {
+			const qualify = (name: string) =>
+				bc === ledger ? name : `${bc.name} / ${name}`;
+			for (const aggregate of bc.aggregates.values()) {
+				const holds = [...aggregate.entities.values()].some((entity) =>
+					[...entity.attributes.values()].some((a) => a.valueobject === money),
+				);
+				if (holds) expected.push(qualify(aggregate.name));
+			}
+			for (const vo of bc.valueobjects.values())
+				if ([...vo.attributes.values()].some((a) => a.valueobject === money))
+					expected.push(`${qualify(vo.name)} (value object)`);
+			for (const schema of bc.schemas.values())
+				if (
+					[...schema.attributes.values()].some((a) => a.valueobject === money)
+				)
+					expected.push(`${qualify(schema.name)} (schema)`);
+		}
+		expect(expected).toContain("Cards / Card");
+		expect(expected).toContain("Accounts / OverdraftLimit (value object)");
+		expect(expected).toContain("Payments Hub / InitiatePayment (schema)");
+
+		const page = docs["boundedcontexts/ledger/index.md"];
+		const row = page.split("\n").find((line) => line.startsWith("| Money |"));
+		expect(row).toBeTruthy();
+		const cells = (row ?? "").split(/ \| /);
+		const usedBy = cells[cells.length - 1].replace(/ \|$/, "");
+		const links = [
+			...usedBy.matchAll(
+				/\[([^\]]+)\]\(([^)]+)\)( \((?:value object|schema)\))?/g,
+			),
+		];
+		expect(links.map((m) => `${m[1]}${m[3] ?? ""}`)).toEqual(expected);
+
+		// Each link opens a generated page, and a schema or value object opens
+		// the section that holds it.
+		for (const [, label, href, kind] of links) {
+			const [file, anchor] = href.split("#");
+			const target = `boundedcontexts/ledger/${file}`
+				.split("/")
+				.reduce<string[]>((path, part) => {
+					if (part === "..") path.pop();
+					else if (part !== ".") path.push(part);
+					return path;
+				}, [])
+				.join("/");
+			expect(docs[target], `${label} links to ${href}`).toBeTruthy();
+			if (kind?.includes("schema")) expect(anchor).toBe("schemas");
+			if (kind?.includes("value object")) expect(anchor).toBe("value-objects");
+		}
+
+		// AccountNumber, which only Accounts uses outside Ledger, reads the same.
+		expect(page).toMatch(
+			/\| AccountNumber \|.*\[Accounts \/ Account\]\(\.\.\/accounts\/aggregates\/account\/index\.md\)/,
+		);
+	}, 60_000);
+
 	// Rendering every diagram through graphviz-wasm takes tens of seconds on
 	// the larger models, so this one test gets a generous timeout.
 	it("generates a complete docsify site with no broken links", async () => {

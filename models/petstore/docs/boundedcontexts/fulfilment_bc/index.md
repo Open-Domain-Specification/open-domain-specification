@@ -44,8 +44,8 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 ## Value Objects
 | Name | Description | Attributes | Invariants | Used by |
 | --- | --- | --- | --- | --- |
-| TrackingNumber | Carrier reference; a value because two shipments never share one | value: `string` | - | Shipment |
-| ShipmentStatus | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` | - | Shipment |
+| TrackingNumber | Carrier reference; a value because two shipments never share one | value: `string` | - | [Shipment](aggregates/shipment/index.md) |
+| ShipmentStatus | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` | - | [Shipment](aggregates/shipment/index.md) |
 
 
 ## Schemas

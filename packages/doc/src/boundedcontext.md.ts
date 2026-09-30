@@ -23,7 +23,7 @@ import {
 	pathToFlowMapSvg,
 	pathToIndexMd,
 } from "./lib/paths";
-import { aggregatesHolding } from "./lib/value-objects";
+import { usersOfValueObject } from "./lib/value-objects";
 import type { Options } from "./options";
 import { strategicPositionMd } from "./strategic-position.md";
 import { teamLinkMd } from "./team.md";
@@ -81,6 +81,25 @@ const schemaSection = (schema: DataSchema) => [
 	schema.consumables.map((it) => it.name).join(", ") || "-",
 ];
 
+/**
+ * Who uses a value object, anywhere in the workspace, each linked to its
+ * generated page. A user in another context is written `Context / Name`, the
+ * form the Serves list uses, so a reader can tell a borrower from a local
+ * holder; a value object or schema user says which it is, since an aggregate
+ * is what the column mostly names.
+ */
+const usedByMd = (valueObject: ValueObject) =>
+	usersOfValueObject(valueObject)
+		.map((it) => {
+			const foreign = it.boundedcontext !== valueObject.boundedcontext;
+			const label = foreign
+				? `${it.boundedcontext.name} / ${it.name}`
+				: it.name;
+			const href = `${pathToIndexMd(it.path, valueObject.boundedcontext.path)}${it.anchor}`;
+			return `[${label}](${href})${it.kind === "aggregate" ? "" : ` (${it.kind})`}`;
+		})
+		.join(", ") || "-";
+
 const valueObjectSection = (valueObject: ValueObject) => [
 	// A kind says so beside its name, and lists what it has from the value
 	// object it is a kind of along with its own (decision 22).
@@ -100,9 +119,7 @@ const valueObjectSection = (valueObject: ValueObject) => [
 		valueObject.invariants.values(),
 		(it) => `${it.name}: ${it.description}`,
 	).join("; ") || "-",
-	aggregatesHolding(valueObject)
-		.map((it) => it.name)
-		.join(", ") || "-",
+	usedByMd(valueObject),
 ];
 
 // The same three columns the aggregate page uses, because a rule reads the

@@ -38,9 +38,9 @@ Open-host service for /store/order endpoints
 ## Value Objects
 | Name | Description | Attributes | Invariants | Used by |
 | --- | --- | --- | --- | --- |
-| OrderStatus | Where the order is in its lifecycle | value: `'placed' | 'approved' | 'delivered'` | - | Order |
-| Quantity | The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1 | value: `int > 0` | - | Order |
-| ShipDate | When the order ships; set by Fulfilment once dispatch is planned | value: `date-time` | - | Order |
+| OrderStatus | Where the order is in its lifecycle | value: `'placed' | 'approved' | 'delivered'` | - | [Order](aggregates/order/index.md), [OrderDetail](./index.md#schemas) (schema) |
+| Quantity | The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1 | value: `int > 0` | - | [Order](aggregates/order/index.md), [OrderPlaced](./index.md#schemas) (schema), [PlaceOrder](./index.md#schemas) (schema), [OrderDetail](./index.md#schemas) (schema) |
+| ShipDate | When the order ships; set by Fulfilment once dispatch is planned | value: `date-time` | - | [Order](aggregates/order/index.md), [OrderDetail](./index.md#schemas) (schema) |
 
 
 ## Schemas
