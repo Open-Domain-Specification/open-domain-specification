@@ -1,10 +1,10 @@
 ---
-column: doing
+column: done
 labels: [ci, vscode]
 priority: medium
 agent: developer
-live: true
-updatedAt: 2026-09-30T13:18:03Z
+live: false
+updatedAt: 2026-09-30T15:34:08Z
 ---
 # The real VS Code suites run in CI
 
@@ -55,3 +55,4 @@ No branch protection or ruleset exists on develop or main. The check becomes mer
   - locally on macOS 27 arm64 with VS Code 1.96.4, `test:vscode` passed 3 of 3 runs (9 passing and 4 pending screenshots; 1; 4) and `test:vscode:keyboard` 3 of 3 (23 passed).
   The failure-propagation runs 36707268430 and 36707274645 predate the checker change. They exercise the step-outcome path, which is unchanged; the new rejections are covered by the real-runner tests.
   Correction to the entry above: develop's branch data shows required-check enforcement off and no required contexts. Branch rules were read with a token that may lack administrative scope (the owner's administrative read got a 403), so "no ruleset exists" is what this token could see, not a confirmed absence.
+- **lead** (2026-09-30T15:34:08Z): Landed. The owner passed PR #95 at re-review (d449e843) and merged it into develop as ad27704f at 2026-09-30T15:27:37Z. Post-merge CI run 36736900080 is green (`test`, `e2e`, `real-vscode`). Issue #69 is closed; the card moves to `done`. Both real-host suites now run automatically on every push and PR. Merge enforcement is **not** configured: no branch rule requires `real-vscode` yet. That needs a maintainer with repository admin access to require the GitHub Actions check `real-vscode` on develop (and main if wanted), with no administrator or bypass exemption.
