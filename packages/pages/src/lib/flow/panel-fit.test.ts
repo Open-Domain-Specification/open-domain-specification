@@ -9,6 +9,7 @@ import {
 	NO_AIR,
 	needsRelief,
 	PANEL_GUTTER,
+	PANEL_SELECTOR,
 	type PanelPadding,
 	panelPadding,
 	READABLE_ZOOM,
@@ -112,12 +113,51 @@ describe("panelPadding", () => {
 	});
 
 	it("drops to the gutter on a side no panel claims once the air gives way", () => {
-		const padding = panelPadding(VIEW, [tall(15, 215)], NO_AIR);
+		const padding = panelPadding(VIEW, [tall(15, 215)], undefined, NO_AIR);
 		expect(padding.top).toBe(`${PANEL_GUTTER}px`);
 		expect(padding.bottom).toBe(`${PANEL_GUTTER}px`);
 		expect(padding.right).toBe(`${PANEL_GUTTER}px`);
 		// The panel's own strip is not air and is reserved as it was.
 		expect(padding.left).toBe(`${215 + PANEL_GUTTER}px`);
+	});
+
+	it("clears a panel by whichever strip lets the map fit larger", () => {
+		// A minimap-sized box in the bottom-right corner: its column and its
+		// band cost about the same share of their axes.
+		const corner: Rect = { left: 665, right: 785, top: 305, bottom: 385 };
+		// A wide, flat map is held by the width: a band costs it nothing.
+		const wide = panelPadding(VIEW, [corner], { width: 1600, height: 200 });
+		expect(wide.bottom).toBe(`${400 - 305 + PANEL_GUTTER}px`);
+		expect(wide.right).toBe("80px");
+		// A tall, narrow one is held by the height: a column costs it nothing.
+		const narrow = panelPadding(VIEW, [corner], { width: 200, height: 800 });
+		expect(narrow.right).toBe(`${800 - 665 + PANEL_GUTTER}px`);
+		expect(narrow.bottom).toBe("40px");
+	});
+
+	it("never takes a strip the cap has cut short while the other one clears", () => {
+		// The deep legend's band would cost a wide, flat map nothing, but at
+		// 300px it is past the cap and would leave the legend over the map.
+		const padding = panelPadding(VIEW, [tall(15, 215)], {
+			width: 1600,
+			height: 100,
+		});
+		expect(padding.left).toBe(`${215 + PANEL_GUTTER}px`);
+		expect(padding.top).toBe("40px");
+	});
+
+	it("chooses for every panel together, so two corners can share one side", () => {
+		// The zoom controls bottom-left and the minimap bottom-right: for a wide
+		// map, one band along the bottom clears both.
+		const controls: Rect = { left: 15, right: 95, top: 300, bottom: 385 };
+		const minimap: Rect = { left: 665, right: 785, top: 305, bottom: 385 };
+		const padding = panelPadding(VIEW, [controls, minimap], {
+			width: 1600,
+			height: 200,
+		});
+		expect(padding.bottom).toBe(`${400 - 300 + PANEL_GUTTER}px`);
+		expect(padding.left).toBe("80px");
+		expect(padding.right).toBe("80px");
 	});
 });
 
@@ -134,11 +174,39 @@ function container(box: Rect, panels: Rect[]): Element {
 	return el;
 }
 
+/** A flow whose nodes span `bounds`, with a `fitView` to watch. */
+const fitter = (bounds: Size = { width: 0, height: 0 }) => ({
+	fitView: vi.fn(async (_options: { padding: PanelPadding }) => true),
+	getNodes: () => [{ id: "a" }],
+	getNodesBounds: () => bounds,
+});
+
+describe("PANEL_SELECTOR", () => {
+	it("finds the legend, the options, the zoom controls and the minimap", () => {
+		const el = document.createElement("div");
+		el.innerHTML = [
+			'<div class="diagram-legend"></div>',
+			'<div class="diagram-options"></div>',
+			'<div class="svelte-flow__controls"></div>',
+			'<div class="svelte-flow__minimap"></div>',
+			'<div class="svelte-flow__attribution"></div>',
+		].join("");
+		expect(
+			[...el.querySelectorAll(PANEL_SELECTOR)].map((p) => p.className),
+		).toEqual([
+			"diagram-legend",
+			"diagram-options",
+			"svelte-flow__controls",
+			"svelte-flow__minimap",
+		]);
+	});
+});
+
 describe("fitPastPanels", () => {
-	it("fits with the measured panels reserved", () => {
-		const fitView = vi.fn();
-		fitPastPanels({ fitView }, container(VIEW, [tall(15, 215)]));
-		expect(fitView).toHaveBeenCalledWith({
+	it("fits with the measured panels reserved", async () => {
+		const flow = fitter();
+		await fitPastPanels(flow, container(VIEW, [tall(15, 215)]));
+		expect(flow.fitView).toHaveBeenCalledWith({
 			padding: {
 				top: "40px",
 				bottom: "40px",
@@ -148,16 +216,31 @@ describe("fitPastPanels", () => {
 		});
 	});
 
-	it("refits at once: the call carries no duration, so the viewport never eases", () => {
-		const fitView = vi.fn();
-		fitPastPanels({ fitView }, container(VIEW, [tall(15, 215)]));
-		expect(Object.keys(fitView.mock.calls[0][0])).toEqual(["padding"]);
+	it("chooses the strips for the map it is fitting", async () => {
+		// A legend whose column is the cheaper strip by share of its axis. That
+		// column would cost a wide, flat map its width; the band costs it
+		// nothing, so the band is the one reserved.
+		const legend: Rect = { left: 15, right: 215, top: 10, bottom: 140 };
+		const flow = fitter({ width: 1600, height: 100 });
+		await fitPastPanels(flow, container(VIEW, [legend]));
+		expect(flow.fitView).toHaveBeenCalledWith({
+			padding: expect.objectContaining({
+				top: `${140 + PANEL_GUTTER}px`,
+				left: "80px",
+			}),
+		});
 	});
 
-	it("does nothing without a container to measure", () => {
-		const fitView = vi.fn();
-		fitPastPanels({ fitView }, undefined);
-		expect(fitView).not.toHaveBeenCalled();
+	it("refits at once: the call carries no duration, so the viewport never eases", async () => {
+		const flow = fitter();
+		await fitPastPanels(flow, container(VIEW, [tall(15, 215)]));
+		expect(Object.keys(flow.fitView.mock.calls[0][0])).toEqual(["padding"]);
+	});
+
+	it("does nothing without a container to measure", async () => {
+		const flow = fitter();
+		await fitPastPanels(flow, undefined);
+		expect(flow.fitView).not.toHaveBeenCalled();
 	});
 });
 
@@ -256,8 +339,8 @@ describe("crowded", () => {
 		expect(crowded(flow({ width: 400, height: 200 }), canvas())).toBe(false);
 		// The air and the floor are the caller's to name, step by step: this map
 		// is under the readable floor with the default air and over it without.
-		expect(crowded(flow({ width: 2400, height: 900 }), canvas())).toBe(true);
-		expect(crowded(flow({ width: 2400, height: 900 }), canvas(), NO_AIR)).toBe(
+		expect(crowded(flow({ width: 2400, height: 1000 }), canvas())).toBe(true);
+		expect(crowded(flow({ width: 2400, height: 1000 }), canvas(), NO_AIR)).toBe(
 			false,
 		);
 	});

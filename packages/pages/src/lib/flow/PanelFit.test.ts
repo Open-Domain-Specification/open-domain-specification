@@ -1,5 +1,5 @@
 import { render } from "@testing-library/svelte";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installXyflowTestEnv } from "../xyflow-test-env";
 import { createDiagramFit } from "./fit.svelte";
 import Harness from "./PanelFit.harness.svelte";
@@ -82,6 +82,17 @@ describe("PanelFit", () => {
 		unmount();
 	});
 
+	it("measures nothing and fits nothing without a container", async () => {
+		const { unmount } = render(Harness, {});
+		await settled();
+		expect(fitPastPanels).toHaveBeenCalledWith(
+			expect.anything(),
+			undefined,
+			expect.any(Number),
+		);
+		unmount();
+	});
+
 	it("drops the pending frame when the diagram goes away first", async () => {
 		const { unmount } = render(Harness, {
 			container: document.createElement("div"),
@@ -89,5 +100,90 @@ describe("PanelFit", () => {
 		unmount();
 		await walked();
 		expect(fitPastPanels).not.toHaveBeenCalled();
+	});
+});
+
+describe("PanelFit after the fit lands", () => {
+	/** Each observer made while rendering, with the elements it watches. */
+	let observers: { report: () => void; watched: Element[] }[];
+	/** The one watching the panels, which is PanelFit's; Svelte Flow makes its own. */
+	const panels = (container: Element) => {
+		const found = observers.find((o) =>
+			o.watched.includes(container.children[0]),
+		);
+		if (!found) throw new Error("nothing watches the panels");
+		return found;
+	};
+
+	beforeEach(() => {
+		observers = [];
+		vi.stubGlobal(
+			"ResizeObserver",
+			class {
+				watched: Element[] = [];
+				constructor(report: () => void) {
+					observers.push({ report, watched: this.watched });
+				}
+				observe(el: Element) {
+					this.watched.push(el);
+				}
+				disconnect() {}
+			},
+		);
+		vi.mocked(fitPastPanels).mockClear();
+	});
+	afterEach(() => vi.unstubAllGlobals());
+
+	/** A diagram's box with one of each panel the fit keeps clear of in it. */
+	const withPanels = () => {
+		const container = document.createElement("div");
+		container.innerHTML = [
+			'<div class="diagram-legend"></div>',
+			'<div class="diagram-options"></div>',
+			'<div class="svelte-flow__controls"></div>',
+			'<div class="svelte-flow__minimap"></div>',
+		].join("");
+		return container;
+	};
+
+	it("watches every panel the fit keeps clear of", async () => {
+		const container = withPanels();
+		const { unmount } = render(Harness, { container });
+		expect(panels(container).watched).toEqual([...container.children]);
+		unmount();
+	});
+
+	it("refits when a panel changes size while the view is still the fit's", async () => {
+		const container = withPanels();
+		const { unmount } = render(Harness, { container });
+		await walked();
+		expect(fitPastPanels).toHaveBeenCalledTimes(1);
+		panels(container).report();
+		expect(fitPastPanels).toHaveBeenCalledTimes(2);
+		unmount();
+	});
+
+	it("leaves a view the reader has moved alone", async () => {
+		const container = withPanels();
+		const fit = createDiagramFit();
+		const { unmount } = render(Harness, { container, fit });
+		await walked();
+		// What the reader's zoom does: the view on screen is no longer the fit's.
+		fit.landed({ x: 40, y: 40, zoom: 2 });
+		panels(container).report();
+		expect(fitPastPanels).toHaveBeenCalledTimes(1);
+		unmount();
+	});
+
+	it("does not refit before the first fit lands, nor after the diagram goes", async () => {
+		const container = withPanels();
+		const { unmount } = render(Harness, { container });
+		// The walk collapses panels before it lands: those resizes are its own.
+		panels(container).report();
+		expect(fitPastPanels).not.toHaveBeenCalled();
+		await walked();
+		unmount();
+		panels(container).report();
+		expect(fitPastPanels).toHaveBeenCalledTimes(1);
 	});
 });

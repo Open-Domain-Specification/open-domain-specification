@@ -1,16 +1,16 @@
 <script lang="ts">
 import { useSvelteFlow } from "@xyflow/svelte";
 import { onMount, tick } from "svelte";
-import type { DiagramFit } from "./fit.svelte";
-import { crowded, fitPastPanels, MIN_ZOOM, RELIEF_STEPS } from "./panel-fit";
+import { type DiagramFit, refit } from "./fit.svelte";
+import { crowded, MIN_ZOOM, PANEL_SELECTOR, RELIEF_STEPS } from "./panel-fit";
 
 /**
- * Draws nothing: it exists to refit the canvas once, from inside Svelte Flow,
- * with the room the floating panels take reserved. Svelte Flow's own initial
- * fit runs as soon as the nodes are measured and knows nothing about the
- * legend or the options panel, so this one lands after it — a tick for the
- * nodes to be laid out, then two frames, by which time both panels have a box
- * to measure. A diagram torn down before then is left alone.
+ * Draws nothing: it exists to refit the canvas from inside Svelte Flow, with
+ * the room the floating panels take reserved. Svelte Flow's own initial fit
+ * runs as soon as the nodes are measured and knows nothing about the panels,
+ * so this one lands after it — a tick for the nodes to be laid out, then two
+ * frames, by which time every panel has a box to measure. A diagram torn down
+ * before then is left alone.
  *
  * When the room runs out it walks the order in `panel-fit.ts`: the legend
  * gives way, then the options panel, then the air, and only if the map still
@@ -20,6 +20,12 @@ import { crowded, fitPastPanels, MIN_ZOOM, RELIEF_STEPS } from "./panel-fit";
  * questions are asked with the panels at the size they are then, never twice
  * about the same box, so nothing can open, run out of room and close again in
  * front of the reader.
+ *
+ * After that, a panel that changes size — the reader opening the legend, or
+ * closing the options — refits the map round its new box, as long as the view
+ * is still the one the fit drew. Only the fit is redone, never the walk, so a
+ * panel the reader opened stays open. Once the reader has zoomed or panned,
+ * the view is theirs and a panel opening over it moves nothing.
  */
 let { container, fit }: { container?: HTMLElement; fit: DiagramFit } = $props();
 const flow = useSvelteFlow();
@@ -32,6 +38,11 @@ onMount(() => {
 		await tick();
 		await frame();
 	};
+	const resized = new ResizeObserver(() => {
+		if (live && fit.owns(flow.getViewport())) void refit(fit, flow, container);
+	});
+	for (const panel of container?.querySelectorAll(PANEL_SELECTOR) ?? [])
+		resized.observe(panel);
 	void (async () => {
 		await tick();
 		await frame();
@@ -44,10 +55,11 @@ onMount(() => {
 			fit.give(step);
 			await settle();
 		}
-		if (live) fitPastPanels(flow, container, fit.air);
+		if (live) await refit(fit, flow, container);
 	})();
 	return () => {
 		live = false;
+		resized.disconnect();
 	};
 });
 </script>

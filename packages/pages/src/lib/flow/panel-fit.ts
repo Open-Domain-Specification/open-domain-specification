@@ -1,11 +1,12 @@
 /**
  * Fitting a diagram so its panels never cover a node.
  *
- * Svelte Flow's panels float over the canvas: the legend sits top-left and
- * the options top-right. A plain `fitView` knows nothing about them, so on a
- * dense map the outermost node ends up underneath one of them. Svelte Flow
- * takes per-side padding in pixels, so the fix is to measure the panels once
- * they are on screen and reserve the strip each one occupies.
+ * Svelte Flow's panels float over the canvas: the legend sits top-left, the
+ * options top-right, the zoom controls bottom-left and the minimap
+ * bottom-right. A plain `fitView` knows nothing about them, so on a dense map
+ * the outermost node ends up underneath one of them. Svelte Flow takes
+ * per-side padding in pixels, so the fix is to measure the panels once they
+ * are on screen and reserve the strip each one occupies.
  *
  * The guarantee: the whole map is on the canvas and no node is under a panel.
  * When the room runs out, the thing that gives way is decided in one order,
@@ -21,7 +22,9 @@
  * The order is what it costs the reader. A legend row is a term list they can
  * open again in a click; the options row is a control they were not using; the
  * air is nothing but taste. A node under a panel, or a map cropped out of the
- * canvas, is information they cannot get back, so it goes last.
+ * canvas, is information they cannot get back, so it goes last. The controls
+ * and the minimap never give way: they are small, and they are how a reader
+ * moves round a map the fit has made small.
  */
 
 /** The part of a `DOMRect` this module needs; a real `DOMRect` satisfies it. */
@@ -67,62 +70,103 @@ export function basePadding(size: number, fraction = BASE_PADDING): number {
 
 const px = (n: number): `${number}px` => `${Math.floor(n)}px`;
 
+/** One side of the canvas, as Svelte Flow's per-side padding names it. */
+type Side = keyof PanelPadding;
+
+/** A strip of the canvas reserved to clear one panel: its side and its depth in pixels. */
+type Strip = { side: Side; reserve: number };
+
+/**
+ * The strips that can clear `panel`: the column between it and the side it
+ * hugs, and the band between it and the edge above (or below) it, each with
+ * the gutter added. Either keeps every node out from under it, the cheaper
+ * one — as a share of its axis — listed first. A strip deeper than `MAX_SIDE`
+ * of its axis is cut to that and no longer clears the panel, so it is offered
+ * only when neither strip can: then the cheaper one, cut, is all there is.
+ */
+function stripsFor(view: Rect, panel: Rect): Strip[] {
+	const width = view.right - view.left;
+	const height = view.bottom - view.top;
+	const strip = (side: Side, depth: number, of: number) => ({
+		side,
+		reserve: Math.min(depth + PANEL_GUTTER, of * MAX_SIDE),
+		clears: depth + PANEL_GUTTER <= of * MAX_SIDE,
+		cost: depth / of,
+	});
+	const across =
+		(panel.left + panel.right) / 2 < (view.left + view.right) / 2
+			? strip("left", panel.right - view.left, width)
+			: strip("right", view.right - panel.left, width);
+	const down =
+		(panel.top + panel.bottom) / 2 < (view.top + view.bottom) / 2
+			? strip("top", panel.bottom - view.top, height)
+			: strip("bottom", view.bottom - panel.top, height);
+	const both = across.cost <= down.cost ? [across, down] : [down, across];
+	const clearing = both.filter((s) => s.clears);
+	return clearing.length ? clearing : both.slice(0, 1);
+}
+
 /**
  * The padding that keeps `panels` off the fitted bounds inside `view`.
  *
- * A panel is cleared by reserving a whole strip of the canvas, and it can be
- * either strip it touches: the column between it and the side it hugs, or the
- * band between it and the edge above (or below) it. Both keep every node out
- * from under it, so each panel takes whichever is the smaller share of its
- * axis — the tall, narrow legend gives up a column, the wide, flat options
- * panel a band. Reserving both strips for both panels would leave a webview
- * split nothing to draw the map in. A side no panel claims keeps `fraction`
- * of air, and never less than the gutter — at `NO_AIR` the map is given
- * everything but the room it needs to keep off the edge.
+ * Each panel is cleared by one of its strips (`stripsFor`); reserving both
+ * for every panel would leave a webview split nothing to draw the map in.
+ * Which one is worth taking depends on the map: a wide, flat graph is held by
+ * the width, so a band off the top or bottom costs it nothing, while a column
+ * costs it scale. So every combination of choices is tried, and the one that
+ * lets `bounds` fit at the largest zoom wins. With no size to fit — or when
+ * nothing does better — each panel takes its cheaper strip, the tall, narrow
+ * legend a column and the wide, flat options panel a band. A side no panel
+ * claims keeps `fraction` of air, and never less than the gutter — at
+ * `NO_AIR` the map is given everything but the room it needs to keep off the
+ * edge.
  */
 export function panelPadding(
 	view: Rect,
 	panels: Rect[],
+	bounds: Size = { width: 0, height: 0 },
 	fraction = BASE_PADDING,
 ): PanelPadding {
 	const width = view.right - view.left;
 	const height = view.bottom - view.top;
 	const air = (size: number) =>
 		Math.max(basePadding(size, fraction), PANEL_GUTTER);
-	const pad = {
-		top: air(height),
-		bottom: air(height),
-		left: air(width),
-		right: air(width),
+	const padded = (choice: Strip[]): PanelPadding => {
+		const pad = {
+			top: air(height),
+			bottom: air(height),
+			left: air(width),
+			right: air(width),
+		};
+		for (const { side, reserve } of choice)
+			pad[side] = Math.max(pad[side], reserve);
+		return {
+			top: px(pad.top),
+			bottom: px(pad.bottom),
+			left: px(pad.left),
+			right: px(pad.right),
+		};
 	};
-	/** One candidate strip: the room it costs, and what share of its axis that is. */
-	const strip = (side: keyof PanelPadding, reserve: number, of: number) => ({
-		side,
-		reserve,
-		of,
-		cost: reserve / of,
-	});
-	for (const panel of panels) {
-		const across =
-			(panel.left + panel.right) / 2 < (view.left + view.right) / 2
-				? strip("left", panel.right - view.left, width)
-				: strip("right", view.right - panel.left, width);
-		const down =
-			(panel.top + panel.bottom) / 2 < (view.top + view.bottom) / 2
-				? strip("top", panel.bottom - view.top, height)
-				: strip("bottom", view.bottom - panel.top, height);
-		const cheaper = across.cost <= down.cost ? across : down;
-		pad[cheaper.side] = Math.max(
-			pad[cheaper.side],
-			Math.min(cheaper.reserve + PANEL_GUTTER, cheaper.of * MAX_SIDE),
-		);
+	// Every way of choosing one strip per panel; the first is each panel's
+	// cheaper strip, and another replaces it only by fitting strictly larger.
+	const [first, ...rest] = panels
+		.map((panel) => stripsFor(view, panel))
+		.reduce<Strip[][]>(
+			(choices, strips) =>
+				choices.flatMap((choice) => strips.map((s) => [...choice, s])),
+			[[]],
+		)
+		.map(padded);
+	let best = first;
+	let zoom = fittedZoom(view, best, bounds);
+	for (const candidate of rest) {
+		const next = fittedZoom(view, candidate, bounds);
+		if (next > zoom) {
+			best = candidate;
+			zoom = next;
+		}
 	}
-	return {
-		top: px(pad.top),
-		bottom: px(pad.bottom),
-		left: px(pad.left),
-		right: px(pad.right),
-	};
+	return best;
 }
 
 /**
@@ -134,8 +178,20 @@ export function panelPadding(
 export const LEGEND_PANEL_CLASS = "diagram-legend";
 export const OPTIONS_PANEL_CLASS = "diagram-options";
 
+/**
+ * Svelte Flow's own two panels, found by the classes the library gives them:
+ * the zoom controls and the minimap.
+ */
+const LIBRARY_PANEL_CLASSES = ["svelte-flow__controls", "svelte-flow__minimap"];
+
 /** The panels a fit has to stay clear of, in the order they are measured. */
-export const PANEL_SELECTOR = `.${LEGEND_PANEL_CLASS}, .${OPTIONS_PANEL_CLASS}`;
+export const PANEL_SELECTOR = [
+	LEGEND_PANEL_CLASS,
+	OPTIONS_PANEL_CLASS,
+	...LIBRARY_PANEL_CLASSES,
+]
+	.map((name) => `.${name}`)
+	.join(", ");
 
 /**
  * Measures the diagram's own box and its panels. An element with no layout
@@ -155,23 +211,27 @@ export function measurePanels(container: Element): {
 }
 
 /** The slice of the Svelte Flow instance this module drives. */
-export type Fitter = {
-	fitView: (options: { padding: PanelPadding }) => unknown;
+export type Fitter<TNode> = Measurer<TNode> & {
+	fitView: (options: { padding: PanelPadding }) => Promise<boolean>;
 };
 
 /**
- * Refits `flow` inside `container` with the panels' strips reserved. Does
- * nothing without a container: there is then nothing to measure, and the
- * initial `fitView` Svelte Flow does itself still stands.
+ * Refits `flow` inside `container` with the panels' strips reserved, and
+ * settles once Svelte Flow has drawn the fit. Does nothing without a
+ * container: there is then nothing to measure, and the initial `fitView`
+ * Svelte Flow does itself still stands.
  */
-export function fitPastPanels(
-	flow: Fitter,
+export async function fitPastPanels<TNode>(
+	flow: Fitter<TNode>,
 	container: Element | undefined | null,
 	fraction = BASE_PADDING,
-): void {
+): Promise<void> {
 	if (!container) return;
 	const { view, panels } = measurePanels(container);
-	flow.fitView({ padding: panelPadding(view, panels, fraction) });
+	const bounds = flow.getNodesBounds(flow.getNodes());
+	await flow.fitView({
+		padding: panelPadding(view, panels, bounds, fraction),
+	});
 }
 
 /**
@@ -248,7 +308,10 @@ export function needsRelief(
 	fraction = BASE_PADDING,
 	floor = READABLE_ZOOM,
 ): boolean {
-	return fittedZoom(view, panelPadding(view, panels, fraction), bounds) < floor;
+	return (
+		fittedZoom(view, panelPadding(view, panels, bounds, fraction), bounds) <
+		floor
+	);
 }
 
 /** The slice of the Svelte Flow instance the decision measures the graph with. */

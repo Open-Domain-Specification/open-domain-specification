@@ -13,6 +13,7 @@ import { fitClusters } from "../flow/cluster-fit";
 import DiagramOptionsPanel from "../flow/DiagramOptionsPanel.svelte";
 import DoubleClickZoom from "../flow/DoubleClickZoom.svelte";
 import { createDisclosure, withDisclosure } from "../flow/disclosure.svelte";
+import FitViewButton from "../flow/FitViewButton.svelte";
 import { createDiagramFit } from "../flow/fit.svelte";
 import {
 	flowEdges,
@@ -162,7 +163,7 @@ const refit = () => {
 	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} zoomOnDoubleClick={!motion.reduced} edgesFocusable={false} onnodeclick={({ node }) => open(node.id)} ariaLabelConfig={NODE_KEYS} onnodedrag={refitDrag} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
-		<Controls showLock={false} />
+		<Controls showLock={false} showFitView={false}><FitViewButton {container} {fit} /></Controls>
 		<MiniMap pannable zoomable width={120} height={80} nodeClass={minimapNodeClass} />
 		<DiagramOptionsPanel {kind} {fullscreen} {container} panel={fit.options} />
 		<LegendPanel {graph} {kind} legend={fit.legend} />

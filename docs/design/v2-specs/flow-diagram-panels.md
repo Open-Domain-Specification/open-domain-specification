@@ -134,3 +134,34 @@ reserved. Every step is taken and it still lands at 0.197, a hair under the
 floor a map should keep — which is exactly the case the fourth step exists for.
 The reader gets the whole map, no node under a panel, and fullscreen one click
 away in the collapsed options row.
+
+## Amendment, 2026-09-30: four panels, strips chosen for the map, and a fit that follows the panels (#90)
+
+Everything above holds for the legend and the options panel. Three things change, because a
+reader of NorthBank at 1300x900 found the minimap sitting on Payments Hub, Regulatory Reporting
+and Credit Decisioning, and the legend they opened sitting on Sovereign Core.
+
+1. **The guarantee covers four panels, not two.** Svelte Flow's zoom controls (bottom left) and
+   its minimap (bottom right) float over the canvas like the legend and the options, and the fit
+   never measured them. It measures all four now (`PANEL_SELECTOR`). The controls and the
+   minimap never give way: they are small, and they are how a reader moves round a map the fit
+   made small, so the relief order is unchanged and they are simply always reserved.
+2. **Each panel's strip is chosen for the map being fitted.** A panel is still cleared by a
+   whole strip, the column beside it or the band above or below it, because the fit places a
+   rectangle and a rectangle clear of a corner panel is on one side of it. Before, each panel
+   took whichever strip was the smaller share of its axis, whatever the map. Now every
+   combination is tried and the one that fits the graph largest wins, so a wide, flat map gives
+   up bands, which cost it nothing, and a tall one gives up columns. The old rule is the
+   tie-break. A strip cut short by the 40% cap does not clear its panel, so it is offered only
+   when neither strip can.
+3. **A panel the reader opens or closes refits the map round it**, as long as the view on screen
+   is still the one the fit drew. Only the fit is redone, never the walk down the order, so a
+   panel the reader opened stays open and nothing flaps. Once the reader zooms or pans, the view
+   is theirs, and a panel opening over it moves nothing. The controls' Fit View button now fits
+   the same way the diagram does, past the panels, and hands the view back to the fit.
+
+The price is scale on the densest map. NorthBank's workspace map at 1300x900 fitted at 0.216
+with the minimap on a node; clear of it, it fits at 0.172, with the controls' column and the
+minimap's column reserved. Every NorthBank page at 1300x900 and 1150x700, in both themes, and
+the petstore in the viewer and the static export are held to the guarantee by
+`e2e/diagram-panel-fit.spec.ts`, measured once the fit has held still for a dozen frames.
