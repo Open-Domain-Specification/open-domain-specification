@@ -31,3 +31,4 @@ Issue #114. The lead found eight reference-model schemas with no direct consumab
 ## Journal
 
 - **claude** (2026-10-01T01:00:00Z): Picked up from `afb71d15`. The lie was two copies of one carrier-only list, one in `ContextPage.svelte` and one in the Markdown writer. Both now call `usersOfSchema`. Two existing doc test expectations named carriers as bare text and now read the linked form. No agents, reviewers, push, PR or full gate were run.
+- **lead** (2026-09-30): In the outgoing truthfulness pass I tightened the schema's own "Carried by" lead and empty message: that section names direct payload, answer and refusal carriers only, while the context page shows nested users. This avoids implying a nested-only schema has no dependent consumable. The helper and its tests are unchanged; the integrated gate still has to run.
