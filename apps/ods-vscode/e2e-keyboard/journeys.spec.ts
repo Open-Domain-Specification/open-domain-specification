@@ -680,12 +680,153 @@ test.describe("an explanation taller than the room", () => {
 			);
 			expect(again.cap, `after scroll ${i}: same cap`).toBe(first.cap);
 		}
-		const scrolled = await frame.evaluate(() => {
+		// Brought to the foot, and still there once scrolling and layout have
+		// settled: a read in the same callback comes before the scroll event.
+		await frame.evaluate(() => {
 			const layer = document.querySelector(".layer") as HTMLElement;
 			layer.scrollTop = layer.scrollHeight;
-			return layer.scrollTop;
 		});
+		await settleFrame(frame);
+		const scrolled = await frame.evaluate(
+			() => (document.querySelector(".layer") as HTMLElement).scrollTop,
+		);
 		expect(scrolled).toBeGreaterThan(0);
+	});
+});
+
+/**
+ * Waits until scrolling and layout have stopped: the explanation's scroll
+ * position and box and the focused element's box are unchanged for six frames
+ * running, after a short idle. The browser's scroll to reveal a focused
+ * element, and whatever the page does about it, land after the key press, so
+ * a read in the same callback sees neither.
+ */
+async function settleFrame(frame: Frame) {
+	await frame.waitForTimeout(150);
+	await frame.evaluate(
+		() =>
+			new Promise<void>((done) => {
+				const sign = () => {
+					const layer = document.querySelector(".layer") as HTMLElement | null;
+					const at = document.activeElement as HTMLElement | null;
+					const box = (el: Element | null) => {
+						const b = el?.getBoundingClientRect();
+						return b ? [b.left, b.top, b.right, b.bottom].join() : "";
+					};
+					return [layer?.scrollTop, box(layer), box(at)].join("|");
+				};
+				let last = sign();
+				let same = 0;
+				let frames = 0;
+				const tick = () => {
+					const now = sign();
+					same = now === last ? same + 1 : 0;
+					last = now;
+					frames += 1;
+					if (same >= 6 || frames > 300) done();
+					else requestAnimationFrame(tick);
+				};
+				requestAnimationFrame(tick);
+			}),
+	);
+}
+
+/** The focused element inside the explanation against the explanation's box, and what is painted at it. */
+const measureCitation = (frame: Frame) =>
+	frame.evaluate(() => {
+		const layer = document.querySelector(".layer") as HTMLElement;
+		const cit = document.activeElement as HTMLElement;
+		const l = layer.getBoundingClientRect();
+		const c = cit.getBoundingClientRect();
+		// A link that wraps is one box over several lines: hit-test its last line.
+		const lines = cit.getClientRects();
+		const last = lines[lines.length - 1];
+		const hit = document.elementFromPoint(
+			last.left + last.width / 2,
+			last.top + last.height / 2,
+		);
+		return {
+			focused: layer.contains(cit) && cit !== layer,
+			scrollTop: layer.scrollTop,
+			maxScroll: layer.scrollHeight - layer.clientHeight,
+			layer: { top: l.top, bottom: l.bottom },
+			citation: { top: c.top, bottom: c.bottom },
+			inside: c.top >= l.top - 1 && c.bottom <= l.bottom + 1,
+			hitIsCitation: hit !== null && cit.contains(hit),
+		};
+	});
+
+test.describe("a citation in an explanation that scrolls", () => {
+	let host: Host;
+	test.beforeAll(async () => {
+		// A workspace whose tolerated relationship has a long comment and a
+		// citation, so the explanation is taller than the room it has.
+		host = await launchVSCode({ folder: "src/test/fixtures/long-evidence" });
+	});
+	test.afterAll(async () => {
+		await host.close();
+	});
+
+	test("#48 Tab into the citation keeps it in view and hit-testable, and a keyword that moves keeps the reader's place", async () => {
+		await resize(host, 1300, 300);
+		const frame = await openOrders(host);
+		const badge = frame.locator(TOLERATED_BADGE);
+		await tabToLabel(
+			host,
+			frame,
+			(await badge.getAttribute("aria-label")) as string,
+		);
+		await host.window.keyboard.press("Enter");
+		await expect(frame.getByRole("dialog")).toBeVisible();
+		await pressUntil(
+			host,
+			frame,
+			(stop) =>
+				stop.tag === "BUTTON" && stop.label === null && stop.text !== "",
+			"a pattern keyword in the card",
+		);
+		await expect(frame.locator(".layer")).toBeVisible();
+
+		// Tab from the keyword into the citation at the foot of its explanation.
+		await host.window.keyboard.press("Tab");
+		await expect(frame.locator(".layer a").first()).toBeFocused();
+		await settleFrame(frame);
+		const seen = await measureCitation(frame);
+		const said = JSON.stringify(seen);
+		expect(seen.focused, `focus is in the explanation ${said}`).toBe(true);
+		expect(seen.maxScroll, `it scrolls ${said}`).toBeGreaterThan(0);
+		expect(
+			seen.scrollTop,
+			`it scrolled to the citation ${said}`,
+		).toBeGreaterThan(0);
+		expect(seen.inside, `the citation is inside the explanation ${said}`).toBe(
+			true,
+		);
+		expect(seen.hitIsCitation, `and is what is painted there ${said}`).toBe(
+			true,
+		);
+		await expectOnScreen(frame, ".layer", "the explanation");
+
+		// The keyword moves under it: the explanation is placed again, and the
+		// reader keeps their place in it.
+		await frame.evaluate(() => {
+			const flow = document.querySelector(".svelte-flow") as HTMLElement;
+			const room = document.createElement("div");
+			room.style.cssText =
+				"position:absolute;left:0;top:0;width:4000px;height:1px;pointer-events:none";
+			flow.appendChild(room);
+			flow.scrollLeft += 40;
+		});
+		await settleFrame(frame);
+		const moved = await measureCitation(frame);
+		const movedSaid = JSON.stringify(moved);
+		expect(moved.focused, `still focused ${movedSaid}`).toBe(true);
+		expect(
+			Math.abs(moved.scrollTop - seen.scrollTop),
+			`scroll kept ${movedSaid} from ${said}`,
+		).toBeLessThan(1);
+		expect(moved.inside, `still inside ${movedSaid}`).toBe(true);
+		expect(moved.hitIsCitation, `still painted ${movedSaid}`).toBe(true);
 	});
 });
 
