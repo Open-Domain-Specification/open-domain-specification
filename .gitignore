@@ -14,3 +14,6 @@ artifacts/
 # Design audit screenshots are generated, not committed
 docs/design/audit/*.png
 docs/design/audit/**/*.png
+
+# The checker fixture writes its run output to the OS temp dir; never commit one.
+scripts/fixtures/playwright-outcomes/test-results/
