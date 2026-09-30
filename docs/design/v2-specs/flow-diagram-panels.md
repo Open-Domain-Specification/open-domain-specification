@@ -10,7 +10,8 @@ zoom floor; the air step is retired and a side no panel claims keeps only the 12
 The guarantee covers four panels, the legend, the options, the zoom controls and the minimap,
 each cleared by whichever strip fits the map largest (#90). The fit is redone when a panel or the
 canvas changes size while the view is still the fit's, and entering or leaving fullscreen hands
-the view back to the fit (#86). The dated amendments at the end say why; the sections before them
+the view back to the fit (#86). A panel no strip within 40% of its axis can clear gives way too, and
+the fullscreen overlay is the viewport without its scrollbars. The dated amendments at the end say why; the sections before them
 are the record as written for card 64, and where they name the air, four steps or the table of
 costs, the amendments supersede them.
 
@@ -247,3 +248,39 @@ viewer and the static export, dense and sparse maps, both themes. After each tra
 for the settled fit and holds the overlay to the whole window, every node clear of every panel,
 and the graph to the gutter along the axis that binds it. Leaving fullscreen must give back the
 inline fit exactly.
+
+## Amendment, 2026-09-30: a panel the cap cannot clear gives way, and the overlay is the visible viewport (#90, #86)
+
+Codex's review of the PR head found two things CI on Linux showed and macOS did not.
+
+**A panel past the cap.** A strip may take at most 40% of its axis. At 1150x700, Ledger's open
+legend needs a 244px column in a 610px canvas, which is exactly the cap on macOS fonts and a pixel
+over it on Linux. Its 199px band is over the 168px cap as well. With neither strip allowed, the fit
+reserved the cheaper strip cut to the cap, stopped short of the legend, and left Sovereign Core
+(legacy) under it. The relief walk never asked whether a panel could be cleared at all, only how
+large the map would be. At 1100x700 the same happens on any fonts.
+
+- A panel no strip within the cap can clear now counts as crowding (`needsRelief`), so it gives
+  way in the order, legend first.
+- If the reader opens such a panel anyway, it is cleared by a whole strip past the cap. The map is
+  drawn smaller but never under the panel.
+- A choice of strips must leave the map a fifth of each axis, which is what two capped strips
+  leave. Only when no choice does, as with two panels past the cap facing each other or a panel as
+  big as the canvas, does every panel take its cheaper strip cut to the cap.
+
+This supersedes the #90 amendment's sentence that a strip cut by the cap "is offered only when
+neither strip clears the panel".
+
+The cap now says what a strip should take, and the relief walk enforces it. It no longer decides
+what the fit may leave covered.
+
+Among the shipped workspaces' context maps, measured as in the #89 table, one outcome moves. The
+petstore at 1150x700 now gives way to the legend, whose strips were both past the cap, and its map
+fits at 0.492 instead of 0.346. The other seven are as that table gives them.
+
+**The overlay and a classic scrollbar.** The fullscreen overlay was `100vw` by `100vh`. A viewport
+unit counts a classic scrollbar, which Linux draws at 15px and VS Code's webview on Linux keeps. The
+overlay was therefore 15px wider than what the reader sees, and the fit drew into the strip under
+the scrollbar. It is now sized by `inset: 0` alone, the viewport without its scrollbars.
+`e2e/diagram-fullscreen-scrollbar.spec.ts` gives Chromium a 15px scrollbar and holds the overlay to
+the visible viewport, with the node nearest the scrollbar hit-testable.

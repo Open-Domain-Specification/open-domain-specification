@@ -5,7 +5,7 @@ priority: medium
 agent: lead
 live: true
 clean-code-swept: true
-updatedAt: 2026-09-30T20:00:00Z
+updatedAt: 2026-09-30T20:34:00Z
 ---
 # A diagram fits the canvas it is given, and no panel covers a node
 
@@ -56,4 +56,15 @@ Epic #102, issues #89, #90 and #86. A reader opening an inline or fullscreen dia
 - **lead** (2026-09-30T19:58:00Z): Real VS Code in `b698e17c`: a keyboard journey reads the webview through the same settled-fit measure. It covers the map inline, a toggled legend, and fullscreen entered by Enter and left by Escape. It fails on `develop`, with 71px of air either side. `npm run test:vscode:keyboard` passed 24 of 24 and `npm run test:vscode` 9, 1 and 5 passing with 4 pending, on the code before `b7410cbe`.
 
   The integrated review found no blocker. `b7410cbe` covers a legend that arrives after mount, the clean-code DRY finding (0.55) and two nits. The review suspected the style switch or the resize could refit mid-drag and worsen #103. 150 instrumented runs of the drag on this code show one scale before mouseup in every run, so the root is unchanged: auto-pan frame count. #103 stays separate.
+- **lead** (2026-09-30T20:34:00Z): Codex's review of PR #106 at `70d04bd8` found two blockers that CI on Linux showed, and both are fixed in the same PR:
+  - #90, `8e6575f4` and `1f2cf802`. Ledger at 1150x700 put Sovereign Core (legacy) under the open legend, `data-fit` none, in both themes.
+    - Cause: the legend's 244px column is exactly the 40% cap of the 610px canvas on macOS fonts and a pixel over it on Linux, and its band is over the cap too. The fit fell back to a strip cut to the cap, which stopped short of the legend. The relief walk never asked whether a panel could be cleared.
+    - Fix: a panel no strip within the cap clears now gives way. One the reader opens anyway is cleared past the cap, as long as the chosen strips leave the map a fifth of each axis; otherwise every panel is cut to the cap. My statement above that a cut strip is offered only when neither strip clears is superseded.
+    - Evidence: the matrix gains 1100x700, where the same failure happens on any fonts; it fails on `70d04bd8` in both themes. The petstore at 1150x700 now gives way to the legend (0.492, not 0.346).
+  - #86, `ad2bed3f`. The Linux webview's fullscreen canvas was 996px beside a 981px document.
+    - Cause: `100vw` counts the classic scrollbar, so the fit drew under it.
+    - Fix: the overlay is `inset: 0` with its height reset.
+    - Evidence: `e2e/diagram-fullscreen-scrollbar.spec.ts` launches Chromium without `--hide-scrollbars` and gives the root a 15px scrollbar, asserting it takes room. The overlay must equal the visible viewport, and the node nearest the scrollbar must be hit-testable. It fails on `70d04bd8`. The macOS webview floats its scrollbars even when styled, so CI's Linux `real-vscode` job holds the webview case.
+
+  An independent Sonnet review of the corrections found no blocker; its two should-fixes are in `1f2cf802`. On the corrected code, `npm run test:vscode:keyboard` passed 24 of 24 and `npm run test:vscode` 9, 1 and 5 passing with 4 pending. The #103 evidence is posted on that issue as separate tracking: #89's removal of the air puts the drag's target 101px past the canvas edge instead of 49px, so auto-pan timing decides more of it. The test is not changed here.
 
