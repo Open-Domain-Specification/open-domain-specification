@@ -511,7 +511,7 @@ describe("the tactical templates on the alternate branches", () => {
 		// A list of the shape, said in the direction cell the way "returns many"
 		// is (decision 13, second amendment).
 		expect(text).toContain("rejects with many");
-		expect(text).not.toContain("Nothing carries this schema yet");
+		expect(text).not.toContain("No consumable names this schema directly.");
 	});
 
 	it("SchemaPage: a shape refused with one of, not a list of, still reads plainly", () => {

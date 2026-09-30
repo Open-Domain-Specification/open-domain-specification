@@ -95,8 +95,8 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
   either or both, and the flow map draws every edge the same way; which combination happens on a
   given call is the operation's description, not the model.
 - **A change to a value's behaviour shows nowhere.** A value object has attributes and
-  invariants, so changing an attribute of `Money` shows on its page, in `usagesOf` and in the
-  Used by column on its declaring context's page, which lists borrowers; changing how `Money`
+  invariants, so changing an attribute of `Money` shows on its page and in
+  the Used by column on its declaring context's page, which lists users across contexts; changing how `Money`
   rounds names no consumer. Reopens when a source states a value's behaviour with a named input, result or
   refusal, another element's contract depends on it, the model's form loses the change and a
   domain-service operation was tried (decision 15).

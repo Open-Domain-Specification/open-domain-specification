@@ -80,6 +80,10 @@ describe("ContextPage", () => {
 		});
 		const kernel = workspace.addBoundedContext("Kernel", { description: "" });
 		const cards = workspace.addBoundedContext("Cards", { description: "" });
+		kernel.upstreamOf(cards, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
 		const money = kernel.addValueObject("Money", { description: "" });
 		const fee = cards.addValueObject("Fee", {
 			description: "",
@@ -89,6 +93,10 @@ describe("ContextPage", () => {
 		card
 			.addEntity("Card", { description: "", root: true })
 			.addAttribute("fee", { type: "Fee", valueobject: fee });
+		kernel
+			.addAggregate("Account", { description: "" })
+			.addEntity("Account", { description: "", root: true })
+			.addAttribute("balance", { type: "Money", valueobject: money });
 		const model = { workspace, fileLabel: "family.json", diagnostics: [] };
 		const { container } = page(model, kernel);
 		const values = container.querySelector("#values") as HTMLElement;
@@ -96,6 +104,45 @@ describe("ContextPage", () => {
 		expect(values).toHaveTextContent("Cards / Fee");
 		expect(values).toHaveTextContent("through Cards / Fee");
 		expect(values).not.toHaveTextContent("nothing");
+		const cardsPage = page(model, cards);
+		const feeRow = cardsPage.container.querySelector(
+			`[id="${fee.ref}"]`,
+		) as HTMLElement;
+		expect(feeRow).toHaveTextContent("Card");
+		expect(feeRow).not.toHaveTextContent("Kernel / Account");
+	});
+
+	it("lists a value-object kind that inherits an identity naming an external schema", () => {
+		const workspace = new Workspace("Identity", {
+			description: "",
+			version: "test",
+		});
+		const local = workspace.addBoundedContext("Local", { description: "" });
+		const provider = workspace.addBoundedContext("Provider", {
+			description: "",
+			external: true,
+		});
+		const payment = provider.addSchema("ProviderPayment");
+		const parent = local.addValueObject("PaymentReference", {
+			description: "",
+		});
+		parent.addAttribute("providerPaymentId", {
+			type: "string",
+			identifies: payment,
+		});
+		local.addValueObject("CardPaymentReference", {
+			description: "",
+			specialises: parent,
+		});
+		const model = { workspace, fileLabel: "identity.json", diagnostics: [] };
+		const { container } = page(model, provider);
+		const heading = container.querySelector(
+			`[id="${payment.ref}"]`,
+		) as HTMLElement;
+		expect(heading).toHaveTextContent("Local / PaymentReference");
+		expect(heading).toHaveTextContent("Local / CardPaymentReference");
+		expect(heading.querySelectorAll(".keyword")).toHaveLength(4);
+		expect(heading).not.toHaveTextContent("unused");
 	});
 
 	it("lists the integration surface, the policies and the language as tables", () => {

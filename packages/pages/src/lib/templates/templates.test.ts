@@ -313,7 +313,7 @@ describe("every template, through the shipped route", () => {
 		]);
 		expect([...directions.values()]).toEqual(["returns many", "returns"]);
 		expect(container.textContent).not.toContain(
-			"Nothing carries this schema yet",
+			"No consumable names this schema directly.",
 		);
 	});
 

@@ -4,7 +4,7 @@ labels: [model, bug]
 priority: high
 agent: claude
 live: false
-status: Third signoff round blocked on identity-only schema use; correction and focused tests pass, integrated gate pending
+status: Fifth signoff round found inherited identity omitted; correction and focused tests pass, integrated gate pending
 progress: 90
 clean-code-swept: true
 updatedAt: 2026-10-01T01:00:00Z
@@ -35,3 +35,4 @@ Issue #114. The lead found eight reference-model schemas with no direct consumab
 - **claude** (2026-10-01T01:00:00Z): Picked up from `afb71d15`. The lie was two copies of one carrier-only list, one in `ContextPage.svelte` and one in the Markdown writer. Both now call `usersOfSchema`. Two existing doc test expectations named carriers as bare text and now read the linked form. No agents, reviewers, push, PR or full gate were run.
 - **lead** (2026-09-30): In the outgoing truthfulness pass I tightened the schema's own "Carried by" lead and empty message: that section names direct payload, answer and refusal carriers only, while the context page shows nested users. This avoids implying a nested-only schema has no dependent consumable. The helper and its tests are unchanged; the integrated gate still has to run.
 - **lead** (2026-09-30): The third signoff round on exact head `965e522a8a0708b1b6ec8d45eb11ea14a41e6e60` returned BLOCK from both `gpt-6-astra` low and `claude-opus-5-5` high for the same identity-only case. The broad helper now counts `identifies` and marks identity use; the narrow carrier list stays empty. Focused core (4), RiverMart (6), viewer/export browser (4), Svelte check and formatter pass. The generated RiverMart docs now show `[Payments / Payment](../payments/aggregates/payment/index.md) (identity)`; those docs are build output and not tracked. The corrected full gate and exact-head reviews remain.
+- **lead** (2026-10-01): The fifth signoff round on exact head `efc19483a078bcf6af06ebe7035f034ef0a8b574` was BLOCK from both reviewers. Astra reproduced a valid PaymentReference kind inheriting `providerPaymentId identifies ProviderPayment`: its own page displayed that inherited identity, but ProviderPayment's Used by omitted the kind. `usersOfSchema` now reads all attributes of a value-object kind. Core asserts zero diagnostics, both identity users and zero carriers before and after JSON round-trip; the Svelte context page asserts both visible identity users. Focused tests pass; the full gate and new reviews remain.

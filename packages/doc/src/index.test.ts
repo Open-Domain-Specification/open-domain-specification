@@ -722,6 +722,81 @@ describe("toDoc", () => {
 		);
 	});
 
+	it("does not make an upstream holder a user of a downstream value-object kind", async () => {
+		const workspace = new Workspace("Borrowing", {
+			description: "Directional value-object borrowing.",
+			version: "0.1.0",
+		});
+		const accounts = workspace.addBoundedContext("Accounts", {
+			description: "Accounts.",
+		});
+		const cards = workspace.addBoundedContext("Cards", {
+			description: "Cards.",
+		});
+		accounts.upstreamOf(cards, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		const money = accounts.addValueObject("Money", { description: "Money." });
+		const fee = cards.addValueObject("Fee", {
+			description: "A kind of money.",
+			specialises: money,
+		});
+		const account = accounts.addAggregate("Account", {
+			description: "Account.",
+		});
+		account
+			.addRootEntity("Account", { description: "Account." })
+			.addAttribute("balance", { type: "Money", valueobject: money });
+		const card = cards.addAggregate("Card", { description: "Card." });
+		card
+			.addRootEntity("Card", { description: "Card." })
+			.addAttribute("fee", { type: "Fee", valueobject: fee });
+
+		const context = (await toDoc(workspace))["boundedcontexts/cards/index.md"];
+		const feeRow = context
+			.split("\n")
+			.find((line) => line.startsWith("| Fee "));
+		expect(feeRow).toContain("[Card](aggregates/card/index.md)");
+		expect(feeRow).not.toContain("Accounts / Account");
+	});
+
+	it("lists a kind's inherited identity as a schema user, without a carrier", async () => {
+		const workspace = new Workspace("Identity", {
+			description: "Inherited identity.",
+			version: "0.1.0",
+		});
+		const local = workspace.addBoundedContext("Local", {
+			description: "Local.",
+		});
+		const provider = workspace.addBoundedContext("Provider", {
+			description: "Provider.",
+			external: true,
+		});
+		const payment = provider.addSchema("ProviderPayment");
+		const reference = local.addValueObject("PaymentReference", {
+			description: "Payment identity.",
+		});
+		reference.addAttribute("providerPaymentId", {
+			type: "string",
+			identifies: payment,
+		});
+		local.addValueObject("CardPaymentReference", {
+			description: "Card payment identity.",
+			specialises: reference,
+		});
+
+		const context = (await toDoc(workspace))[
+			"boundedcontexts/provider/index.md"
+		];
+		const row = context
+			.split("\n")
+			.find((line) => line.startsWith("| ProviderPayment |"));
+		expect(row).toContain("[Local / PaymentReference]");
+		expect(row).toContain("[Local / CardPaymentReference]");
+		expect(row?.match(/\(value object, identity\)/g)).toHaveLength(2);
+	});
+
 	it("treats an empty or whitespace-only relationship description as generated", async () => {
 		const workspace = new Workspace("Blank", {
 			description: "Relationships with blank descriptions.",

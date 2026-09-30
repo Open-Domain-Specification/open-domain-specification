@@ -40,7 +40,8 @@ export type SchemaUser =
  * A user is a consumable that carries the shape as its payload, its answer or
  * a refusal, or an owner with an attribute that names the schema as a shape
  * or as the kind an identity identifies: an aggregate whose entities hold it,
- * a value object, or another schema that nests it. A posting line is inside
+ * a value object, or another schema that nests it. A value-object kind also
+ * holds the attributes it inherits from its parent. A posting line is inside
  * the entry a command posts, so carriers alone would call that shape unused.
  * An identity naming an external kind does not carry the kind's attributes.
  * A schema that only mentions itself has no user, and an attribute that merely
@@ -80,7 +81,7 @@ export function usersOfSchema(schema: DataSchema): SchemaUser[] {
 				users.push({ kind: "aggregate", boundedcontext: bc, owner, use });
 		}
 		for (const owner of bc.valueobjects.values()) {
-			const use = useOf(owner.attributes.values());
+			const use = useOf(owner.allAttributes);
 			if (use)
 				users.push({ kind: "value object", boundedcontext: bc, owner, use });
 		}

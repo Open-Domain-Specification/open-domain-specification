@@ -1,3 +1,4 @@
+import { mayBorrowFrom } from "./borrowing";
 import {
 	type Aggregate,
 	type BoundedContext,
@@ -58,21 +59,28 @@ export type ValueObjectUser =
  * kinds. Kinds themselves are users of the parent they specialise: that
  * specialisation also backs borrowing in the validator. A holder reached
  * through a parent or kind says which one, so it does not imply that its
- * attribute names this exact value object. Inherited attributes and relations
- * of a kind count too. Each owner appears once even when it uses several
- * members of the same hierarchy.
+ * attribute names this exact value object. A parent-typed holder is a user of
+ * a foreign kind only if it may borrow that kind's context; an upstream holder
+ * cannot depend on a downstream kind. Inherited attributes and relations of a
+ * kind count too. Each owner appears once even when it uses several members
+ * of the same hierarchy.
  */
 export function usersOfValueObject(
 	valueObject: ValueObject,
 ): ValueObjectUser[] {
 	const users: ValueObjectUser[] = [];
-	const related = (candidate: ValueObject) =>
+	const workspace = valueObject.boundedcontext.workspace;
+	const related = (candidate: ValueObject, holder: BoundedContext) =>
 		candidate === valueObject ||
 		candidate.ancestors.includes(valueObject) ||
-		valueObject.ancestors.includes(candidate);
-	const through = (direct: Iterable<ValueObject>) =>
+		(valueObject.ancestors.includes(candidate) &&
+			(holder === valueObject.boundedcontext ||
+				mayBorrowFrom(workspace, holder, valueObject.boundedcontext)));
+	const through = (direct: Iterable<ValueObject>, holder: BoundedContext) =>
 		Array.from(new Set(direct))
-			.filter((candidate) => candidate !== valueObject && related(candidate))
+			.filter(
+				(candidate) => candidate !== valueObject && related(candidate, holder),
+			)
 			.sort((a, b) => a.ref.localeCompare(b.ref));
 	const typedBy = (owner: ValueObject | DataSchema) =>
 		Array.from(
@@ -83,17 +91,19 @@ export function usersOfValueObject(
 			.map((attribute) => attribute.valueobject)
 			.filter(
 				(candidate): candidate is ValueObject =>
-					!!candidate && related(candidate),
+					!!candidate && related(candidate, owner.boundedcontext),
 			);
-	for (const bc of valueObject.boundedcontext.workspace.boundedcontexts.values()) {
+	for (const bc of workspace.boundedcontexts.values()) {
 		for (const owner of bc.aggregates.values()) {
-			const direct = valueObjectsUsedBy(owner).filter(related);
+			const direct = valueObjectsUsedBy(owner).filter((candidate) =>
+				related(candidate, bc),
+			);
 			if (direct.length)
 				users.push({
 					kind: "aggregate",
 					boundedcontext: bc,
 					owner,
-					through: through(direct),
+					through: through(direct, bc),
 				});
 		}
 		for (const owner of bc.valueobjects.values()) {
@@ -103,7 +113,7 @@ export function usersOfValueObject(
 					.map((relation) => relation.target)
 					.filter(
 						(candidate): candidate is ValueObject =>
-							candidate instanceof ValueObject && related(candidate),
+							candidate instanceof ValueObject && related(candidate, bc),
 					),
 			];
 			const asKind =
@@ -113,7 +123,7 @@ export function usersOfValueObject(
 					kind: "value object",
 					boundedcontext: bc,
 					owner,
-					through: through(direct),
+					through: through(direct, bc),
 					asKind,
 				});
 		}
@@ -124,7 +134,7 @@ export function usersOfValueObject(
 					kind: "schema",
 					boundedcontext: bc,
 					owner,
-					through: through(direct),
+					through: through(direct, bc),
 				});
 		}
 	}

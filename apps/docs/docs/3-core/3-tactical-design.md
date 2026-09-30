@@ -104,8 +104,8 @@ Each of these costs something, and the cost is named rather than hidden:
   description, not the model (decision 15).
 - **A change to a value's behaviour shows nowhere.** A value object has
   attributes and invariants, so changing an attribute of `Money` shows on its
-  page, in `usagesOf` and in the Used by column on its declaring context's page,
-  which lists borrowers; changing how `Money` rounds names no consumer. It reopens when a source
+  page and in the Used by column on its declaring context's page,
+  which lists users across contexts; changing how `Money` rounds names no consumer. It reopens when a source
   states a value's behaviour with a named input, result or refusal, another
   element's contract depends on it, the model's form loses the change and a
   domain-service operation was tried (decision 15).

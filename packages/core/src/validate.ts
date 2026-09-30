@@ -1,4 +1,9 @@
 import {
+	downstreamRoleToward,
+	mayBorrowFrom,
+	sharesKernelWith,
+} from "./borrowing";
+import {
 	dispositionOf,
 	intentsWithoutComments,
 	relationshipsWithoutComments,
@@ -17,12 +22,7 @@ import {
 	reachedEvents,
 	routesTo,
 } from "./reaction-walk";
-import {
-	type DownstreamRole,
-	ODS_VERSION,
-	RelationType,
-	type UpstreamRole,
-} from "./schema";
+import { ODS_VERSION, RelationType, type UpstreamRole } from "./schema";
 import {
 	Aggregate,
 	Answer,
@@ -1812,76 +1812,6 @@ const postconditionNamesOperation: Rule = (workspace) => {
 	return diagnostics;
 };
 
-/** Whether the two contexts declare a shared kernel with one another. */
-function sharesKernelWith(
-	workspace: Workspace,
-	one: BoundedContext,
-	other: BoundedContext,
-): boolean {
-	return workspace.relationships.some(
-		(r) => r.type === "shared-kernel" && r.involves(one) && r.involves(other),
-	);
-}
-
-/**
- * Whether `downstream` has declared the given role toward `upstream`: a
- * directed relationship from the one to the other whose `downstreamRoles`
- * carry it (decision 03).
- *
- * The direction is the whole of it. A downstream is the side that takes the
- * other's model — as it stands, or translated — so the borrowing runs
- * downstream from upstream and never the other way: the upstream owes the
- * downstream nothing and must not be shaped by it.
- */
-function downstreamRoleToward(
-	workspace: Workspace,
-	downstream: BoundedContext,
-	upstream: BoundedContext,
-	role: DownstreamRole,
-): boolean {
-	return workspace.relationships.some(
-		(r) =>
-			isDirectedRelationshipType(r.type) &&
-			r.source === upstream &&
-			r.target === downstream &&
-			r.downstreamRoles.includes(role),
-	);
-}
-
-/** Whether `downstream` has declared itself a conformist of `upstream`. */
-function conformsTo(
-	workspace: Workspace,
-	downstream: BoundedContext,
-	upstream: BoundedContext,
-): boolean {
-	return downstreamRoleToward(workspace, downstream, upstream, "conformist");
-}
-
-/**
- * Whether `customer` is the downstream of a `customer-supplier` relationship
- * with `supplier`: the pair has negotiated the interface between them, and the
- * customer has a say in what the supplier builds.
- *
- * Asked of the relationship type rather than of a downstream role, because the
- * type is where the answer is written. Decision 03's amendment of 2026-09-10
- * stopped `role-coherence` asking a customer-supplier downstream for a role at
- * all — in Evans a conformist is the downstream with no say, the opposite of a
- * customer — so a customer has no role to declare and the relationship itself
- * is the declaration (card 128).
- */
-function isCustomerOf(
-	workspace: Workspace,
-	customer: BoundedContext,
-	supplier: BoundedContext,
-): boolean {
-	return workspace.relationships.some(
-		(r) =>
-			r.type === "customer-supplier" &&
-			r.source === supplier &&
-			r.target === customer,
-	);
-}
-
 /** Whether the two contexts declare a partnership with one another. */
 function partnersWith(
 	workspace: Workspace,
@@ -1915,46 +1845,6 @@ function translatesFrom(
 		downstream,
 		upstream,
 		"anti-corruption-layer",
-	);
-}
-
-/**
- * Whether `borrower` may name a schema or a value object that `owner`
- * declares. Three declarations say it may, and everything else stays sealed
- * (decisions 16 and 03).
- *
- * Two contexts keeping part of one model between them is a shared kernel,
- * which is symmetric. A downstream that has said it conforms is the second,
- * and it is one-way: a conformist takes the upstream's model as it stands, so
- * the upstream is never shaped by it.
- *
- * The third is the downstream of a customer-supplier relationship, and it was
- * missing. What that pair has is a negotiated interface, so the supplier's
- * published types are a language the customer had a say in settling; a
- * customer that types an attribute by one of them has borrowed nothing it did
- * not help agree. Without this clause the rule refused that model and told the
- * customer to declare itself a conformist — which decision 03's amendment of
- * 2026-09-10 had just stopped `role-coherence` asking for, because a
- * conformist is the downstream with no say and a customer is the downstream
- * that has one. The model recommended the word it elsewhere says is the wrong
- * word (card 130, architect's fourteenth round).
- *
- * A partnership is deliberately not a fourth. Partners plan and release
- * together; they do not thereby keep one model between them, which is what a
- * shared kernel is and what holding another context's shape needs. A partner
- * pair that really does share a shape declares a shared kernel beside the
- * partnership — two relationships of different types between one pair, which
- * `relationship-duplicate` allows — and {@link borrowingRoutes} says so.
- */
-function mayBorrowFrom(
-	workspace: Workspace,
-	borrower: BoundedContext,
-	owner: BoundedContext,
-): boolean {
-	return (
-		sharesKernelWith(workspace, borrower, owner) ||
-		conformsTo(workspace, borrower, owner) ||
-		isCustomerOf(workspace, borrower, owner)
 	);
 }
 

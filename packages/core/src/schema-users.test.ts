@@ -94,4 +94,42 @@ describe("usersOfSchema", () => {
 		]);
 		expect(usersOfSchema(payment)[0]).toMatchObject({ use: "identity" });
 	});
+
+	it("counts an identity inherited by a value-object kind before and after a round-trip", () => {
+		const { ws, sales } = makeWs();
+		const provider = ws.addBoundedContext("Payment Provider", {
+			description: "",
+			external: true,
+		});
+		const payment = provider.addSchema("ProviderPayment");
+		const parent = sales.addValueObject("PaymentReference", {
+			description: "",
+		});
+		parent.addAttribute("providerPaymentId", {
+			type: "string",
+			identifies: payment,
+		});
+		sales.addValueObject("CardPaymentReference", {
+			description: "",
+			specialises: parent,
+		});
+
+		for (const workspace of [ws, Workspace.fromSchema(ws.toSchema())]) {
+			expect(workspace.validate()).toEqual([]);
+			const schema = workspace.getSchemaByRefOrThrow(payment.ref);
+			expect(schema.consumables).toEqual([]);
+			expect(usersOfSchema(schema)).toMatchObject([
+				{
+					kind: "value object",
+					owner: { name: "PaymentReference" },
+					use: "identity",
+				},
+				{
+					kind: "value object",
+					owner: { name: "CardPaymentReference" },
+					use: "identity",
+				},
+			]);
+		}
+	});
 });

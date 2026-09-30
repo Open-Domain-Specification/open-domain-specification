@@ -114,6 +114,66 @@ describe("usersOfValueObject", () => {
 		]);
 	});
 
+	it("keeps parent-typed holders on the side allowed to borrow a kind", () => {
+		const ws = new Workspace("WS", { description: "", version: "test" });
+		const subdomain = ws
+			.addDomain("Bank", { description: "" })
+			.addSubdomain("Accounts", { type: "core", description: "" });
+		const accounts = subdomain.addBoundedcontext("Accounts", {
+			description: "",
+		});
+		const cards = subdomain.addBoundedcontext("Cards", { description: "" });
+		accounts.upstreamOf(cards, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		const money = accounts.addValueObject("Money", { description: "" });
+		const fee = cards.addValueObject("Fee", {
+			description: "",
+			specialises: money,
+		});
+		const overdraft = accounts.addValueObject("Overdraft", {
+			description: "",
+			specialises: money,
+		});
+		const account = accounts.addAggregate("Account", { description: "" });
+		const accountRoot = account.addEntity("Account", {
+			description: "",
+			root: true,
+		});
+		accountRoot.addAttribute("id", { type: "string", identity: true });
+		accountRoot.addAttribute("balance", {
+			type: "Money",
+			valueobject: money,
+		});
+		const card = cards.addAggregate("Card", { description: "" });
+		const cardRoot = card.addEntity("Card", {
+			description: "",
+			root: true,
+		});
+		cardRoot.addAttribute("id", { type: "string", identity: true });
+		cardRoot.addAttribute("fee", { type: "Fee", valueobject: fee });
+		cardRoot.addAttribute("limit", {
+			type: "Money",
+			valueobject: money,
+		});
+
+		expect(ws.validate()).toEqual([]);
+		expect(usersOfValueObject(fee).map((it) => it.owner.name)).toEqual([
+			"Card",
+		]);
+		expect(usersOfValueObject(overdraft)).toMatchObject([
+			{
+				owner: { name: "Account" },
+				through: [{ name: "Money" }],
+			},
+			{
+				owner: { name: "Card" },
+				through: [{ name: "Money" }],
+			},
+		]);
+	});
+
 	it("is empty for a value nobody uses", () => {
 		expect(usersOfValueObject(makeWs().money)).toEqual([]);
 	});
