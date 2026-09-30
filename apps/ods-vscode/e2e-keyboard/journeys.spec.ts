@@ -1,5 +1,11 @@
 import { expect, type Frame, type Page, test } from "@playwright/test";
 import {
+	expectClear,
+	expectFilled,
+	settledFit,
+	sizeOf,
+} from "../../../packages/pages/e2e/diagram-fit";
+import {
 	emulateReducedMotion,
 	type Host,
 	launchVSCode,
@@ -995,4 +1001,62 @@ test.describe("layout at the sizes a window takes", () => {
 			}
 		});
 	}
+});
+
+test.describe("the diagram fits the webview it is drawn in", () => {
+	let host: Host;
+	test.beforeAll(async () => {
+		host = await launchVSCode({ folder: "src/test/fixtures/cross-surface" });
+		await resize(host, 1300, 900);
+	});
+	test.afterAll(async () => {
+		await host.close();
+	});
+
+	// #89, #90 and #86 in the real webview: the map fills its canvas clear of
+	// the legend, the options, the controls and the minimap; the reader opening
+	// the legend refits round it; fullscreen, entered and left by real keys,
+	// fills the webview and gives the inline fit back. Every read waits for the
+	// settled fit (`packages/pages/e2e/diagram-fit.ts`), never a frame count.
+	test("#89 #90 #86 inline, with the legend toggled, and fullscreen by Enter and Escape", async () => {
+		const frame = await openOrders(host);
+		const flow = frame.locator(".svelte-flow").first();
+		await flow.scrollIntoViewIfNeeded();
+		const inline = await settledFit(flow);
+		expectClear(inline, "the Orders map inline in the webview");
+		expectFilled(inline, "the Orders map inline in the webview");
+
+		const legend = flow.locator(".diagram-legend .legend-header");
+		const was = await legend.getAttribute("aria-expanded");
+		await legend.click();
+		await expect(legend).not.toHaveAttribute("aria-expanded", was ?? "");
+		const toggled = await settledFit(flow);
+		expectClear(toggled, `the Orders map after the legend went from ${was}`);
+		expectFilled(toggled, `the Orders map after the legend went from ${was}`);
+
+		await tabToLabel(host, frame, "Enter fullscreen");
+		await host.window.keyboard.press("Enter");
+		await expect(frame.locator(".interactive.fullscreen")).toHaveCount(1);
+		const full = await settledFit(flow);
+		const screen = await frame.evaluate(() => [
+			document.documentElement.clientWidth,
+			document.documentElement.clientHeight,
+		]);
+		expect([
+			full.view.left,
+			full.view.top,
+			full.view.right,
+			full.view.bottom,
+		]).toEqual([0, 0, ...screen]);
+		expectClear(full, "the Orders map fullscreen in the webview");
+		expectFilled(full, "the Orders map fullscreen in the webview");
+		expect(full.zoom).toBeGreaterThan(toggled.zoom);
+
+		await host.window.keyboard.press("Escape");
+		await expect(frame.locator(".interactive.fullscreen")).toHaveCount(0);
+		const back = await settledFit(flow);
+		expect(sizeOf(back.view)).toEqual(sizeOf(toggled.view));
+		expect(back.zoom).toBeCloseTo(toggled.zoom, 5);
+		expectClear(back, "the Orders map after Escape");
+	});
 });

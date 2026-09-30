@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { expectClear, expectFilled, settledFit } from "./diagram-fit";
+import { expectClear, expectFilled, settledFit, sizeOf } from "./diagram-fit";
 import { openPage } from "./diagram-hosts";
 import { serveModel } from "./helpers";
 
@@ -86,7 +86,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
 				await drive(flow, page, "click");
 				const back = await settledFit(flow);
-				expect(back.view).toEqual(inline.view);
+				expect(sizeOf(back.view)).toEqual(sizeOf(inline.view));
 				expect(back.zoom).toBeCloseTo(inline.zoom, 5);
 				expectClear(back, `${name} after leaving`);
 				expectFilled(back, `${name} after leaving`);
@@ -113,7 +113,7 @@ for (const host of ["viewer", "export"] as const) {
 			await drive(flow, page, "escape");
 			await expect(flow.locator("xpath=..")).not.toHaveClass(/fullscreen/);
 			const back = await settledFit(flow);
-			expect(back.view).toEqual(inline.view);
+			expect(sizeOf(back.view)).toEqual(sizeOf(inline.view));
 			expect(back.zoom).toBeCloseTo(inline.zoom, 5);
 			expectClear(back, `the petstore in the ${host} after Escape`);
 		});

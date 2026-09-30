@@ -142,6 +142,12 @@ export async function settledFit(flow: Locator): Promise<SettledFit> {
 	return measured;
 }
 
+/** A box's width and height: what a canvas is, wherever the page has scrolled it. */
+export const sizeOf = (b: Box) => ({
+	width: b.right - b.left,
+	height: b.bottom - b.top,
+});
+
 const overlaps = (a: Box, b: Box) =>
 	a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
