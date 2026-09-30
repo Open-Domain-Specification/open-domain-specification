@@ -419,7 +419,7 @@ test.describe("diagram nodes and evidence", () => {
 			.locator(".svelte-flow__node-context")
 			.evaluateAll((els) => els.map((el) => el.getAttribute("aria-label")));
 		expect(names).toEqual([
-			"Orders, bounded context",
+			"Orders, INTENTIONAL-FAILURE-69",
 			"Billing, bounded context",
 			"Shipping, bounded context",
 		]);

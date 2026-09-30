@@ -8,7 +8,7 @@ const FIXTURE = "hostile_links.json";
 
 /** The four links the fixture's description writes that are allowed to stay links. */
 const SAFE_HREFS = [
-	"http://example.com/INTENTIONAL-FAILURE-69",
+	"http://example.com/a",
 	"https://example.com/b",
 	"mailto:someone@example.com",
 	"#/teams/orders_team",
