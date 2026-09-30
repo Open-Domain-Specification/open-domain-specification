@@ -36,9 +36,11 @@ export type DiagramFit = {
 	 * Whether `now` is still the view the fit last drew, so a change in the
 	 * room it was drawn for may draw it again. Before the first fit lands
 	 * there is nothing to redraw; once the reader zooms or pans, the view is
-	 * theirs and nothing the fit does moves it.
+	 * theirs and nothing the fit does moves it, until it is handed back.
 	 */
 	owns(now: Viewport): boolean;
+	/** Hands the view back to the fit, whatever the reader did to it, until the next fit lands. */
+	reclaim(): void;
 };
 
 export function createDiagramFit(): DiagramFit {
@@ -47,6 +49,7 @@ export function createDiagramFit(): DiagramFit {
 	let minZoom = $state(MIN_ZOOM);
 	let step = $state<ReliefStep | "none">("none");
 	let drawn: Viewport | undefined;
+	let reclaimed = false;
 	return {
 		legend,
 		options,
@@ -64,23 +67,26 @@ export function createDiagramFit(): DiagramFit {
 		},
 		landed(view) {
 			drawn = { ...view };
+			reclaimed = false;
 		},
 		owns(now) {
+			if (drawn === undefined) return false;
 			return (
-				drawn !== undefined &&
-				now.x === drawn.x &&
-				now.y === drawn.y &&
-				now.zoom === drawn.zoom
+				reclaimed ||
+				(now.x === drawn.x && now.y === drawn.y && now.zoom === drawn.zoom)
 			);
+		},
+		reclaim() {
+			reclaimed = true;
 		},
 	};
 }
 
 /**
  * Fits `flow` past the panels in `container` and records the view it drew as
- * the fit's own. Every fit after the first goes through here — a panel
- * changing size, the Fit View control — so each one hands the view back to
- * the fit.
+ * the fit's own. Every fit goes through here — the first, a panel or the
+ * canvas changing size, fullscreen, the Fit View control — so each one hands
+ * the view back to the fit.
  */
 export async function refit<TNode extends Shown>(
 	fit: DiagramFit,

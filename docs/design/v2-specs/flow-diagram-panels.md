@@ -204,3 +204,26 @@ the maps that were small only because of it. NorthBank's OnboardingApp consumabl
 1300x900 is fitted at 0.320 instead of 0.267. `e2e/diagram-panel-fit.spec.ts` holds every
 NorthBank page at 1300x900 and 1150x700, and the petstore in the viewer and the static export,
 to the gutter along the binding axis.
+
+## Amendment, 2026-09-30: a new canvas gets a new fit, once it has been measured (#86)
+
+A fullscreen diagram filled about half the screen. The report suspected a screenshot taken before
+the refit landed, and it was not. Driven by hand at 1300x900 and left to settle, NorthBank's
+workspace map stayed at 0.2 in the top-left 646x439 of the screen. Leaving fullscreen then drew
+it at 0.356, half again wider than the 760x540 canvas it came back to. The overlay's refit waited
+a tick and a frame, but Svelte Flow learns its size from a ResizeObserver, which reports after
+that frame. So each way, the fit was made for the size the canvas had just stopped being.
+
+The fit now follows Svelte Flow's own measure of the canvas, the size `fitView` fits to. When
+that changes, the fit is redone on the same terms as a panel changing size (#90 above): as long as
+the view on screen is still the one the fit drew. That covers entering and leaving fullscreen, a
+window resized, and an editor split dragged; before, only fullscreen refitted, and a resized
+window left nodes under a panel. Entering or leaving fullscreen first hands the view back to the
+fit, whatever the reader had done to it, because the reader asked for a new canvas. A window
+resized under a view the reader zoomed or panned leaves it where they put it.
+
+`e2e/diagram-fullscreen-fit.spec.ts` drives fullscreen by pointer, by Enter and by Escape in the
+viewer and the static export, dense and sparse maps, both themes. After each transition it waits
+for the settled fit and holds the overlay to the whole window, every node clear of every panel,
+and the graph to the gutter along the axis that binds it. Leaving fullscreen must give back the
+inline fit exactly.

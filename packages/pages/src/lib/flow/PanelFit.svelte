@@ -1,6 +1,6 @@
 <script lang="ts">
-import { useSvelteFlow } from "@xyflow/svelte";
-import { onMount, tick } from "svelte";
+import { useStore, useSvelteFlow } from "@xyflow/svelte";
+import { onMount, tick, untrack } from "svelte";
 import { type DiagramFit, refit } from "./fit.svelte";
 import { crowded, MIN_ZOOM, PANEL_SELECTOR, RELIEF_STEPS } from "./panel-fit";
 
@@ -26,9 +26,36 @@ import { crowded, MIN_ZOOM, PANEL_SELECTOR, RELIEF_STEPS } from "./panel-fit";
  * is still the one the fit drew. Only the fit is redone, never the walk, so a
  * panel the reader opened stays open. Once the reader has zoomed or panned,
  * the view is theirs and a panel opening over it moves nothing.
+ *
+ * The canvas changing size refits it on the same terms: a window or an editor
+ * split resized, or the diagram entering or leaving fullscreen. The refit
+ * waits for Svelte Flow's own measure of the canvas, the size its `fitView`
+ * fits to, which a ResizeObserver updates after layout; a refit timed by
+ * frames instead ran before it and fitted the old size (#86). Entering or
+ * leaving fullscreen hands the view back to the fit first, whatever the
+ * reader had done to it, since the reader asked for a new canvas.
  */
-let { container, fit }: { container?: HTMLElement; fit: DiagramFit } = $props();
+let {
+	container,
+	fit,
+	fullscreen = false,
+}: {
+	container?: HTMLElement;
+	fit: DiagramFit;
+	fullscreen?: boolean;
+} = $props();
 const flow = useSvelteFlow();
+const store = useStore();
+$effect(() => {
+	void fullscreen;
+	untrack(() => fit.reclaim());
+});
+$effect(() => {
+	void [store.width, store.height];
+	untrack(() => {
+		if (fit.owns(flow.getViewport())) void refit(fit, flow, container);
+	});
+});
 const frame = () =>
 	new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 onMount(() => {

@@ -166,9 +166,9 @@ const refit = () => {
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
 		<Controls showLock={false} showFitView={false}><FitViewButton {container} {fit} /></Controls>
 		<MiniMap pannable zoomable width={120} height={80} nodeClass={minimapNodeClass} />
-		<DiagramOptionsPanel {kind} {fullscreen} {container} panel={fit.options} />
+		<DiagramOptionsPanel {kind} {fullscreen} panel={fit.options} />
 		<LegendPanel {graph} {kind} legend={fit.legend} />
-		<PanelFit {container} {fit} />
+		<PanelFit {container} {fit} fullscreen={fullscreen.active} />
 		<DoubleClickZoom {container} reduced={motion.reduced} minZoom={fit.minZoom} maxZoom={MAX_ZOOM} />
 		<DisclosureCard {disclosure} />
 	</SvelteFlow>

@@ -74,7 +74,7 @@ describe("Escape through a whole page's layers", () => {
 		const badge = document.createElement("button");
 		document.body.append(badge);
 		const fullscreen = createFullscreen();
-		fullscreen.toggle(() => {});
+		fullscreen.toggle();
 		const disclosure = createDisclosure();
 		disclosure.show(relationship, { x: 0, y: 0 }, badge);
 		const hover = createHover(() => undefined);

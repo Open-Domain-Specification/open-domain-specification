@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Panel, useSvelteFlow } from "@xyflow/svelte";
+import { Panel } from "@xyflow/svelte";
 import { untrack } from "svelte";
 import Icon from "../atoms/Icon.svelte";
 import type { Fullscreen } from "./fullscreen.svelte";
@@ -10,7 +10,7 @@ import {
 	type EdgeStyle,
 	type HandleMode,
 } from "./options.svelte";
-import { fitPastPanels, OPTIONS_PANEL_CLASS } from "./panel-fit";
+import { OPTIONS_PANEL_CLASS } from "./panel-fit";
 import type { PanelState } from "./panel-state.svelte";
 
 /**
@@ -30,16 +30,12 @@ import type { PanelState } from "./panel-state.svelte";
 let {
 	kind = "context",
 	fullscreen,
-	container,
 	panel,
 }: {
 	kind?: DiagramKind;
 	fullscreen: Fullscreen;
-	container?: HTMLElement;
 	panel: PanelState;
 } = $props();
-// The panel sits inside Svelte Flow, so it is the piece that can refit the canvas.
-const flow = useSvelteFlow();
 let handles = $state<HandleMode>(
 	untrack(() => diagramOptions.handlesFor(kind)),
 );
@@ -93,7 +89,7 @@ const controls = `diagram-options-${uid}`;
 		class="fullscreen"
 		title={fullscreen.active ? "Exit fullscreen" : "Enter fullscreen"}
 		aria-label={fullscreen.active ? "Exit fullscreen" : "Enter fullscreen"}
-		onclick={() => fullscreen.toggle(() => fitPastPanels(flow, container))}
+		onclick={fullscreen.toggle}
 	>
 		<Icon name={fullscreen.active ? "screen-normal" : "screen-full"} />
 	</button>

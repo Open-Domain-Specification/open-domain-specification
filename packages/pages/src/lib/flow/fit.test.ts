@@ -63,6 +63,20 @@ describe("who owns the view", () => {
 		expect(fit.owns(view)).toBe(false);
 	});
 
+	it("takes the view back when handed it, until the next fit lands", () => {
+		const fit = createDiagramFit();
+		const moved = { ...drawn, zoom: 2 };
+		// Nothing to hand back before a fit has landed.
+		fit.reclaim();
+		expect(fit.owns(moved)).toBe(false);
+		fit.landed(drawn);
+		expect(fit.owns(moved)).toBe(false);
+		fit.reclaim();
+		expect(fit.owns(moved)).toBe(true);
+		fit.landed(drawn);
+		expect(fit.owns(moved)).toBe(false);
+	});
+
 	it("takes the view back with every refit", async () => {
 		const fit = createDiagramFit();
 		const flow = {
