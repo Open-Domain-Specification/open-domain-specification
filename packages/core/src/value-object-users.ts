@@ -62,8 +62,9 @@ export type ValueObjectUser =
  * attribute names this exact value object. A parent-typed holder is a user of
  * a foreign kind only if it may borrow that kind's context; an upstream holder
  * cannot depend on a downstream kind. Inherited attributes and relations of a
- * kind count too. Each owner appears once even when it uses several members
- * of the same hierarchy.
+ * kind count too. A recursive value does not count as its own user, as with a
+ * self-nesting schema. Each other owner appears once even when it uses several
+ * members of the same hierarchy.
  */
 export function usersOfValueObject(
 	valueObject: ValueObject,
@@ -107,6 +108,7 @@ export function usersOfValueObject(
 				});
 		}
 		for (const owner of bc.valueobjects.values()) {
+			if (owner === valueObject) continue;
 			const direct = [
 				...typedBy(owner),
 				...owner.allRelations
@@ -116,8 +118,7 @@ export function usersOfValueObject(
 							candidate instanceof ValueObject && related(candidate, bc),
 					),
 			];
-			const asKind =
-				owner !== valueObject && owner.ancestors.includes(valueObject);
+			const asKind = owner.ancestors.includes(valueObject);
 			if (direct.length || asKind)
 				users.push({
 					kind: "value object",

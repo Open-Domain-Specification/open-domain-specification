@@ -177,4 +177,10 @@ describe("usersOfValueObject", () => {
 	it("is empty for a value nobody uses", () => {
 		expect(usersOfValueObject(makeWs().money)).toEqual([]);
 	});
+
+	it("does not count a value's recursive definition as an outside user", () => {
+		const { money } = makeWs();
+		money.addAttribute("next", { type: "Money", valueobject: money });
+		expect(usersOfValueObject(money)).toEqual([]);
+	});
 });

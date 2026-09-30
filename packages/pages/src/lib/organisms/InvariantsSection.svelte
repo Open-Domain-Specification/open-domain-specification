@@ -1,11 +1,16 @@
 <script lang="ts">
-import type { Diagnostic, Invariant } from "@open-domain-specification/core";
-import { constrainableLabel } from "@open-domain-specification/core";
+import {
+	type BoundedContext,
+	constrainableLabel,
+	type Diagnostic,
+	type Invariant,
+} from "@open-domain-specification/core";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Keyword from "../atoms/Keyword.svelte";
 import Lockup from "../atoms/Lockup.svelte";
 import Ref from "../atoms/Ref.svelte";
+import { kindOf } from "../molecules/element-kind";
 import Section from "./Section.svelte";
 
 /**
@@ -26,6 +31,7 @@ const {
 	id = "invariants",
 	title = "Constrained by",
 	constrains = false,
+	ownerRelativeTo,
 	problems = [],
 }: {
 	invariants: Invariant[];
@@ -34,6 +40,8 @@ const {
 	id?: string;
 	title?: string;
 	constrains?: boolean;
+	/** Show who keeps each rule; foreign owners also name their context. */
+	ownerRelativeTo?: BoundedContext;
 	problems?: Diagnostic[];
 } = $props();
 
@@ -47,6 +55,7 @@ const WHOLE = {
 
 const columns = $derived<Column[]>([
 	{ key: "name", label: "Invariant" },
+	...(ownerRelativeTo ? [{ key: "owner", label: "Kept by" }] : []),
 	...(constrains ? [{ key: "constrains", label: "Constrains" }] : []),
 	{ key: "description", label: "Description" },
 ]);
@@ -57,6 +66,11 @@ const columns = $derived<Column[]>([
 		{#snippet cell(i, col)}
 			{#if col.key === "name"}
 				<Lockup kind="invariant" name={i.name} ref={i.ref} />
+			{:else if col.key === "owner"}
+				{#if i.boundedcontext !== ownerRelativeTo}
+					<Lockup kind="boundedcontext" name={i.boundedcontext.name} ref={i.boundedcontext.ref} />{" / "}
+				{/if}
+				<Lockup kind={kindOf(i.owner)} name={i.owner.name} ref={i.owner.ref} />
 			{:else if col.key === "constrains"}
 				{#each i.targets as t, n (t.ref)}{#if n}{", "}{/if}<Ref ref={t.ref} label={constrainableLabel(t)} />{:else}<Keyword text={WHOLE[i.kind]} />{/each}
 			{:else}

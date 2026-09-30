@@ -32,8 +32,7 @@ import Section from "../organisms/Section.svelte";
 const { valueobject: v }: { valueobject: ValueObject } = $props();
 const model = useModel();
 const ws = model.workspace;
-// A value object belongs to the context, so any aggregate of that context may
-// hold it and any of their invariants may name it (decision 16).
+// The value's declaring context is its home, even when another context borrows it.
 const bc = $derived(v.boundedcontext);
 // A kind of a value object may live in a context that borrows this one over a
 // shared kernel, so the kinds are looked up across the workspace, not here.
@@ -44,7 +43,8 @@ const usages = $derived(usagesOf(ws, v));
 // statement (decision 27).
 const invariants = $derived([...v.invariants.values()]);
 const constrainedBy = $derived(
-	[...bc.aggregates.values()]
+	[...ws.boundedcontexts.values()]
+		.flatMap((context) => [...context.aggregates.values()])
 		.flatMap((a) => [...a.invariants.values()])
 		.filter((i) => i.targets.includes(v)),
 );
@@ -90,7 +90,7 @@ const relationColumns: Column[] = [
 <Section
 	id="usage"
 	title={sections.find((s) => s.id === "usage")!.label}
-	lead="Attributes across the workspace that name this exact value object as their type. Parent-typed holders appear in Used by on its context page."
+	lead="Attributes across the workspace that name this exact value object as their type. Kinds, relations and holders reached through a parent or kind appear in Used by on its context page."
 	count={usages.length}
 	problems={problemsUnder(model, v.ref)}
 >
@@ -118,7 +118,7 @@ const relationColumns: Column[] = [
 <Section
 	id="relations"
 	title="Relations"
-	lead="Value objects may hold other value objects of the same context; they should not point at entities in other aggregates."
+	lead="Value objects may hold other value objects of their context or one they may borrow from; they should not point at entities in other aggregates."
 	count={v.relations.length}
 >
 	<DataTable columns={relationColumns} rows={v.relations} empty="No relations.">
@@ -146,6 +146,7 @@ const relationColumns: Column[] = [
 	id="constrained-by"
 	title="Constrained by"
 	invariants={constrainedBy}
+	ownerRelativeTo={bc}
 	lead="Rules of the aggregates that hold this value, which name it as part of a wider statement."
 	emptyText="No aggregate's rule names this value object."
 />
