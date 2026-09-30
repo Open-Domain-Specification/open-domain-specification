@@ -51,12 +51,48 @@ export function playwrightTests(report) {
 				out.push({
 					title: [...here, spec.title].join(" > "),
 					status: test.status,
+					expectedStatus: test.expectedStatus,
+					results: test.results,
 				});
 		for (const child of suite.suites ?? []) walk(child, here);
 	};
 	for (const suite of report.suites ?? []) walk(suite, []);
 	return out;
 }
+
+/**
+ * What one Playwright test amounts to. `status` is the outcome against what the
+ * test expected, so a `test.fail()` test that fails is "expected" with an
+ * `expectedStatus` of "failed"; a journey is a pass only when it was expected to
+ * pass and its one attempt did. Anything not recognised is "unrecognised", never
+ * a pass.
+ */
+export function classifyPlaywrightTest(t) {
+	if (t.status === "skipped") return "skipped";
+	if (t.status === "unexpected") return "failed";
+	if (t.status === "flaky") return "flaky";
+	if (t.status !== "expected") return "unrecognised";
+	if (t.expectedStatus === "failed") return "expected-failure";
+	if (t.expectedStatus !== "passed") return "unrecognised";
+	if (!Array.isArray(t.results) || t.results.length === 0)
+		return "unrecognised";
+	if (t.results.length > 1) return "flaky";
+	return t.results[0]?.status === "passed" ? "passed" : "unrecognised";
+}
+
+const KEYBOARD_REASON = {
+	failed: "failed",
+	flaky: "flaky (passed only on retry)",
+	"expected-failure": "an expected failure (test.fail) is not a pass",
+	skipped: "unexpected skip",
+	unrecognised: "unrecognised result, not counted as a pass",
+};
+
+const isEntryList = (list) =>
+	Array.isArray(list) &&
+	list.every(
+		(e) => e && typeof e === "object" && typeof e.fullTitle === "string",
+	);
 
 /**
  * @param {{
@@ -85,20 +121,39 @@ export function checkResults(input) {
 			);
 			continue;
 		}
-		const passes = report.passes ?? [];
-		const pending = report.pending ?? [];
-		const failures = report.failures ?? [];
-		const executed = passes.length + failures.length;
+		if (
+			![report.passes, report.pending, report.failures, report.retried].every(
+				isEntryList,
+			) ||
+			report.passes.some((p) => !Number.isInteger(p.retries))
+		) {
+			problems.push(
+				`vscode-test ${label}: unrecognised results file (passes, pending, failures or retried missing or malformed)`,
+			);
+			continue;
+		}
+		const { pending, failures, retried } = report;
+		const retriedTitles = new Set([
+			...retried.map((r) => r.fullTitle),
+			...report.passes.filter((p) => p.retries > 0).map((p) => p.fullTitle),
+		]);
+		const passes = report.passes.filter((p) => !retriedTitles.has(p.fullTitle));
+		const executed = report.passes.length + failures.length;
 		summary.vscode[label] = {
 			executed,
 			passed: passes.length,
-			failed: failures.length,
+			failed: failures.length + (report.passes.length - passes.length),
 			skipped: pending.length,
 		};
 		if (executed === 0)
 			problems.push(`vscode-test ${label}: zero tests executed`);
 		for (const f of failures)
 			problems.push(`vscode-test ${label}: failed: ${f.fullTitle}`);
+		for (const title of retriedTitles)
+			if (!failures.some((f) => f.fullTitle === title))
+				problems.push(
+					`vscode-test ${label}: passed only after a retry: ${title}`,
+				);
 		const allow = new Set(allowed[label] ?? []);
 		const skipped = new Set(pending.map((p) => p.fullTitle));
 		for (const title of skipped)
@@ -123,25 +178,28 @@ export function checkResults(input) {
 			"keyboard: no results (VS Code did not download, start or finish)",
 		);
 	} else {
-		const tests = playwrightTests(kb);
-		const count = (s) => tests.filter((t) => t.status === s).length;
+		const tests = playwrightTests(kb).map((t) => ({
+			...t,
+			kind: classifyPlaywrightTest(t),
+		}));
+		const count = (k) => tests.filter((t) => t.kind === k).length;
 		summary.keyboard = {
-			executed: tests.filter((t) => t.status !== "skipped").length,
-			passed: count("expected"),
-			failed: count("unexpected"),
+			executed:
+				count("passed") +
+				count("failed") +
+				count("flaky") +
+				count("expected-failure"),
+			passed: count("passed"),
+			failed: count("failed"),
 			flaky: count("flaky"),
+			other: count("expected-failure") + count("unrecognised"),
 			skipped: count("skipped"),
 		};
 		if (summary.keyboard.executed === 0)
 			problems.push("keyboard: zero tests executed");
-		for (const t of tests) {
-			if (t.status === "unexpected")
-				problems.push(`keyboard: failed: ${t.title}`);
-			else if (t.status === "flaky")
-				problems.push(`keyboard: flaky (passed only on retry): ${t.title}`);
-			else if (t.status === "skipped")
-				problems.push(`keyboard: unexpected skip: ${t.title}`);
-		}
+		for (const t of tests)
+			if (t.kind !== "passed")
+				problems.push(`keyboard: ${KEYBOARD_REASON[t.kind]}: ${t.title}`);
 		for (const e of kb.errors ?? [])
 			problems.push(`keyboard: run error: ${e.message ?? JSON.stringify(e)}`);
 	}
@@ -170,7 +228,7 @@ export function renderSummary(result, env = {}) {
 	if (summary.keyboard) {
 		const k = summary.keyboard;
 		lines.push(
-			`| keyboard | journeys and smoke | ${k.executed} | ${k.passed} | ${k.failed + k.flaky} | ${k.skipped} |`,
+			`| keyboard | journeys and smoke | ${k.executed} | ${k.passed} | ${k.failed + k.flaky + k.other} | ${k.skipped} |`,
 		);
 	}
 	lines.push("", "### Allowed skips (optional screenshot tests)", "");

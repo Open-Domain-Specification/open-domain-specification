@@ -11,11 +11,12 @@ import {
 	VSCODE_TEST_CONFIGS,
 } from "./check-real-host-results.mjs";
 
-const pass = (fullTitle) => ({ title: fullTitle, fullTitle });
+const pass = (fullTitle) => ({ title: fullTitle, fullTitle, retries: 0 });
 const mocha = ({ passes = ["a test"], pending = [], failures = [] } = {}) => ({
 	passes: passes.map(pass),
 	pending: pending.map(pass),
 	failures: failures.map(pass),
+	retried: [],
 });
 const screenshots = ALLOWED_SKIPS.petstore;
 
@@ -24,7 +25,22 @@ const goodVscode = () => ({
 	"hostile-links": mocha(),
 	"cross-surface": mocha(),
 });
-const spec = (title, status) => ({ title, tests: [{ status }] });
+const RESULTS = {
+	expected: [{ status: "passed" }],
+	unexpected: [{ status: "failed" }],
+	flaky: [{ status: "failed" }, { status: "passed" }],
+	skipped: [{ status: "skipped" }],
+};
+const spec = (title, status) => ({
+	title,
+	tests: [
+		{
+			status,
+			expectedStatus: status === "skipped" ? "skipped" : "passed",
+			results: RESULTS[status],
+		},
+	],
+});
 const goodKeyboard = () => ({
 	suites: [
 		{
@@ -174,6 +190,7 @@ describe("checkResults", () => {
 			passed: 1,
 			failed: 1,
 			flaky: 1,
+			other: 0,
 			skipped: 1,
 		});
 	});
@@ -186,18 +203,11 @@ describe("checkResults", () => {
 		expect(r.problems).toContain("allowed skips name an unknown config: ghost");
 	});
 
-	it("tolerates reports without the optional arrays", () => {
+	it("rejects a mocha record that lacks the retry information", () => {
 		const input = good();
-		input.vscode.petstore = { passes: [pass("p")] };
-		input.vscode["hostile-links"] = { passes: [pass("h")], pending: [] };
-		const r = checkResults({
-			...input,
-			allowedSkips: {},
-			keyboard: {
-				suites: [{ specs: [{ title: "t", tests: [{ status: "expected" }] }] }],
-			},
-		});
-		expect(r.problems).toEqual([]);
+		input.vscode.petstore = { passes: [pass("p")], pending: [], failures: [] };
+		const r = checkResults({ ...input, allowedSkips: {} });
+		expect(r.problems[0]).toContain("petstore: unrecognised results file");
 	});
 });
 
@@ -217,7 +227,7 @@ describe("playwrightTests", () => {
 				{ specs: [spec("bare", "skipped")] },
 			],
 		});
-		expect(tests).toEqual([
+		expect(tests.map((t) => ({ title: t.title, status: t.status }))).toEqual([
 			{ title: "a.ts > outer > inner > t", status: "expected" },
 			{ title: "bare", status: "skipped" },
 		]);

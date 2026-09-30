@@ -15,7 +15,7 @@ const run = (args, env = {}) =>
 		env: { ...process.env, GITHUB_STEP_SUMMARY: "", ...env },
 	});
 const tmp = () => mkdtempSync(join(tmpdir(), "ods-results-"));
-const entry = (fullTitle) => ({ title: fullTitle, fullTitle });
+const entry = (fullTitle) => ({ title: fullTitle, fullTitle, retries: 0 });
 
 describe("check-real-host-results.mjs on the command line", () => {
 	it("exits 1 and names the problem when the results directory is empty", () => {
@@ -34,12 +34,28 @@ describe("check-real-host-results.mjs on the command line", () => {
 					passes: [entry("a test")],
 					pending: (ALLOWED_SKIPS[label] ?? []).map(entry),
 					failures: [],
+					retried: [],
 				}),
 			);
 		writeFileSync(
 			join(dir, "keyboard.json"),
 			JSON.stringify({
-				suites: [{ specs: [{ title: "t", tests: [{ status: "expected" }] }] }],
+				suites: [
+					{
+						specs: [
+							{
+								title: "t",
+								tests: [
+									{
+										status: "expected",
+										expectedStatus: "passed",
+										results: [{ status: "passed" }],
+									},
+								],
+							},
+						],
+					},
+				],
 				errors: [],
 			}),
 		);

@@ -11,7 +11,7 @@ const userDataDir =
 	process.env.ODS_VSCODE_USER_DATA ?? join(tmpdir(), "ods-vscode-test");
 
 // With ODS_RESULTS_DIR set, each config also writes `vscode-test-<label>.json`
-// there (see src/test/results-reporter.ts), which CI reads. Unset, the output is
+// there (see src/test/results-reporter.cjs), which CI reads. Unset, the output is
 // the plain spec reporter it always was.
 const resultsDir = process.env.ODS_RESULTS_DIR;
 const mocha = (label) => ({
@@ -19,7 +19,7 @@ const mocha = (label) => ({
 	timeout: 60000,
 	...(resultsDir
 		? {
-				reporter: resolve(import.meta.dirname, "out/test/results-reporter.js"),
+				reporter: resolve(import.meta.dirname, "src/test/results-reporter.cjs"),
 				reporterOptions: {
 					output: join(resultsDir, `vscode-test-${label}.json`),
 				},
