@@ -235,21 +235,36 @@ describe("PanelFit when the canvas changes size", () => {
 		unmount();
 	});
 
-	it("takes the view back on entering and leaving fullscreen, and fits the new canvas", async () => {
+	it("takes the view back on entering and leaving fullscreen, and fits the new canvas once measured", async () => {
 		const fit = createDiagramFit();
 		const { measure, rerender, unmount } = mount({ fit });
 		await walked();
+		// Svelte Flow's measure and the element disagree from here on: jsdom
+		// lays nothing out, so a new measure is always still to come.
+		await measure(760, 540);
 		for (const [fullscreen, width, height] of [
 			[true, 1300, 900],
 			[false, 760, 540],
 		] as const) {
 			// The reader had zoomed in: the view is theirs, until they ask for a new canvas.
 			fit.landed({ x: 40, y: 40, zoom: 2 });
-			await rerender({ fullscreen });
 			const before = vi.mocked(fitPastPanels).mock.calls.length;
+			await rerender({ fullscreen });
+			expect(fitPastPanels).toHaveBeenCalledTimes(before);
 			await measure(width, height);
 			expect(fitPastPanels).toHaveBeenCalledTimes(before + 1);
 		}
+		unmount();
+	});
+
+	it("fits at once an overlay the size the canvas already was", async () => {
+		const fit = createDiagramFit();
+		const { rerender, unmount } = mount({ fit });
+		await walked();
+		// Unlaid-out, the element and Svelte Flow's measure agree: nothing new is coming.
+		fit.landed({ x: 40, y: 40, zoom: 2 });
+		await rerender({ fullscreen: true });
+		expect(fitPastPanels).toHaveBeenCalledTimes(2);
 		unmount();
 	});
 });

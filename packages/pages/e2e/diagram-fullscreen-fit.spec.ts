@@ -164,6 +164,11 @@ test.describe("fullscreen after the reader has moved the map", () => {
 		const zoomed = await settledFit(flow);
 		await page.setViewportSize({ width: 1300, height: 900 });
 		await figure.scrollIntoViewIfNeeded();
-		expect((await settledFit(flow)).zoom).toBe(zoomed.zoom);
+		const wider = await settledFit(flow);
+		// Measured after the canvas took its new width, not before.
+		expect(wider.view.right - wider.view.left).toBeGreaterThan(
+			zoomed.view.right - zoomed.view.left,
+		);
+		expect(wider.zoom).toBe(zoomed.zoom);
 	});
 });

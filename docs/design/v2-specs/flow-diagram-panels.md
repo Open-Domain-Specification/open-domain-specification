@@ -237,8 +237,10 @@ that changes, the fit is redone on the same terms as a panel changing size (#90 
 the view on screen is still the one the fit drew. That covers entering and leaving fullscreen, a
 window resized, and an editor split dragged; before, only fullscreen refitted, and a resized
 window left nodes under a panel. Entering or leaving fullscreen first hands the view back to the
-fit, whatever the reader had done to it, because the reader asked for a new canvas. A window
-resized under a view the reader zoomed or panned leaves it where they put it.
+fit, whatever the reader had done to it, because the reader asked for a new canvas. An overlay
+no bigger than the canvas it replaces brings no new measure to wait for, so it is fitted at once.
+A window resized under a view the reader zoomed or panned leaves it where they put it. Each
+transition moves the viewport once, at the new size.
 
 `e2e/diagram-fullscreen-fit.spec.ts` drives fullscreen by pointer, by Enter and by Escape in the
 viewer and the static export, dense and sparse maps, both themes. After each transition it waits

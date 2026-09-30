@@ -33,7 +33,8 @@ import { crowded, MIN_ZOOM, PANEL_SELECTOR, RELIEF_STEPS } from "./panel-fit";
  * fits to, which a ResizeObserver updates after layout; a refit timed by
  * frames instead ran before it and fitted the old size (#86). Entering or
  * leaving fullscreen hands the view back to the fit first, whatever the
- * reader had done to it, since the reader asked for a new canvas.
+ * reader had done to it, since the reader asked for a new canvas; an overlay
+ * no bigger than the canvas was brings no new measure, and is fitted at once.
  */
 let {
 	container,
@@ -46,9 +47,19 @@ let {
 } = $props();
 const flow = useSvelteFlow();
 const store = useStore();
+/** Svelte Flow has already measured the canvas at the size it has now, so no new measure is coming. */
+const measured = () =>
+	store.domNode?.clientWidth === store.width &&
+	store.domNode?.clientHeight === store.height;
 $effect(() => {
 	void fullscreen;
-	untrack(() => fit.reclaim());
+	untrack(() => {
+		fit.reclaim();
+		// An overlay the size the canvas already was brings no new measure to
+		// wait for, so the view handed back is fitted now.
+		if (measured() && fit.owns(flow.getViewport()))
+			void refit(fit, flow, container);
+	});
 });
 $effect(() => {
 	void [store.width, store.height];
