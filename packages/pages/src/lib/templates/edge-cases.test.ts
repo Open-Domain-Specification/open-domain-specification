@@ -476,7 +476,7 @@ describe("the tactical templates on the alternate branches", () => {
 
 	it("SchemaPage: nothing carries it", () => {
 		expect(textOf(schemaRef("main_context", "unused_schema").$ref)).toContain(
-			"Nothing carries this schema yet.",
+			"No consumable names this schema directly.",
 		);
 	});
 
