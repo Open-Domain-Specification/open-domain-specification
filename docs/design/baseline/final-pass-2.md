@@ -266,3 +266,35 @@ That is 24 screenshots in all (12 from the harness and 12 from the targeted capt
 **Findings.** The on-screen defect above is fixed within #48. No new defect. Nothing blocks the epic.
 
 **Not covered by this recheck.** Screen readers; VS Code high-contrast themes; `forced-colors`; the webview's appearance (its behaviour is covered by the Playwright-Electron journeys, which assert the same on-screen conditions inside the webview frame).
+
+### Addendum: scrolled content and the focused citation (lead, 2026-09-30T09:35:44Z)
+
+The owner's re-review at a212f0e4 found that a scroll of the explanation's own content was treated as the keyword moving. The re-measure then reset `scrollTop` to 0 and hid a citation the reader had tabbed into. This is fixed in 5d378790 (#48):
+- a scroll that starts inside the keyword or its explanation neither closes nor re-places it;
+- a genuine re-placement restores the reader's `scrollTop`.
+
+Only this state is rechecked here. Nothing else in the recheck above changed, because 5d378790 touches only `hover.svelte.ts` and `PatternHover.svelte`.
+
+**Code under test.** Built at 6909d86b, whose product source is identical to 5d378790, the last product-source commit.
+
+**The journey:** real keys throughout.
+1. Tab to the tolerated evidence badge on the petstore Sales BC context map, and press Enter.
+2. Tab to the `upstream-downstream` keyword.
+3. Tab into the citation (`inventory/projection/OrderEventHandler.ts`) at the foot of its explanation.
+4. Wait until `scrollTop` is unchanged across two double-rAF reads, plus 200ms.
+
+Then measure. The hit is `elementFromPoint` at the middle of the citation's last line box.
+
+| Viewport | Hosts × themes | Explanation top–bottom | Citation top–bottom | `scrollTop` / max | Citation inside the explanation | Hit | Seen |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 800×110 | viewer, export × light, dark | 8–81 | 31.5–67 | 138 / 138 | yes | yes | Scrolled to the end; the focused link and its ring are visible inside the explanation |
+| 800×300 | viewer, export × light, dark | 126–292 | 256.8–292.3 | 31 / 45 | yes | yes | Scrolled; the focused link is visible at the foot |
+| 800×400 | viewer, export × light, dark | 176–387 | 337.8–373.3 | 0 / 0 | yes | yes | Petstore's comment fits at this height, so the scroll path is not exercised. The owner's longer fixture exercised it; the 110 and 300 rows and the regression cover it |
+
+These are 12 settled captures at 2× device scale, inspected in the lead's scratchpad and not committed.
+
+The committed regressions carry the same checks, and each failed first on 334f47a5 with `scrollTop` 0 and the citation outside the explanation:
+- `packages/pages/e2e/diagram-evidence-keyboard.spec.ts`, Tab into a citation at 800×110 and 800×300, plus a keyword-move case preserving `scrollTop`, on the viewer and the export;
+- `apps/ods-vscode/e2e-keyboard/journeys.spec.ts`, the real webview on a test-only long-evidence fixture.
+
+**Findings.** None new. Nothing blocks the epic.
