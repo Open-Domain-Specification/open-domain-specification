@@ -5,8 +5,8 @@ priority: high
 agent: claude
 live: false
 status: Preparation committed locally; awaiting one exact-head Claude Opus 5.5 high and OpenAI Astra low signoff
-progress: 60
-clean-code-swept: false
+progress: 75
+clean-code-swept: true
 updatedAt: 2026-10-01T00:00:00Z
 ---
 # Final model sign-off: the record says only what holds
@@ -28,7 +28,7 @@ Issue #108. The owner wants the model complete before one exact-head review by C
 ## Gates
 
 - [x] Focused: core and skill builds, skill drift test, biome on the touched files; results in the journal
-- [ ] `bash scripts/verify-all.sh` unmodified on the final head (the lead)
+- [x] `bash scripts/verify-all.sh` passed unmodified on the integrated model tree at `ff8e8436`: core 1043, graphviz 35, doc 47, skill 62, NorthBank 6, pages 1005 and all other package/model suites; generated-schema comparison and ESM imports green; browser 424 passed, 20 skipped
 
 ## Evidence: capability issues against the record
 
@@ -47,3 +47,5 @@ No issue here is closed or relabelled, and none is accepted as a schema change. 
 
 - **claude** (2026-10-01T00:00:00Z): Wording and documentation only. No schema, checker, renderer or pinned diagnostic changed; `validate.ts` changes one fix string, and the generated validation-rules reference moved by that one string. The issues stay open for the independent review to rule on.
 - **lead** (2026-09-30): Corrected the new delivery amendment's heading and two false implications: a queued reply is not automatically an event, and changing a command into an event is valid only when the source describes a fact. Decision 20 now appends a correction to its earlier suggestion that a comment resolves the warning. The checker and generated rule text remain as built.
+- **lead** (2026-09-30): The unmodified local landing gate passed on `ff8e8436`, the integrated model tree before the gate-result journal update. No GitHub CI minutes were used.
+- **lead** (2026-09-30): Outgoing change and clean-code audit across cards 157–160: checked source fidelity, cross-context borrowing, local scorecard call, Markdown users and links, generated outputs, tests, validator advice, SRP, DRY, naming, coupling, dead code, simplicity, boundaries and reachable failures. No introduced finding above 0.5 or blocking correctness issue. The existing separate doc/pages value-object scans serve different output shapes and need no broader core refactor for this correction.

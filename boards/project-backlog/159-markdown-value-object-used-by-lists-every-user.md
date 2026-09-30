@@ -6,7 +6,7 @@ agent: claude
 live: false
 status: Committed locally; awaiting the lead's integrated gate and independent reviews
 progress: 90
-clean-code-swept: false
+clean-code-swept: true
 updatedAt: 2026-09-30T23:30:00Z
 ---
 # Markdown's value-object "Used by" lists every user
@@ -28,7 +28,7 @@ Issue #110. A reader of generated Markdown sees every user of a value object, in
 ## Gates
 
 - [x] Focused: northbank 6 of 6 (the new test fails on the old code), doc 47, petstore 6, rivermart 23, streamline 6, clinic 3; pinned diagnostics identical for all five models; biome and `tsc` clean
-- [ ] `bash scripts/verify-all.sh` once on the integrated model-finality head, unmodified (the lead)
+- [x] `bash scripts/verify-all.sh` passed unmodified on the integrated model tree at `ff8e8436`: all package and model suites, generated-schema comparison, ESM imports, and browser 424 passed/20 skipped
 
 ## Comments
 

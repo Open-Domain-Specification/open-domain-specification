@@ -6,7 +6,7 @@ agent: claude
 live: false
 status: Committed locally; awaiting the lead's integrated gate and independent reviews
 progress: 90
-clean-code-swept: false
+clean-code-swept: true
 updatedAt: 2026-09-30T23:00:00Z
 ---
 # NorthBank's credit decision records its scorecard call
@@ -26,7 +26,7 @@ Issue #109. A reader following a credit decision sees `Decide` run the scorecard
 ## Gates
 
 - [x] Focused: northbank 5 of 5 (the new test fails on the `f9ef8b67` model); pinned diagnostics identical in rule, ref and message; biome and `tsc` clean
-- [ ] `bash scripts/verify-all.sh` once on the integrated model-finality head, unmodified (the lead)
+- [x] `bash scripts/verify-all.sh` passed unmodified on the integrated model tree at `ff8e8436`: all package and model suites, generated-schema comparison, ESM imports, and browser 424 passed/20 skipped
 
 ## Comments
 
