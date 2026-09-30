@@ -648,6 +648,11 @@ different things is what decision 16's default, a value object belonging to its 
 describes, and forcing them onto one library would couple a seller's listing price to an
 auction's bid ceiling for no reason the interviews give. Nothing changed.
 
+Note (card 157): NorthBank no longer has a Shared Kernel context. Its Accounts and Ledger
+co-own `@northbank/money` in a pairwise kernel, and its other four contexts borrow Money from
+Ledger without owning it. The comparison above stands: NorthBank's contexts use one library,
+and RiverMart's five do not.
+
 ## Revision (card 107): two agreements with Vendor Purchasing, and which exchange belongs to which
 
 Went back to the Retail Systems engineer with the warehouse receiving supervisor in the room,

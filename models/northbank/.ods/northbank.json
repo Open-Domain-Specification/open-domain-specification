@@ -953,7 +953,7 @@
                   "name": "accountNumber",
                   "type": "AccountNumber",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/account_number"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/account_number"
                   }
                 },
                 "posted_balance": {
@@ -961,7 +961,7 @@
                   "type": "Money",
                   "description": "What the ledger has posted to this account",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/money"
                   }
                 },
                 "pending_authorisations": {
@@ -969,7 +969,7 @@
                   "type": "Money",
                   "description": "Card authorisations approved but not yet captured; a hold placed on CardAuthorised and released when the capture posts",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/money"
                   }
                 },
                 "available_balance": {
@@ -977,7 +977,7 @@
                   "type": "Money",
                   "description": "Posted balance less pending card authorisations",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/money"
                   }
                 },
                 "status": {
@@ -1282,7 +1282,7 @@
               "name": "limit",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                "$ref": "#/boundedcontexts/ledger/valueobjects/money"
               }
             }
           },
@@ -1321,7 +1321,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                "$ref": "#/boundedcontexts/ledger/valueobjects/money"
               }
             }
           }
@@ -1480,7 +1480,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/money"
                   }
                 },
                 "direction": {
@@ -1662,6 +1662,38 @@
         }
       },
       "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "Minor units and an ISO 4217 code. Never a float; @northbank/money is the one implementation. Co-owned by Accounts and Ledger through their shared kernel; declared in Ledger only because a value object has one home",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "account_number": {
+          "name": "AccountNumber",
+          "description": "Sort code and eight-digit number, from the same library as Money. Co-owned by Accounts and Ledger through their shared kernel; declared in Ledger only because a value object has one home",
+          "attributes": {
+            "sort_code": {
+              "name": "sortCode",
+              "type": "string"
+            },
+            "number": {
+              "name": "number",
+              "type": "string"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
         "ledger_account": {
           "name": "LedgerAccount",
           "description": "Where a posting lands. No posting lands on a LedgerAccount as such: every one of them is a customer account or a nominal, and the two are named differently",
@@ -1680,7 +1712,7 @@
               "name": "accountNumber",
               "type": "AccountNumber",
               "valueobject": {
-                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/account_number"
+                "$ref": "#/boundedcontexts/ledger/valueobjects/account_number"
               }
             }
           },
@@ -1892,7 +1924,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/money"
                   }
                 },
                 "status": {
@@ -2281,7 +2313,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                "$ref": "#/boundedcontexts/ledger/valueobjects/money"
               }
             },
             "execution_date": {
@@ -2313,7 +2345,7 @@
               "type": "Money",
               "optional": true,
               "valueobject": {
-                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                "$ref": "#/boundedcontexts/ledger/valueobjects/money"
               }
             }
           }
@@ -2338,7 +2370,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                "$ref": "#/boundedcontexts/ledger/valueobjects/money"
               }
             },
             "payee": {
@@ -2750,7 +2782,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/money"
                   }
                 },
                 "at": {
@@ -3020,7 +3052,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                "$ref": "#/boundedcontexts/ledger/valueobjects/money"
               }
             }
           }
@@ -3041,7 +3073,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                "$ref": "#/boundedcontexts/ledger/valueobjects/money"
               }
             }
           }
@@ -3140,7 +3172,7 @@
                   "name": "requested",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/money"
                   }
                 },
                 "status": {
@@ -3282,7 +3314,7 @@
                   "name": "principal",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/money"
                   }
                 },
                 "apr": {
@@ -3371,7 +3403,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/money"
                   }
                 },
                 "paid": {
@@ -3706,7 +3738,7 @@
               "name": "requested",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                "$ref": "#/boundedcontexts/ledger/valueobjects/money"
               }
             },
             "term": {
@@ -3738,7 +3770,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                "$ref": "#/boundedcontexts/ledger/valueobjects/money"
               }
             }
           }
@@ -4527,7 +4559,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/money"
                   }
                 }
               },
@@ -5120,55 +5152,6 @@
       "processes": {},
       "glossary": {},
       "valueobjects": {},
-      "schemas": {}
-    },
-    "shared_kernel": {
-      "name": "Shared Kernel",
-      "description": "The shared library the bank's contexts compile against: Money and AccountNumber, and nothing else. Not a product; nobody's customer journey runs through it",
-      "subdomains": [],
-      "team": {
-        "$ref": "#/teams/shared_kernel_team"
-      },
-      "aggregates": {},
-      "invariants": {},
-      "services": {},
-      "policies": {},
-      "processes": {},
-      "glossary": {},
-      "valueobjects": {
-        "money": {
-          "name": "Money",
-          "description": "Minor units and an ISO 4217 code. Never a float; @northbank/money is the one implementation",
-          "attributes": {
-            "amount_minor": {
-              "name": "amountMinor",
-              "type": "int64"
-            },
-            "currency": {
-              "name": "currency",
-              "type": "ISO 4217 code"
-            }
-          },
-          "relations": [],
-          "invariants": {}
-        },
-        "account_number": {
-          "name": "AccountNumber",
-          "description": "Sort code and eight-digit number, from the same library as Money",
-          "attributes": {
-            "sort_code": {
-              "name": "sortCode",
-              "type": "string"
-            },
-            "number": {
-              "name": "number",
-              "type": "string"
-            }
-          },
-          "relations": [],
-          "invariants": {}
-        }
-      },
       "schemas": {}
     },
     "screening_vendor": {
@@ -5916,13 +5899,13 @@
           "$ref": "#/boundedcontexts/accounts"
         },
         {
-          "$ref": "#/boundedcontexts/shared_kernel"
+          "$ref": "#/boundedcontexts/ledger"
         }
       ],
-      "description": "Money and AccountNumber, from @northbank/money",
+      "description": "Money and AccountNumber, from @northbank/money, changed and released together by the two teams",
       "comments": [
         {
-          "text": "Money and AccountNumber live in @northbank/money; every borrowing context compiles against the same version.",
+          "text": "Money and AccountNumber live in @northbank/money, which Accounts and Ledger change and release together.",
           "link": {
             "kind": "code",
             "url": "https://github.com/example/northbank/blob/main/packages/money/src/Money.ts",
@@ -5930,7 +5913,7 @@
           }
         },
         {
-          "text": "Kept deliberately tiny: two value objects and their parsers, changed only by agreement of the teams that borrow them.",
+          "text": "Kept deliberately tiny: two value objects and their parsers, changed only by agreement of the Accounts Team and the Core Banking Team.",
           "link": {
             "kind": "adr",
             "url": "https://github.com/example/northbank/blob/main/docs/adr/006-money-kernel.md",
@@ -5940,64 +5923,20 @@
       ]
     },
     {
-      "type": "shared-kernel",
-      "participants": [
-        {
-          "$ref": "#/boundedcontexts/ledger"
-        },
-        {
-          "$ref": "#/boundedcontexts/shared_kernel"
-        }
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/ledger"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/cards"
+      },
+      "upstreamRoles": [
+        "published-language"
       ],
-      "description": "Money and AccountNumber, from @northbank/money"
-    },
-    {
-      "type": "shared-kernel",
-      "participants": [
-        {
-          "$ref": "#/boundedcontexts/payments_hub"
-        },
-        {
-          "$ref": "#/boundedcontexts/shared_kernel"
-        }
+      "downstreamRoles": [
+        "conformist"
       ],
-      "description": "Money, from @northbank/money"
-    },
-    {
-      "type": "shared-kernel",
-      "participants": [
-        {
-          "$ref": "#/boundedcontexts/cards"
-        },
-        {
-          "$ref": "#/boundedcontexts/shared_kernel"
-        }
-      ],
-      "description": "Money, from @northbank/money"
-    },
-    {
-      "type": "shared-kernel",
-      "participants": [
-        {
-          "$ref": "#/boundedcontexts/lending"
-        },
-        {
-          "$ref": "#/boundedcontexts/shared_kernel"
-        }
-      ],
-      "description": "Money, from @northbank/money"
-    },
-    {
-      "type": "shared-kernel",
-      "participants": [
-        {
-          "$ref": "#/boundedcontexts/regulatory_reporting"
-        },
-        {
-          "$ref": "#/boundedcontexts/shared_kernel"
-        }
-      ],
-      "description": "Money, from @northbank/money"
+      "description": "Money only, from @northbank/money, taken as Accounts and Ledger release it. Assumed: the Cards lead did not mention the library"
     },
     {
       "type": "upstream-downstream",
@@ -6123,10 +6062,6 @@
     "digital_platform_team": {
       "name": "Digital Platform Team",
       "description": "Identity and access"
-    },
-    "shared_kernel_team": {
-      "name": "Shared Kernel Team",
-      "description": "Owns Money and AccountNumber; changes only by agreement of the teams that borrow them"
     }
   }
 }
