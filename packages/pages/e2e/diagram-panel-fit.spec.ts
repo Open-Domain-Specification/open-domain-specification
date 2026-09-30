@@ -109,41 +109,48 @@ for (const host of ["viewer", "export"] as const) {
 	}
 }
 
-/** Ledger's context map, where the reader's legend covered Sovereign Core (#90). */
-async function ledger(page: Page): Promise<Locator> {
+/** The context map on a NorthBank page, scrolled to. */
+async function contextMap(page: Page, ref: string): Promise<Locator> {
 	const url = await serveModel(page, "northbank");
-	await page.goto(
-		`/?url=${encodeURIComponent(url)}#/domains/banking_products/subdomains/ledger`,
-	);
-	const figure = page.locator("figure.diagram", { hasText: "context map" });
-	await figure.scrollIntoViewIfNeeded();
-	return figure.locator(".svelte-flow");
+	await page.goto(`/?url=${encodeURIComponent(url)}${ref}`);
+	const figure = page.locator("figure.diagram", { hasText: "ontext map" });
+	await figure.first().scrollIntoViewIfNeeded();
+	return figure.first().locator(".svelte-flow");
 }
+
+/** Ledger's context map, where the reader's legend covered Sovereign Core (#90). */
+const LEDGER = "#/domains/banking_products/subdomains/ledger";
 
 test.describe("a panel the reader opens or closes", () => {
 	test.use({ viewport: { width: 1300, height: 900 } });
 
-	test("refits the map round it, so it never lands on a node", async ({
-		page,
-	}) => {
-		const flow = await ledger(page);
-		const header = flow.getByRole("button", { name: "Legend" });
-		const options = flow.getByRole("button", { name: "Options" });
-		expectClear(await settledFit(flow), "Ledger as it opens");
-		for (const toggle of [header, options, header, options]) {
-			const was = await toggle.getAttribute("aria-expanded");
-			await toggle.click();
-			await expect(toggle).not.toHaveAttribute("aria-expanded", was ?? "");
-			const fit = await settledFit(flow);
-			expectClear(
-				fit,
-				`Ledger after ${(await toggle.textContent())?.trim()} went from ${was}`,
-			);
-		}
-	});
+	// Ledger opens with both panels open; the workspace map opens with the
+	// fit having closed both, so the reader's first click opens a deep legend
+	// over where the map was drawn.
+	for (const [name, ref] of [
+		["Ledger", LEDGER],
+		["the workspace", "#"],
+	] as const) {
+		test(`refits ${name}'s map round it, so it never lands on a node`, async ({
+			page,
+		}) => {
+			const flow = await contextMap(page, ref);
+			const header = flow.getByRole("button", { name: "Legend" });
+			const options = flow.getByRole("button", { name: "Options" });
+			expectClear(await settledFit(flow), `${name} as it opens`);
+			for (const toggle of [header, options, header, options]) {
+				const was = await toggle.getAttribute("aria-expanded");
+				await toggle.click();
+				await expect(toggle).not.toHaveAttribute("aria-expanded", was ?? "");
+				const fit = await settledFit(flow);
+				const where = `${name} after ${(await toggle.textContent())?.trim()} went from ${was}`;
+				expectClear(fit, where);
+			}
+		});
+	}
 
 	test("leaves the reader's own zoom where they put it", async ({ page }) => {
-		const flow = await ledger(page);
+		const flow = await contextMap(page, LEDGER);
 		await settledFit(flow);
 		await flow.getByRole("button", { name: "Zoom In" }).click();
 		const zoomed = await settledFit(flow);
@@ -156,7 +163,7 @@ test.describe("a panel the reader opens or closes", () => {
 	test("Fit View fits clear of every panel, and hands the view back to the fit", async ({
 		page,
 	}) => {
-		const flow = await ledger(page);
+		const flow = await contextMap(page, LEDGER);
 		const fitted = await settledFit(flow);
 		await flow.getByRole("button", { name: "Zoom In" }).click();
 		await flow.getByRole("button", { name: "Zoom In" }).click();

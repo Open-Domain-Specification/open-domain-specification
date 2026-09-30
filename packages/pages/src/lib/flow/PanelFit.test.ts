@@ -1,4 +1,5 @@
 import { render } from "@testing-library/svelte";
+import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installXyflowTestEnv } from "../xyflow-test-env";
 import { createDiagramFit } from "./fit.svelte";
@@ -134,6 +135,12 @@ describe("PanelFit after the fit lands", () => {
 	});
 	afterEach(() => vi.unstubAllGlobals());
 
+	/** The tick PanelFit waits for the diagram to bind its box, and the continuation after it. */
+	const bound = async () => {
+		await tick();
+		await Promise.resolve();
+	};
+
 	/** A diagram's box with one of each panel the fit keeps clear of in it. */
 	const withPanels = () => {
 		const container = document.createElement("div");
@@ -146,9 +153,10 @@ describe("PanelFit after the fit lands", () => {
 		return container;
 	};
 
-	it("watches every panel the fit keeps clear of", async () => {
+	it("watches every panel the fit keeps clear of, once the diagram is bound", async () => {
 		const container = withPanels();
 		const { unmount } = render(Harness, { container });
+		await bound();
 		expect(panels(container).watched).toEqual([...container.children]);
 		unmount();
 	});
@@ -178,6 +186,7 @@ describe("PanelFit after the fit lands", () => {
 	it("does not refit before the first fit lands, nor after the diagram goes", async () => {
 		const container = withPanels();
 		const { unmount } = render(Harness, { container });
+		await bound();
 		// The walk collapses panels before it lands: those resizes are its own.
 		panels(container).report();
 		expect(fitPastPanels).not.toHaveBeenCalled();

@@ -41,10 +41,12 @@ onMount(() => {
 	const resized = new ResizeObserver(() => {
 		if (live && fit.owns(flow.getViewport())) void refit(fit, flow, container);
 	});
-	for (const panel of container?.querySelectorAll(PANEL_SELECTOR) ?? [])
-		resized.observe(panel);
 	void (async () => {
 		await tick();
+		// The parent binds `container` as it mounts, after this component's own
+		// mount has run, so the panels are looked for once the tick has landed.
+		for (const panel of container?.querySelectorAll(PANEL_SELECTOR) ?? [])
+			resized.observe(panel);
 		await frame();
 		await frame();
 		for (const step of RELIEF_STEPS) {
