@@ -48,6 +48,14 @@ the viewer. A package was retired, not a site. Read its current position, not it
   and compares the generated JSON schema against the petstore's copy. It takes twelve to
   fifteen minutes and refuses to start while a VS Code extension development host is running or
   port 4173 is in use. Nothing lands without it.
+- **The real-VS-Code suites run in CI, not in the gate.** The gate stays the local landing
+  check and keeps refusing to start while any extension host runs. The two suites that drive a
+  real VS Code 1.96.4 run in the CI job `real-vscode`, one after the other under a virtual
+  display, and locally by hand with `npm run test:vscode` and `npm run test:vscode:keyboard`,
+  never while the gate runs. The job fails on a failure in either suite, on a suite that never
+  reported, on zero tests executed, and on any skip except the optional screenshot tests
+  (`scripts/check-real-host-results.mjs`). A check blocks a merge only when a maintainer
+  requires it in the branch rules.
 - **The reference models are the specification's test.** Each pins the exact diagnostics it
   means to carry, and its `DISCOVERY.md` explains why. If a change moves a model's diagnostics,
   either the change or the model is wrong; do not edit the pinned list to make a build pass.
