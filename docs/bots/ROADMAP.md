@@ -2,6 +2,10 @@
 
 Kept by the lead. Milestones in order, with why. Work items are RepoDoc cards under `boards/`; engineering decisions are records under `decisions/` (the repo's existing ADR stream, not a second one here).
 
+## Current delivery sequence (2026-09-30)
+
+Epic #96 / #75 first: pin the generated cross-surface fixture and its intended diagnostic, so subsequent page work rests on reproducible evidence. Then batch the related relationship-page findings #74, #81, #84 and #85. Reassess the remaining usability findings before starting the identity and reference-heavy capability epics #63 to #65; those epics must not run together. See [sprint 03](sprints/2026-09-30-sprint-03.md).
+
 ## 1. Intent and evidence (shipped, 0.3.0)
 
 Comments and dispositions on strategic intents; relationship pages; health report; map disclosure; skill reconciliation. RFC-002.
