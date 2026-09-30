@@ -187,7 +187,7 @@ for (const host of hosts) {
 				await expect(h1.locator(".agreement")).toHaveText(`· ${n.name}`);
 				const parts = await h1.evaluate((el) =>
 					[...el.querySelectorAll(".name, .arrow, .agreement")]
-						.map((x) => x.textContent?.trim())
+						.map((x) => x.textContent?.replace(/\s+/g, " ").trim())
 						.join(" "),
 				);
 				expect(parts).toBe(relationshipTitle(relationship as never));

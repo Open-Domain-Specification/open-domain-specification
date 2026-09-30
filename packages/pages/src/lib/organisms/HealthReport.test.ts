@@ -100,7 +100,7 @@ describe("HealthReport", () => {
 				// The two lockups, the glyph and a named agreement's name, less the
 				// one-word warnings.
 				const text = [...cell.querySelectorAll(".name, .arrow, .agreement")]
-					.map((n) => n.textContent?.trim())
+					.map((n) => n.textContent?.replace(/\s+/g, " ").trim())
 					.join(" ");
 				const r = titles.get(text);
 				expect(r, `no relationship is titled "${text}"`).toBeDefined();

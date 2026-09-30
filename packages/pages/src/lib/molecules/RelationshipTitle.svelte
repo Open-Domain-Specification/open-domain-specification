@@ -17,13 +17,15 @@ import ContextLockup from "./ContextLockup.svelte";
  * glyphs are in the secondary colour either way.
  */
 const { relationship: r }: { relationship: ContextRelationship } = $props();
+/** Keeps the dot on the name's line: a wrapped title never ends in a bare "·". */
+const NO_BREAK = "\u00a0";
 </script>
 
 <ContextLockup context={r.source} />
 <span class="arrow">{relationshipArrow(r.type)}</span>
 <ContextLockup context={r.target} />
 {#if r.name}
-	<span class="agreement"><span class="separator">{RELATIONSHIP_NAME_SEPARATOR.trim()}</span> {r.name}</span>
+	<span class="agreement"><span class="separator">{RELATIONSHIP_NAME_SEPARATOR.trim()}</span>{NO_BREAK}{r.name}</span>
 {/if}
 
 <style>

@@ -62,7 +62,7 @@ describe("RelationshipDetail", () => {
 			);
 			// The parts a reader sees, in order, are the title core gives it.
 			const parts = [...title.querySelectorAll(".name, .arrow, .agreement")]
-				.map((n) => n.textContent?.trim())
+				.map((n) => n.textContent?.replace(/\s+/g, " ").trim())
 				.join(" ");
 			expect(parts).toBe(relationshipTitle(relationship));
 			const name = title.textContent;

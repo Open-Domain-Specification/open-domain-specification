@@ -4,7 +4,6 @@ import {
 	type ContextRelationship,
 	hasAuthoredDescription,
 	narrativeText,
-	RELATIONSHIP_NAME_SEPARATOR,
 	relationshipNarrative,
 } from "@open-domain-specification/core";
 import type { Column } from "../atoms/DataTable.svelte";
@@ -123,7 +122,7 @@ const columns = $derived<Column[]>([
 						<span class="description generated">{`${narrativeOf(r)} `}<Keyword text="generated" title={GENERATED_TITLE} /></span>
 					{/if}
 				{:else if col.key === "type"}
-					<PatternHover pattern={r.type} label={r.type} intent={r} />{#if r.name}<span class="agreement">{RELATIONSHIP_NAME_SEPARATOR}{r.name}</span>{/if}
+					<PatternHover pattern={r.type} label={r.type} intent={r} />{#if r.name}<span class="agreement">{r.name}</span>{/if}
 				{:else if col.key === "upstream"}
 					{#each r.upstreamRoles as role (role)}
 						<PatternHover pattern={role} mono intent={r} />
@@ -171,6 +170,13 @@ const columns = $derived<Column[]>([
 	   `generated` keyword inside it says so in words. */
 	.description.generated {
 		color: var(--vscode-descriptionForeground);
+	}
+	/* A named agreement's name, under its type: one pair may hold two, and the
+	   row says which (#74). It wraps, as the prose does, so a long name never
+	   widens the column the description has to give up (card 42's floor). */
+	.agreement {
+		display: block;
+		white-space: normal;
 	}
 	.toggle {
 		background: none;

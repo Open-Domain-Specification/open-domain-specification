@@ -611,3 +611,57 @@ test("each of a side's two roles reads as its own item on the page and in the mo
 		.click();
 	await expectRolesApart(page.locator("#relationship-modal #roles"));
 });
+
+/**
+ * Issue #74 beside the tree. RiverMart's Warehouse holds two named agreements
+ * with Vendor Purchasing (legacy), and each row names its own under the type.
+ * The name wraps rather than setting the Type column, so the Strategic position
+ * keeps card 42's rule: its frame scrolls only when the prose is at its floor,
+ * and the page never does. Where an exchange names its agreement, the
+ * Warehouse API's consumes table stays usable at 800 and 390.
+ */
+test("a named agreement's row names it without widening the Strategic position, and narrow pages never scroll sideways (#74)", async ({
+	page,
+}) => {
+	const url = await serveModel(page, "rivermart");
+	for (const width of [1300, 1600]) {
+		await page.setViewportSize({ width, height: 900 });
+		await page.goto(
+			`/?url=${encodeURIComponent(url)}#/boundedcontexts/warehouse`,
+		);
+		const table = page.locator(".strategic-position");
+		await expect(table.locator(".agreement")).toHaveText([
+			"purchase order lookup",
+			"legacy stock feed",
+		]);
+		// The type keyword, not the name under it, is what the column is as wide as.
+		const [column, keyword] = await table
+			.locator("td", { has: page.locator(".agreement") })
+			.first()
+			.evaluate((td) => [
+				td.getBoundingClientRect().width,
+				Math.max(
+					...[...(td.closest("table")?.querySelectorAll("td") ?? [])]
+						.filter(
+							(c) => c.cellIndex === (td as HTMLTableCellElement).cellIndex,
+						)
+						.map(
+							(c) =>
+								c.querySelector(".pattern-hover")?.getBoundingClientRect()
+									.width ?? 0,
+						),
+				),
+			]);
+		expect(column).toBeLessThanOrEqual(keyword + 16 + 1);
+		await expectScrollOnlyAtTheFloor(table);
+		await expectNoSidewaysScroll(page);
+	}
+	for (const width of [800, 390]) {
+		await page.setViewportSize({ width, height: 900 });
+		await page.goto(
+			`/?url=${encodeURIComponent(url)}#/boundedcontexts/warehouse/services/warehouse_api`,
+		);
+		await expect(page.locator("main h1")).toContainText("WarehouseAPI");
+		await expectNoSidewaysScroll(page);
+	}
+});

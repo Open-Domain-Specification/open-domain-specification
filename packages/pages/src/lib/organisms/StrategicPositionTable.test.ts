@@ -113,10 +113,7 @@ describe("StrategicPositionTable", () => {
 			// The row itself names it beside the type, not only the toggle.
 			const row = screen
 				.getAllByRole("row")
-				.find(
-					(tr) =>
-						tr.querySelector(".agreement")?.textContent === ` · ${r.name}`,
-				);
+				.find((tr) => tr.querySelector(".agreement")?.textContent === r.name);
 			expect(row).toBeDefined();
 			const toggle = screen.getByRole("button", {
 				name: `Evidence for ${r.source.name} and ${r.target.name}, the ${r.name} agreement`,
