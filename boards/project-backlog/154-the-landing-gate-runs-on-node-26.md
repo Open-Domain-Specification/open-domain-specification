@@ -1,11 +1,11 @@
 ---
-column: doing
+column: done
 labels: [infra, bug]
 priority: medium
 agent: lead
-live: true
+live: false
 clean-code-swept: true
-updatedAt: 2026-09-30T17:40:00Z
+updatedAt: 2026-09-30T17:56:56Z
 ---
 # The landing gate runs on Node 26
 
@@ -25,9 +25,9 @@ Issue #99, epic #100. The root `package.json` declares `node >=24`, but on Node 
 
 - [x] Focused: `packages/pages` unit suite on Node 26 with no `NODE_OPTIONS`
 - [x] Clean-code sweep
-- [ ] `bash scripts/verify-all.sh` green on the final integrated head under Node 26.8.1, with no `NODE_OPTIONS`
+- [x] `bash scripts/verify-all.sh` green on the final integrated head under Node 26.8.1, with no `NODE_OPTIONS` (8e429bec, finished 2026-09-30T17:40:30Z)
 - [x] Integrated review before the PR
-- [ ] One PR to `develop` for epic #100; CI `test`, `e2e` and `real-vscode` green
+- [x] One PR to `develop` for epic #100; CI `test`, `e2e` and `real-vscode` green (PR #101; post-merge run 36754238029 on fcfd6855)
 
 ## Comments
 
@@ -36,3 +36,4 @@ Issue #99, epic #100. The root `package.json` declares `node >=24`, but on Node 
 - **lead** (2026-09-30T17:30:40Z): Chosen correction, test environment only: `packages/pages/src/lib/test-setup.ts` binds `localStorage` and `sessionStorage` to `globalThis.jsdom.window`'s storage whenever the jsdom environment is active. The alternatives were rejected. A `--no-experimental-webstorage` execArgv in the Vitest config relies on a flag Node will retire once web storage is stable, and then Node would refuse to start. A Vitest major upgrade across ten packages is out of proportion to the defect. `packages/pages` is the only package with a jsdom environment. The new `src/lib/test-setup.test.ts` pins both globals to jsdom's `Storage`, and that they keep what is written. Without the fix on Node 26 the three affected files fail 35 of 36 tests: 33 existing and the 2 new. With it, 36 of 36 pass on Node 26.8.1 and on 24.15.0. Full pages unit suite on Node 26, no override: 106 files, 996 tests, coverage thresholds held; `svelte-check` 0 errors. No assertion, renderer or model file changed.
 - **lead** (2026-09-30T17:33:21Z): Independent issue-level review (Sonnet, read-only) approved 54429e8a. It verified the root cause in the Vitest source. It reproduced the discrimination with the old setup outside the repo: both new tests fail on Node 26, and all pass on Node 24. It also ran the full pages suite on both Node versions. Its one optional note, that the getters rely on per-file isolation, is now a sentence in the setup's comment. Clean-code pass: no finding above 0.5. The full gate runs on the final head, and its result goes in the PR so that no commit follows the gated head.
 - **lead** (2026-09-30T17:40:00Z): An integrated review of the branch against #99 and #100 (Sonnet, read-only) approved 79b8679e. `bash scripts/verify-all.sh` then passed on 79b8679e with Node 26.8.1 and `NODE_OPTIONS` unset. Results: core 1040, graphviz 35, doc 44, skill 62, northbank 3, petstore 23, rivermart 6, streamline 3, clinic 7, models/_shared 9, pages 996, apps/docs 24, apps/ods-vscode 18, scripts 31; ESM imports ok, schema match; pages e2e 408 passed and 20 skipped. The journal times on this card, STATUS.md and sprint 03 were written ahead of the clock; they now match the commits that carried them. That correction is the only change since, and the gate reruns on the corrected head, which the PR records.
+- **lead** (2026-09-30T17:56:56Z): `bash scripts/verify-all.sh` passed on the corrected head `8e429bec` with Node 26.8.1 and `NODE_OPTIONS` unset, finishing at 17:40:30Z with the same results as on 79b8679e. PR #101, the one PR for epic #100, was opened from that head. Codex reviewed it, found no blocker, and it merged to `develop` as `fcfd6855` at 2026-09-30T17:50:06Z. Post-merge run 36754238029 on `fcfd6855` passed `test`, `e2e` and `real-vscode`; `publish` was skipped as usual. #99 and #100 are closed, and the card is `done`.
