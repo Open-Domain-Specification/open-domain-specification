@@ -92,6 +92,9 @@ function stripsBeside(view: Rect, panel: Rect) {
  * the fit asks it to give way (`needsRelief`) before drawing round it.
  */
 export function clearsWithinCap(view: Rect, panel: Rect): boolean {
+	// A box with no layout yet is no claim at all, as `measurePanels` says.
+	const area = (r: Rect) => (r.right - r.left) * (r.bottom - r.top);
+	if (!area(view) || !area(panel)) return true;
 	return stripsBeside(view, panel).some((s) => s.reserve <= s.of * MAX_SIDE);
 }
 
@@ -100,19 +103,24 @@ export function clearsWithinCap(view: Rect, panel: Rect): boolean {
  * hugs, and the band between it and the edge above (or below) it, each with
  * the gutter added. Either keeps every node out from under it, the cheaper
  * one — as a share of its axis — listed first. Strips within `MAX_SIDE` of
- * their axis are offered first. A panel neither of those clears, one the
- * reader opened on a canvas too small for it, is still cleared, by a strip
- * past the cap, as long as it leaves the map some room beyond the far
- * gutter: a node under a panel is the one thing the fit never trades. Only
- * a panel as big as the canvas gets the cheaper strip cut to the cap.
+ * their axis are offered when there are any. A panel neither of those clears,
+ * one the reader opened on a canvas too small for it, is offered both strips
+ * past the cap: a node under a panel is the one thing the fit never trades.
+ * `panelPadding` takes one only if the map keeps room beside it.
  */
 function stripsFor(view: Rect, panel: Rect): Strip[] {
 	const both = stripsBeside(view, panel);
 	const within = both.filter((s) => s.reserve <= s.of * MAX_SIDE);
-	if (within.length) return within;
-	const roomy = both.filter((s) => s.reserve < s.of - PANEL_GUTTER);
-	if (roomy.length) return roomy;
-	return [{ side: both[0].side, reserve: both[0].of * MAX_SIDE }];
+	return within.length ? within : both;
+}
+
+/** The cheaper strip beside `panel`, no deeper than the cap: the last resort. */
+function cutToCap(view: Rect, panel: Rect): Strip {
+	const [cheaper] = stripsBeside(view, panel);
+	return {
+		side: cheaper.side,
+		reserve: Math.min(cheaper.reserve, cheaper.of * MAX_SIDE),
+	};
 }
 
 /**
@@ -149,16 +157,34 @@ export function panelPadding(
 			right: px(pad.right),
 		};
 	};
+	const width = view.right - view.left;
+	const height = view.bottom - view.top;
+	/** Leaves the map at least what two capped strips would, on both axes. */
+	const roomy = (padding: PanelPadding) => {
+		const reserved = (side: Side) => Number.parseFloat(padding[side]);
+		const room = 1 - 2 * MAX_SIDE;
+		return (
+			width - reserved("left") - reserved("right") >= width * room &&
+			height - reserved("top") - reserved("bottom") >= height * room
+		);
+	};
 	// Every way of choosing one strip per panel; the first is each panel's
 	// cheaper strip, and another replaces it only by fitting strictly larger.
-	const [first, ...rest] = panels
+	// Strips past the cap can together leave the map nothing, so a choice has
+	// to leave it room; if none does, every panel takes its cheaper strip cut
+	// to the cap.
+	const choices = panels
 		.map((panel) => stripsFor(view, panel))
 		.reduce<Strip[][]>(
-			(choices, strips) =>
-				choices.flatMap((choice) => strips.map((s) => [...choice, s])),
+			(all, strips) =>
+				all.flatMap((choice) => strips.map((s) => [...choice, s])),
 			[[]],
 		)
-		.map(padded);
+		.map(padded)
+		.filter(roomy);
+	const [first, ...rest] = choices.length
+		? choices
+		: [padded(panels.map((panel) => cutToCap(view, panel)))];
 	let best = first;
 	let zoom = fittedZoom(view, best, bounds);
 	for (const candidate of rest) {

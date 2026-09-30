@@ -137,9 +137,27 @@ describe("panelPadding", () => {
 		// (347px) and its band (312px) are both past the cap. The map is drawn
 		// smaller, but beside it rather than under it.
 		const deep: Rect = { left: 15, right: 335, top: 10, bottom: 300 };
-		expect(panelPadding(VIEW, [deep], { width: 100, height: 100 }).left).toBe(
+		// A wide map: the column past the cap is taken whole, though a column cut
+		// to the cap would fit the map larger, and the band would leave it too
+		// little height.
+		expect(panelPadding(VIEW, [deep], { width: 400, height: 50 }).left).toBe(
 			`${335 + PANEL_GUTTER}px`,
 		);
+	});
+
+	it("keeps the map room when two panels past the cap face each other, cutting both to the cap", () => {
+		// A 560px canvas with a 250px legend on the left and a 300px options
+		// panel on the right, both deeper than the canvas can spare in a band:
+		// clearing both whole would leave the map nothing.
+		const canvas: Rect = { left: 0, right: 560, top: 0, bottom: 420 };
+		const legend: Rect = { left: 15, right: 265, top: 15, bottom: 400 };
+		const options: Rect = { left: 245, right: 545, top: 15, bottom: 400 };
+		const padding = panelPadding(canvas, [legend, options], {
+			width: 100,
+			height: 100,
+		});
+		expect(padding.left).toBe(`${Math.floor(560 * 0.4)}px`);
+		expect(padding.right).toBe(`${Math.floor(560 * 0.4)}px`);
 	});
 
 	it("chooses for every panel together, so two corners can share one side", () => {
@@ -338,6 +356,10 @@ describe("clearsWithinCap", () => {
 		const canvas: Rect = { left: 0, right: 560, top: 0, bottom: 420 };
 		const legend: Rect = { left: 15, right: 232, top: 15, bottom: 187 };
 		expect(clearsWithinCap(canvas, legend)).toBe(false);
+		// A box with no layout yet claims nothing.
+		const none: Rect = { left: 0, right: 0, top: 0, bottom: 0 };
+		expect(clearsWithinCap(none, none)).toBe(true);
+		expect(clearsWithinCap(canvas, none)).toBe(true);
 	});
 });
 
