@@ -1,10 +1,10 @@
 ---
-column: doing
+column: done
 labels: [accessibility]
 priority: medium
 agent: developer
 live: false
-updatedAt: 2026-09-30T09:40:27Z
+updatedAt: 2026-09-30T10:31:24Z
 ---
 # The reader knows where they are
 
@@ -40,3 +40,4 @@ Issue #50, a child of epic #61. The tree marked the page being read with a backg
 - **lead** (2026-09-30T01:36:38Z): Re-verified after the owner's second review, on cbcafac34910ceb4499471eab15d75f045c3553f; the last commit that changes code is 1672315f, and the last that changes product code is 4d658b37. The landing gate ran 01:29:56–01:33:28Z: pages 992 at 100% coverage, pages e2e 404 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match. `npm run test:vscode:keyboard` in real VS Code 1.96.4 passed 22 of 22 on three consecutive runs, and `npm run test:vscode` passed (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), on the same head. The card stays in `doing` until PR #76 merges and post-merge CI succeeds.
 - **lead** (2026-09-30T09:24:59Z): Correction to how the evidence above is described, from the owner's re-review at a212f0e4. In `current-page-landmarks.spec.ts`, the navigations that open a page (Enter on a tree link or a page link) are real key presses. The Back and Forward steps use Playwright's `page.goBack()` and `page.goForward()`, which drive browser history directly and are not keyboard shortcuts. The in-page-anchor control sets `location.hash`. Where earlier entries or the PR said "real keys" for the history steps, they overstated it. The current-page result itself stands.
 - **lead** (2026-09-30T09:40:27Z): Re-verified after the owner's third review, on cac9ac6f0aa0f41e54e10fa2cc8655973d19ee25; the last commit that changes code is 872acc32, and the last that changes product source is 5d378790. The landing gate ran 09:35:55–09:38:03Z: pages 994 at 100% coverage, pages e2e 408 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match. `npm run test:vscode:keyboard` in real VS Code 1.96.4 passed 23 of 23 on three consecutive runs, and `npm run test:vscode` passed (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), on the same head. The card stays in `doing` until PR #76 merges and post-merge CI succeeds.
+- **lead** (2026-09-30T10:31:24Z): Landed. PR #76 passed the owner's re-review at 073e65fd and was merged into develop as 395c859a at 2026-09-30T10:25:39Z. Post-merge CI run 36702357346 is green (test, e2e). Issue #50 is closed; the card moves to `done`.

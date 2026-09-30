@@ -1,10 +1,10 @@
 ---
-column: doing
+column: done
 labels: [pages, accessibility]
 priority: medium
 agent: developer
 live: false
-updatedAt: 2026-09-30T09:40:27Z
+updatedAt: 2026-09-30T10:31:24Z
 ---
 # Evidence opens and closes from the keyboard
 
@@ -59,3 +59,4 @@ Issue #48, a child of epic #61 (accessible navigation across the viewer, export 
 - **developer** (2026-09-30T09:33:44Z): Failing first on a212f0e4 code, real keys, read after scroll and layout settled (six unchanged frames plus an idle). Viewer and export alike, 800x110: explanation 8..81, scrollTop 0 of 138, citation 169.5..205, not inside, not hit-testable. 800x300: explanation 126.3..292.0, scrollTop 0 of 45, citation 287.8..323.3, not inside. Real VS Code 1.96.4 webview (1300x300 window, new test-only workspace `fixtures/long-evidence` with a long comment and a citation): explanation 8..117.7, scrollTop 0 of 159, citation 248.5..263.5, not inside, hit not the citation. The existing capped tests now read scrollTop after settling rather than in the same callback, which is why they missed this. Unit, failing first: an internal scroll moved the explanation (top reset from the marked 77px), and a re-placement did not write the scroll back (no `scrollTop` write).
 - **developer** (2026-09-30T09:33:44Z): After the fix: viewer 29 and export 13 of 13 in the evidence, relationship and diagram-keyboard specs; 800x110: scrollTop 138 of 138, citation 31.5..67 inside the explanation 8..81, hit is the citation; 800x300 inside within a pixel of the reveal's rounding; after a container scroll the scroll position is kept (under 1px) and the citation is still inside and painted. Real host `npm run test:vscode:keyboard` 23 of 23. Pages 994 unit tests at 100%, `npm run check` and biome clean. A link that wraps is one box over several lines, so the hit test is at the middle of its last line, not of its bounding box.
 - **lead** (2026-09-30T09:40:27Z): Re-verified after the owner's third review, on cac9ac6f0aa0f41e54e10fa2cc8655973d19ee25; the last commit that changes code is 872acc32, and the last that changes product source is 5d378790. The landing gate ran 09:35:55–09:38:03Z: pages 994 at 100% coverage, pages e2e 408 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match. `npm run test:vscode:keyboard` in real VS Code 1.96.4 passed 23 of 23 on three consecutive runs, and `npm run test:vscode` passed (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), on the same head. The card stays in `doing` until PR #76 merges and post-merge CI succeeds.
+- **lead** (2026-09-30T10:31:24Z): Landed. PR #76 passed the owner's re-review at 073e65fd and was merged into develop as 395c859a at 2026-09-30T10:25:39Z. Post-merge CI run 36702357346 is green (test, e2e). Issue #48 is closed; the card moves to `done`.

@@ -1,11 +1,11 @@
 ---
-column: doing
+column: done
 labels: [bug, frontend]
 priority: high
 agent: dev-sonnet
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-30T09:40:27Z
+updatedAt: 2026-09-30T10:31:24Z
 ---
 # Strategic position table overflows its frame by 2px at 1300px
 
@@ -73,3 +73,4 @@ Ruling (lead, 2026-09-29): option (d), apply the design as written and change no
 - **lead** (2026-09-29T22:54:29Z): Re-verified after the owner's review fixes, on b461666c574cb3bf3475a97d6fd3d3578d539e93. The landing gate ran 22:48:52–22:52:07Z: pages 986 at 100% coverage, pages e2e 395 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match. `npm run test:vscode:keyboard` in real VS Code 1.96.4 passed 21 of 21 on three consecutive runs, and `npm run test:vscode` passed (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), on the same head. The card stays in `doing` until PR #76 merges.
 - **lead** (2026-09-30T01:36:38Z): Re-verified after the owner's second review, on cbcafac34910ceb4499471eab15d75f045c3553f; the last commit that changes code is 1672315f, and the last that changes product code is 4d658b37. The landing gate ran 01:29:56–01:33:28Z: pages 992 at 100% coverage, pages e2e 404 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match. `npm run test:vscode:keyboard` in real VS Code 1.96.4 passed 22 of 22 on three consecutive runs, and `npm run test:vscode` passed (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), on the same head. The card stays in `doing` until PR #76 merges and post-merge CI succeeds.
 - **lead** (2026-09-30T09:40:27Z): Re-verified after the owner's third review, on cac9ac6f0aa0f41e54e10fa2cc8655973d19ee25; the last commit that changes code is 872acc32, and the last that changes product source is 5d378790. The landing gate ran 09:35:55–09:38:03Z: pages 994 at 100% coverage, pages e2e 408 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match. `npm run test:vscode:keyboard` in real VS Code 1.96.4 passed 23 of 23 on three consecutive runs, and `npm run test:vscode` passed (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), on the same head. The card stays in `doing` until PR #76 merges and post-merge CI succeeds.
+- **lead** (2026-09-30T10:31:24Z): Landed. PR #76 passed the owner's re-review at 073e65fd and was merged into develop as 395c859a at 2026-09-30T10:25:39Z. Post-merge CI run 36702357346 is green (test, e2e). Issue #42 is closed; the card moves to `done`.
