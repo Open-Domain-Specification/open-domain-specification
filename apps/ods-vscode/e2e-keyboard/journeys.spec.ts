@@ -147,32 +147,75 @@ const runningAnimations = (frame: Frame) =>
 			document.getAnimations().filter((a) => a.playState === "running").length,
 	);
 
-/** The distinct transforms of the diagram viewport over `ms`, sampled per frame while `act` runs. */
+/**
+ * The distinct transforms of the diagram viewport, in order: the one before
+ * `act`, then one per change the viewport makes because of it. An instant
+ * change is two; an eased one passes through many.
+ *
+ * It records on every change to the viewport's style, from before `act` until
+ * the viewport has changed at least once and then held still for 300ms (an
+ * eased zoom changes on every frame, so a pause is its end). A fixed window
+ * begun before `act` could close before a slow `act` (a double click in a busy
+ * host) had moved anything, and read as an instant change.
+ */
 async function viewportSteps(
 	frame: Frame,
-	ms: number,
 	act: () => Promise<void>,
 ): Promise<string[]> {
-	const sampled = frame.evaluate(
-		(duration) =>
-			new Promise<string[]>((resolve) => {
-				const viewport = document.querySelector(
-					".svelte-flow__viewport",
-				) as HTMLElement;
-				const seen: string[] = [];
-				const start = performance.now();
-				const tick = () => {
-					const now = viewport.style.transform;
-					if (seen[seen.length - 1] !== now) seen.push(now);
-					if (performance.now() - start < duration) requestAnimationFrame(tick);
-					else resolve(seen);
-				};
-				tick();
-			}),
-		ms,
-	);
+	await frame.evaluate(() => {
+		const viewport = document.querySelector(
+			".svelte-flow__viewport",
+		) as HTMLElement;
+		const seen = [viewport.style.transform];
+		const state = { seen, lastChange: performance.now() };
+		new MutationObserver(() => {
+			const now = viewport.style.transform;
+			if (seen[seen.length - 1] === now) return;
+			seen.push(now);
+			state.lastChange = performance.now();
+		}).observe(viewport, { attributes: true, attributeFilter: ["style"] });
+		(window as unknown as { viewportSteps: typeof state }).viewportSteps =
+			state;
+	});
+	// A map that is still fitting itself on load is not a starting point.
+	await expect
+		.poll(() =>
+			frame.evaluate(
+				() =>
+					performance.now() -
+						(window as unknown as { viewportSteps: { lastChange: number } })
+							.viewportSteps.lastChange >=
+					300,
+			),
+		)
+		.toBe(true);
+	await frame.evaluate(() => {
+		const s = (
+			window as unknown as {
+				viewportSteps: { seen: string[]; lastChange: number };
+			}
+		).viewportSteps;
+		s.seen.splice(0, s.seen.length - 1);
+	});
 	await act();
-	return sampled;
+	const handle = await frame.evaluateHandle(
+		() =>
+			(
+				window as unknown as {
+					viewportSteps: { seen: string[]; lastChange: number };
+				}
+			).viewportSteps,
+	);
+	await expect
+		.poll(
+			() =>
+				handle.evaluate(
+					(s) => s.seen.length > 1 && performance.now() - s.lastChange >= 300,
+				),
+			{ message: "the viewport to change and then hold still" },
+		)
+		.toBe(true);
+	return handle.evaluate((s) => s.seen);
 }
 
 /** Double-clicks the pane of the diagram with the real pointer. */
@@ -667,7 +710,7 @@ test.describe("reduced motion", () => {
 		// The control: motion is there to be switched off.
 		expect(await runningAnimations(frame)).toBeGreaterThan(0);
 		expect(
-			(await viewportSteps(frame, 700, () => dblclickPane(host.window, frame)))
+			(await viewportSteps(frame, () => dblclickPane(host.window, frame)))
 				.length,
 		).toBeGreaterThan(3);
 
@@ -701,7 +744,7 @@ test.describe("reduced motion", () => {
 		await tabToLabel(host, frame, "Zoom Out");
 		await host.window.keyboard.press("Enter");
 		await tabToLabel(host, frame, "Fit View", "Tab");
-		const fit = await viewportSteps(frame, 500, () =>
+		const fit = await viewportSteps(frame, () =>
 			host.window.keyboard.press("Enter"),
 		);
 		expect(fit.length).toBeLessThanOrEqual(2);
@@ -709,7 +752,7 @@ test.describe("reduced motion", () => {
 		await frame.evaluate(() => {
 			(document.activeElement as HTMLElement | null)?.blur();
 		});
-		const steps = await viewportSteps(frame, 700, () =>
+		const steps = await viewportSteps(frame, () =>
 			dblclickPane(host.window, frame),
 		);
 		expect(steps).toHaveLength(2);

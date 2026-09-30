@@ -30,35 +30,76 @@ async function spyOnScrolling(page: Page): Promise<void> {
 }
 
 /**
- * The distinct transforms the diagram's viewport takes over `ms`, in order,
- * sampled every frame while `act` runs. An instant change is the transform
- * before and the transform after, so two; an animated one passes through many.
+ * The distinct transforms the diagram's viewport takes, in order: the one
+ * before `act`, then one per change the viewport makes because of it. An
+ * instant change is two; an animated one passes through many.
+ *
+ * It records on every change to the viewport's style, from before `act` until
+ * the viewport has changed at least once and then held still for 300ms (an
+ * eased zoom changes on every frame, so a pause is its end). A fixed window
+ * begun before `act` could close before a slow `act` had moved anything, and
+ * read as an instant change.
  */
 async function viewportSteps(
 	flow: Locator,
-	ms: number,
 	act: () => Promise<void>,
 ): Promise<string[]> {
-	const sampled = flow.evaluate(
-		(el, duration) =>
-			new Promise<string[]>((resolve) => {
-				const viewport = el.querySelector(
-					".svelte-flow__viewport",
-				) as HTMLElement;
-				const seen: string[] = [];
-				const start = performance.now();
-				const tick = () => {
-					const now = viewport.style.transform;
-					if (seen[seen.length - 1] !== now) seen.push(now);
-					if (performance.now() - start < duration) requestAnimationFrame(tick);
-					else resolve(seen);
-				};
-				tick();
-			}),
-		ms,
-	);
+	await flow.evaluate((el) => {
+		const viewport = el.querySelector(".svelte-flow__viewport") as HTMLElement;
+		const seen = [viewport.style.transform];
+		const state = { seen, lastChange: performance.now() };
+		new MutationObserver(() => {
+			const now = viewport.style.transform;
+			if (seen[seen.length - 1] === now) return;
+			seen.push(now);
+			state.lastChange = performance.now();
+		}).observe(viewport, { attributes: true, attributeFilter: ["style"] });
+		(window as unknown as { viewportSteps: typeof state }).viewportSteps =
+			state;
+	});
+	// A map that is still fitting itself on load is not a starting point.
+	await expect
+		.poll(() =>
+			flow.evaluate(
+				(_, settle) =>
+					performance.now() -
+						(window as unknown as { viewportSteps: { lastChange: number } })
+							.viewportSteps.lastChange >=
+					settle,
+				300,
+			),
+		)
+		.toBe(true);
+	await flow.evaluate(() => {
+		const s = (
+			window as unknown as {
+				viewportSteps: { seen: string[]; lastChange: number };
+			}
+		).viewportSteps;
+		s.seen.splice(0, s.seen.length - 1);
+	});
 	await act();
-	return sampled;
+	await expect
+		.poll(
+			() =>
+				flow.evaluate((_, settle) => {
+					const s = (
+						window as unknown as {
+							viewportSteps: { seen: string[]; lastChange: number };
+						}
+					).viewportSteps;
+					return (
+						s.seen.length > 1 && performance.now() - s.lastChange >= settle
+					);
+				}, 300),
+			{ message: "the viewport to change and then hold still" },
+		)
+		.toBe(true);
+	return flow.evaluate(
+		() =>
+			(window as unknown as { viewportSteps: { seen: string[] } }).viewportSteps
+				.seen,
+	);
 }
 
 for (const host of ["viewer", "export"] as const) {
@@ -145,7 +186,7 @@ for (const host of ["viewer", "export"] as const) {
 			page,
 		}) => {
 			const zoom = (flow: Locator) =>
-				viewportSteps(flow, 700, () =>
+				viewportSteps(flow, () =>
 					flow
 						.locator(".svelte-flow__pane")
 						.dblclick({ position: { x: 5, y: 5 } }),
@@ -174,11 +215,11 @@ for (const host of ["viewer", "export"] as const) {
 				const flow = await openDiagram(page, host, "Context map", "");
 				// Move the map off its fit first, so refitting has somewhere to travel.
 				await flow.getByRole("button", { name: "Zoom In" }).click();
-				const fit = await viewportSteps(flow, 500, () =>
+				const fit = await viewportSteps(flow, () =>
 					flow.getByRole("button", { name: "Fit View" }).click(),
 				);
 				expect(fit.length, `fit view, ${reducedMotion}`).toBeLessThanOrEqual(2);
-				const fullscreen = await viewportSteps(flow, 700, () =>
+				const fullscreen = await viewportSteps(flow, () =>
 					flow.getByRole("button", { name: "Enter fullscreen" }).click(),
 				);
 				// One step for the overlay's new box and one for the refit into it.
