@@ -1,11 +1,11 @@
 ---
-column: doing
+column: done
 labels: [pages, accessibility, bug]
 priority: medium
 agent: lead
-live: true
+live: false
 clean-code-swept: true
-updatedAt: 2026-09-30T18:37:00Z
+updatedAt: 2026-09-30T18:55:00Z
 ---
 # A relationship page says which agreement it is and reads in order
 
@@ -25,8 +25,8 @@ Epic #98, issues #74, #81, #84 and #85. A reader of a context relationship can t
 - [x] Focused: core, doc, pages unit; Playwright relationship, lockup and cross-surface specs; each new regression fails on the code before its fix
 - [x] Real VS Code: `npm run test:vscode`, including the #74 page, tree and search check
 - [x] Clean-code sweep
-- [ ] `bash scripts/verify-all.sh` green on the final integrated head under Node 26.8.1, with no `NODE_OPTIONS`
-- [ ] One PR to `develop` for epic #98; CI `test`, `e2e` and `real-vscode` green
+- [x] `bash scripts/verify-all.sh` green on the final integrated head under Node 26.8.1, with no `NODE_OPTIONS`: passed on `7daac0d0`, the PR head. Results: core 1043, graphviz 35, doc 47, skill 62; northbank 3, petstore 23, rivermart 6, streamline 3, clinic 7, models/_shared 9; pages 1006 at 100% branch coverage; apps/docs 24, apps/ods-vscode 18, scripts 31; ESM imports ok, schema match; pages e2e 416 passed and 20 skipped.
+- [x] One PR to `develop` for epic #98; CI `test`, `e2e` and `real-vscode` green: PR #104. The push run 36760306805 and the PR run 36760310116 both passed `test`, `e2e` and `real-vscode`. The PR merged as `046db881` at 2026-09-30T18:47:32Z. Post-merge run 36761108108 on `046db881` passed `test`, `e2e` and `real-vscode`; publish skipped.
 
 ## Comments
 
@@ -39,3 +39,11 @@ Epic #98, issues #74, #81, #84 and #85. A reader of a context relationship can t
 - **lead** (2026-09-30T18:28:00Z): The integrated review (Sonnet, read-only) approved with should-fixes, now done in `aadbfc06` and the docs commit. On RiverMart's Warehouse at 1600 beside the tree, the inline name widened the Type column and the frame scrolled 139px, against 18px without it. The name is now a wrapping block under the type, and the frame is back to 18px at 1600 and 88px at 1300, the same as `develop`. A new test holds the column to its keywords' width and card 42's scroll rule. It fails against the inline version, first on the name's text. The dot and the name are joined by a no-break space. `organism-relationship-detail.md` carries a dated amendment for all four changes. A long agreement name in a consumes table's icon link cannot wrap, which is the lockup rule, and the Warehouse API page has no sideways scroll at 800 or 390.
 - **lead** (2026-09-30T18:31:00Z): On the code at `aadbfc06` the real VS Code suite passed (`npm run test:vscode`: 9, 1 and 5 passing, 4 pending, including the #74 check). `npm run test:vscode:keyboard` passed 23 of 23 on the same code before `aadbfc06`, which changes only the strategic row's name and the title's no-break space. The full pages e2e run, the pages unit suite and `svelte-check` passed on the code before the review fixes; the focused suites passed after them. The gate runs on the final head, and the PR records its result, so no commit follows the gated head.
 - **lead** (2026-09-30T18:37:00Z): The gate on `d4e315d5` (Node 26.8.1, `NODE_OPTIONS` unset) failed in the pages unit stage. All 1004 tests passed, but branch coverage was 99.92% against the 100% threshold. Svelte 5 compiles `h{size}` in `Heading` and `{r.name}` in `RelationshipTitle` with a `?? ''` fallback that can never be taken. `0bd7f4b8` derives both strings in the script, so no dead branch is compiled, and adds a `RelationshipTitle` test and a `Heading` rerender test. Pages coverage is back to 100%, with 1006 tests. The relationship, lockup and cross-surface Playwright specs and `npm run test:vscode` (9, 1 and 5 passing, 4 pending) pass on that code. The gate reruns on the new final head, and the PR records it.
+- **lead** (2026-09-30T18:55:00Z): Landed. Codex reviewed head `7daac0d0` independently and found no blocker. PR #104 merged into `develop` as `046db881` at 2026-09-30T18:47:32Z. It was a merge commit, so the branch's commits kept their hashes on `develop`:
+  - #74: `c061fb48`, `538d6816`, `aadbfc06` and `0bd7f4b8`;
+  - #81: `253e4de2` and `0bd7f4b8`;
+  - #84: `445cc891`;
+  - #85: `58984e10`;
+  - docs: `7daac0d0`.
+
+  Post-merge run 36761108108 on `046db881` passed `test` (18:47:39 to 18:52:09Z), `e2e` (18:47:38 to 18:53:47Z) and `real-vscode` (18:47:38 to 18:50:20Z), with publish skipped. #74, #81, #84 and #85 were closed with their evidence, the epic's checklist was ticked, and #98 was closed. This close-out is committed on `origin/develop` `046db881` and gated before the fast-forward push. #102 (diagram fitting) is next; #103 (the intermittent diagram drag browser check) is a separate open follow-up.
