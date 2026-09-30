@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import {
 	type ElectronApplication,
 	_electron as electron,
+	expect,
 	type Frame,
 	type Page,
 } from "@playwright/test";
@@ -26,6 +27,44 @@ export interface LaunchOptions {
 	/** Extra Chromium or VS Code switches. */
 	args?: string[];
 }
+
+/**
+ * Counts the times VS Code's webview host calls `window.focus()` on a webview's
+ * content. VS Code hands focus to a webview in two steps: `WebviewElement.focus()`
+ * at once, then, after a 50ms delayer, a `focus` message that the webview host
+ * answers with `contentWindow.focus()`. That second step lands whenever it
+ * lands, including after the next command palette has opened, and a palette
+ * closes on blur. The count is the one observable end of the hand-off.
+ */
+const COUNT_HOST_FOCUS = `(() => {
+	const focus = window.focus;
+	window.__odsHostFocus = 0;
+	window.focus = function () {
+		window.__odsHostFocus++;
+		return focus.call(this);
+	};
+})()`;
+
+const hostFocusCount = async (window: Page): Promise<number> => {
+	let total = 0;
+	for (const frame of window.frames()) {
+		if (!frame.url().startsWith("vscode-webview://")) continue;
+		total += await frame
+			.evaluate(
+				() =>
+					(window as unknown as { __odsHostFocus?: number }).__odsHostFocus ??
+					0,
+			)
+			.catch(() => 0);
+	}
+	return total;
+};
+
+/** Whether the workbench's focus is on a webview, as it is after a page opens. */
+const webviewHoldsFocus = (window: Page): Promise<boolean> =>
+	window.evaluate(
+		() => document.activeElement?.matches("iframe.webview") === true,
+	);
 
 /**
  * Starts the real VS Code with this extension loaded, on a clean user-data and
@@ -61,6 +100,8 @@ export async function launchVSCode(options: LaunchOptions): Promise<Host> {
 			...(options.args ?? []),
 		],
 	});
+	// Added before any webview exists, so each one is counted from its start.
+	await app.context().addInitScript(COUNT_HOST_FOCUS);
 	const window = await app.firstWindow();
 	await window.waitForSelector(".monaco-workbench", { timeout: 60_000 });
 	// `.monaco-workbench` is there long before the window takes keys: a key sent
@@ -94,6 +135,10 @@ export async function openPageByKeyboard(
 	window: Page,
 	searchText: string,
 ): Promise<void> {
+	// Note whether this call starts from a focused webview, and how many
+	// hand-offs it has seen, so the end of the call can wait for its own.
+	const fromWebview = await webviewHoldsFocus(window);
+	const handOffs = await hostFocusCount(window);
 	await window.keyboard.press("F1");
 	// Type into the palette once it is up, not into whatever had focus.
 	await window.waitForSelector(".quick-input-widget", { state: "visible" });
@@ -108,6 +153,16 @@ export async function openPageByKeyboard(
 	await window.keyboard.type(searchText);
 	await window.waitForSelector(".quick-input-list .monaco-list-row");
 	await window.keyboard.press("Enter");
+	// Closing a quick pick that was opened from a webview returns focus to it,
+	// and the last step of that lands about 70ms later. A palette the caller
+	// opens before it lands is closed by it: it was the second call in a test
+	// that found the palette visible and then gone. Wait for the landing.
+	if (fromWebview)
+		await expect
+			.poll(() => hostFocusCount(window), {
+				message: "VS Code handing focus back to the webview",
+			})
+			.toBeGreaterThan(handOffs);
 }
 
 /**
