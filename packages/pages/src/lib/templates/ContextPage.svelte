@@ -24,6 +24,7 @@ import {
 	type SchemaUser,
 	usersOfSchema,
 	usersOfValueObject,
+	type ValueObject,
 	type ValueObjectUser,
 	valueObjectsUsedBy,
 } from "@open-domain-specification/core";
@@ -113,6 +114,15 @@ const userLabel = (
 	user.boundedcontext === declaring
 		? user.owner.name
 		: `${user.boundedcontext.name} / ${user.owner.name}`;
+
+const throughLabel = (declaring: BoundedContext, values: ValueObject[]) =>
+	`through ${values
+		.map((value) =>
+			value.boundedcontext === declaring
+				? value.name
+				: `${value.boundedcontext.name} / ${value.name}`,
+		)
+		.join(", ")}`;
 
 const aggregateColumns: Column[] = [
 	{ key: "name", label: "Aggregate" },
@@ -300,7 +310,7 @@ const termColumns: Column[] = [
 			{:else if col.key === "attributes"}
 				{v.attributes.size}
 			{:else if col.key === "usedby"}
-				<Joined>{#each usersOfValueObject(v) as user (`${user.kind}:${user.owner.ref}`)}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner.ref} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+				<Joined>{#each usersOfValueObject(v) as user (`${user.kind}:${user.owner.ref}`)}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner.ref} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{#if user.kind === "value object" && user.asKind} <Keyword text="kind" />{/if}{#if user.through.length} <Keyword text={throughLabel(bc, user.through)} />{/if}{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else}
 				{v.description}
 			{/if}

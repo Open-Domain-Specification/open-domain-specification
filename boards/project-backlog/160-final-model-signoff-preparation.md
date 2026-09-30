@@ -4,8 +4,8 @@ labels: [docs, model]
 priority: high
 agent: claude
 live: false
-status: Third round on 965e522a blocked by both reviewers on identity-only schema use; card 164 correction in progress
-progress: 85
+status: Fourth round on cb3ebb0a: Astra APPROVE, Opus BLOCK on value-object kinds; card 162 correction in progress
+progress: 90
 clean-code-swept: true
 updatedAt: 2026-10-01T01:00:00Z
 ---
@@ -22,8 +22,8 @@ Issue #108. The owner wants the model complete before one exact-head review by C
 - [x] Hand-written skill preferences and the tactical page read against it: each says a comment says how a message travels, which stays true; none changed
 - [x] Evidence table below for #35, #36, #37, #38, #39, #40
 - [ ] The exact-head signoff: one Claude Opus 5.5 high and one OpenAI Astra low review of the same commit, each answering whether this is a correct, clean and detailed DDD specification, reproduced defects kept apart from named preferences (the lead)
-- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (rounds one to three each found a correction; the third is an identity-only schema user in card 164)
-- [x] Journal: three exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
+- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (rounds one to four each found a correction; the fourth is a value-object hierarchy user in card 162)
+- [x] Journal: four exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
 
 ## Gates
 
@@ -119,6 +119,35 @@ You are an independent final reviewer of the Open Domain Specification metamodel
 The owner's question: Is this a correct, clean, detailed specification for modelling software systems the Domain-Driven Design way, with the metamodel, validator, reference models, and all four permanent reading surfaces telling the same truth? Give an explicit APPROVE or BLOCK verdict on this exact head. Approval requires no unresolved semantic defect; it does not require every possible DDD construct. Deliberate model preferences are allowed when their costs and source-backed reopening conditions are honest.
 
 Read AGENTS.md, STATUS.md's current state, the current-position paragraphs and relevant amendments of decisions 15, 16, 17, 18, 20, 21 and 23, the card 160 evidence table, and the source notes in the five reference models. Inspect the core schema, DSL, validator, derived maps/reaction walk, generated JSON schema, authoring skill, documentation site, pages renderer for VS Code/viewer/static export, and Markdown writer as needed. Review the changes from a0e88e97 through HEAD adversarially, especially NorthBank kernel ownership (#107), its structured Scorecard call (#109), Markdown value-object users (#110), and final decision/validator wording (#108), and the correction to borrowed value-object specialisation (#111). The first signoff round on the older head reproduced issue #111: a permitted cross-context value-object specialisation did not back shared-kernel, conformist or customer-supplier relationships. Independently verify that the current regression and common borrowing predicate fix all three routes without excusing invalid relationships or changing pinned diagnostics. The first round also identified four decision/guidance wording problems; check the recorded corrections for truth. The second round found that the context renderer omitted foreign and nested users of value objects (#112), and that generated Markdown retained five orphan pages (#113); check the shared core user helper, all three Svelte surfaces, the Markdown reader, and on-disk generated file set. The lead then found nested-only schemas marked unused in the context page and Markdown (#114); verify the broad Used by lists and the narrow direct Carried by list, including NorthBank Ledger PostingLine. Check these fixes for new misstatements or omissions across reference models. Challenge the conditional capability rulings for #35, #36, #37, #38, #39, #40 against source-backed cases and the code's actual behavior. Check that pinned diagnostics and generated outputs still mean what they claim; do not edit them.
+
+For each blocking finding, give a concrete source-backed or runnable counterexample, the actual behavior, expected behavior, exact file/line evidence, and the smallest regression test that would prove the correction. Separate reproduced semantic defects and cross-surface lies from deliberate named costs, optional improvements, and uncertain source questions. If you cannot substantiate an objection, state the uncertainty rather than treating it as a blocker. Note any meaningful limit of your inspection.
+
+End with: VERDICT: APPROVE or VERDICT: BLOCK; the exact HEAD; and a concise answer to the owner's question. Do not approve an older head.
+```
+
+
+## Fourth round (head `cb3ebb0a`)
+
+The unmodified local gate passed on exact head `cb3ebb0aa9d3b99d574d5b06700f49dfe406a2f5`: core 1056, graphviz 35, doc 47, skill 62, NorthBank 7, pages 1005, all other suites, schema match and ESM imports, browser 430 passed/20 skipped. The worktree was clean. Both reviews were read-only and used the same prompt. No GitHub CI minutes were used.
+
+| Reviewer | Model | Verdict |
+| --- | --- | --- |
+| OpenAI | `gpt-6-astra`, low | APPROVE |
+| Claude | `claude-opus-5-5`, high | **BLOCK** |
+
+- **Opus's reproduced defect:** since #111 the validator counts a kind that specialises a value object as borrowing, but `usersOfValueObject` expressly excluded it. A two-context kernel where Cards' `Fee` specialises `Money` and `Card` holds `Fee` leaves Money's broad Used by empty. In NorthBank, `JournalEntry` holds `LedgerAccount`, so `CustomerLedgerAccount` and `NominalLedgerAccount` are possible values through that parent, but both context and Markdown said no one uses them. The browser regression had pinned the false NominalLedgerAccount claim.
+- **Astra, APPROVE:** confirmed the identity correction, all four surfaces, generated files and pinned diagnostics; it did not raise the hierarchy defect.
+- **Lead ruling:** BLOCK. The source and runnable cases contradict the broad Used by promise and the checker, even though the prior report called Kinds a hint. The correction extends #112/card 162: list kinds, parent-typed holders and kind-typed holders with `kind` and `through <type>` labels. Core tests first failed on `cb3ebb0a`; with the fix, focused core, NorthBank Markdown and viewer/export browser tests pass. Both reviewers must inspect a new exact head after the full local gate.
+- **Other findings:** #107-#111, #113-#114 and conditional #35-#40 rulings held for both. Opus noted the schema page's carrier intro omitted non-carrier uses; its copy was made explicit with the fix.
+
+Prompt given to both verbatim:
+
+```text
+You are an independent final reviewer of the Open Domain Specification metamodel and its reference models. Review the exact committed head cb3ebb0aa9d3b99d574d5b06700f49dfe406a2f5 in this checkout, based on origin/develop a0e88e97. This is a read-only review: make no edits, commits, issue or PR comments, pushes, or agent delegations. Do not run the full verify-all.sh gate; it has passed locally on this exact head. Check the head and clean worktree before reasoning.
+
+The owner's question: Is this a correct, clean, detailed specification for modelling software systems the Domain-Driven Design way, with the metamodel, validator, reference models, and all four permanent reading surfaces telling the same truth? Give an explicit APPROVE or BLOCK verdict on this exact head. Approval requires no unresolved semantic defect; it does not require every possible DDD construct. Deliberate model preferences are allowed when their costs and source-backed reopening conditions are honest.
+
+Read AGENTS.md, STATUS.md's current state, the current-position paragraphs and relevant amendments of decisions 15, 16, 17, 18, 20, 21 and 23, the card 160 evidence table, and the source notes in the five reference models. Inspect the core schema, DSL, validator, derived maps/reaction walk, generated JSON schema, authoring skill, documentation site, pages renderer for VS Code/viewer/static export, and Markdown writer as needed. Review the changes from a0e88e97 through HEAD adversarially, especially NorthBank kernel ownership (#107), its structured Scorecard call (#109), Markdown value-object users (#110), and final decision/validator wording (#108), and the correction to borrowed value-object specialisation (#111). The first signoff round on the older head reproduced issue #111: a permitted cross-context value-object specialisation did not back shared-kernel, conformist or customer-supplier relationships. Independently verify that the current regression and common borrowing predicate fix all three routes without excusing invalid relationships or changing pinned diagnostics. The first round also identified four decision/guidance wording problems; check the recorded corrections for truth. The second round found that the context renderer omitted foreign and nested users of value objects (#112), and that generated Markdown retained five orphan pages (#113); check the shared core user helper, all three Svelte surfaces, the Markdown reader, and on-disk generated file set. The lead then found nested-only schemas marked unused in the context page and Markdown (#114); verify the broad Used by lists and the narrow direct Carried by list, including NorthBank Ledger PostingLine. Check these fixes for new misstatements or omissions across reference models. In the third round on the older head, both reviewers independently blocked because RiverMart Capture.providerPaymentId identifies the external ProviderPayment schema but Used by called it unused. On this head, challenge the new identity-aware usersOfSchema and the explicit identity labels in Markdown and all Svelte hosts. Verify that an identity reference does not imply a direct payload carrier, that the RiverMart regression fails on the old head and passes here, and that no new user is duplicated or omitted. The local full gate passed on this exact head: core 1056, pages 1005, browser 430 passed/20 skipped, other package/model suites and generated schema/import checks green. Challenge the conditional capability rulings for #35, #36, #37, #38, #39, #40 against source-backed cases and the code's actual behavior. Check that pinned diagnostics and generated outputs still mean what they claim; do not edit them.
 
 For each blocking finding, give a concrete source-backed or runnable counterexample, the actual behavior, expected behavior, exact file/line evidence, and the smallest regression test that would prove the correction. Separate reproduced semantic defects and cross-surface lies from deliberate named costs, optional improvements, and uncertain source questions. If you cannot substantiate an objection, state the uncertainty rather than treating it as a blocker. Note any meaningful limit of your inspection.
 

@@ -3,7 +3,7 @@ import {
 	type BoundedContext,
 	type DataSchema,
 	Entity,
-	type ValueObject,
+	ValueObject,
 } from "./workspace";
 
 /**
@@ -26,9 +26,25 @@ export function valueObjectsUsedBy(aggregate: Aggregate): ValueObject[] {
 
 /** One place a value object is used, anywhere in the workspace. */
 export type ValueObjectUser =
-	| { kind: "aggregate"; boundedcontext: BoundedContext; owner: Aggregate }
-	| { kind: "value object"; boundedcontext: BoundedContext; owner: ValueObject }
-	| { kind: "schema"; boundedcontext: BoundedContext; owner: DataSchema };
+	| {
+			kind: "aggregate";
+			boundedcontext: BoundedContext;
+			owner: Aggregate;
+			through: ValueObject[];
+	  }
+	| {
+			kind: "value object";
+			boundedcontext: BoundedContext;
+			owner: ValueObject;
+			through: ValueObject[];
+			asKind: boolean;
+	  }
+	| {
+			kind: "schema";
+			boundedcontext: BoundedContext;
+			owner: DataSchema;
+			through: ValueObject[];
+	  };
 
 /**
  * Everything in the workspace that uses a value object, in the order a reader
@@ -37,35 +53,79 @@ export type ValueObjectUser =
  *
  * A value object is borrowed across a kernel or a directed relationship
  * (decision 16), so a list of only the declaring context's users reads as if
- * nobody else depends on it. A user is an aggregate whose entities type the
- * value or relate to it, a value object whose attributes type it or whose
- * relations target it, or a schema whose attributes type it. A value object
- * that is only a kind of this one is not a user: it reaches the value by
- * inheritance, and is listed under Kinds.
+ * nobody else depends on it. A user is an aggregate, value object or schema
+ * that types or relates to the value, one of its ancestors, or one of its
+ * kinds. Kinds themselves are users of the parent they specialise: that
+ * specialisation also backs borrowing in the validator. A holder reached
+ * through a parent or kind says which one, so it does not imply that its
+ * attribute names this exact value object. Inherited attributes and relations
+ * of a kind count too. Each owner appears once even when it uses several
+ * members of the same hierarchy.
  */
 export function usersOfValueObject(
 	valueObject: ValueObject,
 ): ValueObjectUser[] {
 	const users: ValueObjectUser[] = [];
+	const related = (candidate: ValueObject) =>
+		candidate === valueObject ||
+		candidate.ancestors.includes(valueObject) ||
+		valueObject.ancestors.includes(candidate);
+	const through = (direct: Iterable<ValueObject>) =>
+		Array.from(new Set(direct))
+			.filter((candidate) => candidate !== valueObject && related(candidate))
+			.sort((a, b) => a.ref.localeCompare(b.ref));
 	const typedBy = (owner: ValueObject | DataSchema) =>
-		Array.from(owner.attributes.values()).some(
-			(attribute) => attribute.valueobject === valueObject,
-		);
+		Array.from(
+			owner instanceof ValueObject
+				? owner.allAttributes
+				: owner.attributes.values(),
+		)
+			.map((attribute) => attribute.valueobject)
+			.filter(
+				(candidate): candidate is ValueObject =>
+					!!candidate && related(candidate),
+			);
 	for (const bc of valueObject.boundedcontext.workspace.boundedcontexts.values()) {
 		for (const owner of bc.aggregates.values()) {
-			if (valueObjectsUsedBy(owner).includes(valueObject))
-				users.push({ kind: "aggregate", boundedcontext: bc, owner });
+			const direct = valueObjectsUsedBy(owner).filter(related);
+			if (direct.length)
+				users.push({
+					kind: "aggregate",
+					boundedcontext: bc,
+					owner,
+					through: through(direct),
+				});
 		}
 		for (const owner of bc.valueobjects.values()) {
-			if (
-				typedBy(owner) ||
-				owner.relations.some((it) => it.target === valueObject)
-			)
-				users.push({ kind: "value object", boundedcontext: bc, owner });
+			const direct = [
+				...typedBy(owner),
+				...owner.allRelations
+					.map((relation) => relation.target)
+					.filter(
+						(candidate): candidate is ValueObject =>
+							candidate instanceof ValueObject && related(candidate),
+					),
+			];
+			const asKind =
+				owner !== valueObject && owner.ancestors.includes(valueObject);
+			if (direct.length || asKind)
+				users.push({
+					kind: "value object",
+					boundedcontext: bc,
+					owner,
+					through: through(direct),
+					asKind,
+				});
 		}
 		for (const owner of bc.schemas.values()) {
-			if (typedBy(owner))
-				users.push({ kind: "schema", boundedcontext: bc, owner });
+			const direct = typedBy(owner);
+			if (direct.length)
+				users.push({
+					kind: "schema",
+					boundedcontext: bc,
+					owner,
+					through: through(direct),
+				});
 		}
 	}
 	return users;

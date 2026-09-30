@@ -252,7 +252,7 @@ describe("NorthBank reference workspace", () => {
 	// carry it (issue 114). Ledger's PostingLine is sent and answered by no
 	// consumable: PostEntry and EntryPosted nest it, and those are what carry it.
 	// The old column read the carrier-only list and printed "-".
-	it("lists the schemas that nest PostingLine in its Used by column, not a dash", async () => {
+	it("lists nested schema users and the users of ledger account kinds", async () => {
 		const docs = await assertDocSite(workspace);
 		const page = docs["boundedcontexts/ledger/index.md"];
 		const row = page
@@ -263,6 +263,26 @@ describe("NorthBank reference workspace", () => {
 		expect(usedBy).not.toMatch(/^-\s*\|?$/);
 		expect(usedBy).toContain("[PostEntry](./index.md#schemas) (schema)");
 		expect(usedBy).toContain("[EntryPosted](./index.md#schemas) (schema)");
+
+		const ledgerAccount = page
+			.split("\n")
+			.find((line) => line.startsWith("| LedgerAccount |"));
+		expect(ledgerAccount).toContain(
+			"[CustomerLedgerAccount](./index.md#value-objects) (value object, kind)",
+		);
+		expect(ledgerAccount).toContain(
+			"[NominalLedgerAccount](./index.md#value-objects) (value object, kind)",
+		);
+		for (const kind of ["CustomerLedgerAccount", "NominalLedgerAccount"]) {
+			const kindRow = page
+				.split("\n")
+				.find((line) =>
+					line.startsWith(`| ${kind} (a kind of LedgerAccount) |`),
+				);
+			expect(kindRow).toContain(
+				"[JournalEntry](aggregates/journal_entry/index.md) (through LedgerAccount)",
+			);
+		}
 	}, 60_000);
 
 	// Rendering every diagram through graphviz-wasm takes tens of seconds on

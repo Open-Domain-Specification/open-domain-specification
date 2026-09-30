@@ -153,8 +153,27 @@ for (const [host, open] of hosts) {
 			).toHaveAttribute("href", href);
 		await expect(money).toContainText("schema");
 		await expect(money).not.toContainText("nothing");
-		// A value nobody uses still says so: the empty state is for that alone.
-		await expect(row("NominalLedgerAccount")).toContainText("nothing");
+		// A kind is a user of its parent; a holder typed by the parent may hold
+		// either kind. The old page warned that neither kind was used.
+		const ledgerAccount = row("LedgerAccount");
+		for (const kind of ["CustomerLedgerAccount", "NominalLedgerAccount"])
+			await expect(
+				ledgerAccount.getByRole("link", { name: kind, exact: true }),
+			).toBeVisible();
+		await expect(ledgerAccount).toContainText("kind");
+		for (const id of ["customer_ledger_account", "nominal_ledger_account"]) {
+			const kindRow = values.locator(
+				`[id="#/boundedcontexts/ledger/valueobjects/${id}"]`,
+			);
+			await expect(
+				kindRow.getByRole("link", { name: "JournalEntry", exact: true }),
+			).toHaveAttribute(
+				"href",
+				"#/boundedcontexts/ledger/aggregates/journal_entry",
+			);
+			await expect(kindRow).toContainText("through LedgerAccount");
+			await expect(kindRow).not.toContainText("nothing");
+		}
 
 		// A link lands on the user's page.
 		await link("Accounts / Account").first().click();

@@ -38,7 +38,7 @@ describe("usersOfValueObject", () => {
 		]);
 	});
 
-	it("counts a value object that only relates to the value, and not one that only specialises it", () => {
+	it("counts a relation and a kind that specialises the value", () => {
 		const { sales, money } = makeWs();
 		const wallet = sales.addValueObject("Wallet", { description: "" });
 		wallet.addRelation(money, { relation: "uses" });
@@ -46,6 +46,71 @@ describe("usersOfValueObject", () => {
 
 		expect(usersOfValueObject(money).map((it) => it.owner.name)).toEqual([
 			"Wallet",
+			"Euro",
+		]);
+		expect(usersOfValueObject(money)[1]).toMatchObject({ asKind: true });
+	});
+
+	it("shows a borrowed kind and its holder as users of the parent", () => {
+		const { sales, money } = makeWs();
+		const fee = sales.addValueObject("Fee", {
+			description: "",
+			specialises: money,
+		});
+		const card = sales.addAggregate("Card", { description: "" });
+		card
+			.addEntity("Card", { description: "", root: true })
+			.addAttribute("fee", { type: "Fee", valueobject: fee });
+
+		expect(usersOfValueObject(money)).toMatchObject([
+			{
+				kind: "aggregate",
+				owner: { name: "Card" },
+				through: [{ name: "Fee" }],
+			},
+			{ kind: "value object", owner: { name: "Fee" }, asKind: true },
+		]);
+		expect(usersOfValueObject(fee)).toMatchObject([
+			{ kind: "aggregate", owner: { name: "Card" }, through: [] },
+		]);
+	});
+
+	it("shows a parent-typed holder as a user of each kind, marked through that parent", () => {
+		const { kernel, money } = makeWs();
+		const ledgerAccount = kernel.addValueObject("LedgerAccount", {
+			description: "",
+		});
+		const customer = kernel.addValueObject("CustomerLedgerAccount", {
+			description: "",
+			specialises: ledgerAccount,
+		});
+		ledgerAccount.addAttribute("amount", { type: "Money", valueobject: money });
+		const journal = kernel.addAggregate("JournalEntry", { description: "" });
+		journal
+			.addEntity("Posting", { description: "", root: true })
+			.addAttribute("account", {
+				type: "LedgerAccount",
+				valueobject: ledgerAccount,
+			});
+
+		expect(usersOfValueObject(customer)).toMatchObject([
+			{
+				kind: "aggregate",
+				owner: { name: "JournalEntry" },
+				through: [{ name: "LedgerAccount" }],
+			},
+		]);
+		expect(usersOfValueObject(ledgerAccount)).toMatchObject([
+			{ kind: "aggregate", owner: { name: "JournalEntry" }, through: [] },
+			{
+				kind: "value object",
+				owner: { name: "CustomerLedgerAccount" },
+				asKind: true,
+			},
+		]);
+		expect(usersOfValueObject(money).map((it) => it.owner.name)).toEqual([
+			"LedgerAccount",
+			"CustomerLedgerAccount",
 		]);
 	});
 

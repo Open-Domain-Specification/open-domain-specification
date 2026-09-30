@@ -70,7 +70,7 @@ const directionOf = (c: (typeof carriers)[number]) =>
 <Section
 	id="carriers"
 	title="Carried by"
-	lead="Consumables that name this schema directly as a payload, answer or refusal. A command and the event it raises often share one. Other schemas can nest this shape; those uses appear on its context page."
+	lead="Consumables that name this schema directly as a payload, answer or refusal. A command and the event it raises often share one. Attributes can hold this shape, and an identity can name its kind; those uses appear on its context page."
 	count={carriers.length}
 	problems={problemsUnder(model, s.ref)}
 >

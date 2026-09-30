@@ -90,14 +90,14 @@ const relationColumns: Column[] = [
 <Section
 	id="usage"
 	title={sections.find((s) => s.id === "usage")!.label}
-	lead="Attributes across the workspace whose type is this value object."
+	lead="Attributes across the workspace that name this exact value object as their type. Parent-typed holders appear in Used by on its context page."
 	count={usages.length}
 	problems={problemsUnder(model, v.ref)}
 >
 	<DataTable
 		columns={usageColumns}
 		rows={usages}
-		empty="Nothing uses this value object as a type yet."
+		empty="No attribute names this value object directly as its type."
 		rowId={(u) => u.ref}
 	>
 		{#snippet cell(u, col)}

@@ -290,7 +290,9 @@ describe("the tactical templates on the alternate branches", () => {
 		const text = textOf(
 			valueObjectRef("main_context", "unused_value_object").$ref,
 		);
-		expect(text).toContain("Nothing uses this value object as a type yet.");
+		expect(text).toContain(
+			"No attribute names this value object directly as its type.",
+		);
 		expect(text).toContain("No relations.");
 		expect(text).toContain("This value keeps no rule of its own.");
 		expect(text).toContain("No aggregate's rule names this value object.");

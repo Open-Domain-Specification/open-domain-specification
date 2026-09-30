@@ -108,7 +108,20 @@ const usedByMd = (
 				kind === "consumable" ? owner.type : kind === "aggregate" ? "" : kind;
 			const identityMark =
 				"use" in user && user.use !== "shape" ? user.use : "";
-			const mark = [kindMark, identityMark].filter(Boolean).join(", ");
+			const kindOfValueMark = "asKind" in user && user.asKind ? "kind" : "";
+			const throughMark =
+				"through" in user && user.through.length
+					? `through ${user.through
+							.map((via) =>
+								via.boundedcontext === declaring
+									? via.name
+									: `${via.boundedcontext.name} / ${via.name}`,
+							)
+							.join(", ")}`
+					: "";
+			const mark = [kindMark, identityMark, kindOfValueMark, throughMark]
+				.filter(Boolean)
+				.join(", ");
 			return `[${label}](${href})${mark ? ` (${mark})` : ""}`;
 		})
 		.join(", ") || "-";
