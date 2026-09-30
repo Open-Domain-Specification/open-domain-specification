@@ -1,4 +1,7 @@
-import type { BoundedContext } from "@open-domain-specification/core";
+import {
+	type BoundedContext,
+	Workspace,
+} from "@open-domain-specification/core";
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import Harness from "../evidence/WithModel.harness.svelte";
@@ -68,6 +71,31 @@ describe("ContextPage", () => {
 			0,
 		);
 		expect(container.querySelector(".card, .grid")).toBeNull();
+	});
+
+	it("names a foreign kind when an aggregate holds a parent's value through it", () => {
+		const workspace = new Workspace("Family", {
+			description: "",
+			version: "test",
+		});
+		const kernel = workspace.addBoundedContext("Kernel", { description: "" });
+		const cards = workspace.addBoundedContext("Cards", { description: "" });
+		const money = kernel.addValueObject("Money", { description: "" });
+		const fee = cards.addValueObject("Fee", {
+			description: "",
+			specialises: money,
+		});
+		const card = cards.addAggregate("Card", { description: "" });
+		card
+			.addEntity("Card", { description: "", root: true })
+			.addAttribute("fee", { type: "Fee", valueobject: fee });
+		const model = { workspace, fileLabel: "family.json", diagnostics: [] };
+		const { container } = page(model, kernel);
+		const values = container.querySelector("#values") as HTMLElement;
+		expect(values).toHaveTextContent("Cards / Card");
+		expect(values).toHaveTextContent("Cards / Fee");
+		expect(values).toHaveTextContent("through Cards / Fee");
+		expect(values).not.toHaveTextContent("nothing");
 	});
 
 	it("lists the integration surface, the policies and the language as tables", () => {
