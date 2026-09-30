@@ -89,16 +89,21 @@ jobs:
     timeout-minutes: 45
     env:
       VSCODE_VERSION: '1.96.4'
-      # Fresh per run and inside the runner's temp dir, which is cleaned below.
-      ODS_EVIDENCE: ${{ runner.temp }}/ods-evidence
-      ODS_RESULTS_DIR: ${{ runner.temp }}/ods-evidence/results
-      ODS_LOGS_DIR: ${{ runner.temp }}/ods-evidence/keyboard
-      ODS_VSCODE_USER_DATA: ${{ runner.temp }}/ods-vscode-user-data
-      ODS_TMP: ${{ runner.temp }}/ods-tmp
     defaults:
       run:
         shell: bash
     steps:
+      # Fresh per run and inside the runner's temp dir, which is cleaned below.
+      # Set here because the runner context is not available to job-level env.
+      - name: Name the scratch and result directories
+        run: |
+          {
+            echo "ODS_EVIDENCE=$RUNNER_TEMP/ods-evidence"
+            echo "ODS_RESULTS_DIR=$RUNNER_TEMP/ods-evidence/results"
+            echo "ODS_LOGS_DIR=$RUNNER_TEMP/ods-evidence/keyboard"
+            echo "ODS_VSCODE_USER_DATA=$RUNNER_TEMP/ods-vscode-user-data"
+            echo "ODS_TMP=$RUNNER_TEMP/ods-tmp"
+          } >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
