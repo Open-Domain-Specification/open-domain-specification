@@ -32,4 +32,31 @@ describe("strategicPositionMd", () => {
 			);
 		}
 	});
+
+	it("names each of two same-type agreements in its row and its comment title (#74)", () => {
+		const ws = new Workspace("W", { description: "d", version: "0" });
+		const trade = ws
+			.addDomain("Shop", { description: "d" })
+			.addSubdomain("Trade", { type: "core", description: "d" });
+		const vendor = trade.addBoundedcontext("Vendor", { description: "d" });
+		const warehouse = trade.addBoundedcontext("Warehouse", {
+			description: "d",
+		});
+		for (const name of ["purchase feed", "price lookup"])
+			warehouse.downstreamOf(vendor, {
+				name,
+				comments: [{ text: `About the ${name}.` }],
+			});
+
+		const lines = strategicPositionMd(warehouse).split("\n");
+		for (const name of ["purchase feed", "price lookup"]) {
+			const type = `upstream-downstream · ${name}`;
+			expect(
+				lines.filter(
+					(l) => l.startsWith("| Vendor |") && l.includes(` ${type} `),
+				),
+			).toHaveLength(1);
+			expect(lines).toContain(`- **Vendor** (${type})`);
+		}
+	});
 });
