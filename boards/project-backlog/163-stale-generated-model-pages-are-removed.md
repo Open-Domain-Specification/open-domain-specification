@@ -15,7 +15,7 @@ Issue #113. The second signoff round's Opus report found tracked generated pages
 
 ## Checklist
 
-- [x] `generate()` in `models/_shared/src/index.ts` writes the site to `docs.next` and swaps it in for `docs/` only after `toDoc` has returned, so a removed element leaves no page or SVG and a failed build keeps the old site. Nothing outside a model's `docs/` is touched (`DISCOVERY.md`, `.ods/`)
+- [x] `generate()` in `models/_shared/src/index.ts` writes the site to `docs.next` and swaps it in for `docs/` only after `toDoc` has returned, so a removed element leaves no page or SVG and a failed `toDoc` leaves the old site untouched. Nothing outside a model's `docs/` is touched (`DISCOVERY.md`, `.ods/`)
 - [x] An optional `root` (default `.`) says which package directory the outputs go under; each model's `build` runs as before
 - [x] Regression in `models/_shared/src/generate.test.ts`: an orphan page and SVG planted in a temporary `docs/`, a small workspace generated, and the on-disk file set asserted equal to `toDoc`'s keys, each file's content equal, the orphan gone, `DISCOVERY.md` untouched. It fails on the `16665ca5` generator
 - [x] All five models rebuilt through their generators. Deleted, and only these: `models/petstore/docs/boundedcontexts/identity_bc/aggregates/user/{index.md,consumablemap.svg,relationmap.svg}` and `models/clinic/docs/boundedcontexts/triage/services/triage_assessment/{index.md,consumablemap.svg}`. No other tracked file changed, so no current `toDoc` output was removed and the `.ods` output is byte-identical

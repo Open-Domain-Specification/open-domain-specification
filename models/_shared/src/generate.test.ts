@@ -38,6 +38,7 @@ describe("generate", () => {
 	});
 
 	afterEach(() => {
+		vi.restoreAllMocks();
 		fs.rmSync(root, { recursive: true, force: true });
 	});
 
