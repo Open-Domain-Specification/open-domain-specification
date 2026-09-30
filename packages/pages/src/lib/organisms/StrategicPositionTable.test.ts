@@ -8,7 +8,7 @@ import {
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import Harness from "../evidence/WithModel.harness.svelte";
-import { edgeCaseModel, petstoreSales } from "../fixtures";
+import { edgeCaseModel, petstoreSales, rivermartModel } from "../fixtures";
 import StrategicPositionTable from "./StrategicPositionTable.svelte";
 
 type Model = ReturnType<typeof petstoreSales>["model"];
@@ -99,6 +99,37 @@ describe("StrategicPositionTable", () => {
 		const modals = document.querySelectorAll("#relationship-modal");
 		expect(modals).toHaveLength(1);
 		expect(modals[0].querySelector(".body")?.textContent).not.toBe(first);
+	});
+
+	it("names a named agreement on its row's toggle and in its modal's title, so two between one pair read apart (#74)", async () => {
+		const model = rivermartModel();
+		const named = model.workspace.relationships.filter((r) => r.name);
+		const warehouse = named[0].target;
+		// Give each a comment so both rows carry a toggle.
+		for (const r of named)
+			if (!r.comments.length) r.comments.push({ text: "Recorded." });
+		position(model, warehouse);
+		for (const r of named) {
+			// The row itself names it beside the type, not only the toggle.
+			const row = screen
+				.getAllByRole("row")
+				.find(
+					(tr) =>
+						tr.querySelector(".agreement")?.textContent === ` · ${r.name}`,
+				);
+			expect(row).toBeDefined();
+			const toggle = screen.getByRole("button", {
+				name: `Evidence for ${r.source.name} and ${r.target.name}, the ${r.name} agreement`,
+			});
+			await fireEvent.click(toggle);
+			const modal = document.getElementById(
+				"relationship-modal",
+			) as HTMLElement;
+			expect(modal.querySelector(".agreement")).toHaveTextContent(
+				`· ${r.name}`,
+			);
+			await fireEvent.click(toggle);
+		}
 	});
 
 	it("closes the modal on Escape and puts focus back on the row's toggle", async () => {

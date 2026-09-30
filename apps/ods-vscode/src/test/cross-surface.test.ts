@@ -12,6 +12,7 @@ import type {
 } from "@open-domain-specification/pages";
 import * as vscode from "vscode";
 import type { OdsTestApi } from "../extension";
+import { searchIndex } from "../search";
 import { EXPECTED, FIXTURE_FILE } from "./fixtures/cross-surface/expected";
 
 const EXTENSION_ID = "open-domain-specification.ods-vscode";
@@ -168,6 +169,49 @@ describe("the cross-surface facts in a real VS Code webview", function () {
 			lines.filter((l) => l.startsWith("Under the ")).sort(),
 			named.map((c) => a.edgeTitle(c.agreement as string)).sort(),
 		);
+	});
+
+	it("names each named agreement on its page, in the tree and in search, as core titles it (#74)", async () => {
+		const root = api.tree
+			.getChildren()
+			.find((n) => n.file.relativePath === FIXTURE_FILE);
+		assert.ok(root, `the tree has no node for ${FIXTURE_FILE}`);
+		const group = api.tree
+			.getChildren(root)
+			.find((n) => n.label === "Relationships");
+		assert.ok(group, "the tree has no Relationships group");
+		const rows = api.tree.getChildren(group);
+		const hits = [...searchIndex(file)];
+		const labels = new Set<string>();
+		for (const n of EXPECTED.namedAgreements) {
+			const relationship = workspace.relationships.find(
+				(r) => r.ref === n.relationship,
+			);
+			assert.ok(relationship, `the fixture has no ${n.relationship}`);
+			const title = relationshipTitle(relationship);
+			assert.ok(title.endsWith(` · ${n.name}`), title);
+			labels.add(title);
+
+			const row = rows.find((r) => r.ref === n.relationship);
+			assert.ok(row, `the tree has no row for ${n.relationship}`);
+			assert.equal(api.tree.getTreeItem(row).label, title);
+			const hit = hits.find((h) => h.ref === n.relationship);
+			assert.ok(hit, `search has no hit for ${n.relationship}`);
+			assert.ok(hit.label.endsWith(` ${title}`), hit.label);
+
+			const heading = "main h1";
+			const probed = await read(
+				n.relationship,
+				n.name,
+				[`${heading} .name`, `${heading} .arrow`, `${heading} .agreement`],
+				(p) => (p[`${heading} .agreement`]?.length ?? 0) > 0,
+			);
+			const [source, target] = trimmed(probed[`${heading} .name`]);
+			const [arrow] = trimmed(probed[`${heading} .arrow`]);
+			const [agreement] = trimmed(probed[`${heading} .agreement`]);
+			assert.equal(`${source} ${arrow} ${target} ${agreement}`, title);
+		}
+		assert.equal(labels.size, EXPECTED.namedAgreements.length);
 	});
 
 	it("labels a relationship in the health report as core titles it, each context its own link (#44)", async () => {

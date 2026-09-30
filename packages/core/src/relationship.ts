@@ -23,11 +23,32 @@ export const relationshipArrow = (type: string): string =>
 	isSymmetricRelationship(type) ? "↔" : "→";
 
 /**
- * How a relationship is named wherever it is listed — its own page, the
- * strategic position table, the search spotlight, the extension tree. A
- * relationship has no name of its own, so it is named by its two contexts
- * and the direction between them: an arrow when one side leads, a double
- * arrow when neither does.
+ * What stands between a relationship's two contexts and its agreement name,
+ * wherever a surface draws the two apart (a page heading, a table cell) and
+ * must still read as `relationshipTitle` does.
+ */
+export const RELATIONSHIP_NAME_SEPARATOR = " · ";
+
+/**
+ * A relationship's label with a named agreement's name after the middle dot,
+ * or the label alone when it has none: the title's two contexts, or a type
+ * where a table cell stands for the relationship.
+ */
+export const withAgreementName = (label: string, name?: string): string =>
+	name ? `${label}${RELATIONSHIP_NAME_SEPARATOR}${name}` : label;
+
+/**
+ * How a relationship is named wherever it is listed: its own page, the health
+ * report, the search spotlight, the extension tree and generated Markdown. It
+ * is named by its two contexts and the direction between them, an arrow when
+ * one side leads and a double arrow when neither does. One pair may hold two
+ * agreements (decision 15), and each then carries a name, so a named agreement
+ * adds it after a middle dot, as the context map's stereotype badge does:
+ * "Vendor → Warehouse · purchase feed". A pair's only agreement needs no name
+ * and reads as the pair alone.
  */
 export const relationshipTitle = (r: ContextRelationship): string =>
-	`${r.source.name} ${relationshipArrow(r.type)} ${r.target.name}`;
+	withAgreementName(
+		`${r.source.name} ${relationshipArrow(r.type)} ${r.target.name}`,
+		r.name,
+	);

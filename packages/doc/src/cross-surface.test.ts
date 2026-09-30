@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { Workspace } from "@open-domain-specification/core";
+import { relationshipTitle, Workspace } from "@open-domain-specification/core";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
 	EXPECTED,
@@ -14,8 +14,10 @@ import { toDoc } from "./index";
  * `expected.ts` (`packages/pages/e2e/cross-surface-facts.spec.ts`,
  * `apps/ods-vscode/src/test/cross-surface.test.ts`).
  *
- * Markdown writes no relationship page and no health report, so the label
- * fact (#44) has no Markdown form and nothing here asserts one.
+ * Markdown writes no relationship page, so the pages' relationship heading
+ * has no Markdown form. The workspace page's health section lists each
+ * relationship by core's `relationshipTitle` in bold, so a named agreement's
+ * name (#74) is asserted there.
  */
 const dir = join(
 	__dirname,
@@ -99,6 +101,24 @@ describe("the cross-surface fixture as Markdown", () => {
 					t.includes(a.edgeTitle(c.agreement as string)),
 				),
 			).toBe(true);
+		}
+	});
+
+	it("lists each named agreement under its own title in the health section and the context map table (#74)", () => {
+		const page = docs[`${workspace.path}/index.md`];
+		const health = page.split("## Health")[1].split("\n## ")[0];
+		const map = page.split("## Context Relationships")[1].split("\n## ")[0];
+		for (const n of EXPECTED.namedAgreements) {
+			const relationship = workspace.relationships.find(
+				(r) => r.ref === n.relationship,
+			);
+			expect(relationship?.name).toBe(n.name);
+			expect(health).toContain(
+				`- **${relationshipTitle(relationship as never)}** (`,
+			);
+			expect(relationshipTitle(relationship as never)).toContain(n.name);
+			// The context map's table names it after the type, as the map's badge does.
+			expect(map).toContain(`| ${relationship?.type} · ${n.name} |`);
 		}
 	});
 

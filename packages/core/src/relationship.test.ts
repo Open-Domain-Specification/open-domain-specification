@@ -3,6 +3,7 @@ import {
 	isSymmetricRelationship,
 	relationshipArrow,
 	relationshipTitle,
+	withAgreementName,
 } from "./relationship";
 import { Workspace } from "./workspace";
 
@@ -47,6 +48,21 @@ describe("relationshipTitle", () => {
 		});
 		expect(relationshipTitle(r)).toBe("Catalog ↔ Sales");
 	});
+
+	it("adds a named agreement's name, so two agreements between one pair read apart (#74)", () => {
+		const { catalog, sales } = makeWs();
+		const feed = catalog.upstreamOf(sales, { name: "price feed" });
+		const lookup = catalog.upstreamOf(sales, { name: "price lookup" });
+		expect(relationshipTitle(feed)).toBe("Catalog → Sales · price feed");
+		expect(relationshipTitle(lookup)).toBe("Catalog → Sales · price lookup");
+	});
+
+	it("reads a blank name as no name", () => {
+		const { catalog, sales } = makeWs();
+		const r = catalog.upstreamOf(sales, {});
+		r.name = "";
+		expect(relationshipTitle(r)).toBe("Catalog → Sales");
+	});
 });
 
 describe("relationshipArrow", () => {
@@ -70,5 +86,19 @@ describe("relationshipArrow", () => {
 				`Catalog ${relationshipArrow(r.type)} Sales`,
 			);
 		}
+	});
+});
+
+describe("withAgreementName", () => {
+	it("puts a name after the middle dot and leaves an unnamed label alone", () => {
+		expect(withAgreementName("upstream-downstream", "price feed")).toBe(
+			"upstream-downstream · price feed",
+		);
+		expect(withAgreementName("upstream-downstream")).toBe(
+			"upstream-downstream",
+		);
+		expect(withAgreementName("upstream-downstream", "")).toBe(
+			"upstream-downstream",
+		);
 	});
 });

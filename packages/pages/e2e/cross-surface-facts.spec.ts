@@ -173,6 +173,29 @@ for (const host of hosts) {
 			);
 		});
 
+		test("each named agreement's page names it, as core titles it, apart from the other (#74)", async ({
+			page,
+		}) => {
+			const headings: string[] = [];
+			for (const n of EXPECTED.namedAgreements) {
+				const relationship = workspace.relationships.find(
+					(r) => r.ref === n.relationship,
+				);
+				expect(relationship).toBeDefined();
+				await host.open(page, n.relationship);
+				const h1 = page.locator("main h1");
+				await expect(h1.locator(".agreement")).toHaveText(`· ${n.name}`);
+				const parts = await h1.evaluate((el) =>
+					[...el.querySelectorAll(".name, .arrow, .agreement")]
+						.map((x) => x.textContent?.trim())
+						.join(" "),
+				);
+				expect(parts).toBe(relationshipTitle(relationship as never));
+				headings.push((await h1.textContent()) ?? "");
+			}
+			expect(new Set(headings).size).toBe(EXPECTED.namedAgreements.length);
+		});
+
 		test("the health report labels a relationship as core titles it, with each context its own link (#44)", async ({
 			page,
 		}) => {

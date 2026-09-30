@@ -2,11 +2,12 @@ import {
 	type ContextRelationship,
 	isSymmetricRelationship,
 	PATTERNS,
+	relationshipTitle,
 } from "@open-domain-specification/core";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import Harness from "../evidence/WithModel.harness.svelte";
-import { edgeCaseModel, petstoreModel } from "../fixtures";
+import { edgeCaseModel, petstoreModel, rivermartModel } from "../fixtures";
 import RelationshipDetail from "./RelationshipDetail.svelte";
 
 const model = petstoreModel();
@@ -35,6 +36,41 @@ describe("RelationshipDetail", () => {
 		// Each part keeps its id so a page's table of contents can point at it.
 		for (const id of ["roles", "comments", "crossings", "links"])
 			expect(container.querySelector(`#${id}`)).toBeInTheDocument();
+	});
+
+	it("names a named agreement in its title, as relationshipTitle does, so two between one pair read apart (#74)", () => {
+		const river = rivermartModel();
+		const named = river.workspace.relationships.filter((r) => r.name);
+		expect(named.map((r) => r.name).sort()).toEqual([
+			"legacy stock feed",
+			"purchase order lookup",
+		]);
+		const titles = named.map((relationship) => {
+			const { unmount } = render(Harness, {
+				model: river,
+				component: RelationshipDetail,
+				args: { relationship, heading: "h1" },
+			});
+			const title = screen.getByRole("heading", { level: 1 });
+			expect(title.querySelector(".agreement")).toHaveTextContent(
+				`· ${relationship.name}`,
+			);
+			// The parts a reader sees, in order, are the title core gives it.
+			const parts = [...title.querySelectorAll(".name, .arrow, .agreement")]
+				.map((n) => n.textContent?.trim())
+				.join(" ");
+			expect(parts).toBe(relationshipTitle(relationship));
+			const name = title.textContent;
+			unmount();
+			return name;
+		});
+		expect(new Set(titles).size).toBe(2);
+	});
+
+	it("gives an unnamed relationship no agreement name", () => {
+		const { container } = detail(asymmetric);
+		expect(asymmetric.name).toBeUndefined();
+		expect(container.querySelector(".agreement")).toBeNull();
 	});
 
 	it("lists the roles as a definition per side, each role a code with its pattern's name and summary", () => {

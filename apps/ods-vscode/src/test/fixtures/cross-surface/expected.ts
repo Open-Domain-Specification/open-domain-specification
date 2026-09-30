@@ -71,6 +71,24 @@ export const EXPECTED = {
 		bullet: (agreement: string) => `- **Agreement**: ${agreement}`,
 	},
 
+	/**
+	 * Issue #74: each named agreement's own page names it, and so do its tree
+	 * row, its search hit and Markdown's health list. Each harness compares the
+	 * whole label with core's `relationshipTitle`; the name is the fact.
+	 */
+	namedAgreements: [
+		{
+			name: "purchase feed",
+			relationship:
+				"#/relationships/vendor~upstream-downstream~warehouse~purchase_feed",
+		},
+		{
+			name: "price lookup",
+			relationship:
+				"#/relationships/vendor~upstream-downstream~warehouse~price_lookup",
+		},
+	],
+
 	/** Issue #44: the tolerated relationship, in the health report. */
 	health: {
 		source: { name: "Orders", ref: "#/boundedcontexts/orders" },

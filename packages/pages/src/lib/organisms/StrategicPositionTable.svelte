@@ -4,6 +4,7 @@ import {
 	type ContextRelationship,
 	hasAuthoredDescription,
 	narrativeText,
+	RELATIONSHIP_NAME_SEPARATOR,
 	relationshipNarrative,
 } from "@open-domain-specification/core";
 import type { Column } from "../atoms/DataTable.svelte";
@@ -73,9 +74,12 @@ const narrativeOf = (r: ContextRelationship) =>
 /** What the `generated` keyword discloses on hover. */
 const GENERATED_TITLE =
 	"Generated from the relationship's type and roles. The model has no authored description.";
-/** Names both ends, because a row's own cells only name the counterpart. */
+/**
+ * Names both ends, because a row's own cells only name the counterpart, and a
+ * named agreement's name, because one pair may hold two (#74).
+ */
 const discloses = (r: ContextRelationship) =>
-	`Evidence for ${r.source.name} and ${r.target.name}`;
+	`Evidence for ${r.source.name} and ${r.target.name}${r.name ? `, the ${r.name} agreement` : ""}`;
 
 const columns = $derived<Column[]>([
 	...(withEvidence ? [{ key: "toggle", label: "", width: "22px" }] : []),
@@ -119,7 +123,7 @@ const columns = $derived<Column[]>([
 						<span class="description generated">{`${narrativeOf(r)} `}<Keyword text="generated" title={GENERATED_TITLE} /></span>
 					{/if}
 				{:else if col.key === "type"}
-					<PatternHover pattern={r.type} label={r.type} intent={r} />
+					<PatternHover pattern={r.type} label={r.type} intent={r} />{#if r.name}<span class="agreement">{RELATIONSHIP_NAME_SEPARATOR}{r.name}</span>{/if}
 				{:else if col.key === "upstream"}
 					{#each r.upstreamRoles as role (role)}
 						<PatternHover pattern={role} mono intent={r} />

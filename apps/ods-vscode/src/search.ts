@@ -68,7 +68,8 @@ export function* searchIndex(file: WorkspaceFile): Iterable<Hit> {
 			"Relationships marked for refactoring, tolerated compromises, and intents with no comments",
 	};
 	for (const t of ws.teams.values()) yield hit(file, "team", t, []);
-	// A relationship has no name or id of its own; it is named by its two ends.
+	// A relationship has no id of its own; it is named by its two ends and, where
+	// the pair holds more than one agreement, the agreement's name (#74).
 	for (const r of ws.relationships)
 		yield {
 			file,

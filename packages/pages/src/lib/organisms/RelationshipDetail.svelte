@@ -4,7 +4,6 @@ import {
 	type DownstreamRole,
 	isSymmetricRelationship,
 	PATTERNS,
-	relationshipArrow,
 	type UpstreamRole,
 } from "@open-domain-specification/core";
 import Comments from "../atoms/Comments.svelte";
@@ -23,15 +22,16 @@ import { crossingConsumables, relationshipLinks } from "../evidence/derive";
 import { LINK_KIND_LABELS } from "../evidence/labels";
 import { roleLabel } from "../flow/roles";
 import { consumableIcon, useModel } from "../model";
-import ContextLockup from "../molecules/ContextLockup.svelte";
 import Joined from "../molecules/Joined.svelte";
 import PatternHover from "../molecules/PatternHover.svelte";
+import RelationshipTitle from "../molecules/RelationshipTitle.svelte";
 
 /**
  * Everything known about one context relationship, intent and evidence
  * together (RFC-002 section 4.3). The card v1 drew around it — and the two
  * cards inside it that held nothing but a name — are gone: the title is the
- * two context lockups with the arrow between them, the roles are a definition
+ * relationship as core titles it, two context lockups with the arrow between
+ * them and a named agreement's name, the roles are a definition
  * list, the crossings are a table and the links are a definition list keyed by
  * what each one points at.
  *
@@ -76,9 +76,7 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 
 <div class="relationship-detail">
 	<Heading {level}>
-		<ContextLockup context={r.source} />
-		<span class="arrow">{relationshipArrow(r.type)}</span>
-		<ContextLockup context={r.target} />
+		<RelationshipTitle relationship={r} />
 		<PatternHover pattern={r.type} label={r.type} intent={r} />
 		<Disposition disposition={r.disposition} />
 	</Heading>
@@ -174,7 +172,6 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 	.relationship-detail section {
 		margin: 0;
 	}
-	.arrow,
 	.summary {
 		color: var(--vscode-descriptionForeground);
 	}

@@ -3,7 +3,12 @@ import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import { health, healthCounts } from "../evidence/derive";
 import Harness from "../evidence/WithModel.harness.svelte";
-import { edgeCaseModel, emptyWorkspaceModel, petstoreModel } from "../fixtures";
+import {
+	edgeCaseModel,
+	emptyWorkspaceModel,
+	petstoreModel,
+	rivermartModel,
+} from "../fixtures";
 import HealthReport from "./HealthReport.svelte";
 
 const report = (model: ReturnType<typeof petstoreModel>) =>
@@ -77,7 +82,9 @@ describe("HealthReport", () => {
 
 	it("reads each relationship as relationshipTitle does, with each end its own link", async () => {
 		const seen = new Set<string>();
-		for (const model of [petstoreModel(), edgeCaseModel()]) {
+		const named = new Set<string>();
+		// RiverMart's pair holds two named agreements (#74).
+		for (const model of [petstoreModel(), edgeCaseModel(), rivermartModel()]) {
 			const { container, unmount } = report(model);
 			await fireEvent.click(
 				screen.getByRole("button", { name: /No comments/ }),
@@ -90,8 +97,9 @@ describe("HealthReport", () => {
 			);
 			expect(cells.length).toBeGreaterThan(0);
 			for (const cell of cells) {
-				// The two lockups and the glyph, less the one-word warnings.
-				const text = [...cell.querySelectorAll(".name, .arrow")]
+				// The two lockups, the glyph and a named agreement's name, less the
+				// one-word warnings.
+				const text = [...cell.querySelectorAll(".name, .arrow, .agreement")]
 					.map((n) => n.textContent?.trim())
 					.join(" ");
 				const r = titles.get(text);
@@ -106,10 +114,18 @@ describe("HealthReport", () => {
 					r?.target.ref,
 				]);
 				seen.add(cell.querySelector(".arrow")?.textContent ?? "");
+				if (r?.name) named.add(text);
 			}
 			unmount();
 		}
-		// Both a directed and a symmetric relationship were compared.
+		// Both a directed and a symmetric relationship were compared, and both
+		// of RiverMart's named agreements, each under its own title.
 		expect(seen.size).toBe(2);
+		expect(named).toEqual(
+			new Set([
+				"Vendor Purchasing (legacy) → Warehouse · purchase order lookup",
+				"Vendor Purchasing (legacy) → Warehouse · legacy stock feed",
+			]),
+		);
 	});
 });
