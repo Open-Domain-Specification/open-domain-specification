@@ -55,6 +55,11 @@ $effect(() => card?.focus({ preventScroll: true }));
 		top: 0;
 		left: 0;
 		z-index: 10;
+		/* The viewport's front layer takes no pointer events, so that it never
+		   blocks the map under it, and this card inherited that: a click on the
+		   card, its Close button, a link or a keyword in it fell through to the
+		   node beneath, and the mouse could not open a keyword's explanation. */
+		pointer-events: auto;
 		width: 420px;
 		max-width: 60vw;
 		max-height: 60vh;

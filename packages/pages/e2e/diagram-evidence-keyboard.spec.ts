@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { arriveAt, openDiagram, tabUntil } from "./diagram-hosts";
+import { onScreen } from "./on-screen";
 
 /**
  * The badges on a context map disclose a relationship's evidence (card 150).
@@ -11,6 +12,8 @@ import { arriveAt, openDiagram, tabUntil } from "./diagram-hosts";
 const SALES = "#/boundedcontexts/sales_bc";
 /** The tolerated Sales to Inventory stereotype badge: the map's marked, evidence-bearing edge. */
 const BADGE = ".port.stereotype.tolerated button";
+/** The explanation's box: what a reader sees, and what `onScreen` measures. */
+const LAYER = ".layer";
 
 for (const host of ["viewer", "export"] as const) {
 	test.describe(`${host}: evidence opens and closes from the keyboard`, () => {
@@ -121,6 +124,7 @@ for (const host of ["viewer", "export"] as const) {
 			test(`Escape closes the innermost layer first: pattern explanation, then the card${fullscreen ? ", then fullscreen" : ""}`, async ({
 				page,
 			}) => {
+				await page.setViewportSize({ width: 1300, height: 900 });
 				const flow = await openDiagram(
 					page,
 					host,
@@ -145,6 +149,8 @@ for (const host of ["viewer", "export"] as const) {
 				expect(await tabUntil(page, trigger)).toBe(true);
 				const explanation = card.getByRole("tooltip");
 				await expect(explanation).toBeVisible();
+				// Painted where the reader can see it, not only present in the DOM.
+				await onScreen(page.locator(LAYER), "the explanation in the card");
 
 				// First Escape: only the explanation goes. The card stays, and
 				// focus stays on the keyword that opened it.
@@ -180,6 +186,7 @@ for (const host of ["viewer", "export"] as const) {
 			expect(await tabUntil(page, trigger)).toBe(true);
 			const explanation = card.getByRole("tooltip");
 			await expect(explanation).toBeVisible();
+			await onScreen(page.locator(LAYER), "opened");
 
 			/** Where the explanation sits relative to its keyword. */
 			const offsetFromKeyword = () =>
@@ -217,6 +224,7 @@ for (const host of ["viewer", "export"] as const) {
 				() => new Promise((done) => requestAnimationFrame(() => done(null))),
 			);
 			await expect(explanation).toBeVisible();
+			await onScreen(page.locator(LAYER), "after the scroll report");
 			// And it still sits where it did against the keyword.
 			const after = await offsetFromKeyword();
 			expect(Math.abs(after.dy - placed.dy)).toBeLessThan(1);
@@ -269,6 +277,7 @@ for (const host of ["viewer", "export"] as const) {
 					};
 				});
 			const contained = async (when: string) => {
+				await onScreen(page.locator(LAYER), when);
 				const m = await measure();
 				expect(m.top, `${when}: top`).toBeGreaterThanOrEqual(0);
 				expect(m.bottom, `${when}: bottom`).toBeLessThanOrEqual(m.viewport);
@@ -330,6 +339,39 @@ for (const host of ["viewer", "export"] as const) {
 				return layer.scrollTop;
 			});
 			expect(scrolled).toBeGreaterThan(0);
+		});
+
+		test("the pointer opens a keyword's explanation inside the card, painted on screen, and can cross into it", async ({
+			page,
+		}) => {
+			await page.setViewportSize({ width: 1300, height: 900 });
+			const flow = await openDiagram(page, host, "Sales BC context map", SALES);
+			await flow.locator(BADGE).click();
+			const card = flow.getByRole("dialog");
+			await expect(card).toBeVisible();
+			const trigger = page.locator(".anchored .pattern-hover .trigger").first();
+			await trigger.hover();
+			const explanation = card.getByRole("tooltip");
+			await expect(explanation).toBeVisible();
+			await onScreen(page.locator(LAYER), "hovered by the pointer");
+
+			// Down into the explanation itself, as a reader does to reach a link in
+			// it: the pointer leaves the keyword and the explanation stays.
+			const box = (await page.locator(LAYER).boundingBox()) as {
+				x: number;
+				y: number;
+				width: number;
+				height: number;
+			};
+			await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, {
+				steps: 5,
+			});
+			await page.evaluate(() => new Promise((done) => setTimeout(done, 300)));
+			await expect(explanation).toBeVisible();
+
+			// Off both, it goes.
+			await page.mouse.move(2, 2);
+			await expect(explanation).toHaveCount(0);
 		});
 
 		test("the pointer still opens it, and a click elsewhere closes it without taking focus back", async ({

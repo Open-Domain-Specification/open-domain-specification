@@ -11,6 +11,7 @@ import {
 	WORKSPACE_NAME,
 	wrapOf,
 } from "./helpers";
+import { onScreen } from "./on-screen";
 
 /**
  * The relationship detail (RFC-002 card E) in both places it is reached: in
@@ -136,6 +137,24 @@ test("Escape closes the modal and puts focus back on the row's toggle", async ({
 	await expect(toggle).toBeFocused();
 });
 
+test("a keyword's explanation opened inside the relationship modal is painted on screen, over the modal", async ({
+	page,
+}) => {
+	await page.goto(viewerAt(SALES_REF));
+	const toggle = page.locator(".strategic-position").getByRole("button", {
+		name: "Evidence for Catalog BC and Sales BC",
+	});
+	await toggle.scrollIntoViewIfNeeded();
+	await toggle.click();
+	const modal = page.locator("#relationship-modal");
+	await expect(modal).toBeVisible();
+
+	const keyword = modal.locator(".pattern-hover .trigger").first();
+	await keyword.focus();
+	await expect(modal.getByRole("tooltip")).toBeVisible();
+	await onScreen(page.locator(".layer"), "the explanation in the modal");
+});
+
 test("the page behind the modal does not scroll while it is open, and keeps its place after it closes", async ({
 	page,
 }) => {
@@ -222,6 +241,9 @@ test("a role code on the Strategic position table discloses the pattern and this
 	const card = page.locator(".hover-card");
 	await expect(card).toContainText("Anti-Corruption Layer");
 	await expect(card).toContainText(ACL_SUMMARY);
+	// Painted on screen, not only in the DOM: the control for the card in the
+	// evidence dialog, which sits in a transformed, clipped frame.
+	await onScreen(page.locator(".layer"), "the strategic table's explanation");
 	// The card teaches the pattern, then discloses this relationship's evidence.
 	await expect(card).toContainText(
 		"Sales reads Catalog through PetSummaryClient",

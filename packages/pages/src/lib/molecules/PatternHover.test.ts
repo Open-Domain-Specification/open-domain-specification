@@ -439,4 +439,113 @@ describe("PatternHover", () => {
 			true,
 		);
 	});
+
+	describe("in the top layer", () => {
+		/** A browser with popovers: `showPopover` is recorded, and what the layer measured at that moment. */
+		const withPopovers = (order: string[] = []) => {
+			const shown: HTMLElement[] = [];
+			const proto = HTMLElement.prototype as unknown as {
+				showPopover?: () => void;
+			};
+			proto.showPopover = function (this: HTMLElement) {
+				shown.push(this);
+				order.push("shown");
+			};
+			return {
+				shown,
+				restore: () => {
+					delete proto.showPopover;
+				},
+			};
+		};
+
+		it("is a manual popover shown when it opens and before it is placed, and stays the keyword's child with its tooltip and expanded state intact", async () => {
+			const order: string[] = [];
+			const popovers = withPopovers(order);
+			const rect = vi
+				.spyOn(HTMLElement.prototype, "getBoundingClientRect")
+				.mockImplementation(function (this: HTMLElement) {
+					if (this.classList.contains("layer")) order.push("measured");
+					return {
+						top: 0,
+						bottom: 0,
+						left: 0,
+						right: 0,
+						width: 0,
+						height: 0,
+					} as DOMRect;
+				});
+			const { container } = show();
+			expect(container.querySelector(".layer")).toBeNull();
+			await fireEvent.focusIn(
+				container.querySelector(".pattern-hover") as HTMLElement,
+			);
+			const layer = container.querySelector(".layer") as HTMLElement;
+
+			expect(popovers.shown).toEqual([layer]);
+			// Shown first: a popover that is not open has no box to measure.
+			expect(order[0]).toBe("shown");
+			expect(order).toContain("measured");
+			expect(layer).toHaveAttribute("popover", "manual");
+			// Not moved: still inside the keyword, so Tab, the pointer and the
+			// outside-click test all still treat it as part of the keyword.
+			expect(layer.parentElement).toBe(
+				container.querySelector(".pattern-hover"),
+			);
+			// (jsdom hides a `[popover]` that is not open, so the role is asked
+			// for with `hidden`.)
+			expect(screen.getByRole("tooltip", { hidden: true })).toBe(
+				layer.querySelector(".hover-card"),
+			);
+			expect(
+				screen.getByRole("button", { name: "ACL", hidden: true }),
+			).toHaveAttribute("aria-expanded", "true");
+			rect.mockRestore();
+			popovers.restore();
+		});
+
+		it("is not shown again when a scroll places it again, and is gone from the document when it closes", async () => {
+			const popovers = withPopovers();
+			const { container } = show();
+			const term = container.querySelector(".pattern-hover") as HTMLElement;
+			screen.getByRole("button", { name: "ACL" }).focus();
+			await fireEvent.focusIn(term);
+			await fireEvent.scroll(container);
+			await tick();
+			expect(popovers.shown).toHaveLength(1);
+
+			await fireEvent.keyDown(window, { key: "Escape" });
+			expect(document.querySelector(".layer")).toBeNull();
+			expect(screen.queryByRole("tooltip", { hidden: true })).toBeNull();
+			expect(screen.getByRole("button", { name: "ACL" })).toHaveAttribute(
+				"aria-expanded",
+				"false",
+			);
+			popovers.restore();
+		});
+
+		it("leaves nothing behind when it is destroyed while open", async () => {
+			const popovers = withPopovers();
+			const { container, unmount } = show();
+			await fireEvent.focusIn(
+				container.querySelector(".pattern-hover") as HTMLElement,
+			);
+			expect(document.querySelector(".layer")).not.toBeNull();
+			unmount();
+			expect(document.querySelector(".layer")).toBeNull();
+			expect(document.querySelector('[role="tooltip"]')).toBeNull();
+			popovers.restore();
+		});
+
+		it("still opens where the browser has no popover, placed as it always was", async () => {
+			expect("showPopover" in HTMLElement.prototype).toBe(false);
+			const { container } = show();
+			await fireEvent.focusIn(
+				container.querySelector(".pattern-hover") as HTMLElement,
+			);
+			const layer = container.querySelector(".layer") as HTMLElement;
+			expect(layer.style.top).not.toBe("");
+			expect(screen.getByRole("tooltip")).toBeInTheDocument();
+		});
+	});
 });

@@ -85,8 +85,27 @@ const place = (layer: HTMLElement) => {
 	layer.style.left = `${at.left}px`;
 	layer.style.maxHeight = at.maxHeight === undefined ? "" : `${at.maxHeight}px`;
 };
-/** Places the card when it appears, and again whenever a scroll moved the keyword under it. */
+/**
+ * Puts the card in the browser's top layer, then places it when it appears and
+ * again whenever a scroll moved the keyword under it.
+ *
+ * The top layer is what takes it out of the frame it was opened in: an
+ * element there is laid out against the viewport, whatever transform an
+ * ancestor has (a transformed ancestor is the containing block for
+ * `position: fixed`, which put the evidence card's explanations off screen)
+ * and is clipped by no ancestor's overflow. It is not moved in the DOM, so it
+ * stays the keyword's child: Tab reaches the links in it, the pointer crosses
+ * into it without leaving the keyword, and it reads the theme the keyword
+ * does. Shown before it is placed, since a popover that is not open has no
+ * box to measure. A browser with no popover keeps the earlier placement.
+ */
 const placeLayer = (layer: HTMLElement, _moves: number) => {
+	if (layer.showPopover) {
+		// Set here, not in the markup: the attribute is what hides the element
+		// until it is shown, which is only right where it is going to be shown.
+		layer.setAttribute("popover", "manual");
+		layer.showPopover();
+	}
 	place(layer);
 	return { update: () => place(layer) };
 };
@@ -147,7 +166,7 @@ const placeLayer = (layer: HTMLElement, _moves: number) => {
 		outline: 1px solid var(--vscode-focusBorder);
 		outline-offset: 1px;
 	}
-	/* Over everything else, at the viewport position `placeLayer` gives it, and
+	/* Over everything else (the top layer, where it is supported), at the viewport position `placeLayer` gives it, and
 	   never inheriting the `nowrap` a table cell sets on its content. The 4px
 	   between the word and the card is padding, not a gap, so the pointer can
 	   cross into the card without leaving the disclosure; it sits on both
@@ -158,6 +177,15 @@ const placeLayer = (layer: HTMLElement, _moves: number) => {
 		z-index: 20;
 		top: 0;
 		left: 0;
+		/* A popover comes with the browser's dialog look: centred by auto
+		   margins between all four insets, bordered, filled and padded. None
+		   of it is wanted; the frame inside is the card. */
+		right: auto;
+		bottom: auto;
+		margin: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
 		box-sizing: border-box;
 		display: block;
 		padding: 4px 0;
