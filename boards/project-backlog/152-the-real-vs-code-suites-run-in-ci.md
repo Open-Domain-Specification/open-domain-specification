@@ -4,7 +4,7 @@ labels: [ci, vscode]
 priority: medium
 agent: developer
 live: true
-updatedAt: 2026-09-30T13:11:33Z
+updatedAt: 2026-09-30T13:18:03Z
 ---
 # The real VS Code suites run in CI
 
@@ -46,3 +46,12 @@ Issue #69. The two suites that drive a real VS Code 1.96.4, `npm run test:vscode
   - CI push run 36707942927 is green (`test`, `e2e`, `real-vscode`).
 No branch protection or ruleset exists on develop or main. The check becomes merge-blocking only when a maintainer requires the status check `real-vscode`.
 - **developer** (2026-09-30T13:11:33Z): Owner review of PR #95 found two cases where the checker said success against its own policy; both fixed in 9cecda7a. (1) A Mocha test that failed its first attempt and passed its retry was recorded as a clean pass, because Mocha emits `retry`, not `fail`, for an attempt it will repeat. The reporter (now plain CommonJS, `src/test/results-reporter.cjs`, so the scripts tests run it unbuilt) records `retry` events and each pass's `currentRetry()`; the checker rejects any test with either, naming the config and the test. (2) A Playwright `test.fail()` test that fails reports outcome `expected` with `expectedStatus: failed`, and was counted as a pass. A journey now counts as passed only when its outcome is `expected`, `expectedStatus` is `passed` and it has exactly one attempt with status `passed`; expected failures, `test.fixme`, unallowlisted skips, flaky passes, and missing or unrecognised statuses, results or record shapes (Mocha side too) are rejected. Regression tests use records from a real Mocha 11 run (`this.retries(1)`: clean accepted, retry-only rejected, terminal failure rejected) and from a real `@playwright/test` run of a fixture spec (pass accepted; failure, `test.fail()` and fixme rejected, each named). The old checker on the same real records accepted the retry-only pass and counted the `test.fail()` failure as 1 passed; the new one rejects both. `npm run test:scripts` is 31 tests (was 22). CI run 36719041633 on 9cecda7a is green (`test`, `e2e`, `real-vscode`) with the same counts: petstore 9 and 4 skipped, hostile-links 1, cross-surface 4, keyboard 23.
+- **lead** (2026-09-30T13:18:03Z): Review of 8b8c0746, both findings fixed in 9cecda7a:
+  - a Mocha pass that needed a retry is rejected by name;
+  - a Playwright journey counts only if `expectedStatus` is `passed` and its single attempt passed, so `test.fail()`, fixme, missing and unrecognised results are rejected.
+  The regressions use a real Mocha 11 run and a real Playwright 1.62.1 JSON report, and the pre-fix checker accepted both cases. 3caa2a82 moves the Playwright fixture's run output out of the checkout, and removes three run-output files 9cecda7a had committed.
+- **lead** (2026-09-30T13:18:03Z): On 3caa2a82:
+  - the landing gate is green, 13:13:05–13:15:21Z (the real-host checker 31 tests, pages e2e 408 passed and 20 skipped), and the tree stayed clean;
+  - locally on macOS 27 arm64 with VS Code 1.96.4, `test:vscode` passed 3 of 3 runs (9 passing and 4 pending screenshots; 1; 4) and `test:vscode:keyboard` 3 of 3 (23 passed).
+  The failure-propagation runs 36707268430 and 36707274645 predate the checker change. They exercise the step-outcome path, which is unchanged; the new rejections are covered by the real-runner tests.
+  Correction to the entry above: develop's branch data shows required-check enforcement off and no required contexts. Branch rules were read with a token that may lack administrative scope (the owner's administrative read got a 403), so "no ruleset exists" is what this token could see, not a confirmed absence.

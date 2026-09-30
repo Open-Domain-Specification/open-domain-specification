@@ -8,7 +8,7 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 Card 152 is live: #69, both real-VS-Code suites as the CI job `real-vscode` (draft PR 95, branch `issue-69/real-vscode-ci`).
 - The job runs `test:vscode` then `test:vscode:keyboard`, in VS Code 1.96.4 under Xvfb on `ubuntu-24.04`, and a tested checker fails it on a failing suite, zero tests, or any skip except the four named screenshot tests.
-- Each suite has been shown to turn it red on its own.
+- Each suite has been shown to turn it red on its own. The owner's review at 8b8c0746 found the checker accepting a retry-dependent Mocha pass and a Playwright `test.fail()` failure; both are now rejected (9cecda7a), with real-runner regressions.
 - The release job now needs it.
 - It becomes merge-blocking only when a maintainer requires the status check `real-vscode`; develop and main have no branch rules today.
 
