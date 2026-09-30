@@ -1,6 +1,14 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { type Runner, reporters, type Test } from "mocha";
+import type { Runner, reporters, Test } from "mocha";
+
+// The Mocha this runs under is the one @vscode/test-cli bundles (11.x, CommonJS);
+// the `mocha` the extension lists is 12, an ES module the extension host cannot
+// `require`. Take the spec reporter from the runner's own copy.
+const testCli = require.resolve("@vscode/test-cli");
+const Spec: typeof reporters.Spec = require(
+	require.resolve("mocha/lib/reporters/spec.js", { paths: [dirname(testCli)] }),
+);
 
 interface Entry {
 	title: string;
@@ -18,7 +26,7 @@ interface Entry {
  * A test a hook skips with `this.skip()` is reported through `pending`, so the
  * pending list here is the real list of skips.
  */
-export = class ResultsReporter extends reporters.Spec {
+export = class ResultsReporter extends Spec {
 	constructor(
 		runner: Runner,
 		options: { reporterOptions?: { output?: string } },
