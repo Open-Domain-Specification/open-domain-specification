@@ -26,9 +26,9 @@ The journey of one approved order to its owner. Attempts live inside it because 
 
 
 ## Invariants
-| Name | Description | Constrains |
-| --- | --- | --- |
-| DeliveredOnlyByAttempt | A shipment becomes delivered only through a successful delivery attempt, so the audit trail is never empty | Shipment |
+| Name | Description | When | Constrains |
+| --- | --- | --- | --- |
+| DeliveredOnlyByAttempt | A shipment becomes delivered only through a successful delivery attempt, so the audit trail is never empty | Holds after every change | Shipment |
 
 
 ## Provides

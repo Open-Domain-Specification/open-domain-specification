@@ -32,6 +32,7 @@ const normalise = (text: string) => text.replace(/\s+/g, " ");
 const handWrittenFiles = [
 	"packages/skill/skill/SKILL.md",
 	"packages/skill/skill/references/interview-playbook.md",
+	"packages/skill/skill/references/ddd-glossary.md",
 	"packages/skill/skill/references/preferences.md",
 	"packages/skill/skill/references/json-mode.md",
 	"packages/skill/skill/references/dsl-api.md",
@@ -232,6 +233,63 @@ const currentFacts: Array<{
 		sentences: [
 			"This entity's own attributes, by id. Optional, and an absent map is an\n\t * empty one",
 			"The fields of this payload, by id. Optional, and an absent map is an\n\t * empty one",
+		],
+	},
+	{
+		fact: "aggregate rules distinguish save, precondition and answer timing (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"whether as a rule held on every save, a check before an operation, or a guarantee about its answer",
+		],
+	},
+	{
+		fact: "aggregate rules distinguish save, precondition and answer timing (interview playbook)",
+		file: "packages/skill/skill/references/interview-playbook.md",
+		sentences: [
+			"Ask whether it holds on every save, is checked before a named operation, or guarantees its answer",
+		],
+	},
+	{
+		fact: "aggregate rules distinguish save, precondition and answer timing (glossary)",
+		file: "packages/skill/skill/references/ddd-glossary.md",
+		sentences: [
+			"its precondition is checked before a named operation, and its postcondition guarantees what the call answers with",
+		],
+	},
+	{
+		fact: "a value invariant follows composition (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"that value's own and inherited attributes and the attributes of values it composes, transitively, but nothing outside that path",
+		],
+	},
+	{
+		fact: "a value invariant follows composition (interview playbook)",
+		file: "packages/skill/skill/references/interview-playbook.md",
+		sentences: [
+			"its own and inherited attributes and the attributes of values it composes, transitively, but nothing outside that path",
+		],
+	},
+	{
+		fact: "a value invariant follows composition (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"that value object's own and inherited attributes and the attributes of values it composes, transitively, but nothing outside that path",
+		],
+	},
+	{
+		fact: "a precondition cannot read its own answer and a postcondition can relate request to answer (schema source)",
+		file: "packages/core/src/schema.ts",
+		sentences: [
+			"operation's own answer, which does not exist yet. A postcondition may",
+			"relate the guarded operation's request to the shapes it returns or",
+		],
+	},
+	{
+		fact: "a precondition cannot read its own answer and a postcondition can relate request to answer (generated reference)",
+		file: "packages/skill/skill/references/model-reference.md",
+		sentences: [
+			"It cannot name that operation's own answer, which does not exist yet. A postcondition may relate the guarded operation's request to the shapes it returns or rejects with",
 		],
 	},
 ];

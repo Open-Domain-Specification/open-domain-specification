@@ -1,6 +1,7 @@
 <script module lang="ts">
 import {
 	BoundedContext as InvariantContext,
+	invariantTimingLabel,
 	type Invariant as Rule,
 } from "@open-domain-specification/core";
 
@@ -20,14 +21,7 @@ const eventOnlyPostcondition = (i: Rule) =>
 
 export const guardsLabel = (i: Rule) => {
 	if (!(i.owner instanceof InvariantContext)) return "Guarded by";
-	if (i.precondition) return "Checked before";
-	if (i.postcondition)
-		return eventOnlyPostcondition(i)
-			? "Guaranteed on event"
-			: i.guarded.some((it) => it.type === "event")
-				? "Guaranteed by"
-				: "Checked after";
-	return "Checked by";
+	return invariantTimingLabel(i);
 };
 
 export const sectionsFor = (i: Rule) => [
@@ -63,8 +57,9 @@ import Section from "../organisms/Section.svelte";
 const { invariant: i }: { invariant: Invariant } = $props();
 const model = useModel();
 // A rule belongs to a value object, where it holds by construction, to one
-// aggregate, where it holds on every save, or to the whole context, where it
-// is checked across instances or of an answer (decision 27).
+// aggregate, where its flags distinguish call timing from an unflagged save
+// rule, or to the whole context, where it is checked across instances or of
+// an answer (decision 27).
 // The header says which, because the three promise different things.
 const owner = $derived(i.owner);
 const inAggregate = $derived(owner instanceof Aggregate);
@@ -74,7 +69,7 @@ const KIND = {
 		label: "value invariant",
 		title:
 			"Holds by construction of the value: one that breaks it is never made.",
-		lead: "The attributes of this value the rule is about. A value knows nothing outside itself, so the list goes no further.",
+		lead: "The attributes of this value the rule is about, including inherited attributes and those of values it composes. It reaches nothing outside that path.",
 		guards:
 			"Nothing guards a value's rule. It is kept by refusing to construct a value that breaks it, which is why no operation appears here.",
 		empty:

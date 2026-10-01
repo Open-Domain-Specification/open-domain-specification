@@ -16,6 +16,8 @@ A context invariant is always a check and never claims to hold at rest (second a
 
 A value object's invariant reaches its own and inherited attributes and, through composition, the attributes of the value objects its attributes hold (amendment of 2026-09-10, card 113; decision 22).
 
+Since the note of 2026-10-01 (card 171), the save claim above is explicitly about an unflagged aggregate invariant. A flagged aggregate rule is a precondition checked before a call or a postcondition about its answer; NorthBank has both, and neither is held on every save.
+
 The note of 2026-09-07 stands: five cross-instance rules, not eleven, and a rule checked against another context's data is a precondition on the aggregate's operation (decision 19). The bullet "nothing crosses a context" stands for targets, with a qualification recorded in decision 19: a precondition may constrain the `returns` of a consumed consumable or a consumed event's payload held in the same context (cards 116 and 124), never another context's entities. An external context may state flagged invariants on its own operations, reaching their request and answer schemas and its own value objects (decision 28, cards 107 and 116). An obligation across contexts is a process (amendment of 2026-09-08).
 
 ## Context
@@ -78,3 +80,7 @@ Reviewers read "a context invariant is always a check, because a count across in
 ## Note (2026-09-10, third)
 
 "Nothing crosses a context" is about entities and their attributes. A precondition that reads the answer its front fetched (card 116) or the payload its reactor heard (card 124) reads the context's own copy of a fact in the shape it arrived, which decision 19 allows; another context's entity is still out of reach.
+
+## Note (2026-10-01)
+
+The standing save sentence in this decision is true for an unflagged aggregate invariant, not for every invariant owned by an aggregate. NorthBank PaymentInstruction's `FundsAvailableAtInitiation` checks before initiation, and Cards' `AuthWithinAvailableBalance` guarantees an operation's answer at that moment. Both are valid aggregate rules, but the root does not keep them true after every change (card 171, issue #121). Their pages and Markdown now state the timing alongside each rule.

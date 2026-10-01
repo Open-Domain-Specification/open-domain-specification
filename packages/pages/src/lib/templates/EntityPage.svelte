@@ -59,7 +59,7 @@ const incomingColumns: Column[] = [
 	{#snippet meta()}
 		{#if e.root}<Keyword
 				text="aggregate root"
-				title="Every change to the aggregate enters through the root, which enforces the aggregate's invariants."
+				title="Every change to the aggregate enters through the root, which keeps its persistent rules true on save."
 			/>{/if}
 	{/snippet}
 	{#snippet facts()}

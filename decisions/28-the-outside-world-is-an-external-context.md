@@ -18,6 +18,8 @@ A `bigBallOfMud` context is exempt from `event-unraised`, `aggregate-root` and `
 
 NorthBank's kernel stays a real context; its invented subdomain came out under decision 16's exemption (card 95).
 
+Since the note of 2026-10-01 (card 172), the `precondition` or `postcondition` choice above is exclusive on an external context invariant; setting both is refused.
+
 Since then: an external context's invariant may name one of its own events, flagged `postcondition`, and constrain that event's payload (fifth amendment, card 128); `boundaryOnly` is the third kind of context, ours and coherent and modelled at its boundary only, with its own rule and stereotype (sixth amendment, card 132); an external or boundary-only consumer is not asked for a downstream role (card 135); the Clock route's ceremony is named and the scheduled operation is the usual route; `subscription-backed` skips a mud consumer (card 124).
 
 ## Context
@@ -99,3 +101,7 @@ This record named two kinds of unknown, a system that is not ours (`external`) a
 ## Note (2026-09-10, fifth)
 
 `role-coherence` asked an external consumer of our event for a downstream role, whether it conforms or translates, which is its inside; an external or boundary-only consumer is not asked (card 135, architect's sixteenth round).
+
+## Note (2026-10-01)
+
+The published contract of an external operation chooses one timing: a `precondition` checks what exists before the call, or a `postcondition` guarantees what comes back. A rule marked as both contradicts itself and `external-is-boundary` now refuses it (card 172, issue #122). This narrows the fourth amendment's choice of flags; its separate allowances for an operation contract and an event payload guarantee stand.

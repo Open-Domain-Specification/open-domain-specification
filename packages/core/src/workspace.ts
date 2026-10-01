@@ -2383,6 +2383,22 @@ export class Invariant
 	}
 }
 
+/** The promise a rule makes, for tables that list several rule kinds together. */
+export function invariantTimingLabel(invariant: Invariant): string {
+	if (invariant.precondition) return "Checked before";
+	if (invariant.postcondition) {
+		const guards = invariant.guarded;
+		if (guards.length && guards.every((it) => it.type === "event"))
+			return "Guaranteed on event";
+		return guards.some((it) => it.type === "event")
+			? "Guaranteed by"
+			: "Checked after";
+	}
+	if (invariant.owner instanceof Aggregate) return "Holds after every change";
+	if (invariant.owner instanceof ValueObject) return "Holds by construction";
+	return "Checked by";
+}
+
 export type EntityRelationAttributes = {
 	label?: string;
 	relation: EntityRelationType;

@@ -1322,7 +1322,7 @@ describe("invariant-in-aggregate", () => {
 				severity: "error",
 				rule: "invariant-in-aggregate",
 				message:
-					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				ref: stretched.ref,
 			},
 		]);
@@ -1404,7 +1404,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(theirs);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Order" constrains "Check", which is an application service\'s, on "TheirApp" in bounded context "Next"; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Reaches Out" of aggregate "Order" constrains "Check", which is an application service\'s, on "TheirApp" in bounded context "Next"; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				abroad.ref,
 			],
 		]);
@@ -1453,7 +1453,7 @@ describe("invariant-in-aggregate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				reaching.ref,
 			],
 		]);
@@ -1476,7 +1476,7 @@ describe("invariant-in-aggregate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Reaches Sideways" of aggregate "Invoice" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Reaches Sideways" of aggregate "Invoice" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Invoice" holds; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				reaching.ref,
 			],
 		]);
@@ -1571,7 +1571,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, price);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Quoted Price Is Positive" of aggregate "Shipment" constrains "Quote.price", which is an attribute of schema "Quote", which is neither in the request of an operation this precondition guards, nor in what a call that guard makes answers with, nor in the payload of an event the reactor issuing that guard heard, directly or through a shape one of those composes; a precondition reads what it has by the time it runs — the request, what the guard or the front that calls it already fetched, and what the fact it is reacting to arrived carrying — and not what this call comes back with; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Quoted Price Is Positive" of aggregate "Shipment" constrains "Quote.price", which is an attribute of schema "Quote", which is neither in the request of an operation this precondition guards, nor in what a call that guard makes answers with, nor in the payload of an event the reactor issuing that guard heard, directly or through a shape one of those composes; a precondition reads what it has by the time it runs — the request, what the guard or the front that calls it already fetched, and what the fact it is reacting to arrived carrying — and not what this call comes back with; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				early.ref,
 			],
 		]);
@@ -1587,7 +1587,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, reference);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which is neither in the request of an operation this precondition guards, nor in what a call that guard makes answers with, nor in the payload of an event the reactor issuing that guard heard, directly or through a shape one of those composes; a precondition reads what it has by the time it runs — the request, what the guard or the front that calls it already fetched, and what the fact it is reacting to arrived carrying — and not what this call comes back with; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which is neither in the request of an operation this precondition guards, nor in what a call that guard makes answers with, nor in the payload of an event the reactor issuing that guard heard, directly or through a shape one of those composes; a precondition reads what it has by the time it runs — the request, what the guard or the front that calls it already fetched, and what the fact it is reacting to arrived carrying — and not what this call comes back with; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				stray.ref,
 			],
 		]);
@@ -1651,7 +1651,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, reference);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Booked Under A Reference" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this postcondition guards takes, returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Booked Under A Reference" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this postcondition guards takes, returns or rejects with, directly or through a shape one of those composes; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				wrongShape.ref,
 			],
 		]);
@@ -1666,7 +1666,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, pickup);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				persistent.ref,
 			],
 		]);
@@ -7621,6 +7621,35 @@ describe("external-is-boundary", () => {
 		// And the rules that read a context invariant are content with it too:
 		// the guard is named, and both flags are allowed on one (card 103).
 		expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+	});
+
+	it("rejects an external contract marked both before and after", () => {
+		const { ws, external, capture, amount } = publishedCapture();
+		const both = external
+			.addInvariant("Two Moments At Once", {
+				description: "",
+				precondition: true,
+				postcondition: true,
+			})
+			.constrains(capture, amount);
+		external
+			.addInvariant("Captured Answer", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(capture, amount);
+		for (const workspace of [ws, Workspace.fromSchema(ws.toSchema())]) {
+			expect(boundary(workspace)).toEqual([
+				[
+					"error",
+					'External context "Card Scheme" marks invariant "Two Moments At Once" both a precondition and a postcondition; a published contract checks a request before a call or guarantees its answer or an event\'s payload, and cannot claim both moments',
+					both.ref,
+				],
+			]);
+			expect(
+				workspace.validate().filter((d) => d.severity === "error"),
+			).toHaveLength(1);
+		}
 	});
 
 	it("still refuses one with neither flag, and says which is allowed", () => {

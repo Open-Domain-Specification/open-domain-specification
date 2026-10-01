@@ -64,7 +64,7 @@ const raisersOf = (event: Consumable) =>
 				{#if root}<Lockup kind="entity" name={root.name} ref={root.ref} />{:else}<Keyword
 						text="no root entity"
 						tone="error"
-						title="An aggregate needs exactly one root entity that guards its invariants."
+						title="An aggregate needs exactly one root entity; it keeps persistent aggregate rules true on save."
 					/>{/if}
 			</Definition>
 			<Definition term="Context"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
@@ -98,7 +98,8 @@ const raisersOf = (event: Consumable) =>
 	{invariants}
 	title="Invariants"
 	constrains
-	lead="Rules that must hold after every change. The root enforces them; the elements they constrain are listed."
+	timing
+	lead="Rules of this aggregate. The When column distinguishes checks before an operation, guarantees about its answer and rules kept true on save."
 	emptyText="No invariants stated. If nothing can go wrong, is this really an aggregate?"
 	problems={invariants.flatMap((i) => problemsUnder(model, i.ref))}
 />

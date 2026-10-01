@@ -55,7 +55,7 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(rows[0]).toContain("Silent Operation");
 		expect(section).toHaveTextContent("Checked After Invariant");
 		expect(section).toHaveTextContent(
-			"Each rule's page says how it is checked or guaranteed.",
+			"The When column says how each is checked or guaranteed.",
 		);
 		expect(section).not.toHaveTextContent(
 			"each names the operation that checks it before acting",

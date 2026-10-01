@@ -6,6 +6,7 @@ import {
 	type DataSchema,
 	Deadline,
 	type Invariant,
+	invariantTimingLabel,
 	ODSConsumptionGraph,
 	type Policy,
 	type Process,
@@ -155,23 +156,12 @@ const valueObjectSection = (valueObject: ValueObject) => [
 	usedByMd(valueObject.boundedcontext, usersOfValueObject(valueObject)),
 ];
 
-// The same three columns the aggregate page uses, because a rule reads the
-// same either way; what changes is which boundary keeps it (decision 27).
-const checkOf = (invariant: Invariant) => {
-	if (invariant.precondition) return "Checked before";
-	if (!invariant.postcondition) return "Checked by";
-	const guards = invariant.guarded;
-	if (guards.length && guards.every((it) => it.type === "event"))
-		return "Guaranteed on event";
-	return guards.some((it) => it.type === "event")
-		? "Guaranteed by"
-		: "Checked after";
-};
-
+// A rule's timing reads the same on context and aggregate pages; what changes
+// is which boundary keeps it (decision 27).
 const invariantSection = (invariant: Invariant) => [
 	invariant.name,
 	invariant.description,
-	checkOf(invariant),
+	invariantTimingLabel(invariant),
 	invariant.targets.map(constrainableLabel).join(", ") || "-",
 ];
 

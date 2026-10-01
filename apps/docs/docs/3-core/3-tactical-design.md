@@ -295,8 +295,9 @@ and a transport shape is not the model.
 An invariant may instead belong to a value object. A rule that is about a
 value alone — an IBAN's mod-97 checksum, a Money's single currency — holds by
 construction: a value that breaks it is never made, so no save keeps it and no
-operation guards it. It constrains that value object's own attributes and
-nothing else (`invariant-in-value-object`); a rule that reaches for the entity
+operation guards it. It constrains that value object's own and inherited
+attributes and the attributes of values it composes, transitively, but nothing
+outside that path (`invariant-in-value-object`); a rule that reaches for the entity
 holding the value is that aggregate's.
 
 An invariant may instead belong to the bounded context rather than to one

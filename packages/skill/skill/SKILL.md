@@ -87,9 +87,11 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   its own context declares, or one it borrows over a `shared-kernel`, as a conformist, or as a
   customer-supplier downstream of the context that owns it.
 - An invariant belongs to a value object when it holds by construction of the value — an IBAN's
-  checksum, a Money's single currency — and then it constrains that value's own attributes and
-  nothing else, and needs no guard. It belongs to an aggregate when it holds inside that
-  boundary on every save, and to the context when it holds across instances or aggregates —
+  checksum, a Money's single currency — and then it constrains that value's own and inherited
+  attributes and the attributes of values it composes, transitively, but nothing outside that
+  path; it needs no guard. It belongs to an aggregate when it describes that
+  boundary, whether as a rule held on every save, a check before an operation, or a guarantee
+  about its answer. It belongs to the context when it reaches across instances or aggregates —
   uniqueness, a quota, a limit — or where the context has no aggregate at all and the rule is
   the contract of its operation. A context's invariant names at least one operation of the
   context that checks it, says with `precondition` or `postcondition` which side of that call

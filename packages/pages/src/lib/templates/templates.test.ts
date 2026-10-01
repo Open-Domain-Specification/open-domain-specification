@@ -55,7 +55,7 @@ describe("every template, through the shipped route", () => {
 		const headers = [...(invariants?.querySelectorAll("thead th") ?? [])].map(
 			(h) => h.textContent?.trim(),
 		);
-		expect(headers).toEqual(["Invariant", "Constrains", "Description"]);
+		expect(headers).toEqual(["Invariant", "When", "Constrains", "Description"]);
 	});
 
 	it("AggregatePage: an internal operation says so, and a published one lists its consumers", () => {

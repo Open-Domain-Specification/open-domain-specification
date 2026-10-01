@@ -160,10 +160,12 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   about the model, so it names the model.
 - Per rule: "is this true of the value itself, whatever holds it?" → a rule that is about a
   value alone — a checksum, a currency, a range — is that value object's:
-  `valueObject.addInvariant(...)`, constraining its own attributes and nothing else. Nothing
-  guards it, because a value that breaks it is never constructed.
+  `valueObject.addInvariant(...)`, constraining its own and inherited attributes and the
+  attributes of values it composes, transitively, but nothing outside that path. Nothing guards
+  it, because a value that breaks it is never constructed.
 - Per rule: "is this true of one of these, or of all of them together?" → one of them is the
-  aggregate's invariant, checked every time that one is saved. All of them together — at most
+  aggregate's invariant. Ask whether it holds on every save, is checked before a named operation,
+  or guarantees its answer, and set the timing flag when needed. All of them together — at most
   one open application per customer, one active offer per seller and SKU, a daily total — is
   the context's invariant: `boundedContext.addInvariant(...)`, constraining what it counts in
   any of the context's aggregates. Then ask "which operation checks it, and when?" and name that

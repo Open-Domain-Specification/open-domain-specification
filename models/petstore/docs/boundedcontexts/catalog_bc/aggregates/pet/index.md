@@ -27,10 +27,10 @@ A pet listed in the store. One aggregate because a pet's photos, tags and status
 
 
 ## Invariants
-| Name | Description | Constrains |
-| --- | --- | --- |
-| NameRequired | Pet.name must be non-empty, because the storefront lists pets by name | Pet.name |
-| SoldNotReopen | Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's, and the operation that makes the transition, because that is where the rule is enforced | Pet, ChangePetStatus |
+| Name | Description | When | Constrains |
+| --- | --- | --- | --- |
+| NameRequired | Pet.name must be non-empty, because the storefront lists pets by name | Holds after every change | Pet.name |
+| SoldNotReopen | Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's, and the operation that makes the transition, because that is where the rule is enforced | Holds after every change | Pet, ChangePetStatus |
 
 
 ## Provides

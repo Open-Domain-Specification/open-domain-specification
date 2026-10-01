@@ -4,6 +4,7 @@ import {
 	constrainableLabel,
 	type Diagnostic,
 	type Invariant,
+	invariantTimingLabel,
 } from "@open-domain-specification/core";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
@@ -31,6 +32,7 @@ const {
 	id = "invariants",
 	title = "Constrained by",
 	constrains = false,
+	timing = false,
 	ownerRelativeTo,
 	problems = [],
 }: {
@@ -40,6 +42,8 @@ const {
 	id?: string;
 	title?: string;
 	constrains?: boolean;
+	/** Show what this rule promises about the moment of a call or save. */
+	timing?: boolean;
 	/** Show who keeps each rule; foreign owners also name their context. */
 	ownerRelativeTo?: BoundedContext;
 	problems?: Diagnostic[];
@@ -55,6 +59,7 @@ const WHOLE = {
 
 const columns = $derived<Column[]>([
 	{ key: "name", label: "Invariant" },
+	...(timing ? [{ key: "timing", label: "When" }] : []),
 	...(ownerRelativeTo ? [{ key: "owner", label: "Kept by" }] : []),
 	...(constrains ? [{ key: "constrains", label: "Constrains" }] : []),
 	{ key: "description", label: "Description" },
@@ -66,6 +71,8 @@ const columns = $derived<Column[]>([
 		{#snippet cell(i, col)}
 			{#if col.key === "name"}
 				<Lockup kind="invariant" name={i.name} ref={i.ref} />
+			{:else if col.key === "timing"}
+				<Keyword text={invariantTimingLabel(i)} />
 			{:else if col.key === "owner"}
 				{#if i.boundedcontext !== ownerRelativeTo && i.owner !== i.boundedcontext}
 					<Lockup kind="boundedcontext" name={i.boundedcontext.name} ref={i.boundedcontext.ref} />{" / "}

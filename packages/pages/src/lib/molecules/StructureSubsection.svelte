@@ -24,7 +24,7 @@ const isRoot = $derived("root" in e && e.root);
 		<Lockup kind={kindOf(e)} name={e.name} ref={e.ref} />
 		{#if isRoot}<Keyword
 				text="aggregate root"
-				title="Every change to the aggregate enters through the root, which enforces the invariants."
+				title="Every change to the aggregate enters through the root, which keeps its persistent rules true on save."
 			/>{/if}
 	</Heading>
 	{#if e.description}<p class="description">{e.description}</p>{/if}

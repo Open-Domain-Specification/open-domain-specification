@@ -286,7 +286,8 @@ const termColumns: Column[] = [
 	id="invariants"
 	title="Invariants"
 	constrains
-	lead="Rules this context checks or guarantees, including cross-instance limits and contracts of its operations or events. Each rule's page says how it is checked or guaranteed."
+	timing
+	lead="Rules this context checks or guarantees, including cross-instance limits and contracts of its operations or events. The When column says how each is checked or guaranteed."
 	emptyText="No context invariants declared."
 	problems={invariants.flatMap((i) => problemsUnder(model, i.ref))}
 />

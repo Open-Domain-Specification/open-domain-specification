@@ -235,7 +235,7 @@ const processColumns: Column[] = [
 <Section
 	id="invariants"
 	title="Invariants"
-	lead="The rules this consumable has to uphold every time it runs."
+	lead="Rules that name this event or operation. Each rule's page says whether it is checked before a call, guaranteed of an answer or payload, or kept true on save."
 	count={invariants.length}
 >
 	{#if invariants.length}

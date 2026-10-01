@@ -16,8 +16,40 @@ const petstoreSchema = JSON.parse(
 	),
 );
 const petstore = Workspace.fromSchema(petstoreSchema);
+const northbankSchema = JSON.parse(
+	readFileSync(
+		join(__dirname, "../../../models/northbank/.ods/northbank.json"),
+		"utf8",
+	),
+);
 
 describe("toDoc", () => {
+	it("prints NorthBank aggregate rule timing before and after JSON round-trip", async () => {
+		const workspace = Workspace.fromSchema(northbankSchema);
+		for (const model of [
+			workspace,
+			Workspace.fromSchema(workspace.toSchema()),
+		]) {
+			const docs = await toDoc(model);
+			const payment =
+				docs[
+					"boundedcontexts/payments_hub/aggregates/payment_instruction/index.md"
+				];
+			const card = docs["boundedcontexts/cards/aggregates/card/index.md"];
+			expect(payment).toContain("| Name | Description | When | Constrains |");
+			expect(payment).toContain("| FundsAvailableAtInitiation |");
+			expect(payment).toMatch(
+				/\| FundsAvailableAtInitiation \|[^\n]*\| Checked before \|/,
+			);
+			expect(payment).toMatch(
+				/\| PayerNotPayee \|[^\n]*\| Holds after every change \|/,
+			);
+			expect(card).toMatch(
+				/\| AuthWithinAvailableBalance \|[^\n]*\| Checked after \|/,
+			);
+		}
+	});
+
 	it("should generate documentation for empty workspace", async () => {
 		const workspace = new Workspace("Test Workspace", {
 			description: "A test workspace",
@@ -246,7 +278,9 @@ describe("toDoc", () => {
 			"| Order Summary | What an order looks like | **orderId**: `string`, total: `number`, lines: [`OrderLine[]`](./index.md#schemas) | [Order Placed](aggregates/order/index.md) (event), [Approve Order](aggregates/order/index.md) (operation) |",
 		);
 		// An invariant that names an operation reads on the aggregate too.
-		expect(aggregateDoc).toContain("| Approved once |  | Approve Order |");
+		expect(aggregateDoc).toContain(
+			"| Approved once |  | Holds after every change | Approve Order |",
+		);
 		// A schema nothing sends and nothing answers with is still used: it is
 		// what Approve Order says no with.
 		expect(contextDoc).toContain(
