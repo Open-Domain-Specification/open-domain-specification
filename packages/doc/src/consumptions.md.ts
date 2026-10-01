@@ -60,7 +60,7 @@ export const consumptionsTableMd = (
 
 /** One consumption on the page of the aggregate or service that makes it. */
 export const consumptionSectionMd = (consumption: Consumption) => `
-### ${consumption.consumable.name} ${consumption.pattern ? `[${consumption.pattern}]` : ""}
+### ${consumption.consumable.name}${consumption.pattern ? ` [${consumption.pattern}]` : ""}
 ${consumption.consumable.description}
 - **Provider**: [${consumption.consumable.provider.name}](${pathToIndexMd(consumption.consumable.provider.path, consumption.consumer.path)})${madeByMd(consumption)}${agreementMd(consumption)}
 `;

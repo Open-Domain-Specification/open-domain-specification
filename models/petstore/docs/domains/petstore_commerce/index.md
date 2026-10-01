@@ -53,6 +53,7 @@ Getting a sold pet to its owner. Supporting: needed, but a courier could do it j
 | [ShipmentApp](../../boundedcontexts/fulfilment_bc/services/shipment_app/index.md) | conformist | Order | OrderApproved | published-language |
 | [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Order | OrderDelivered | published-language |
 | [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Order | OrderDeleted | published-language |
+| [OrderApp](../../boundedcontexts/sales_bc/services/order_app/index.md) | - | Order | ApproveOrder | - |
 | [OrderApp](../../boundedcontexts/sales_bc/services/order_app/index.md) | - | Order | DeliverOrder | - |
 | [ShipmentApp](../../boundedcontexts/fulfilment_bc/services/shipment_app/index.md) | - | OrderApp | ConfirmDelivery | open-host-service |
 

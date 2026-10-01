@@ -601,8 +601,8 @@ orderAgg
 	.constrains(quantityVO);
 // An invariant only names things inside its own aggregate: Sales cannot
 // enforce a rule over the catalogue's PetStatus. What it can enforce is that
-// its own status only moves to approved after the availability check the
-// ACL made through GetPetSummary; the process below is where that check runs.
+// its own status only moves to approved after the check-and-approve front has
+// read availability through the ACL's GetPetSummary call.
 // The rule is a precondition of the transition, so it names the operation that
 // makes it — ApproveOrder, the aggregate's own — and the guard is in the model
 // rather than in this comment (decision 19). The invariant is declared after
@@ -687,12 +687,12 @@ const approveOrder = orderAgg
 	})
 	.raises(orderApproved);
 // The precondition, declared here because it names the transition it guards.
-// What it reads is named further down, once CheckPetAvailable and the ACL
+// What it reads is named further down, once CheckAndApproveOrder and the ACL
 // consumption that feeds it exist.
 const approveOnlyWhenAvailable = orderAgg
 	.addInvariant("ApproveOnlyWhenAvailable", {
 		description:
-			"Move to approved only while PetSummary.status, fetched through the ACL by CheckPetAvailable, says the pet is available; the catalogue's own Pet is outside this aggregate, so what the rule reads is the answer we were given, not the catalogue's model",
+			"Move to approved only while PetSummary.status, fetched through the ACL by CheckAndApproveOrder, says the pet is available; the catalogue's own Pet is outside this aggregate, so what the rule reads is the answer we were given, not the catalogue's model",
 		// The catalogue may sell the pet a second later and this order says
 		// nothing about it: the read holds at approval only (card 94).
 		precondition: true,
@@ -774,12 +774,12 @@ const markPetSoldForDelivered = orderApp.provides("MarkPetSold", {
 });
 // The third step of the same kind, and the one the model used to leave out: a
 // call is made by an operation, not by the process that issues it (decision 17;
-// `consumption-by-operation`). The process asked Catalog directly, through a
-// `by` naming itself, so the boundary had no local operation on it at all and
-// the reaction walk ran out of chain (card 92).
-const checkPetAvailable = orderApp.provides("CheckPetAvailable", {
+// `consumption-by-operation`). This front reads Catalog through the ACL and
+// then runs the aggregate transition, so the availability fact and approval
+// belong to one causal chain.
+const checkAndApproveOrder = orderApp.provides("CheckAndApproveOrder", {
 	description:
-		"Read the ordered pet's summary from Catalog, through the ACL, and decide whether Sales may approve the order",
+		"Read the ordered pet's summary from Catalog, through the ACL, then approve the order when it is available",
 	type: "operation",
 	internal: true,
 	schema: orderIdSchema,
@@ -814,12 +814,7 @@ const orderFulfilment = salesBC
 	})
 	.starts(orderPlaced)
 	.on(petStatusChanged)
-	.issues(
-		checkPetAvailable,
-		approveOrder,
-		reservePetForApproved,
-		markPetSoldForDelivered,
-	)
+	.issues(checkAndApproveOrder, reservePetForApproved, markPetSoldForDelivered)
 	.ends(orderDelivered);
 
 // The two consumptions the process drives, declared here because the relisting
@@ -827,16 +822,16 @@ const orderFulfilment = salesBC
 // into its own notion of availability rather than adopting the catalog's model,
 // and it does the same with the relisting fact.
 //
-// What makes the availability call is CheckPetAvailable, not the process. The
-// process is what remembers which order is waiting and decides when to ask; the
-// asking is a step of Sales' own boundary, with a translator behind it and a
-// place for a comment about it, and the flow map and the reaction walk both
-// read the crossing there (decisions 17 and 21). A `by` may name a process, but
-// only on an event: nothing stands between a fact arriving and a reaction to
-// it, while a call is something a part of this context does.
+// CheckAndApproveOrder makes the availability call and then runs the aggregate
+// transition. The process remembers which order is waiting and decides when to
+// issue that front; the front is Sales' boundary step, with a translator behind
+// it, and the flow map and reaction walk both read the chain there (decisions
+// 17 and 21). A `by` may name a process, but only on an event: nothing stands
+// between a fact arriving and a reaction to it, while a call is something a
+// part of this context does.
 orderApp.consumes(getPetSummaryOp, {
 	pattern: "anti-corruption-layer",
-	by: [checkPetAvailable],
+	by: [checkAndApproveOrder],
 	comments: [
 		{
 			text: "PetSummaryClient is the translator; nothing else in Sales knows the catalog payload shape.",
@@ -848,14 +843,13 @@ orderApp.consumes(getPetSummaryOp, {
 		},
 	],
 });
-// Now that the call exists, the approval rule names what it reads: the
-// availability check that makes the call is a guard of the rule beside
-// ApproveOrder, and the field it decides on is PetSummary.status, the answer
-// the ACL brought back. Before card 116 a precondition could reach only its
-// own request, so this was a sentence in the description pointing at a call
-// nothing in the model connected it to (decision 19, amendment of 2026-09-10,
-// second).
-approveOnlyWhenAvailable.constrains(checkPetAvailable, petSummaryStatus);
+// The availability front makes the call and runs ApproveOrder, so the rule
+// names the front and PetSummary.status, the answer the ACL brought back.
+// Before card 116 a precondition could reach only its own request, so this was
+// a sentence in the description pointing at a call nothing in the model
+// connected it to (decision 19, amendment of 2026-09-10, second).
+orderApp.consumes(approveOrder, { by: [checkAndApproveOrder] });
+approveOnlyWhenAvailable.constrains(checkAndApproveOrder, petSummaryStatus);
 // Waiting on the catalogue's relisting is a dependency on Catalog like any
 // other, so Sales takes the fact in at its own boundary rather than only
 // subscribing to it (decision 17; `subscription-consumed`). The same ACL

@@ -5,6 +5,57 @@ import Harness from "../evidence/WithModel.harness.svelte";
 import InvariantPage from "./InvariantPage.svelte";
 
 describe("InvariantPage", () => {
+	it("describes an aggregate precondition's held facts without limiting them to its boundary", () => {
+		const workspace = new Workspace("Orders", {
+			description: "",
+			version: "test",
+		});
+		const context = workspace.addBoundedContext("Ordering", {
+			description: "",
+		});
+		const aggregate = context.addAggregate("Order", { description: "" });
+		const root = aggregate.addRootEntity("Order", { description: "" });
+		root.addAttribute("id", { type: "string", identity: true });
+		const request = context.addSchema("Approve Request", { description: "" });
+		const orderId = request.addAttribute("order id", { type: "string" });
+		const service = context.addService("Orders", {
+			description: "",
+			type: "application",
+		});
+		const approve = service.provides("Approve", {
+			description: "",
+			type: "operation",
+			schema: request,
+		});
+		aggregate
+			.addInvariant("May Approve", {
+				description: "The order may be approved.",
+				precondition: true,
+			})
+			.constrains(approve, orderId);
+
+		const invariant = aggregate.invariants.get("may_approve")!;
+		const { container } = render(Harness, {
+			model: { workspace, fileLabel: "orders.json", diagnostics: [] },
+			component: InvariantPage,
+			args: { invariant },
+		});
+		const section = container.querySelector("#constrains") as HTMLElement;
+		expect(section).toHaveTextContent("model elements of the aggregate");
+		expect(section).toHaveTextContent(
+			"facts every named guard and caller route holds",
+		);
+		expect(section).toHaveTextContent(
+			"a process start-event payload, or a policy's immediate event or answer trigger",
+		);
+		expect(section).toHaveTextContent(
+			"A process's `on` trigger or a starting operation's later answer is not assumed before its command.",
+		);
+		expect(section).not.toHaveTextContent(
+			"all inside the boundary that states it",
+		);
+	});
+
 	it("describes an aggregate postcondition that relates request and answer", () => {
 		const workspace = new Workspace("Plans", {
 			description: "",
@@ -52,6 +103,12 @@ describe("InvariantPage", () => {
 			const guards = container.querySelector("#guards") as HTMLElement;
 			expect(section).toHaveTextContent("guarded call's request");
 			expect(section).toHaveTextContent("answer or refusal");
+			expect(section).toHaveTextContent(
+				"Where it names several operations, each guarantees the target shape through composition",
+			);
+			expect(section).toHaveTextContent(
+				"their shapes are not combined into a union",
+			);
 			expect(section).toHaveTextContent("deadline");
 			expect(section).toHaveTextContent("arrival");
 			expect(guards).toHaveTextContent(

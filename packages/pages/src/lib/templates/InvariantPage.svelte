@@ -92,7 +92,7 @@ const KIND = {
 		label: "precondition",
 		title:
 			"Checked before the operations it names run; the model does not promise it remains true afterward.",
-		lead: "The elements this rule is about, all inside the boundary that states it.",
+		lead: "The elements this rule is about: model elements of the aggregate, the guarded request, and facts every named guard and caller route holds — an earlier answer, a process start-event payload, or a policy's immediate event or answer trigger. A process's `on` trigger or a starting operation's later answer is not assumed before its command.",
 		guards:
 			"The operations this rule is checked before. What it was checked against — a balance, an entitlement, another context's answer — may move when the call returns, so the model makes no later guarantee.",
 		empty:
@@ -105,7 +105,7 @@ const KIND = {
 		label: "postcondition",
 		title:
 			"Guaranteed of what the operations it names answer with, every time they answer.",
-		lead: "The elements this rule is about. A guarantee may relate the guarded call's request to its answer or refusal and to model elements of this boundary.",
+		lead: "The elements this rule is about. A guarantee may relate each guarded call's request to its answer or refusal and to model elements of this boundary. Where it names several operations, each guarantees the target shape through composition; their shapes are not combined into a union.",
 		guards:
 			"The operations this rule is a guarantee about. It describes what each call answers with, without claiming an aggregate keeps that answer true afterward.",
 		empty:
@@ -130,7 +130,7 @@ const KIND = {
 		label: "context invariant",
 		title:
 			"Checked before the operations it names run, across the instances and aggregates of the context. Never a promise about afterwards.",
-		lead: "The elements this rule is about: model elements of the context, the guarded request, facts already fetched by the guard or its front, and an event payload the issuing reactor heard.",
+		lead: "The elements this rule is about: model elements of the context, the guarded request, and facts every named guard and caller route holds — an earlier answer, a process start-event payload, or a policy's immediate event or answer trigger. A process's `on` trigger or a starting operation's later answer is not assumed before its command.",
 		guards:
 			"The operations this rule is checked before. What it was checked against may move when the call returns, and a check across instances can race, so the model makes no later guarantee.",
 		empty:
@@ -140,7 +140,7 @@ const KIND = {
 		label: "context invariant",
 		title:
 			"Checked of what the operations it names answer with, against the instances and aggregates of the context. Never a promise about afterwards.",
-		lead: "The elements this rule is about: anything in the context, and the fields of what the guarded call carries, request and answer alike.",
+		lead: "The elements this rule is about: anything in the context, and the fields of what each guarded call carries, request and answer alike. Where it names several operations, each guarantees the target shape through composition; their shapes are not combined into a union.",
 		guards:
 			"The operations this rule is checked of. It describes what each call answers with, without claiming that answer remains true afterward.",
 		empty:

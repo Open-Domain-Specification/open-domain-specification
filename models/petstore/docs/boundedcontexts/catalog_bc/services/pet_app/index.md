@@ -28,12 +28,12 @@ Open-host service for /pet endpoints
 
 ## Consumes
 
-### ReservePet 
+### ReservePet
 available → pending: the pet is held for an approved order; run by PetApp on the request Sales makes
 - **Provider**: [Pet](../../aggregates/pet/index.md)
 - **Made by**: ReservePetForOrder
 
-### MarkPetSold 
+### MarkPetSold
 pending → sold: the pet has gone to its owner; run by PetApp on the request Sales makes
 - **Provider**: [Pet](../../aggregates/pet/index.md)
 - **Made by**: MarkPetSoldForOrder

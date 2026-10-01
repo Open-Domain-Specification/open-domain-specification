@@ -440,18 +440,110 @@ const currentFacts: Array<{
 		],
 	},
 	{
-		fact: "a precondition cannot read its own answer and a postcondition can relate request to answer (schema source)",
+		fact: "a precondition reads an earlier fact through local fronts, not an ending event or a named operation's future answer (schema source)",
 		file: "packages/core/src/schema.ts",
 		sentences: [
-			"operation's own answer, which does not exist yet. A postcondition may",
+			"a front on its local call chain already",
+			"process's ending event and an event the guarded call raises",
+			"It cannot name an answer of a named guarded operation",
 			"relate the guarded operation's request to the shapes it returns or",
 		],
 	},
 	{
-		fact: "a precondition cannot read its own answer and a postcondition can relate request to answer (generated reference)",
+		fact: "a precondition reads an earlier fact through local fronts, not an ending event or a named operation's future answer (generated reference)",
 		file: "packages/skill/skill/references/model-reference.md",
 		sentences: [
-			"It cannot name that operation's own answer, which does not exist yet. A postcondition may relate the guarded operation's request to the shapes it returns or rejects with",
+			"a front on its local call chain already fetched",
+			"A process's ending event and an event the guarded call raises are future",
+			"It cannot name an answer of a named guarded operation",
+			"A postcondition may relate the guarded operation's request to the shapes it returns or rejects with",
+		],
+	},
+	{
+		fact: "precondition fact timing is stated by the tactical guide",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"a front on its local call chain in the same context",
+			"A process holds a starting event's payload",
+			"`on` events or answers may occur later",
+			"policy holds its immediate `on` event or answer",
+			"It may not name an answer of a named guarded operation",
+			"A distinct earlier query may return the same shape",
+		],
+	},
+	{
+		fact: "precondition fact timing is stated by the authoring skill",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"a starting event's payload is held",
+			"its `on` events or answers may occur later",
+			"A policy's immediate `on` event or answer is held",
+			"A named operation never lends its own future answer, though a",
+			"distinct earlier query may return the same shape",
+			"A fact is reachable only when every",
+			"independent named guard and caller or reactor-trigger path holds it",
+			"sequential local fronts retain their held facts, but a sibling path does not supply one",
+		],
+	},
+	{
+		fact: "precondition fact timing is stated by the DSL reference",
+		file: "packages/skill/skill/references/dsl-api.md",
+		sentences: [
+			"a front on its local call chain",
+			"A process holds a starting event's payload",
+			"does not assume its `on` events or answers before a command it issues",
+			"a policy holds its immediate `on` event or answer",
+			"No named operation lends its future answer, though a distinct earlier query may return the same shape",
+			"A fact must be held on every independent named guard and caller or reactor-trigger path",
+			"sequential local fronts retain their held facts, but a sibling path does not supply one",
+		],
+	},
+	{
+		fact: "precondition facts are reliable on every route to the guard (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"A fact must be held on every independent named guard and caller or reactor-trigger path to the guard",
+			"sequential local fronts retain their held facts, but a sibling path does not supply one",
+		],
+	},
+	{
+		fact: "validation guidance states process and policy precondition timing",
+		file: "apps/docs/docs/3-core/4-validation.md",
+		sentences: [
+			"a process start-event payload, or a policy's immediate event or answer trigger",
+			"A process `on` trigger or a starting operation's later answer is not assumed before a process-issued command",
+		],
+	},
+	{
+		fact: "a multi-operation postcondition guarantees its target at each operation",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"Where a postcondition names several operations, it guarantees its target shape at each operation",
+			"their shapes are not combined into a union",
+		],
+	},
+	{
+		fact: "a multi-operation postcondition is universal in the DSL reference",
+		file: "packages/skill/skill/references/dsl-api.md",
+		sentences: [
+			"A postcondition naming several operations guarantees its target shape at each operation",
+			"rather than their union",
+		],
+	},
+	{
+		fact: "a multi-operation postcondition is universal in the tactical and validation guides",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"Where a postcondition names several operations",
+			"their shapes are not combined into a union",
+		],
+	},
+	{
+		fact: "validation guidance keeps multi-operation postconditions universal",
+		file: "apps/docs/docs/3-core/4-validation.md",
+		sentences: [
+			"When it names several operations, each guarantees the target shape through composition",
+			"their shapes are not combined into a union",
 		],
 	},
 ];

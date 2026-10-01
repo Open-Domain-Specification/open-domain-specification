@@ -4,10 +4,10 @@ labels: [docs, model]
 priority: high
 agent: lead
 live: false
-status: Twelfth blocker corrections in progress; full gate and exact-head independent signoff pending
-progress: 90
+status: Local route matrix and cross-reader audit integrated; final clean-head gate and signoff pending
+progress: 94
 clean-code-swept: true
-updatedAt: 2026-10-01T07:25:00Z
+updatedAt: 2026-10-01T11:48:00Z
 ---
 # Final model sign-off: the record says only what holds
 
@@ -22,15 +22,15 @@ Issue #108. The owner wants the model complete before one exact-head review by C
 - [x] Hand-written skill preferences and the tactical page read against it: each says a comment says how a message travels, which stays true; none changed
 - [x] Evidence table below for #35, #36, #37, #38, #39, #40
 - [ ] The exact-head signoff: one Claude Opus 5.5 high and one OpenAI Astra low review of the same commit, each answering whether this is a correct, clean and detailed DDD specification, reproduced defects kept apart from named preferences (the lead)
-- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (rounds one to ten found corrections; latest in cards 174–175)
-- [x] Journal: ten exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
+- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (fifteen completed rounds found corrections; latest under expanded #131/card 181)
+- [x] Journal: fifteen exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
 
 ## Gates
 
 - [x] Focused: core and skill builds, skill drift test, biome on the touched files; results in the journal
 - [x] `bash scripts/verify-all.sh` passed unmodified on the integrated model tree at `ff8e8436`: core 1043, graphviz 35, doc 47, skill 62, NorthBank 6, pages 1005 and all other package/model suites; generated-schema comparison and ESM imports green; browser 424 passed, 20 skipped
-- [ ] `bash scripts/verify-all.sh` passes unmodified on the next clean committed head containing cards 171–173
-- [ ] `bash scripts/verify-all.sh` passes unmodified on the next clean committed head containing cards 174–175
+- [x] `bash scripts/verify-all.sh` passed unmodified on clean `a40226e9` before the fifteenth review exposed #131's wider route class (core 1090, pages 1019 at 100% coverage, browser 430 passed/20 skipped)
+- [ ] `bash scripts/verify-all.sh` passes unmodified on the final clean committed head containing the expanded #131 correction and all reader wording
 
 ## Evidence: capability issues against the record
 
@@ -376,3 +376,11 @@ The unmodified full local gate passed on exact clean head `4fe805c6230e8b13454a2
 - **Reproduced timing defect (#131/card 181):** a precondition on `Decide`'s future answer correctly failed until a front consumed `Decide`; then it validated with zero diagnostics and Markdown called it checked before the call. The gap held for aggregate and context owners, explicit and inferred `by`, and direct/JSON-round-trip models. `fetchedByGuard` collected the front's consumption of the guard itself. The correction excludes that operation by identity, retaining a separate earlier query that returns the same schema.
 - **Prior corrections:** Astra confirmed the #130 fetched-answer/heard-payload cases, including ambiguous and unrelated negatives, plus #128's timing/target matrix and #129's symmetric shared-kernel borrowing. Reference diagnostics remained 0 / 2 / 4 / 3 / 0 and generated schemas matched core. It found no substantiated trigger for #35–#40. This new blocker overrides any older approval.
 - **Next gate:** focused timing tests pass; clean-code review, the unmodified full local gate and a new exact-head signoff remain. Prompt: `/tmp/ods-final-model-review-4fe805c6.txt`; report: `/tmp/ods-astra-final-review-4fe805c6.txt`.
+
+## Fifteenth completed round (head `a40226e9`) and process correction
+
+The unmodified full local gate passed on exact clean head `a40226e937bcf0d48f098f4b31c95f2711135194`: core 1090, graphviz 35, doc 52, skill 99, all five reference-model suites and shared fixtures, pages 1019 at 100% coverage, apps/docs 24, VS Code 18, scripts 31, schema and ESM checks, browser 430 passed/20 skipped. OpenAI `gpt-6-astra` low returned **BLOCK**; Claude was not called. No GitHub CI minutes were used.
+
+- **Three related reach defects, consolidated under #131/card 181:** naming both a front and its guarded operation re-admitted the latter's future answer; a process's `ends` event (or a self-raised `on` event) looked already heard by the precondition of the command that raises it; and an already-held answer or event payload was lost when the local call chain had two fronts. Each reproduced for aggregate/context owners, explicit/inferred callers and direct/JSON-round-trip. Astra confirmed the narrow prior #131 fix, #130, #128, #129, and exact reference diagnostic counts 0 / 2 / 4 / 3 / 0. No substantiated trigger for #35–#40 was found.
+- **Owner's five-whys assessment:** the open issue count had reached 54, including 16 created on 2026-10-01; 25 board cards were `doing`. The branch had not landed any of them on `develop`. The process gap was using final reviews as the first adversarial semantic matrix, then adding tickets for local patches. The lead stopped reviewer calls, broadened existing #131 rather than opening three issues, and is verifying guard count, lifecycle stage, local call depth, caller ambiguity, owner and JSON round-trip together before another signoff request.
+- **Evidence:** prompt `/tmp/ods-final-model-review-a40226e9.txt`, full report `/tmp/ods-astra-final-review-a40226e9.txt`, gate `/tmp/ods-verify-a40226e9.log`. The next independent review waits for a coherent clean commit and the full local gate.

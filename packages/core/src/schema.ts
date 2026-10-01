@@ -699,11 +699,20 @@ export interface InvariantSchema {
 	 * rule it is: `precondition` says that.
 	 *
 	 * A precondition may name attributes of the request its guarded operation
-	 * takes, of an answer the guard or its front already fetched, and of an
-	 * event payload the issuing reactor already heard. It cannot name that
-	 * operation's own answer, which does not exist yet. A postcondition may
+	 * takes, of an answer the guard or a front on its local call chain already
+	 * fetched, of an event or answer payload that triggered its issuing policy,
+	 * or of a process start-event payload. A fetched answer or heard payload must
+	 * be available on every named guard and independent caller or reactor route;
+	 * sequential local fronts retain facts already held on their call chain.
+	 * A process's `on` triggers do not prove when a particular command is issued,
+	 * and a starting operation's later answer has no guaranteed delivery time.
+	 * A process's ending event and an event the guarded call raises are future,
+	 * not already heard. It cannot name an answer of a named guarded operation,
+	 * which does not exist before that call. A postcondition may
 	 * relate the guarded operation's request to the shapes it returns or
-	 * rejects with; it guarantees what comes back. Either may follow
+	 * rejects with; it guarantees what comes back. When several operations are
+	 * named, the postcondition's shape must be reachable from each of them.
+	 * Either timing may follow
 	 * composition: an attribute of any schema reachable from those
 	 * through `attribute.schema` is one of the fields the call carries, so a
 	 * rule about the amount of an order line is a rule about the request that

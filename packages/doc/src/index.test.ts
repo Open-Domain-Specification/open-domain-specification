@@ -662,11 +662,11 @@ describe("toDoc", () => {
 		expect(section("MarkPetSoldForOrder")).toContain(
 			"- **Made by**: MarkPetSold",
 		);
-		// The read beside them is CheckPetAvailable's: a call is made by an
+		// The read beside them is CheckAndApproveOrder's: a call is made by an
 		// operation, and the process that issues it is not one
 		// (`consumption-by-operation`, card 92).
 		expect(section("GetPetSummary")).toContain(
-			"- **Made by**: CheckPetAvailable",
+			"- **Made by**: CheckAndApproveOrder",
 		);
 		// The line is left off where the whole consumer is the answer, which in
 		// this model is every event Inventory's projection takes in.

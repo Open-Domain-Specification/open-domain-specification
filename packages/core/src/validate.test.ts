@@ -3,6 +3,7 @@ import { makeRichTestWs } from "./makeTestWs";
 import { hearsAnswerOf, ReactionChain, routesTo } from "./reaction-walk";
 import {
 	type BoundedContext,
+	type Consumable,
 	type DirectedRelationshipOptions,
 	Workspace,
 } from "./workspace";
@@ -1781,14 +1782,17 @@ describe("invariant-in-aggregate", () => {
 	}
 
 	it("lets a precondition read what its own guard fetched", () => {
-		const { ws, orders, approve, check, standing } = goodStanding();
+		const { ws, orders, check, standing } = goodStanding();
 		orders
-			.addInvariant("Approve Only In Good Standing", {
+			.addInvariant("Check Only After Fetching Standing", {
 				description: "",
 				precondition: true,
 			})
-			.constrains(approve, check, standing);
-		expect(inAggregate(ws)).toEqual([]);
+			.constrains(check, standing);
+		for (const model of [ws, Workspace.fromSchema(ws.toSchema())])
+			expect(
+				model.validate().filter((d) => d.rule === "invariant-in-aggregate"),
+			).toEqual([]);
 	});
 
 	it("lets it read what the front calling the guard fetched", () => {
@@ -1814,7 +1818,7 @@ describe("invariant-in-aggregate", () => {
 					description: "",
 					precondition: true,
 				})
-				.constrains(approve, ...(front ? [] : [check]), standing);
+				.constrains(front ? approve : check, standing);
 			for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
 				expect(
 					model.validate().filter((d) => d.rule === "invariant-in-aggregate"),
@@ -2231,6 +2235,7 @@ describe("invariant reach through inferred operation callers", () => {
 		fronted: boolean,
 		explicit: boolean,
 		independentlyFetched = false,
+		bothGuards = false,
 	) {
 		const ws = new Workspace("Review", { description: "", version: "0" });
 		const bc = ws
@@ -2250,6 +2255,7 @@ describe("invariant reach through inferred operation callers", () => {
 				internal: true,
 				returns: answer,
 			});
+		const guards = [decide];
 		if (fronted) {
 			const front = bc.addService("Front", {
 				description: "",
@@ -2260,6 +2266,7 @@ describe("invariant reach through inferred operation callers", () => {
 				type: "operation",
 				internal: true,
 			});
+			if (bothGuards) guards.push(call);
 			front.consumes(decide, explicit ? { by: [call] } : {});
 			if (independentlyFetched) {
 				const lookup = bc
@@ -2279,7 +2286,7 @@ describe("invariant reach through inferred operation callers", () => {
 				description: "",
 				precondition: true,
 			})
-			.constrains(decide, result);
+			.constrains(...guards, result);
 		return { ws, rule };
 	}
 
@@ -2301,6 +2308,38 @@ describe("invariant reach through inferred operation callers", () => {
 						.filter((d) => d.rule === `invariant-in-${scope}`)
 						.map((d) => d.ref),
 				).toEqual([rule.ref]);
+		},
+	);
+
+	it.each([
+		["aggregate", false],
+		["aggregate", true],
+		["context", false],
+		["context", true],
+	] as const)(
+		"%s precondition cannot borrow one guard's future answer from another, explicit=%s",
+		(scope, explicit) => {
+			const { ws, rule } = futureAnswer(scope, true, explicit, false, true);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`)
+						.map((d) => d.ref),
+				).toEqual([rule.ref]);
+		},
+	);
+
+	it.each(["aggregate", "context"] as const)(
+		"%s precondition may name two operations when a separate call supplies the shared shape",
+		(scope) => {
+			const { ws } = futureAnswer(scope, true, true, true, true);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`),
+				).toEqual([]);
 		},
 	);
 
@@ -2358,6 +2397,211 @@ describe("invariant reach through inferred operation callers", () => {
 				expect(candidate.validate()).toEqual([]);
 		},
 	);
+
+	function parallelFronts(everyRouteFetches: boolean) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const fact = bc.addSchema("Standing");
+		const standing = fact.addAttribute("standing", { type: "string" });
+		const decide = bc
+			.addService("Decision", { description: "", type: "application" })
+			.provides("Decide", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+		const query = bc
+			.addService("Lookup", { description: "", type: "application" })
+			.provides("GetStanding", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: fact,
+			});
+		const informed = bc.addService("Informed Front", {
+			description: "",
+			type: "application",
+		});
+		const informedCall = informed.provides("Call", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		informed.consumes(query, { by: [informedCall] });
+		informed.consumes(decide, { by: [informedCall] });
+		const uninformed = bc.addService("Uninformed Front", {
+			description: "",
+			type: "application",
+		});
+		const uninformedCall = uninformed.provides("Call", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		uninformed.consumes(decide, { by: [uninformedCall] });
+		if (everyRouteFetches) uninformed.consumes(query, { by: [uninformedCall] });
+		const rule = bc
+			.addInvariant("Standing required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, standing);
+		return { ws, rule };
+	}
+
+	it("does not lend one front's fetched answer to an independent front", () => {
+		const { ws, rule } = parallelFronts(false);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("accepts a fetched answer supplied independently on every front", () => {
+		const { ws } = parallelFronts(true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
+
+	function independentGuards(everyGuardFetches: boolean) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const service = bc.addService("Decisions", {
+			description: "",
+			type: "application",
+		});
+		const first = service.provides("First", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const second = service.provides("Second", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const query = bc
+			.addService("Lookup", { description: "", type: "application" })
+			.provides("GetFact", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: fact,
+			});
+		service.consumes(query, { by: [first] });
+		if (everyGuardFetches) service.consumes(query, { by: [second] });
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(first, second, field);
+		return { ws, rule };
+	}
+
+	it("does not lend one named guard's fetched answer to an independent guard", () => {
+		const { ws, rule } = independentGuards(false);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("accepts a fetched answer supplied independently by every named guard", () => {
+		const { ws } = independentGuards(true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
+
+	function publicGuard(internal: boolean) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const decide = bc
+			.addService("Decision", { description: "", type: "application" })
+			.provides("Decide", {
+				description: "",
+				type: "operation",
+				internal,
+			});
+		const query = bc
+			.addService("Lookup", { description: "", type: "application" })
+			.provides("GetFact", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: fact,
+			});
+		const front = bc.addService("Front", {
+			description: "",
+			type: "application",
+		});
+		const call = front.provides("Call", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		front.consumes(query, { by: [call] });
+		front.consumes(decide, { by: [call] });
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it("keeps a public guard's uninformed direct route beside its informed front", () => {
+		const { ws, rule } = publicGuard(false);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("accepts an internal guard reached only through its informed front", () => {
+		const { ws } = publicGuard(true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
 
 	function model(
 		scope: "aggregate" | "context",
@@ -2453,6 +2697,797 @@ describe("invariant reach through inferred operation callers", () => {
 			}
 		},
 	);
+});
+
+describe("transport shape intersection across named guards", () => {
+	function workspace() {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const envelope = bc.addSchema("Envelope");
+		envelope.addAttribute("fact", { type: "Fact", schema: fact });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		return { ws, bc, fact, field, envelope, service };
+	}
+
+	it("intersects fetched facts after expanding composition", () => {
+		const { ws, bc, fact, field, envelope, service } = workspace();
+		const first = service.provides("First", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const second = service.provides("Second", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const fetchEnvelope = service.provides("Fetch Envelope", {
+			description: "",
+			type: "operation",
+			internal: true,
+			returns: envelope,
+		});
+		const fetchFact = service.provides("Fetch Fact", {
+			description: "",
+			type: "operation",
+			internal: true,
+			returns: fact,
+		});
+		service.consumes(fetchEnvelope, { by: [first] });
+		service.consumes(fetchFact, { by: [second] });
+		bc.addInvariant("Fact required", {
+			description: "",
+			precondition: true,
+		}).constrains(first, second, field);
+
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
+
+	it.each([false, true])(
+		"requires every named guard request to carry the fact, every=%s",
+		(everyGuardCarries) => {
+			const { ws, bc, fact, field, envelope, service } = workspace();
+			const first = service.provides("First", {
+				description: "",
+				type: "operation",
+				internal: true,
+				schema: fact,
+			});
+			const second = service.provides("Second", {
+				description: "",
+				type: "operation",
+				internal: true,
+				...(everyGuardCarries ? { schema: envelope } : {}),
+			});
+			const rule = bc
+				.addInvariant("Fact required", {
+					description: "",
+					precondition: true,
+				})
+				.constrains(first, second, field);
+
+			expect(
+				[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+					candidate
+						.validate()
+						.filter((d) => d.rule === "invariant-in-context")
+						.map((d) => d.ref),
+				),
+			).toEqual(everyGuardCarries ? [[], []] : [[rule.ref], [rule.ref]]);
+		},
+	);
+
+	it.each([false, true])(
+		"requires every named guard answer to carry the guaranteed fact, every=%s",
+		(everyGuardCarries) => {
+			const { ws, bc, fact, field, envelope, service } = workspace();
+			const first = service.provides("First", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: fact,
+			});
+			const second = service.provides("Second", {
+				description: "",
+				type: "operation",
+				internal: true,
+				...(everyGuardCarries ? { returns: envelope } : {}),
+			});
+			const rule = bc
+				.addInvariant("Fact guaranteed", {
+					description: "",
+					postcondition: true,
+				})
+				.constrains(first, second, field);
+
+			expect(
+				[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+					candidate
+						.validate()
+						.filter((d) => d.rule === "invariant-in-context")
+						.map((d) => d.ref),
+				),
+			).toEqual(everyGuardCarries ? [[], []] : [[rule.ref], [rule.ref]]);
+		},
+	);
+});
+
+describe("precondition facts across a local call chain", () => {
+	function chain(
+		scope: "aggregate" | "context",
+		fact: "answer" | "event",
+		explicit: boolean,
+		ambiguous = false,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const shape = bc.addSchema("Fact");
+		const field = shape.addAttribute("result", { type: "string" });
+		const decide = bc
+			.addService("Decision", { description: "", type: "application" })
+			.provides("Decide", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+		const inner = bc.addService("Inner", {
+			description: "",
+			type: "application",
+		});
+		const innerCall = inner.provides("InnerCall", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		if (ambiguous)
+			inner.provides("Other", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+		inner.consumes(decide, explicit ? { by: [innerCall] } : {});
+		const outer = bc.addService("Outer", {
+			description: "",
+			type: "application",
+		});
+		const outerCall = outer.provides("OuterCall", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		outer.consumes(innerCall, explicit ? { by: [outerCall] } : {});
+		if (fact === "answer") {
+			const query = bc
+				.addService("Lookup", { description: "", type: "application" })
+				.provides("GetFact", {
+					description: "",
+					type: "operation",
+					internal: true,
+					returns: shape,
+				});
+			outer.consumes(query, explicit ? { by: [outerCall] } : {});
+		} else {
+			const source = bc.addService("Source", {
+				description: "",
+				type: "application",
+			});
+			const heard = source.provides("Heard", {
+				description: "",
+				type: "event",
+				schema: shape,
+			});
+			source
+				.provides("Start", {
+					description: "",
+					type: "operation",
+					internal: true,
+				})
+				.raises(heard);
+			const reactor = bc
+				.addProcess("Lifecycle", { description: "" })
+				.starts(heard)
+				.issues(outerCall);
+			outer.consumes(heard, { by: [reactor] });
+		}
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("Check held fact", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it.each([
+		["aggregate", "answer", false],
+		["aggregate", "answer", true],
+		["context", "answer", false],
+		["context", "answer", true],
+		["aggregate", "event", false],
+		["aggregate", "event", true],
+		["context", "event", false],
+		["context", "event", true],
+	] as const)(
+		"%s precondition reads held %s through two fronts, explicit=%s",
+		(scope, fact, explicit) => {
+			const { ws } = chain(scope, fact, explicit);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`),
+				).toEqual([]);
+		},
+	);
+
+	it.each(["answer", "event"] as const)(
+		"an ambiguous inner operation cannot lend its %s through the chain",
+		(fact) => {
+			const { ws, rule } = chain("context", fact, false, true);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === "invariant-in-context")
+						.map((d) => d.ref),
+				).toEqual([rule.ref]);
+		},
+	);
+
+	it("terminates on a bounded dense graph of local callers", () => {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const service = bc.addService("Dense Fronts", {
+			description: "",
+			type: "application",
+		});
+		const operations = Array.from({ length: 9 }, (_, index) =>
+			service.provides(`Call ${index}`, {
+				description: "",
+				type: "operation",
+				internal: true,
+			}),
+		);
+		for (let called = 0; called < operations.length - 1; called++)
+			service.consumes(operations[called], {
+				by: operations.slice(called + 1),
+			});
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(operations[0], field);
+
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	}, 1_000);
+
+	it.each(["policy", "process"] as const)(
+		"does not borrow an event raised later by the outer front from its %s trigger",
+		(kind) => {
+			const ws = new Workspace("Review", { description: "", version: "0" });
+			const bc = ws
+				.addDomain("D", { description: "" })
+				.addSubdomain("S", { description: "", type: "core" })
+				.addBoundedcontext("Sales", { description: "" });
+			const fact = bc.addSchema("Fact");
+			const field = fact.addAttribute("result", { type: "string" });
+			const service = bc.addService("Application", {
+				description: "",
+				type: "application",
+			});
+			const decide = service.provides("Decide", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			const front = service.provides("Front", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			service.consumes(decide, { by: [front] });
+			const future = service.provides("Future", {
+				description: "",
+				type: "event",
+				schema: fact,
+			});
+			front.raises(future);
+			if (kind === "policy")
+				bc.addPolicy("Retry", { description: "" }).on(future).issues(front);
+			else
+				bc.addProcess("Retry", { description: "" })
+					.starts(future)
+					.issues(front);
+			const rule = bc
+				.addInvariant("Fact required", {
+					description: "",
+					precondition: true,
+				})
+				.constrains(decide, field);
+
+			expect(
+				[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+					candidate
+						.validate()
+						.filter((d) => d.rule === "invariant-in-context")
+						.map((d) => d.ref),
+				),
+			).toEqual([[rule.ref], [rule.ref]]);
+		},
+	);
+});
+
+describe("precondition facts across independent reactor triggers", () => {
+	function independentTriggers(
+		kind: "policy" | "process",
+		everyTriggerCarriesFact: boolean,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const first = service.provides("First", {
+			description: "",
+			type: "event",
+			schema: fact,
+		});
+		const second = service.provides("Second", {
+			description: "",
+			type: "event",
+			...(everyTriggerCarriesFact ? { schema: fact } : {}),
+		});
+		service
+			.provides("Publish First", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(first);
+		service
+			.provides("Publish Second", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(second);
+		const decide = service.provides("Decide", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		if (kind === "policy") {
+			bc.addPolicy("Decide on either", { description: "" })
+				.on(first, second)
+				.issues(decide);
+		} else {
+			const continued = service.provides("Continued", {
+				description: "",
+				type: "event",
+			});
+			const done = service.provides("Done", {
+				description: "",
+				type: "event",
+			});
+			service
+				.provides("Continue", {
+					description: "",
+					type: "operation",
+					internal: true,
+				})
+				.raises(continued);
+			decide.raises(done);
+			bc.addProcess("Decide from either start", { description: "" })
+				.starts(first, second)
+				.on(continued)
+				.issues(decide)
+				.ends(done);
+		}
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it("a policy cannot lend one trigger's payload to an independent trigger", () => {
+		const { ws, rule } = independentTriggers("policy", false);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("a policy accepts the shared payload when every trigger carries it", () => {
+		const { ws } = independentTriggers("policy", true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
+
+	it("a process cannot lend one start's payload to an independent start", () => {
+		const { ws, rule } = independentTriggers("process", false);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("a process retains a payload supplied by every start across later triggers", () => {
+		const { ws } = independentTriggers("process", true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
+});
+
+describe("precondition facts from policy answer triggers", () => {
+	function answerTrigger(
+		kind: "return" | "rejection",
+		withAlternateTrigger: boolean,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const query = service.provides("Get Fact", {
+			description: "",
+			type: "operation",
+			internal: true,
+			...(kind === "return" ? { returns: fact } : { rejects: [fact] }),
+		});
+		const decide = service.provides("Decide", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const answer = kind === "return" ? query.returned() : query.rejected(fact);
+		const policy = bc
+			.addPolicy("Decide from answer", { description: "" })
+			.on(answer)
+			.issues(query, decide);
+		if (withAlternateTrigger) {
+			const alternate = service.provides("Alternate", {
+				description: "",
+				type: "event",
+			});
+			service
+				.provides("Publish Alternate", {
+					description: "",
+					type: "operation",
+					internal: true,
+				})
+				.raises(alternate);
+			policy.on(alternate);
+		}
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it.each(["return", "rejection"] as const)(
+		"accepts a %s answer as the immediate policy trigger",
+		(kind) => {
+			const { ws } = answerTrigger(kind, false);
+			expect(
+				[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+					candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+				),
+			).toEqual([[], []]);
+		},
+	);
+
+	it.each(["return", "rejection"] as const)(
+		"does not lend a %s answer to an independent policy trigger",
+		(kind) => {
+			const { ws, rule } = answerTrigger(kind, true);
+			expect(
+				[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+					candidate
+						.validate()
+						.filter((d) => d.rule === "invariant-in-context")
+						.map((d) => d.ref),
+				),
+			).toEqual([[rule.ref], [rule.ref]]);
+		},
+	);
+
+	it("does not treat the issued operation's own answer as already held", () => {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const decide = service.provides("Decide", {
+			description: "",
+			type: "operation",
+			internal: true,
+			returns: fact,
+		});
+		bc.addPolicy("Decide from its answer", { description: "" })
+			.on(decide.returned())
+			.issues(decide);
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+});
+
+describe("precondition event timing in a process", () => {
+	function lifecycle(
+		scope: "aggregate" | "context",
+		payloadAt: "start" | "wait" | "on" | "end",
+		fronted: boolean,
+		explicit: boolean,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const shape = bc.addSchema("Fact");
+		const field = shape.addAttribute("result", { type: "string" });
+		const service = bc.addService("Decision", {
+			description: "",
+			type: "application",
+		});
+		const decide = service.provides("Decide", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const started = service.provides("Started", {
+			description: "",
+			type: "event",
+			...(payloadAt === "start" ? { schema: shape } : {}),
+		});
+		service
+			.provides("Start", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(started);
+		let waited: Consumable | undefined;
+		if (payloadAt === "wait") {
+			waited = service.provides("EarlierFact", {
+				description: "",
+				type: "event",
+				schema: shape,
+			});
+			service
+				.provides("Publish Earlier Fact", {
+					description: "",
+					type: "operation",
+					internal: true,
+				})
+				.raises(waited);
+		}
+		const decided = service.provides("Decided", {
+			description: "",
+			type: "event",
+			...(payloadAt === "on" || payloadAt === "end" ? { schema: shape } : {}),
+		});
+		decide.raises(decided);
+		let issued = decide;
+		if (fronted) {
+			const front = bc.addService("Front", {
+				description: "",
+				type: "application",
+			});
+			issued = front.provides("Call", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			front.consumes(decide, explicit ? { by: [issued] } : {});
+		}
+		const process = bc
+			.addProcess("Lifecycle", { description: "" })
+			.starts(started)
+			.issues(issued);
+		if (waited) process.on(waited);
+		if (payloadAt === "on") process.on(decided);
+		else process.ends(decided);
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("Before Decide", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it.each([
+		["aggregate", false, false],
+		["aggregate", true, false],
+		["aggregate", true, true],
+		["context", false, false],
+		["context", true, false],
+		["context", true, true],
+	] as const)(
+		"%s precondition distinguishes a starting fact from unordered later and future facts, front=%s explicit=%s",
+		(scope, fronted, explicit) => {
+			for (const payloadAt of ["start", "wait", "end", "on"] as const) {
+				const { ws, rule } = lifecycle(scope, payloadAt, fronted, explicit);
+				for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())]) {
+					const refs = candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`)
+						.map((d) => d.ref);
+					// A process remembers `on` facts once they arrive, but `issues`
+					// does not map a command to a lifecycle step. Only `starts` proves
+					// this payload was present before every possible issue of the guard.
+					expect(refs).toEqual(payloadAt === "start" ? [] : [rule.ref]);
+				}
+			}
+		},
+	);
+
+	function laterAnswer(startingOperation = false) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const shape = bc.addSchema("Fact");
+		const field = shape.addAttribute("result", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const started = service.provides("Started", {
+			description: "",
+			type: "event",
+		});
+		service
+			.provides("Publish Start", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(started);
+		const query = service.provides("Get Fact", {
+			description: "",
+			type: "operation",
+			internal: true,
+			returns: shape,
+		});
+		const decide = service.provides("Decide", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const done = service.provides("Done", {
+			description: "",
+			type: "event",
+		});
+		decide.raises(done);
+		const process = bc
+			.addProcess("Lifecycle", { description: "" })
+			.starts(startingOperation ? query : started)
+			.issues(decide)
+			.ends(done);
+		if (!startingOperation) process.on(query.returned()).issues(query);
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it("does not treat an answer in process on as prior to every issued command", () => {
+		const { ws, rule } = laterAnswer();
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("does not treat a starting operation's later answer as prior to an issued command", () => {
+		const { ws, rule } = laterAnswer(true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
 });
 
 describe("invariant-in-value-object", () => {

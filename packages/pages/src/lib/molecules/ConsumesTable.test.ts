@@ -44,7 +44,7 @@ describe("ConsumesTable", () => {
 		]);
 		expect(madeBy).toContainEqual(["ReservePetForOrder", "ReservePet"]);
 		expect(madeBy).toContainEqual(["MarkPetSoldForOrder", "MarkPetSold"]);
-		expect(madeBy).toContainEqual(["GetPetSummary", "CheckPetAvailable"]);
+		expect(madeBy).toContainEqual(["GetPetSummary", "CheckAndApproveOrder"]);
 		expect(madeBy).toContainEqual(["PetRegistered", "whole consumer"]);
 		expect(screen.getAllByText("whole consumer")[0]).toHaveClass("keyword");
 	});

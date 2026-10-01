@@ -1178,39 +1178,68 @@ function composedSchemas(roots: Iterable<DataSchema>): Set<DataSchema> {
 
 /**
  * The operations that stand where the guard stands: the guard itself, and the
- * fronts of this context whose own call reaches it.
+ * fronts of this context whose local call chain reaches it.
  *
  * Decision 17 puts the public operation on the application service, so an
  * aggregate's guarded transition is normally reached through a front: the
  * aggregate keeps the rule and the service is what talks to anybody, which
  * means the aggregate's operation never holds the consumption and is never the
  * thing a reactor issues. Whatever the guard may read, the front reads on its
- * behalf, so both rules that ask what the guard already knows —
- * {@link fetchedByGuard} and {@link heardByGuardsReactor} — ask about this set
- * rather than about the guard alone. A front is found through `by` read as the
- * causal link it is (decision 21's amendment), and only inside the guard's own
- * context: a consumption is the consumer's, and a rule of ours may not be fed
- * by somebody else's call. An omitted `by` on a single-operation consumer
- * means that operation is the caller, as it does in the reaction walk.
+ * behalf, so the walk follows every local route to the guard rather than the
+ * guard alone. A front is found through `by` read as the causal link it is
+ * (decision 21's amendment), and only inside the guard's own context: a
+ * consumption is the consumer's, and a rule of ours may not be fed by somebody
+ * else's call. An omitted `by` on a single-operation consumer means that
+ * operation is the caller, as it does in the reaction walk.
+ *
+ * Routes stay separate. Two fronts calling the same guard are two possible
+ * executions, so a fact held by only one cannot satisfy the guard. A reactor
+ * is an entry to the operation it issues. Each policy trigger and each process
+ * start is an alternative entry. A process's `on` events establish no timing
+ * for its commands, so they cannot establish a precondition fact.
  */
-function guardChain(guard: Consumable): {
+function guardGraph(guard: Consumable): {
 	consumptions: Consumption[];
-	callers: Set<Consumable>;
+	operations: Set<Consumable>;
+	callers: Map<Consumable, Set<Consumable>>;
 } {
 	const bc = guard.boundedcontext;
 	const members = [...bc.aggregates.values(), ...bc.services.values()];
 	const consumptions = members.flatMap((member) => member.consumptions);
-	const callers = new Set<Consumable>([guard]);
-	for (const consumption of consumptions) {
-		if (consumption.consumable !== guard) continue;
-		for (const caller of operationCallers(consumption)) callers.add(caller);
+	const operations = new Set<Consumable>([guard]);
+	const callers = new Map<Consumable, Set<Consumable>>();
+	const queue = [guard];
+	for (const called of queue) {
+		const predecessors = new Set<Consumable>();
+		for (const consumption of consumptions) {
+			if (consumption.consumable !== called) continue;
+			for (const caller of operationCallers(consumption)) {
+				if (caller.boundedcontext !== bc) continue;
+				predecessors.add(caller);
+				if (operations.has(caller)) continue;
+				operations.add(caller);
+				queue.push(caller);
+			}
+		}
+		callers.set(called, predecessors);
 	}
-	return { consumptions, callers };
+	return { consumptions, operations, callers };
+}
+
+function intersectSchemas(sources: ReadonlyArray<ReadonlySet<DataSchema>>) {
+	const [first, ...rest] = sources;
+	if (!first) return new Set<DataSchema>();
+	return new Set(
+		[...first].filter((schema) => rest.every((it) => it.has(schema))),
+	);
+}
+
+function addComposedSchema(target: Set<DataSchema>, schema: DataSchema): void {
+	for (const composed of composedSchemas([schema])) target.add(composed);
 }
 
 /**
- * What a guard has already been told: the shapes the calls made for this
- * operation answered with.
+ * What every route to a guard has already been told or handed.
  *
  * A precondition is checked at the moment of the call, and a check that reads
  * something from another context reads an answer, not that context's model.
@@ -1221,66 +1250,113 @@ function guardChain(guard: Consumable): {
  * rule a reader can follow to the call that feeds it and a sentence saying
  * "somewhere we look this up".
  *
- * Two ways a call belongs to a guard, and both use the effective caller from
- * decision 21. The guard makes the call itself, or a front that calls the
- * guard makes it (the {@link guardChain}). A sole operation with omitted `by`
- * is inferred in both places; an ambiguous consumer gains no caller. The
- * front's call to the guard is not a fetched fact: the guard's own answer
- * does not exist until after the precondition runs. Another call may return
- * the same shape, so exclude that call by identity rather than by schema.
+ * Calls use the effective caller from decision 21. The guard may make one
+ * itself, or a front on a local call route may make it. A sole operation with
+ * omitted `by` is inferred in both places; an ambiguous consumer gains no
+ * caller. The front's call to the guard, or to another front of it, is not a
+ * fetched fact: those callers' answers do not exist until after the guarded
+ * call. Another call may return the same shape, so caller operations are
+ * excluded by identity rather than by schema.
+ *
+ * Reactor event payloads and policy answer triggers join the answers held on
+ * their particular route. An answer of the guard, a named operation, or a
+ * caller on the route is still in the future and contributes nothing. The
+ * final intersection is the guard's reliable knowledge: a shape must be
+ * present on every possible caller and reactor route, rather than borrowed
+ * from a sibling route that did not execute.
  */
-function fetchedByGuard(guard: Consumable): DataSchema[] {
-	const { consumptions, callers } = guardChain(guard);
-	const answers: DataSchema[] = [];
+function heldByGuard(
+	guard: Consumable,
+	namedOperations: ReadonlySet<Consumable>,
+): DataSchema[] {
+	const { consumptions, operations, callers } = guardGraph(guard);
+	const reactors = reactorsOf(guard.boundedcontext);
+	const local = new Map(
+		[...operations].map((operation) => [operation, new Set<DataSchema>()]),
+	);
 	for (const consumption of consumptions) {
-		if (consumption.consumable === guard) continue;
-		const { returns } = consumption.consumable;
-		if (!returns) continue;
-		if (!operationCallers(consumption).some((caller) => callers.has(caller)))
+		if (
+			operations.has(consumption.consumable) ||
+			namedOperations.has(consumption.consumable)
+		)
 			continue;
-		if (!answers.includes(returns)) answers.push(returns);
-	}
-	return answers;
-}
-
-/**
- * What a guard has already been handed: the payload shapes of the events the
- * reactor that issued it heard.
- *
- * A fulfilment gate is the case. "Ship only when the captured amount covers
- * the order total" is checked before `Ship` runs, and the captured amount is
- * neither in the request nor in an answer anybody here waited on: it arrived
- * on `PaymentCaptured`, which a policy or a process of this context is
- * subscribed to and which is why the operation is being issued at all. That
- * payload is a fact this context holds, in the shape it came in, exactly as an
- * answer the front fetched is (decision 19, amendments of 2026-09-10, second
- * and third). Refusing it sent the model back to copying the amount into the
- * request so a rule had something local to point at.
- *
- * The reactor is one of this context's own, and what makes it the guard's is
- * that it issues the guard or a front of it (the {@link guardChain}): a policy
- * elsewhere in the context, hearing a different fact and issuing something
- * else, has handed this call nothing. Only the events a reactor is subscribed
- * to count — a command a process starts on is issued rather than heard, and
- * an answer is already {@link fetchedByGuard}'s.
- */
-function heardByGuardsReactor(guard: Consumable): DataSchema[] {
-	const { callers } = guardChain(guard);
-	const payloads: DataSchema[] = [];
-	for (const reactor of reactorsOf(guard.boundedcontext)) {
-		if (!reactor.commands.some((issued) => callers.has(issued))) continue;
-		for (const event of subscribedEvents(reactor)) {
-			const payload = event.schema;
-			if (event.type !== "event" || !payload) continue;
-			if (!payloads.includes(payload)) payloads.push(payload);
+		const answer = consumption.consumable.returns;
+		if (!answer) continue;
+		for (const caller of operationCallers(consumption)) {
+			const facts = local.get(caller);
+			if (facts) addComposedSchema(facts, answer);
 		}
 	}
-	return payloads;
+
+	const futureEvents = new Set<Consumable>(
+		[...operations, ...namedOperations].flatMap((operation) => [
+			...operation.raisedEvents,
+			...reachedEvents(operation),
+		]),
+	);
+	const out = new Map(
+		[...operations].map((operation) => [operation, new Set<DataSchema>()]),
+	);
+	let changed = true;
+	while (changed) {
+		changed = false;
+		for (const operation of operations) {
+			const sources: Set<DataSchema>[] = [];
+			for (const caller of callers.get(operation) ?? [])
+				sources.push(out.get(caller) ?? new Set());
+
+			const issuing = reactors.filter((reactor) =>
+				reactor.commands.includes(operation),
+			);
+			for (const reactor of issuing) {
+				const triggers =
+					reactor instanceof Process ? reactor.startEvents : reactor.events;
+				if (triggers.length === 0) sources.push(new Set());
+				for (const trigger of triggers) {
+					const facts = new Set<DataSchema>();
+					if (
+						trigger instanceof Consumable &&
+						trigger.type === "event" &&
+						trigger.schema &&
+						!futureEvents.has(trigger)
+					)
+						addComposedSchema(facts, trigger.schema);
+					if (
+						trigger instanceof Answer &&
+						trigger.schema &&
+						!operations.has(trigger.operation) &&
+						!namedOperations.has(trigger.operation)
+					)
+						addComposedSchema(facts, trigger.schema);
+					sources.push(facts);
+				}
+			}
+
+			if (
+				!operation.internal ||
+				((callers.get(operation)?.size ?? 0) === 0 && issuing.length === 0)
+			)
+				sources.push(new Set());
+			const next = intersectSchemas(sources);
+			for (const fact of local.get(operation) ?? []) next.add(fact);
+			const previous = out.get(operation);
+			if (
+				previous &&
+				(previous.size !== next.size ||
+					[...next].some((it) => !previous.has(it)))
+			) {
+				out.set(operation, next);
+				changed = true;
+			}
+		}
+	}
+	return [...(out.get(guard) ?? [])];
 }
 
 /**
- * The payload shapes this invariant's guarded operations put within its reach,
- * composition included.
+ * The payload shapes this invariant's named operations put within reach,
+ * composition included. A named operation may be a front that supplies a fact
+ * for another guard, but none of them may lend its own future answer or event.
  *
  * A precondition is checked before the call runs, so what it can read is what
  * has arrived: the request, and the shapes the request composes. The answer
@@ -1294,7 +1370,10 @@ function heardByGuardsReactor(guard: Consumable): DataSchema[] {
  * between the answer and the request that produced it: every returned
  * itinerary arrives by the requested time names one attribute of each, and
  * reading the answer alone refused the very example the flag was introduced
- * for (decision 19, third amendment).
+ * for (decision 19, third amendment). When one invariant names several
+ * operations, its shape must be reachable for every one of them. Composition
+ * is expanded before that intersection, because one route carrying an
+ * envelope and another carrying its nested fact both carry the fact.
  *
  * A precondition reaches one place further still: what the guard already
  * fetched. "Approve only if the customer is in good standing" is checked
@@ -1304,32 +1383,32 @@ function heardByGuardsReactor(guard: Consumable): DataSchema[] {
  * the moment of the check, so the rule may name it, and until card 116 it
  * could name neither that nor the other context's attribute and had to leave
  * what it reads in prose. What it reaches is the `returns` of the consumables
- * the guard itself consumes, or that the front calling the guard consumes (see
- * {@link fetchedByGuard}); the other context's entities stay out of reach, as
- * they always were (decision 19, amendment of 2026-09-10, second).
+ * the guard itself consumes, or that every route calling the guard consumes
+ * (see {@link heldByGuard}); the other context's entities stay out of reach,
+ * as they always were (decision 19, amendment of 2026-09-10, second).
  *
  * And one place beside that: the payload of the event the reactor heard before
  * issuing the guard. "Ship only when the captured amount covers the order
  * total" reads `PaymentCaptured.amount`, which is not in the request and which
  * nobody called for — it is why the call is being made at all, held through
- * this context's own subscription (see {@link heardByGuardsReactor}). Fetched
- * or delivered, it is the same fact in the same shape, and the third amendment
- * of 2026-09-10 says so.
+ * this context's own subscription (see {@link heldByGuard}). Fetched or
+ * delivered, it is the same fact in the same shape, and the third amendment of
+ * 2026-09-10 says so. Either way, it must be held on every route to the guard.
  */
 function guardedSchemas(invariant: Invariant): Set<DataSchema> {
-	const roots: DataSchema[] = [];
-	for (const operation of invariant.guarded) {
-		if (operation.type !== "operation") continue;
+	const operations = invariant.guarded.filter((it) => it.type === "operation");
+	const named = new Set(operations);
+	const reachable = operations.map((operation) => {
+		const roots: DataSchema[] = [];
 		if (operation.schema) roots.push(operation.schema);
-		if (invariant.precondition) {
-			roots.push(...fetchedByGuard(operation));
-			roots.push(...heardByGuardsReactor(operation));
+		if (invariant.precondition) roots.push(...heldByGuard(operation, named));
+		if (invariant.postcondition) {
+			if (operation.returns) roots.push(operation.returns);
+			roots.push(...operation.rejects);
 		}
-		if (!invariant.postcondition) continue;
-		if (operation.returns) roots.push(operation.returns);
-		roots.push(...operation.rejects);
-	}
-	return composedSchemas(roots);
+		return composedSchemas(roots);
+	});
+	return intersectSchemas(reachable);
 }
 
 /**
@@ -1587,12 +1666,12 @@ function outsideAggregate(
  * A precondition reaches what the guard fetched as well as what it was sent:
  * "approve only if the customer is in good standing" reads a standing that
  * came back from another context before this call began, and the shape it came
- * back in is the one the rule names (see {@link fetchedByGuard}). It reaches
- * what the guard was handed too: "ship only when the captured amount covers
- * the order total" reads the payload of the event this context's own reactor
- * heard before issuing the call (see {@link heardByGuardsReactor}). What stays
- * out of reach is that context's own entities and attributes: a fact we were
- * given, fetched or delivered, is a fact we hold, and their model is not
+ * back in is the one the rule names. It reaches what the guard was handed too:
+ * "ship only when the captured amount covers the order total" reads the
+ * payload of the event this context's own reactor heard before issuing the
+ * call. Both forms must be held on every route (see {@link heldByGuard}). What
+ * stays out of reach is that context's own entities and attributes: a fact we
+ * were given, fetched or delivered, is a fact we hold, and their model is not
  * (decision 19, amendments of 2026-09-10, second and third).
  */
 const invariantInAggregate: Rule = (workspace) => {
@@ -5588,17 +5667,17 @@ const RULES: CataloguedRule[] = [
 		rule: "invariant-in-aggregate",
 		severities: ["error"],
 		summary:
-			"An aggregate's invariant describes a rule of that boundary: unflagged rules hold on every save, preconditions are checked before a call, and postconditions guarantee its answer. Every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object something in the aggregate holds, its context's own or one borrowed from elsewhere, or is an operation of a service of its own context, application or domain, that guards it. A precondition may also constrain attributes of the schema the operation it guards takes, of what a call that guard, or the front that calls it, already made comes back with, and of the payload of an event the reactor issuing that guard heard; a postcondition those of the request, the answer and the refusals; both follow composition into the shapes those compose.",
-		why: "Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and the model does not promise it remains true afterward — enough funds at initiation, an entitlement at playback start, a pet still available at approval. When neither timing flag is set, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. A postcondition instead guarantees what the operation answers or refuses with. The invariant's page says which timing it promises, because the three readings mean different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not, wherever it was declared. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts. A precondition reaches one place further still: what it checks is often in the request rather than in the model — pickup before delivery, a positive weight, on a quotation no aggregate holds yet — so it may name attributes of the schema its guarded operation takes, and of what its guard, or the front that calls it, already fetched: approve only if the customer is in good standing reads a standing that came back from another context before this call began, and the shape it came back in is a fact we hold. So is a fact that arrived unasked: ship only when the captured amount covers the order total reads the payload of PaymentCaptured, which this context holds through its own subscription and which is why the reactor issued the call at all, and refusing it left the model copying the amount into the request so a rule had something local to point at. What it may not name is this call's own answer, which does not exist yet, or the other context's entities, which are never ours. A postcondition is the one that may name what that operation answers or refuses with, and the request beside it, since what it guarantees relates the two. Either follows composition, because the fields of a shape nested in a payload are fields the call carries: a rule about the amount of an order line is a rule about the request that holds the lines. No other invariant may name a schema's attribute at all: a rule kept true on every save is a rule about the model, and a transport shape is not the model.",
-		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one, and it is asked of the context's own values as much as of borrowed ones. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them, and the attributes it may then constrain are those of that operation's own schema and of the shapes that composes; if it is a guarantee about what comes back, mark it a postcondition instead, which reaches the answer and the rejections as well as the request. If it reads a fact from another context, name the operation of this context that fetches it as a guard beside the transition, and constrain the attribute of what that call returns rather than the other context's entity; where the fact arrived on an event instead, constrain the attribute of that event's payload schema, as long as the policy or process subscribed to it is what issues the guard or the front that calls it.",
+			"An aggregate's invariant describes a rule of that boundary: unflagged rules hold on every save, preconditions are checked before a call, and postconditions guarantee its answer. Every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object something in the aggregate holds, its context's own or one borrowed from elsewhere, or is an operation of a service of its own context, application or domain, that guards it. A precondition may also constrain attributes of the schema the operation it guards takes, of what a call that guard, or a front on its local call chain, already made comes back with, and of a policy trigger's event or answer payload or a process start-event payload, when every named guard and independent route holds that fact; a postcondition those of the request, the answer and the refusals, reachable from every named operation; both follow composition into the shapes those compose.",
+		why: "Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and the model does not promise it remains true afterward — enough funds at initiation, an entitlement at playback start, a pet still available at approval. When neither timing flag is set, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. A postcondition instead guarantees what the operation answers or refuses with. The invariant's page says which timing it promises, because the three readings mean different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not, wherever it was declared. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts. A precondition reaches one place further still: what it checks is often in the request rather than in the model — pickup before delivery, a positive weight, on a quotation no aggregate holds yet — so it may name attributes of the schema its guarded operation takes, and of what its guard, or a front on its local call chain, already fetched: approve only if the customer is in good standing reads a standing that came back from another context before this call began, and the shape it came back in is a fact we hold. So is a fact that arrived unasked: ship only when the captured amount covers the order total reads the payload of PaymentCaptured, which a policy heard as its immediate trigger or a process heard as its start event before issuing the call, and refusing it left the model copying the amount into the request so a rule had something local to point at. Each named guard and independently possible caller or reactor route must hold the fact; a sibling route cannot lend it. A process may remember `on` events or answers, but the model does not prove that they arrived before a particular issued command. What it may not name is the future answer of any named guarded operation, or the payload of an event the guard or its caller raises, or a process ends on; none has happened when the check runs. The other context's entities are never ours. A postcondition is the one that may name what that operation answers or refuses with, and the request beside it, since what it guarantees relates the two. Either follows composition, because the fields of a shape nested in a payload are fields the call carries: a rule about the amount of an order line is a rule about the request that holds the lines. No other invariant may name a schema's attribute at all: a rule kept true on every save is a rule about the model, and a transport shape is not the model.",
+		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one, and it is asked of the context's own values as much as of borrowed ones. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them, and the attributes it may then constrain are those of that operation's own schema and of the shapes that composes; if it is a guarantee about what comes back, mark it a postcondition instead, which reaches the answer and the rejections as well as the request. If it reads a fact from another context, name the operation of this context that fetches it as a guard beside the transition, and constrain the attribute of what that call returns rather than the other context's entity; where the fact arrived on an event instead, constrain the attribute of that event's payload schema, as long as the policy or process subscribed to it is what issues the guard or a front on its local call chain.",
 		check: invariantInAggregate,
 	},
 	{
 		rule: "invariant-in-context",
 		severities: ["error"],
 		summary:
-			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, a value object something in the context holds, its own or a borrowed one, or one of its operations. A precondition may also constrain attributes of the schema the operation it guards takes, of what a call that guard, or the front that calls it, already made comes back with, and of the payload of an event the reactor issuing that guard heard; a postcondition those of the request, the answer and the refusals; both follow composition into the shapes those compose.",
-		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not, and the holding is the whole question, asked of the context's own values as much as of borrowed ones. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns or what nobody keeps, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead. A precondition is the one rule that may look at a request: it runs before the call, and what it checks — pickup before delivery, a positive weight — is often in the call rather than in anything saved, so it may name attributes of the schema its guarded operation takes, of what its guard, or the front that calls it, already fetched from elsewhere, and of the payload of an event the reactor issuing that guard heard, which arrived unasked and is a fact this context holds all the same. That is as far as it reaches: this call's own answer does not exist when the check runs, and the other context's entities are never in reach. A postcondition is its mirror and may name what that operation answers or refuses with, and the request it relates them to. Either follows composition into the shapes those compose, because the fields of a nested shape are fields the call carries.",
+			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, a value object something in the context holds, its own or a borrowed one, or one of its operations. A precondition may also constrain attributes of the schema the operation it guards takes, of what a call that guard, or a front on its local call chain, already made comes back with, and of a policy trigger's event or answer payload or a process start-event payload, when every named guard and independent route holds that fact; a postcondition those of the request, the answer and the refusals, reachable from every named operation; both follow composition into the shapes those compose.",
+		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not, and the holding is the whole question, asked of the context's own values as much as of borrowed ones. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns or what nobody keeps, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead. A precondition is the one rule that may look at a request: it runs before the call, and what it checks — pickup before delivery, a positive weight — is often in the call rather than in anything saved, so it may name attributes of the schema its guarded operation takes, of what its guard, or a front on its local call chain, already fetched from elsewhere, and of a policy's immediate event or answer trigger or a process start-event payload, which arrived before that call and is a fact this context holds all the same. The fact must be held on every named guard and independently possible caller or reactor route. A process may remember `on` events or answers, but the model does not prove that they arrived before a particular issued command. That is as far as it reaches: the answer of a named guarded operation, an event that guard or its caller raises, and a process's ending event are future facts; the other context's entities are never in reach. A postcondition is its mirror and may name what that operation answers or refuses with, and the request it relates them to. Either follows composition into the shapes those compose, because the fields of a nested shape are fields the call carries.",
 		fix: "Point the invariant at this context's own model, or at a value object its aggregates hold — give an entity or a value here an attribute typed by it, which is what says the context holds one — or move the rule to the context that owns what it counts. A context with no entity at all cannot be given one just to hold a value object; a quotation service that stores nothing has no aggregate to reach for, so a rule of its own is a precondition or a postcondition on its operation instead, naming the schema's attributes rather than the value object (decision 27, third amendment) — or, where the value really is state this context should keep, add the aggregate that holds it. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them; if it is a guarantee about what that call answers with, mark it a postcondition instead.",
 		check: invariantInContext,
 	},

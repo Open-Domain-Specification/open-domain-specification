@@ -229,6 +229,7 @@ describe("Swagger Petstore Example Workspace", () => {
 		expect(orderApp.consumables.has("place_order")).toBe(true);
 		expect(orderApp.consumables.has("get_order_by_id")).toBe(true);
 		expect(orderApp.consumables.has("delete_order")).toBe(true);
+		expect(orderApp.consumables.has("check_and_approve_order")).toBe(true);
 	});
 
 	it("should have User application service with user operations", () => {
@@ -321,8 +322,9 @@ describe("Swagger Petstore Example Workspace", () => {
 		expect(workspace.validate()).toEqual([]);
 	});
 
-	// The approval rule reads a fact from Catalog, and it names it: the check
-	// that fetches it, and the field of the answer it decides on. Before card
+	// The approval rule reads a fact from Catalog, and it names the front that
+	// fetches it and runs the transition, plus the field of the answer it decides
+	// on. Before card
 	// 116 a precondition reached only its own request, so this was a sentence
 	// in the description pointing at a call nothing connected it to.
 	it("has its approval precondition name what it reads", () => {
@@ -334,9 +336,30 @@ describe("Swagger Petstore Example Workspace", () => {
 		expect(invariant?.targets.map((it) => it.name)).toEqual([
 			"OrderStatus",
 			"ApproveOrder",
-			"CheckPetAvailable",
+			"CheckAndApproveOrder",
 			"status",
 		]);
+	});
+
+	it("puts the approval precondition on one check-and-approve call chain", () => {
+		const orderApp = workspace.getServiceByRefOrThrow(
+			"#/boundedcontexts/sales_bc/services/order_app",
+		);
+		const chainFront = orderApp.consumables.get("check_and_approve_order");
+		expect(chainFront?.name).toBe("CheckAndApproveOrder");
+		expect(
+			orderApp.consumptions
+				.filter((consumption) => consumption.by.includes(chainFront!))
+				.map((consumption) => consumption.consumable.name)
+				.sort(),
+		).toEqual(["ApproveOrder", "GetPetSummary"]);
+
+		const process = workspace
+			.getBoundedContextByRefOrThrow("#/boundedcontexts/sales_bc")
+			.processes.get("order_fulfilment");
+		expect(process?.commands.map((operation) => operation.name)).not.toContain(
+			"ApproveOrder",
+		);
 	});
 
 	// Rendering every diagram through graphviz-wasm takes tens of seconds on

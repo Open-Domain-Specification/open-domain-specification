@@ -89,7 +89,7 @@ Open-host service for /pet endpoints
 ## Consumptions
 | Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- | --- |
-| [OrderApp](../sales_bc/services/order_app/index.md) | CheckPetAvailable | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | CheckAndApproveOrder | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | MarkPetSold | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 | [PetApp](services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |

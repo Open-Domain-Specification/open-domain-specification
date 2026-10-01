@@ -98,7 +98,16 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   context that checks it, says with `precondition` or `postcondition` which side of that call
   the check is made on, and reaches no further than that context. In a modelled aggregate or
   context, an event is never another guard beside the operation; a precondition may instead
-  constrain the reachable attributes of an event payload its issuing reactor already heard.
+  constrain the reachable attributes of an event payload its issuing reactor already heard. For a
+  process, a starting event's payload is held; its `on` events or answers may occur later, so
+  they are not assumed before a command it issues, and a starting operation's later answer is
+  not held either. A policy's immediate `on` event or answer is held. `ends`, and an event the
+  guarded call raises, are future facts. A named operation never lends its own future answer,
+  though a distinct earlier query may return the same shape. A fact is reachable only when every
+  independent named guard and caller or reactor-trigger path holds it; sequential local fronts
+  retain their held facts, but a sibling path does not supply one. Where a postcondition names
+  several operations, it guarantees its target shape at each operation, through composition;
+  their shapes are not combined into a union.
 - An external context is somebody else's machine: it states no aggregates, policies or
   processes, and no rule it keeps at rest. What it publishes it may state — the rules on its
   value objects, and a `precondition` or `postcondition` on one of its own operations, which is

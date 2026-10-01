@@ -29,6 +29,7 @@ Plans and tracks the shipment of an approved order until it is delivered
 | [PetApp](../../../../boundedcontexts/catalog_bc/services/pet_app/index.md) | - | Pet | MarkPetSold | - |
 | [OrderApp](../../../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 | [OrderApp](../../../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](../../../../boundedcontexts/sales_bc/services/order_app/index.md) | - | Order | ApproveOrder | - |
 | [OrderApp](../../../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | Pet | PetStatusChanged | published-language |
 | [ShipmentApp](../../../../boundedcontexts/fulfilment_bc/services/shipment_app/index.md) | conformist | Order | OrderApproved | published-language |
 	

@@ -281,20 +281,29 @@ produce balanced postings, and the postings stay balanced.
 An event is never a guard of a modelled aggregate or context invariant, even
 beside an operation (`invariant-guards-are-operations`). A precondition may
 instead constrain the reachable attributes of an event payload its issuing
-reactor already heard. An external context's own published-event guarantee is
-a separate `postcondition` case below.
+reactor already heard. A process holds a starting event's payload, but its
+`on` events or answers may occur later, so it cannot assume them before a
+command it issues; nor does it hold a starting operation's later answer. A
+policy holds its immediate `on` event or answer. `ends` and an event the
+guarded call raises are future facts, so neither supplies a precondition. An external
+context's own published-event guarantee is a separate `postcondition` case below.
 
 Both may reach the payload the call carries. A precondition may constrain the
 attributes of the schema its guarded operation takes, and those of what a call
-that guard — or the front that calls it in the same context — already made
-comes back with: "approve only if the customer is in good standing" reads a
+that guard — or a front on its local call chain in the same context — already
+made comes back with: "approve only if the customer is in good standing" reads a
 standing another context answered with before this call began, and the shape it
-came back in is a fact this context holds. It may not name this call's own
-answer, which does not exist when the check runs, nor the other context's
+came back in is a fact this context holds. It may not name an answer of a named
+guarded operation: that answer does not exist when the check runs. A distinct
+earlier query may return the same shape. A fact must be held on every
+independent named guard and caller or reactor-trigger path to the guard; sequential local
+fronts retain their held facts, but a sibling path does not supply one. Nor may it name the other context's
 entities, which are never in reach. A postcondition constrains what its
 operation returns or rejects with, and the request it relates them to. Either
 follows composition: a rule about the amount of an order line is a rule about
-the request that holds the lines. No other invariant may name a schema's
+the request that holds the lines. Where a postcondition names several operations,
+it guarantees its target shape at each operation, through composition; their
+shapes are not combined into a union. No other invariant may name a schema's
 attribute at all — a rule kept true on every save is a rule about the model,
 and a transport shape is not the model.
 

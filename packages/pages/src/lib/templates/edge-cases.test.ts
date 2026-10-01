@@ -153,7 +153,10 @@ describe("the tactical templates on the alternate branches", () => {
 			"The operations this rule is checked before.",
 		);
 		expect(container.querySelector("#constrains")).toHaveTextContent(
-			"event payload the issuing reactor heard",
+			"facts every named guard and caller route holds",
+		);
+		expect(container.querySelector("#constrains")).toHaveTextContent(
+			"a process start-event payload, or a policy's immediate event or answer trigger",
 		);
 		expect(container.querySelector("#guards")).toHaveTextContent(
 			"the model makes no later guarantee",

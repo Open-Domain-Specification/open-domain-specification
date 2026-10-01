@@ -65,6 +65,15 @@ describe("the agreement an exchange runs under, in Markdown", () => {
 		expect(section("Ping")).not.toContain("Agreement");
 	});
 
+	it("renders a consumption heading without trailing whitespace when it has no pattern", async () => {
+		const service = page(
+			await toDoc(twoAgreements()),
+			"warehouse_api/index.md",
+		);
+		expect(service).toContain("### Ping\nd");
+		expect(service).not.toContain("### Ping \n");
+	});
+
 	const cells = (row: string) =>
 		row
 			.split("|")
