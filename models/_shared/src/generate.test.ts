@@ -4,7 +4,7 @@ import path from "node:path";
 import { Workspace } from "@open-domain-specification/core";
 import { toDoc } from "@open-domain-specification/doc";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { generate } from "./index";
+import { assertDocSite, generate } from "./index";
 
 /** Every file under `dir`, as sorted paths relative to it with `/` separators. */
 function filesUnder(dir: string): string[] {
@@ -95,4 +95,36 @@ describe("generate", () => {
 		);
 		expect(filesUnder(path.join(root, "docs"))).toEqual(before);
 	});
+});
+
+describe("assertDocSite", () => {
+	it("checks projected pages, links, and sidebar entries for hostile identities", async () => {
+		const workspace = new Workspace("Identity paths", {
+			description: "Portable Markdown path coverage.",
+			id: "identity_paths",
+			version: "0.1.0",
+		});
+		workspace.addDomain("Slash", { description: "", id: "a/b" });
+		workspace.addDomain("Literal escape", {
+			description: "",
+			id: "a~1b",
+		});
+		workspace.addDomain("Percent", { description: "", id: "%2F" });
+		workspace.addDomain("Empty", { description: "", id: "" });
+		workspace.addDomain("Long tilde", {
+			description: "",
+			id: "~".repeat(70),
+		});
+
+		const docs = await assertDocSite(workspace);
+		const domainPages = Object.keys(docs).filter(
+			(file) => file.startsWith("domains/") && file.endsWith("/index.md"),
+		);
+		expect(domainPages).toHaveLength(5);
+
+		// Keep one spelling pinned independently of assertDocSite's use of the
+		// public projection helpers: slash data is pointer-escaped before the
+		// unsafe physical component is encoded as UTF-16 code units.
+		expect(docs["domains/_ods_0061007e00310062/index.md"]).toBeTruthy();
+	}, 60_000);
 });

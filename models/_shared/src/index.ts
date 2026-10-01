@@ -6,7 +6,11 @@ import {
 	type BoundedContext,
 	Workspace,
 } from "@open-domain-specification/core";
-import { toDoc } from "@open-domain-specification/doc";
+import {
+	pathToGlossaryMd,
+	pathToIndexMd,
+	toDoc,
+} from "@open-domain-specification/doc";
 
 const require = createRequire(import.meta.url);
 
@@ -195,20 +199,23 @@ function resolveFrom(from: string, destination: string): string {
 
 /** The `index.md` (and, for the workspace, `glossary.md`) pages toDoc emits. */
 function expectedPages(workspace: Workspace): string[] {
-	const pages = [`${workspace.path}/index.md`, `${workspace.path}/glossary.md`];
+	const pages = [
+		pathToIndexMd(workspace.path),
+		pathToGlossaryMd(workspace.path),
+	];
 	for (const domain of workspace.domains.values()) {
-		pages.push(`${domain.path}/index.md`);
+		pages.push(pathToIndexMd(domain.path));
 		for (const subdomain of domain.subdomains.values()) {
-			pages.push(`${subdomain.path}/index.md`);
+			pages.push(pathToIndexMd(subdomain.path));
 		}
 	}
 	for (const context of workspace.boundedcontexts.values()) {
-		pages.push(`${context.path}/index.md`);
+		pages.push(pathToIndexMd(context.path));
 		for (const aggregate of context.aggregates.values()) {
-			pages.push(`${aggregate.path}/index.md`);
+			pages.push(pathToIndexMd(aggregate.path));
 		}
 		for (const service of context.services.values()) {
-			pages.push(`${service.path}/index.md`);
+			pages.push(pathToIndexMd(service.path));
 		}
 	}
 	return pages;
@@ -227,16 +234,16 @@ function expectedSidebar(workspace: Workspace): SidebarEntry[] {
 	});
 
 	const contextEntry = (context: BoundedContext, depth: number) =>
-		entry(depth, context.name, `${context.path}/index.md`);
+		entry(depth, context.name, pathToIndexMd(context.path));
 
 	const entries: SidebarEntry[] = [
-		entry(0, workspace.name, `${workspace.path}/index.md`),
-		entry(1, "Glossary", `${workspace.path}/glossary.md`),
+		entry(0, workspace.name, pathToIndexMd(workspace.path)),
+		entry(1, "Glossary", pathToGlossaryMd(workspace.path)),
 	];
 	for (const domain of workspace.domains.values()) {
-		entries.push(entry(1, domain.name, `${domain.path}/index.md`));
+		entries.push(entry(1, domain.name, pathToIndexMd(domain.path)));
 		for (const subdomain of domain.subdomains.values()) {
-			entries.push(entry(2, subdomain.name, `${subdomain.path}/index.md`));
+			entries.push(entry(2, subdomain.name, pathToIndexMd(subdomain.path)));
 			for (const context of subdomain.boundedcontexts.values()) {
 				entries.push(contextEntry(context, 3));
 			}
