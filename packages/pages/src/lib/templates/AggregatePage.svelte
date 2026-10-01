@@ -84,14 +84,14 @@ const raisersOf = (event: Consumable) =>
 <Section
 	id="structure"
 	title="Structure"
-	lead="Entities have identity and a lifecycle; the value objects are the context's, listed here as the ones this aggregate holds."
+	lead="Entities have identity and a lifecycle; value objects are declared by contexts, and this lists the ones the aggregate holds, including borrowed ones."
 	count={entities.length + valueobjects.length}
 	problems={[...entities, ...valueobjects].flatMap((e) => problemsUnder(model, e.ref))}
 >
 	<Heading level={3} count={entities.length}>Entities</Heading>
 	{#each entities as e (e.ref)}<StructureSubsection element={e} />{:else}<EmptyState text="No entities. An aggregate needs a root entity." />{/each}
 	<Heading level={3} count={valueobjects.length}>Value objects</Heading>
-	{#each valueobjects as v (v.ref)}<StructureSubsection element={v} />{:else}<EmptyState text="No value objects. Nothing here is typed by one of the context's values." />{/each}
+	{#each valueobjects as v (v.ref)}<StructureSubsection element={v} />{:else}<EmptyState text="No value objects held by this aggregate." />{/each}
 </Section>
 
 <InvariantsSection
@@ -113,16 +113,16 @@ const raisersOf = (event: Consumable) =>
 	<Heading level={3} count={operations.length}>Operations</Heading>
 	{#each operations as c (c.ref)}<ConsumableSubsection consumable={c} />{:else}<EmptyState text="No operations. How does state change?" />{/each}
 	<Heading level={3} count={events.length}>Events</Heading>
-	{#each events as e (e.ref)}<ConsumableSubsection consumable={e} raisedBy={raisersOf(e)} />{:else}<EmptyState text="No events. Nothing outside will ever know what happened here." />{/each}
+	{#each events as e (e.ref)}<ConsumableSubsection consumable={e} raisedBy={raisersOf(e)} />{:else}<EmptyState text="No events provided by this aggregate." />{/each}
 </Section>
 
 <Section
 	id="integration"
 	title="Integration"
-	lead="What this aggregate relies on from elsewhere."
+	lead="Consumable exchanges this aggregate participates in."
 	count={a.consumptions.length}
 >
-	<DiagramFigure caption={consumableCaption} emptyText="Depends on nothing outside itself." graph={consumableGraph(consumableMap)} />
+	<DiagramFigure caption={consumableCaption} emptyText="No consumable flow to draw." graph={consumableGraph(consumableMap)} />
 	<Heading level={3} count={a.consumptions.length}>Consumes</Heading>
 	<ConsumesTable consumptions={a.consumptions} />
 </Section>

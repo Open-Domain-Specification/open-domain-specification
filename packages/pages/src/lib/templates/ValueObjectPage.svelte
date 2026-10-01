@@ -12,7 +12,7 @@ export const sections = [
 <script lang="ts">
 import type { ValueObject } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
-import { type AttributeOwner, usagesOf } from "../elements";
+import { type AttributeOwner, invariantsNaming, usagesOf } from "../elements";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Definition from "../atoms/Definition.svelte";
@@ -34,20 +34,15 @@ const model = useModel();
 const ws = model.workspace;
 // The value's declaring context is its home, even when another context borrows it.
 const bc = $derived(v.boundedcontext);
-// A kind of a value object may live in a context that borrows this one over a
-// shared kernel, so the kinds are looked up across the workspace, not here.
+// A kind may live in any context allowed to borrow this value, so the kinds
+// are looked up across the workspace, not only its declaring context.
 const kinds = $derived(v.kinds);
 const usages = $derived(usagesOf(ws, v));
-// The value's own rules, which hold by construction, and separately the rules
-// of the aggregates that hold one, which name this value as part of a wider
-// statement (decision 27).
+const relations = $derived(v.allRelations);
+// The value's own rules hold by construction. Aggregate and context rules
+// that name it are kept at those boundaries instead (decision 27).
 const invariants = $derived([...v.invariants.values()]);
-const constrainedBy = $derived(
-	[...ws.boundedcontexts.values()]
-		.flatMap((context) => [...context.aggregates.values()])
-		.flatMap((a) => [...a.invariants.values()])
-		.filter((i) => i.targets.includes(v)),
-);
+const constrainedBy = $derived(invariantsNaming(ws, v));
 const ownerOf = (u: { owner: unknown }) => u.owner as AttributeOwner;
 
 const usageColumns: Column[] = [
@@ -90,14 +85,14 @@ const relationColumns: Column[] = [
 <Section
 	id="usage"
 	title={sections.find((s) => s.id === "usage")!.label}
-	lead="Attributes across the workspace that name this exact value object as their type. Kinds, relations and holders reached through a parent or kind appear in Used by on its context page."
+	lead="Declared attributes across the workspace that name this exact value object as their type. Inherited uses, kinds, relations and holders reached through a parent or kind appear in Used by on its context page."
 	count={usages.length}
 	problems={problemsUnder(model, v.ref)}
 >
 	<DataTable
 		columns={usageColumns}
 		rows={usages}
-		empty="No attribute names this value object directly as its type."
+		empty="No declared attribute names this value object directly as its type."
 		rowId={(u) => u.ref}
 	>
 		{#snippet cell(u, col)}
@@ -118,13 +113,14 @@ const relationColumns: Column[] = [
 <Section
 	id="relations"
 	title="Relations"
-	lead="Value objects may hold other value objects of their context or one they may borrow from; they should not point at entities in other aggregates."
-	count={v.relations.length}
+	lead="Value objects may relate to other values of their context or one they may borrow from. An entity is not a valid relation target."
+	count={relations.length}
 >
-	<DataTable columns={relationColumns} rows={v.relations} empty="No relations.">
+	<DataTable columns={relationColumns} rows={relations} empty="No relations.">
 		{#snippet cell(r, col)}
 			{#if col.key === "relation"}
 				<Keyword text={r.relation} />
+				{#if r.source !== v} <Keyword text={`from ${r.source.name}`} />{/if}
 			{:else if col.key === "target"}
 				<Lockup kind={kindOf(r.target)} name={r.target.name} ref={r.target.ref} />
 			{:else if r.cardinality}
@@ -147,8 +143,8 @@ const relationColumns: Column[] = [
 	title="Constrained by"
 	invariants={constrainedBy}
 	ownerRelativeTo={bc}
-	lead="Rules of the aggregates that hold this value, which name it as part of a wider statement."
-	emptyText="No aggregate's rule names this value object."
+	lead="Rules of aggregates and contexts that hold this value and explicitly name it. The Kept by column shows whose rule each one is."
+	emptyText="No aggregate or context rule names this value object."
 />
 
 <LanguageSection target={v} />

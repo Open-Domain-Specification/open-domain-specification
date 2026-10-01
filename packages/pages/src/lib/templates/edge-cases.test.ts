@@ -257,11 +257,9 @@ describe("the tactical templates on the alternate branches", () => {
 	it("AggregatePage: an aggregate with nothing in it says what would fill each section", () => {
 		const text = textOf(aggregateRef("main_context", "empty_aggregate").$ref);
 		expect(text).toContain("No entities. An aggregate needs a root entity.");
-		expect(text).toContain("No value objects.");
+		expect(text).toContain("No value objects held by this aggregate.");
 		expect(text).toContain("No operations. How does state change?");
-		expect(text).toContain(
-			"No events. Nothing outside will ever know what happened here.",
-		);
+		expect(text).toContain("No events provided by this aggregate.");
 		expect(text).toContain(
 			"No invariants stated. If nothing can go wrong, is this really an aggregate?",
 		);
@@ -291,11 +289,13 @@ describe("the tactical templates on the alternate branches", () => {
 			valueObjectRef("main_context", "unused_value_object").$ref,
 		);
 		expect(text).toContain(
-			"No attribute names this value object directly as its type.",
+			"No declared attribute names this value object directly as its type.",
 		);
 		expect(text).toContain("No relations.");
 		expect(text).toContain("This value keeps no rule of its own.");
-		expect(text).toContain("No aggregate's rule names this value object.");
+		expect(text).toContain(
+			"No aggregate or context rule names this value object.",
+		);
 	});
 
 	it("ValueObjectPage: a relation carries its cardinality as a code keyword", () => {
@@ -325,7 +325,7 @@ describe("the tactical templates on the alternate branches", () => {
 	it("ServicePage: a service that provides nothing and consumes nothing says so", () => {
 		const text = textOf(serviceRef("second_context", "odd_service").$ref);
 		expect(text).toContain("Provides nothing.");
-		expect(text).toContain("Depends on nothing outside itself.");
+		expect(text).toContain("Consumes no consumables.");
 	});
 
 	it("ConsumablePage: a schema with no attributes, and an operation no policy issues", () => {
@@ -338,9 +338,7 @@ describe("the tactical templates on the alternate branches", () => {
 			).$ref,
 		);
 		expect(text).toContain("The schema has no attributes.");
-		expect(text).toContain(
-			"No policy issues this operation; it comes from users or application services.",
-		);
+		expect(text).toContain("No policy issues this operation.");
 		expect(text).toContain(
 			"Raises nothing. Its effect is invisible to the rest of the system.",
 		);
@@ -431,7 +429,7 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(own.textContent).toContain("whole value");
 		const named = container.querySelector("#constrained-by") as HTMLElement;
 		expect(named.textContent).toContain(
-			"No aggregate's rule names this value object.",
+			"No aggregate or context rule names this value object.",
 		);
 	});
 

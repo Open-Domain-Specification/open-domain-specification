@@ -20,15 +20,16 @@ Issue #115. On the sixth signoff head `a11bede2`, OpenAI Astra low reproduced a 
 - [x] A zero-diagnostic two-context shared-kernel fixture asserts the rule, owner context, aggregate and links before and after JSON round-trip
 - [x] Value-object detail copy states the direct scope of its attribute table and the borrowing scope of relations
 - [x] Decision 18 appends a correction to its `mayBorrowFrom` file pointer; core's broad value-object list now excludes a recursive value's self-reference, like the schema list
-- [ ] The five pinned diagnostic lists and generated outputs remain unchanged
+- [x] The five pinned diagnostic lists and generated outputs remain unchanged on the `c1fc4bbd` full gate; seventh-round reviewers confirmed this fix holds
 
 ## Gates
 
 - [x] Focused: value-object page test, core self-reference test, Svelte check
-- [ ] `bash scripts/verify-all.sh` on the corrected integrated head
+- [x] `bash scripts/verify-all.sh` passed on `c1fc4bbd`: core 1061, pages 1008, browser 430 passed/20 skipped, all model suites, schema and ESM checks
 - [ ] Exact-head independent signoff after the gate, with OpenAI Astra low and Claude Opus 5.5 high if available
 
 ## Journal
 
 - **lead** (2026-10-01): Issue #115 records the reader story. The page's local-only lookup was narrower than decision 27 and the validator: an aggregate may constrain a borrowed value it holds. I moved its search over all contexts' aggregates and added an optional Kept by column to the existing invariant table, showing `Cards / Card` for a foreign rule. The new test checks the runnable counterexample both as authored and after a JSON round-trip. No schema or validator rule changed. Focused tests and Svelte check pass; the full gate and final reviews remain.
 - **lead** (2026-10-01): Clean-code pass on the outgoing diff: one lookup remains in the page that alone needs it; the reusable invariant table only gains an optional owner column; no duplicate rule calculation, unchecked lookup or dead path was found. The recursive self-user guard is one early return. Format and diff-whitespace checks pass. The browser and full repository gate remain the required integration checks.
+- **lead** (2026-10-01): The `c1fc4bbd` full gate passed. Astra and Opus both verified the borrowed Money / PositiveBalance correction on that head. They found separate defects in the context and entity pages, tracked as issues #116 and #117; this card remains in `doing` until the integrated model head lands.

@@ -2,7 +2,10 @@ import type {
 	Aggregate,
 	Attribute,
 	Consumable,
+	Entity,
+	EntityRelation,
 	GlossaryTerm,
+	Invariant,
 	Policy,
 	Process,
 	ValueObject,
@@ -51,6 +54,49 @@ export function* consumablesOf(ws: Workspace): Iterable<Consumable> {
 		for (const m of [...bc.aggregates.values(), ...bc.services.values()])
 			yield* m.consumables.values();
 	}
+}
+
+/** Direct incoming relations, including those a kind inherits from a parent. */
+export type NamedRelation = {
+	source: Entity | ValueObject;
+	relation: EntityRelation;
+};
+
+export function relationsNaming(
+	ws: Workspace,
+	target: Entity | ValueObject,
+): NamedRelation[] {
+	const incoming: NamedRelation[] = [];
+	for (const bc of ws.boundedcontexts.values()) {
+		for (const aggregate of bc.aggregates.values()) {
+			for (const source of aggregate.entities.values()) {
+				for (const relation of source.allRelations)
+					if (relation.target === target) incoming.push({ source, relation });
+			}
+		}
+		for (const source of bc.valueobjects.values()) {
+			for (const relation of source.allRelations)
+				if (relation.target === target) incoming.push({ source, relation });
+		}
+	}
+	return incoming;
+}
+
+/** Aggregate and context rules that explicitly name an element, in workspace order. */
+export function invariantsNaming(
+	ws: Workspace,
+	target: Entity | ValueObject,
+): Invariant[] {
+	const named: Invariant[] = [];
+	for (const bc of ws.boundedcontexts.values()) {
+		for (const invariant of bc.invariants.values())
+			if (invariant.targets.includes(target)) named.push(invariant);
+		for (const aggregate of bc.aggregates.values()) {
+			for (const invariant of aggregate.invariants.values())
+				if (invariant.targets.includes(target)) named.push(invariant);
+		}
+	}
+	return named;
 }
 
 export function* termsOf(ws: Workspace): Iterable<GlossaryTerm> {

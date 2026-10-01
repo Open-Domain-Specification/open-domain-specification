@@ -67,7 +67,7 @@ const columns = $derived<Column[]>([
 			{#if col.key === "name"}
 				<Lockup kind="invariant" name={i.name} ref={i.ref} />
 			{:else if col.key === "owner"}
-				{#if i.boundedcontext !== ownerRelativeTo}
+				{#if i.boundedcontext !== ownerRelativeTo && i.owner !== i.boundedcontext}
 					<Lockup kind="boundedcontext" name={i.boundedcontext.name} ref={i.boundedcontext.ref} />{" / "}
 				{/if}
 				<Lockup kind={kindOf(i.owner)} name={i.owner.name} ref={i.owner.ref} />

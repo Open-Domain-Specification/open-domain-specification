@@ -112,6 +112,60 @@ describe("ContextPage", () => {
 		expect(feeRow).not.toHaveTextContent("Kernel / Account");
 	});
 
+	it("does not deny borrowed values and payloads when it declares neither locally", () => {
+		const workspace = new Workspace("Borrowing", {
+			description: "",
+			version: "test",
+		});
+		const subdomain = workspace
+			.addDomain("Bank", { description: "" })
+			.addSubdomain("Banking", { description: "", type: "core" });
+		const ledger = subdomain.addBoundedcontext("Ledger", {
+			description: "",
+		});
+		const cards = subdomain.addBoundedcontext("Cards", {
+			description: "",
+		});
+		ledger.sharesKernelWith(cards);
+		const money = ledger.addValueObject("Money", { description: "" });
+		money.addAttribute("amount", { type: "int" });
+		const request = ledger.addSchema("CardRequest");
+		request.addAttribute("amount", { type: "Money", valueobject: money });
+		const card = cards.addAggregate("Card", { description: "" });
+		const root = card.addRootEntity("Card", { description: "" });
+		root.addAttribute("id", { type: "string", identity: true });
+		root.addAttribute("balance", { type: "Money", valueobject: money });
+		card.provides("Adjust", {
+			type: "operation",
+			description: "",
+			internal: true,
+			schema: request,
+		});
+
+		for (const ws of [workspace, Workspace.fromSchema(workspace.toSchema())]) {
+			expect(ws.validate()).toEqual([]);
+			const context = ws.getBoundedContextByRefOrThrow(cards.ref);
+			const model = {
+				workspace: ws,
+				fileLabel: "borrowing.json",
+				diagnostics: [],
+			};
+			const { container } = page(model, context);
+			expect(container.querySelector("#values")).toHaveTextContent(
+				"No value objects declared in this context.",
+			);
+			expect(container.querySelector("#schemas")).toHaveTextContent(
+				"No schemas declared in this context.",
+			);
+			expect(container).not.toHaveTextContent(
+				"Every attribute here is a bare type.",
+			);
+			expect(container).not.toHaveTextContent(
+				"Consumables carry no declared payload.",
+			);
+		}
+	});
+
 	it("lists a value-object kind that inherits an identity naming an external schema", () => {
 		const workspace = new Workspace("Identity", {
 			description: "",
@@ -255,9 +309,7 @@ describe("ContextPage", () => {
 		expect(services.querySelector(".count")).toBeNull();
 		expect(screen.getByText("No services.")).toBeInTheDocument();
 		expect(screen.getByText("Provides nothing.")).toBeInTheDocument();
-		expect(
-			screen.getByText("Depends on nothing outside itself."),
-		).toBeInTheDocument();
+		expect(screen.getByText("Consumes no consumables.")).toBeInTheDocument();
 		expect(screen.getByText("No policies.")).toBeInTheDocument();
 		expect(
 			screen.getByText(
@@ -265,7 +317,7 @@ describe("ContextPage", () => {
 			),
 		).toBeInTheDocument();
 		expect(
-			screen.getByText("No schemas. Consumables carry no declared payload."),
+			screen.getByText("No schemas declared in this context."),
 		).toBeInTheDocument();
 		expect(
 			screen.getByText(

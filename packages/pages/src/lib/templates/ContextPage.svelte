@@ -302,7 +302,7 @@ const termColumns: Column[] = [
 		columns={valueObjectColumns}
 		rows={valueobjects}
 		rowId={(v) => v.ref}
-		empty="No value objects. Every attribute here is a bare type."
+		empty="No value objects declared in this context."
 	>
 		{#snippet cell(v, col)}
 			{#if col.key === "name"}
@@ -411,7 +411,7 @@ const termColumns: Column[] = [
 		<p class="description">{s.description}</p>
 		<AttributeTable attributes={s.attributes.values()} empty="The schema has no attributes." />
 	{:else}
-		<EmptyState text="No schemas. Consumables carry no declared payload." />
+		<EmptyState text="No schemas declared in this context." />
 	{/each}
 </Section>
 

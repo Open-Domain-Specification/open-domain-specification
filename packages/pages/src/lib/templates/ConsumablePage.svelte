@@ -258,7 +258,7 @@ const processColumns: Column[] = [
 		rows={policies}
 		empty={isEvent
 			? "No policy reacts to this event."
-			: "No policy issues this operation; it comes from users or application services."}
+			: "No policy issues this operation."}
 		rowId={(p) => p.ref}
 	>
 		{#snippet cell(p, col)}

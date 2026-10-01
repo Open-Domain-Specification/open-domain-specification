@@ -2080,7 +2080,8 @@ export class ValueObject
 	 * The value object this one is a kind of, when it is one: a nominal ledger
 	 * account is a ledger account and has everything one has, plus its own
 	 * (decision 22). The parent belongs to this context, or to a context this
-	 * one shares a kernel with.
+	 * one may borrow from through a shared kernel, conformist role, or
+	 * customer-supplier relationship.
 	 */
 	specialises?: ValueObject;
 

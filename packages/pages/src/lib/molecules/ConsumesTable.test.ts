@@ -62,9 +62,7 @@ describe("ConsumesTable", () => {
 
 	it("says what would fill it when the context depends on nothing", () => {
 		render(ConsumesTable, { consumptions: [] });
-		expect(screen.getByText("Depends on nothing outside itself.")).toHaveClass(
-			"empty",
-		);
+		expect(screen.getByText("Consumes no consumables.")).toHaveClass("empty");
 	});
 });
 

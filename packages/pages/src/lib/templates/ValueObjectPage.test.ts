@@ -48,7 +48,7 @@ describe("ValueObjectPage", () => {
 			expect(section.querySelectorAll("tbody tr")).toHaveLength(1);
 			expect(section).toHaveTextContent("PositiveBalance");
 			expect(section).not.toHaveTextContent(
-				"No aggregate's rule names this value object.",
+				"No aggregate or context rule names this value object.",
 			);
 			expect(
 				[...section.querySelectorAll("thead th")].map((h) => h.textContent),
@@ -60,5 +60,85 @@ describe("ValueObjectPage", () => {
 			expect(row.querySelectorAll("a")[1]).toHaveAttribute("href", cards.ref);
 			expect(row.querySelectorAll("a")[2]).toHaveAttribute("href", card.ref);
 		}
+	});
+
+	it("names a context rule that constrains a borrowed value", () => {
+		const workspace = new Workspace("Review", {
+			description: "",
+			version: "test",
+		});
+		const subdomain = workspace
+			.addDomain("Bank", { description: "" })
+			.addSubdomain("Banking", { description: "", type: "core" });
+		const ledger = subdomain.addBoundedcontext("Ledger", {
+			description: "",
+		});
+		const cards = subdomain.addBoundedcontext("Cards", {
+			description: "",
+		});
+		ledger.sharesKernelWith(cards);
+		const money = ledger.addValueObject("Money", { description: "" });
+		money.addAttribute("amount", { type: "int" });
+		const card = cards.addAggregate("Card", { description: "" });
+		const root = card.addRootEntity("Card", { description: "" });
+		root.addAttribute("id", { type: "string", identity: true });
+		root.addAttribute("balance", { type: "Money", valueobject: money });
+		const adjust = card.provides("Adjust", {
+			type: "operation",
+			description: "",
+			internal: true,
+		});
+		cards
+			.addInvariant("OneBalance", {
+				description: "A context-wide balance rule.",
+			})
+			.constrains(money, adjust);
+
+		for (const ws of [workspace, Workspace.fromSchema(workspace.toSchema())]) {
+			expect(ws.validate()).toEqual([]);
+			const model = {
+				workspace: ws,
+				fileLabel: "review.json",
+				diagnostics: [],
+			};
+			const { container } = render(Harness, {
+				model,
+				component: ValueObjectPage,
+				args: { valueobject: ws.getValueObjectByRefOrThrow(money.ref) },
+			});
+			const section = container.querySelector("#constrained-by") as HTMLElement;
+			const row = section.querySelector("tbody tr") as HTMLElement;
+			expect(row).toHaveTextContent("OneBalance");
+			expect(row.querySelectorAll("td")[1]).toHaveTextContent("Cards");
+		}
+	});
+
+	it("shows a kind's inherited relation with its declaring parent", () => {
+		const workspace = new Workspace("Kinds", {
+			description: "",
+			version: "test",
+		});
+		const context = workspace.addBoundedContext("Accounts", {
+			description: "",
+		});
+		const currency = context.addValueObject("Currency", { description: "" });
+		const money = context.addValueObject("Money", { description: "" });
+		money.addAttribute("currency", { type: "Currency", valueobject: currency });
+		money.addRelation(currency, { relation: "uses" });
+		const fee = context.addValueObject("Fee", {
+			description: "",
+			specialises: money,
+		});
+		const model = { workspace, fileLabel: "kinds.json", diagnostics: [] };
+		const { container } = render(Harness, {
+			model,
+			component: ValueObjectPage,
+			args: { valueobject: fee },
+		});
+		const relation = container.querySelector(
+			"#relations tbody tr",
+		) as HTMLElement;
+		expect(relation).toHaveTextContent("Currency");
+		expect(relation).toHaveTextContent("from Money");
 	});
 });

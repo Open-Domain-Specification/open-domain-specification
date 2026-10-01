@@ -81,7 +81,9 @@ describe("every template, through the shipped route", () => {
 		).toEqual(["Relation", "Target", "Cardinality", "Label"]);
 		// Nothing in the Pet aggregate points back at Pet, so the incoming table
 		// says what would fill it instead of drawing an empty header row.
-		expect(relations?.textContent).toContain("Nothing points at this entity.");
+		expect(relations?.textContent).toContain(
+			"No relation names this entity directly.",
+		);
 		const identity = [...container.querySelectorAll("dt")].find(
 			(t) => t.textContent === "Identity",
 		);
