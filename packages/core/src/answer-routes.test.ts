@@ -3,6 +3,7 @@ import { flowEdgeLabel, ODSFlowMap } from "./flow-map";
 import { answersInvocation } from "./invocation-walk";
 import { ReactionChain, type Reactor, routesTo } from "./reaction-walk";
 import {
+	Answer,
 	type BoundedContext,
 	type Consumable,
 	type Policy,
@@ -784,5 +785,268 @@ describe("reaction-cycle follows each call's own invocation", () => {
 		expect(cycles(built.ws)).toEqual([
 			[loop("Retry", "Direct", "Retry"), "retry"],
 		]);
+	});
+});
+
+/**
+ * A starting operation's own answer is not the process's, by any route
+ * (decision 21; issue #108, twenty-first review).
+ *
+ * The process is what its start created, not what called it, so the answer
+ * of the starting operation goes to whoever invoked it unless the process
+ * also issues that operation itself. The calls the start makes are the
+ * instance's own, and their answers still come home. The restriction holds
+ * before routes are combined: an explicit self-consumption, an inferred one,
+ * a ring of fronts back to the start, or the process named as caller cannot
+ * hand the start's own answer to the process, while an operation it really
+ * issues can.
+ */
+describe("a starting operation's own answer stays its caller's", () => {
+	type Expected = {
+		routes: Record<string, string[]>;
+		edges: string[];
+		diagnostics: Array<string[]>;
+	};
+
+	/** What the walk, the map and the validator say the reactor hears. */
+	function heard(ws: Workspace, reactor: Policy | Process, of: string[]) {
+		const own = ws.getByRef(reactor.ref) as Policy | Process;
+		const chain = new ReactionChain(ws.boundedcontexts.values());
+		const operation = (name: string) =>
+			chain.steps.find((it) => it.name === name) as Consumable;
+		return {
+			routes: Object.fromEntries(
+				of.map((name) => [name, names(routesTo(own, operation(name)))]),
+			),
+			steps: Object.fromEntries(
+				of.map((name) => [
+					name,
+					chain.steps
+						.flatMap((node) =>
+							chain
+								.stepsFrom(node)
+								.filter(
+									(step) =>
+										step.to === own &&
+										step.answer?.operation === operation(name),
+								)
+								.map(() => node.name),
+						)
+						.sort(),
+				]),
+			),
+			edges: Array.from(ODSFlowMap.fromWorkspace(ws).edges.values())
+				.filter((edge) => edge.target.id === own.ref && edge.answer)
+				.map((edge) => `${edge.source.name} [${flowEdgeLabel(edge)}]`)
+				.sort(),
+			diagnostics: diagnostics(ws),
+		};
+	}
+
+	function expectHeard(
+		ws: Workspace,
+		reactor: Policy | Process,
+		expected: Expected,
+	) {
+		const of = Object.keys(expected.routes);
+		for (const model of [ws, roundTripped(ws)]) {
+			const found = heard(model, reactor, of);
+			expect(found.routes).toEqual(expected.routes);
+			// The walk draws an `on` answer step from exactly the routes.
+			for (const name of of)
+				if (
+					reactor.events.some(
+						(it) => it instanceof Answer && it.operation.name === name,
+					)
+				)
+					expect(found.steps[name]).toEqual([...expected.routes[name]!].sort());
+			expect(found.edges).toEqual(expected.edges);
+			expect(found.diagnostics).toEqual(expected.diagnostics);
+		}
+	}
+
+	/** Run starts on Begin, issues `issues` and ends when Finish completes. */
+	function run(
+		built: ReturnType<typeof orders>,
+		waitsOn: string[],
+		issues: string[] = [],
+	) {
+		const { bc, op } = built;
+		return bc
+			.addProcess("Run", { description: "" })
+			.starts(op("Begin"))
+			.on(...waitsOn.map((name) => op(name).completed()))
+			.issues(op("Finish"), ...issues.map(op))
+			.ends(op("Finish").completed());
+	}
+
+	for (const writes of ["all", "none"] as const) {
+		const said = writes === "all" ? "written" : "inferred";
+
+		// The reviewer's model: Begin's service provides only Begin and calls it.
+		it(`refuses the start's own answer through self-consumption, by ${said}`, () => {
+			const built = orders(["Begin -> Begin"], writes);
+			const process = run(built, ["Begin"]);
+			expectHeard(built.ws, process, {
+				routes: { Begin: [] },
+				edges: ["Finish [completes (ends)]"],
+				diagnostics: [
+					["consumable-kind", "run"],
+					["reaction-cycle", "begin"],
+				],
+			});
+		});
+
+		it(`refuses the start's own returned and refused answers alike, by ${said}`, () => {
+			const built = orders(["Query -> Query"], writes);
+			const { bc, op, query, refused } = built;
+			const process = bc
+				.addProcess("Run", { description: "" })
+				.starts(query)
+				.on(query.returned(), query.rejected(refused))
+				.issues(op("Finish"))
+				.ends(op("Finish").completed());
+			expectHeard(built.ws, process, {
+				routes: { Query: [] },
+				edges: ["Finish [completes (ends)]"],
+				diagnostics: [
+					["consumable-kind", "run"],
+					["consumable-kind", "run"],
+					["reaction-cycle", "query"],
+				],
+			});
+		});
+
+		// Begin calls Loop, which calls Begin back: Loop's answer is a call the
+		// start made, Begin's is still its caller's.
+		it(`hears a front the start calls but not the start through it, by ${said}`, () => {
+			const built = orders(["Begin -> Loop", "Loop -> Begin"], writes);
+			const process = run(built, ["Begin", "Loop"]);
+			expectHeard(built.ws, process, {
+				routes: { Begin: [], Loop: ["Begin"] },
+				edges: ["Begin [completes]", "Finish [completes (ends)]"],
+				diagnostics: [
+					["consumable-kind", "run"],
+					["reaction-cycle", "begin"],
+				],
+			});
+		});
+
+		// Issuing Loop makes Loop's call to Begin the process's own call.
+		it(`hears Begin's answer to a call its own command makes, by ${said}`, () => {
+			const built = orders(["Begin -> Loop", "Loop -> Begin"], writes);
+			const process = run(built, ["Begin", "Loop"], ["Loop"]);
+			expectHeard(built.ws, process, {
+				routes: { Begin: ["Loop"], Loop: ["Begin", "Loop"] },
+				edges: [
+					"Begin [completes]",
+					"Finish [completes (ends)]",
+					"Loop [completes]",
+				],
+				diagnostics: [
+					["reaction-cycle", "begin"],
+					["reaction-cycle", "run"],
+				],
+			});
+		});
+
+		// A second consumption names an operation the process issues.
+		it(`hears the start's answer through an issued caller beside the self-call, by ${said}`, () => {
+			const built = orders(["Begin -> Begin", "Other -> Begin"], writes);
+			const process = run(built, ["Begin"], ["Other"]);
+			expectHeard(built.ws, process, {
+				routes: { Begin: ["Other"] },
+				edges: ["Finish [completes (ends)]", "Other [completes]"],
+				diagnostics: [
+					["reaction-cycle", "begin"],
+					["reaction-cycle", "run"],
+				],
+			});
+		});
+
+		// Starting on and issuing Begin: the issued call's answer is its own.
+		it(`hears its start's answer where it also issues the start, by ${said}`, () => {
+			const built = orders(["Begin -> Begin"], writes);
+			const process = run(built, ["Begin"], ["Begin"]);
+			expectHeard(built.ws, process, {
+				routes: { Begin: ["Begin"] },
+				edges: ["Begin [completes]", "Finish [completes (ends)]"],
+				diagnostics: [
+					["reaction-cycle", "begin"],
+					["reaction-cycle", "run"],
+				],
+			});
+		});
+
+		// Another process issues Begin; Run is what Begin created.
+		it(`leaves the answer with the reactor that issued the start, by ${said}`, () => {
+			const built = orders(["Begin -> Begin"], writes);
+			const process = run(built, ["Begin"]);
+			const starter = built.bc
+				.addProcess("Starter", { description: "" })
+				.starts(built.op("Starter Start"))
+				.issues(built.op("Begin"))
+				.ends(built.op("Begin").completed());
+			expectHeard(built.ws, process, {
+				routes: { Begin: [] },
+				edges: ["Finish [completes (ends)]"],
+				diagnostics: [
+					["consumable-kind", "run"],
+					["reaction-cycle", "begin"],
+				],
+			});
+			expectHeard(built.ws, starter, {
+				routes: { Begin: ["Begin"] },
+				edges: ["Begin [completes (ends)]"],
+				diagnostics: [
+					["consumable-kind", "run"],
+					["reaction-cycle", "begin"],
+				],
+			});
+		});
+	}
+
+	// A policy has no start: issuing the operation that calls itself is its
+	// own call, and its retry is the ring the rule reports.
+	it("hears a policy's own self-calling operation", () => {
+		const built = orders(["Begin -> Begin"]);
+		const opened = built.op("Open").provider.provides("Opened", {
+			description: "",
+			type: "event",
+			internal: true,
+		});
+		built.op("Open").raises(opened);
+		const policy = built.bc
+			.addPolicy("Retry", { description: "" })
+			.on(opened, built.op("Begin").completed())
+			.issues(built.op("Begin"));
+		expectHeard(built.ws, policy, {
+			routes: { Begin: ["Begin"] },
+			edges: ["Begin [completes]"],
+			diagnostics: [
+				["reaction-cycle", "begin"],
+				["reaction-cycle", "retry"],
+			],
+		});
+	});
+
+	// Naming the process as Begin's caller is a mistake the validator reports,
+	// and it does not make the start's own answer the process's either.
+	it("refuses the start's own answer where the process is named as its caller", () => {
+		const built = orders([]);
+		const process = run(built, ["Begin"]);
+		built.op("Begin").provider.consumes(built.op("Begin"), { by: [process] });
+		expectHeard(built.ws, process, {
+			routes: { Begin: [] },
+			edges: ["Finish [completes (ends)]"],
+			// No ring: `by` names the process, so Begin does not call itself.
+			diagnostics: [
+				[
+					"consumption-by-operation",
+					"boundedcontexts~orders~services~begin_handler~provides~begin",
+				],
+				["consumable-kind", "run"],
+			],
+		});
 	});
 });

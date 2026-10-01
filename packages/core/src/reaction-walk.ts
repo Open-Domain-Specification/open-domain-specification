@@ -418,6 +418,14 @@ function firstSteps(reactor: Policy | Process): Consumable[] {
  * #108). Every root is still the reactor's own and conditional on its own
  * invocation: a front two reactors issue is a root of each, and a reactor
  * never gains a root it does not issue or start on.
+ *
+ * Which roots may carry an answer is decided for each root before routes are
+ * combined. A starting operation the process does not issue keeps its own
+ * answer for whoever invoked it, under every kind of route: until the
+ * twenty-first review a written `by` on the start's self-consumption let it
+ * through while the inferred `by` and the invocation walk refused it (issue
+ * #108). Its calls out are still the instance's, and an operation the process
+ * issues that calls the start makes a call of its own.
  */
 export function routesTo(
 	reactor: Policy | Process,
@@ -428,13 +436,20 @@ export function routesTo(
 			callersFor(reactor, call),
 		),
 	);
-	const routes: Reactor[] = firstSteps(reactor).filter(
-		(issued) =>
-			(issued === operation && reactor.commands.includes(issued)) ||
-			named.has(issued) ||
-			callChainReaches(issued, operation, reactor.boundedcontext),
+	// The process is what its start created, not what called it: a starting
+	// operation it does not issue keeps its own answer for whoever invoked
+	// it, however a consumption names it, and that is asked of every root
+	// before any route counts. Its calls out are still the instance's own.
+	const ownStart =
+		!reactor.commands.includes(operation) &&
+		firstSteps(reactor).includes(operation);
+	const routes: Reactor[] = firstSteps(reactor).filter((root) =>
+		root === operation
+			? !ownStart
+			: named.has(root) ||
+				callChainReaches(root, operation, reactor.boundedcontext),
 	);
-	return named.has(reactor) ? [...routes, reactor] : routes;
+	return named.has(reactor) && !ownStart ? [...routes, reactor] : routes;
 }
 
 /**

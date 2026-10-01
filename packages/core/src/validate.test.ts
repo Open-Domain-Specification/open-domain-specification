@@ -3114,6 +3114,50 @@ describe("a named query's completed answer at another named guard", () => {
 			expect(refused(ws, scope)).toEqual([[rule.ref], [rule.ref]]);
 		},
 	);
+
+	// A front that calls itself fetches nothing but its own answer, which is
+	// still to come when it calls Approve; written or inferred, that self-call
+	// lends Approve no fact (issue #108, twenty-first review).
+	it.each(
+		scopes.flatMap((scope) =>
+			[true, false].map((explicit) => [scope, explicit] as const),
+		),
+	)(
+		"%s refuses the answer a self-calling front fetches from itself, explicit=%s",
+		(scope, explicit) => {
+			const ws = emptyWorkspace();
+			const bc = ws.addBoundedContext("Sales", { description: "" });
+			const aggregate = bc.addAggregate("Order", { description: "" });
+			aggregate
+				.addRootEntity("Order", { description: "" })
+				.addAttribute("id", { type: "uuid", identity: true });
+			const shape = bc.addSchema("Standing");
+			const status = shape.addAttribute("status", { type: "string" });
+			const approve = aggregate.provides("Approve", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			const front = bc.addService("Front", {
+				description: "",
+				type: "application",
+			});
+			const approveFront = front.provides("ApproveFront", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: shape,
+			});
+			const by = explicit ? { by: [approveFront] } : {};
+			front.consumes(approveFront, by);
+			front.consumes(approve, by);
+			const owner = scope === "aggregate" ? aggregate : bc;
+			const rule = owner
+				.addInvariant("Good standing", { description: "", precondition: true })
+				.constrains(approve, status);
+			expect(refused(ws, scope)).toEqual([[rule.ref], [rule.ref]]);
+		},
+	);
 });
 
 describe("precondition facts across a local call chain", () => {

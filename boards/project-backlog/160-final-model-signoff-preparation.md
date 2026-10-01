@@ -4,10 +4,10 @@ labels: [docs, model]
 priority: high
 agent: lead
 live: false
-status: Integrated local corrections accepted; clean-head full landing gate and same-head final signoff pending
+status: Per-root starting-answer correction accepted locally; final clean-head gate and same-head signoff pending
 progress: 90
 clean-code-swept: true
-updatedAt: 2026-10-01T18:40:59Z
+updatedAt: 2026-10-01T19:05:32Z
 ---
 # Final model sign-off: the record says only what holds
 
@@ -505,3 +505,41 @@ The unmodified full gate passed on clean `687b18e94a78cf0d0757735a9525f323ae7259
 ## Lead integration checkpoint (2026-10-01T18:40:59Z)
 
 The integrated route union, caller-feasible cycle witnesses, regional feedback completion, stack-safe traversal and concise warning volume are accepted locally. All eight clean-code principles are reconciled; the PANIC auditor rechecked the 10,000-segment SCC and 20,000-node cycle without abort. Source inspection and mutations confirm caller ownership and hidden-feedback completion are independently necessary. Focused core1491, graphviz36, doc53, skill154, pages1024 at100% and all model/shared/docs suites pass; pins0/2/4/3/0 and generated schema unchanged. Card moves to review, not done. Freeze a clean candidate, run the unmodified full gate and request exact-head Astra low then Claude Opus5.5high only after it passes. No final approval, push, CI, merge or issue closure is claimed. The lead updated ROADMAP with bounded later batches and prepared an external25issue acceptance ledger for post-merge reconciliation.
+
+## Twenty-first completed round (head `12b6202a`)
+
+The unmodified full gate passed on clean `12b6202a3cde7a124b5e9deca1ca9247920cb0a4`: core 1491, skill 154, pages 1024, browser 430 passed, all five pins, schema match and ESM imports. OpenAI `gpt-6-astra` low returned **BLOCK** on the same head. Claude final review was not called. No push, GitHub CI or new issue.
+
+- **Reproduced defect:**
+  - **Model:** `App` provides only `Begin` and consumes it. `Run` starts on `Begin`, waits on `Begin.completed()`, issues `Finish` in another local service, and ends when `Finish` completes.
+  - **With `by` omitted:** `routesTo(Run, Begin)` was `[]`, `consumable-kind` reported, and no edge was drawn.
+  - **With `by: [Begin]` written:** it was `[Begin]`, the error was missing, and the flow map drew `Begin → Run`, while the invocation walk refused the same step.
+  - Both forms kept their genuine self-call `reaction-cycle`. Reproduced in source and JSON.
+  - **Cause:** `named.has(root)` bypassed the starting-operation restriction that only the "issues it itself" clause applied.
+- **Ruling:** accepted under #108 and card 160 (`doing`); no new issue, card or PR.
+- **Correction checkpoint (2026-10-01, Claude Opus 5.5 high):**
+  - **Predicate, applied to every root before routes combine:**
+    - a root that is the target is eligible only if the reactor issues it;
+    - a starting operation the process does not issue never carries its own answer;
+    - any other root is eligible when a `by` names it or its local chain reaches the target;
+    - the reactor-named fallback is kept, except for the process's own start.
+  - **Unchanged:** a start's calls out, returned/refused/completion answers alike, inferred sole callers, foreign one-hop routes, policies' direct issues and route order.
+  - **Records:** the `routesTo` doc and decision 21's fourth note of 2026-10-01 record it. No guidance surface states the rule, so none changed.
+  - **Matrix:** in `answer-routes.test.ts`, every case asserts routes, `ReactionChain` answer steps, `ODSFlowMap` answer edges and exact diagnostics, source and JSON. Written and inferred `by` for:
+    - self-consumption;
+    - returned and refused answers;
+    - a ring of fronts back to the start, with and without the process issuing the front;
+    - a second consumption by an issued operation;
+    - a process that both starts on and issues `Begin`;
+    - another process issuing the start.
+
+    Also a policy's own self-calling operation, and the process named as its start's caller. Every invalid-but-admitted self-call keeps its own call-ring and spawn diagnostics.
+  - **Held-fact audit:** in `validate.test.ts`, a self-calling front lends its future answer to no guard, aggregate and context, explicit and inferred.
+  - **Failing before** (on HEAD's `reaction-walk.ts`): 5 of the 20 targeted tests failed, all on routes with `by` written. The held-fact audit passes before and after; the solver never read routes.
+  - **Evidence:** core 1511, graphviz 36, doc 53, skill 154, pages 1024 at 100% coverage with svelte-check clean, apps/docs 24, all five model suites and `_shared` 12. Pins are unchanged at 0 / 2 / 4 / 3 / 0, the schema matches, and no generated file moved. The 100-relay shared front stays at 100 warnings. TypeScript and Biome are clean.
+  - **Artifacts:** prompt `/tmp/ods-final-model-review-12b6202a.txt`; report `/tmp/ods-astra-final-review-12b6202a.md`; gate `/tmp/ods-verify-12b6202a.log`; correction logs `/tmp/ods-start-before.log`, `/tmp/ods-start-focused.log`.
+  - No local result counts as approval.
+
+## Lead eligibility acceptance (2026-10-01T19:05:32Z)
+
+Bounded audit /tmp/ods-start-answer-eligibility-audit.md is clear. Source and regression inspection confirms start-only S cannot take its own answer; issued F to S, start S to different T, start and issue S, and policy-issued S remain eligible. Explicit/inferred and source/JSON twins assert routes, walk and flow edges, and exact diagnostics including independent call/spawn warnings. The proportional eight-principle check finds no introduced violation. Core1511 and all affected focused/model/guidance checks pass; five pins unchanged. Freeze this correction, run its own unmodified full gate and request final same-head approval only after it passes. Twenty-one completed rounds remain historical BLOCK evidence; no approval, push, CI, merge or closure is claimed.
