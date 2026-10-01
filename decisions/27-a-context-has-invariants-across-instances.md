@@ -18,6 +18,8 @@ A value object's invariant reaches its own and inherited attributes and, through
 
 Since the note of 2026-10-01 (card 171), the save claim above is explicitly about an unflagged aggregate invariant. A flagged aggregate rule is a precondition checked before a call or a postcondition about its answer; NorthBank has both, and neither is held on every save.
 
+Since the second note of 2026-10-01 (card 174), a value-object invariant also cannot carry either timing flag: construction, not an operation, is the moment at which its rule holds.
+
 The note of 2026-09-07 stands: five cross-instance rules, not eleven, and a rule checked against another context's data is a precondition on the aggregate's operation (decision 19). The bullet "nothing crosses a context" stands for targets, with a qualification recorded in decision 19: a precondition may constrain the `returns` of a consumed consumable or a consumed event's payload held in the same context (cards 116 and 124), never another context's entities. An external context may state flagged invariants on its own operations, reaching their request and answer schemas and its own value objects (decision 28, cards 107 and 116). An obligation across contexts is a process (amendment of 2026-09-08).
 
 ## Context
@@ -84,3 +86,7 @@ Reviewers read "a context invariant is always a check, because a count across in
 ## Note (2026-10-01)
 
 The standing save sentence in this decision is true for an unflagged aggregate invariant, not for every invariant owned by an aggregate. NorthBank PaymentInstruction's `FundsAvailableAtInitiation` checks before initiation, and Cards' `AuthWithinAvailableBalance` guarantees an operation's answer at that moment. Both are valid aggregate rules, but the root does not keep them true after every change (card 171, issue #121). Their pages and Markdown now state the timing alongside each rule.
+
+## Note (2026-10-01, second)
+
+A value object's invariant holds by construction and names no operation. The general timing checks had skipped external contexts, allowing a standard's value rule to claim `precondition`, `postcondition`, or both with no diagnostic. `invariant-in-value-object` now refuses either flag for every context, modelled or external (card 174, issue #124). A rule about a call belongs to the aggregate or context that owns it.

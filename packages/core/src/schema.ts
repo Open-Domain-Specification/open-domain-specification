@@ -731,9 +731,10 @@ export interface InvariantSchema {
 	 * every quoted premium is within the band the schedule allows.
 	 *
 	 * It is neither a persistent invariant nor a precondition. The answer does
-	 * not exist before the call runs, so nothing can be checked beforehand, and
-	 * it is not saved anywhere afterwards, so no aggregate keeps it true. What
-	 * holds it is the operation, every time it answers, which is why a
+	 * not exist before the call runs, so nothing can be checked beforehand.
+	 * The operation guarantees its answer when it responds; the rule does not
+	 * claim an aggregate keeps that answer true afterward, whether or not the
+	 * same facts are stored. This is why a
 	 * postcondition names the operation it is about
 	 * (`postcondition-names-operation`) and may constrain the attributes of
 	 * what that operation returns or rejects with (decision 19, third
@@ -815,8 +816,10 @@ export interface ValueObjectSchema {
 	 * The rules that hold of every instance of this value: a Money's two
 	 * amounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by
 	 * construction — a value that breaks it is never made — so it constrains
-	 * this value's own attributes and needs no operation to guard it
-	 * (decision 27). Optional, and an absent map is an empty one, like every
+	 * its own and inherited attributes and the attributes of values it composes,
+	 * transitively. It needs no operation to guard it and cannot carry a
+	 * precondition or postcondition timing flag (decision 27). Optional, and
+	 * an absent map is an empty one, like every
 	 * map of elements in this schema.
 	 */
 	invariants?: { [invariant: string]: InvariantSchema };
@@ -988,7 +991,7 @@ export function invariantRef(
 	};
 }
 
-/** The ref of an invariant a value object owns: a rule about its own attributes. */
+/** The ref of an invariant a value object owns: a construction rule following its composition path. */
 export function valueObjectInvariantRef(
 	boundedcontext: string,
 	valueobject: string,

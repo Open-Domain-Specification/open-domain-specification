@@ -4,10 +4,10 @@ labels: [docs, model]
 priority: high
 agent: lead
 live: false
-status: Ninth blockers in correction; full gate and exact-head independent signoff pending
+status: Tenth blockers in correction; full gate and exact-head independent signoff pending
 progress: 90
 clean-code-swept: true
-updatedAt: 2026-10-01T04:40:00Z
+updatedAt: 2026-10-01T05:10:00Z
 ---
 # Final model sign-off: the record says only what holds
 
@@ -22,14 +22,15 @@ Issue #108. The owner wants the model complete before one exact-head review by C
 - [x] Hand-written skill preferences and the tactical page read against it: each says a comment says how a message travels, which stays true; none changed
 - [x] Evidence table below for #35, #36, #37, #38, #39, #40
 - [ ] The exact-head signoff: one Claude Opus 5.5 high and one OpenAI Astra low review of the same commit, each answering whether this is a correct, clean and detailed DDD specification, reproduced defects kept apart from named preferences (the lead)
-- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (rounds one to nine found corrections; latest in cards 171–173)
-- [x] Journal: nine exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
+- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (rounds one to ten found corrections; latest in cards 174–175)
+- [x] Journal: ten exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
 
 ## Gates
 
 - [x] Focused: core and skill builds, skill drift test, biome on the touched files; results in the journal
 - [x] `bash scripts/verify-all.sh` passed unmodified on the integrated model tree at `ff8e8436`: core 1043, graphviz 35, doc 47, skill 62, NorthBank 6, pages 1005 and all other package/model suites; generated-schema comparison and ESM imports green; browser 424 passed, 20 skipped
 - [ ] `bash scripts/verify-all.sh` passes unmodified on the next clean committed head containing cards 171–173
+- [ ] `bash scripts/verify-all.sh` passes unmodified on the next clean committed head containing cards 174–175
 
 ## Evidence: capability issues against the record
 
@@ -300,6 +301,40 @@ Read AGENTS.md, STATUS.md, current positions and relevant amendments in decision
 Prior cases #107-#118 include NorthBank kernel ownership and Scorecard call; Markdown foreign value users; decision 15 reopening conditions; permitted value specialization over three borrowing routes; nested, inherited and kind value/schema users with correct borrowing direction and identity/direct-carrier distinctions; stale generated Markdown files; a borrowed Money detail page's foreign aggregate rule; false context empty states for borrowed types; entity incoming references across aggregates and context rules; inherited relations and overbroad empty claims. The eighth review of a2cef010 returned two BLOCKs: Astra reproduced a valid context postcondition that Markdown described as checked before acting and whose timing flag the table hid; Opus found NorthBank Account and PaymentInstruction entity pages omitted rules targeting their attributes, including context DailyLimit. Challenge #119-#120 on this head: timing column in Markdown; context and invariant Svelte page copy; zero-diagnostic precondition/postcondition, external event payload guarantee and mixed event/operation cases before and after JSON round-trip; generated authoring reference, tactical docs and model comments; entity/value-object direct and inherited attribute rule lookup, NorthBank cases, keeper links, narrow copy and root tooltip. The lead independently found and corrected a before-acting claim on ContextPage and a false empty state. Seek concrete remaining semantic defects or cross-surface lies, not merely optional wording preferences.
 
 The unmodified full local gate passed on exact clean HEAD 3ee62a29dd37455bdc48d1217cb372622bf31f5b: core 1061, doc 51, pages 1017 with 100% coverage, browser 430 passed/20 skipped, all other package/model suites and generated schema/ESM checks green. Check that pinned diagnostics and generated outputs still mean what they claim. Challenge the conditional capability rulings for #35-#40 against source-backed cases and actual code behavior; do not edit them.
+
+For each blocking finding, give a concrete source-backed or runnable counterexample, actual versus expected behavior, exact file/line evidence, and smallest regression test that would prove a correction. Separate reproduced semantic defects and cross-surface lies from deliberate named costs, optional improvements and uncertain source questions. If you cannot substantiate an objection, state uncertainty rather than blocking. Note meaningful inspection limits.
+
+End with VERDICT: APPROVE or VERDICT: BLOCK, exact HEAD, and a concise answer to the owner's question. Do not approve an older head.
+```
+
+
+## Tenth round (head `edee33cb`)
+
+The unmodified local gate passed on exact clean head `edee33cb593c2cb48685e1c94843b8337fdb69f4`: core 1062, graphviz 35, doc 52, skill 71, NorthBank 7, Petstore 23, RiverMart 6, StreamLine 3, Clinic 7, shared 12, pages 1018 at 100% coverage, apps/docs 24, VS Code 18, scripts 31, schema and ESM checks, browser 430 passed/20 skipped. Both read-only reviews used the same prompt and no GitHub CI minutes.
+
+| Reviewer | Model | Verdict |
+| --- | --- | --- |
+| OpenAI | `gpt-6-astra`, low | **BLOCK** |
+| Claude | `claude-opus-5-5`, high | **BLOCK** |
+
+- **Common reproduced defect:** an external value object's by-construction invariant may set either call-timing flag or both with zero diagnostics before/after JSON round-trip. The invariant page calls it a guardless precondition, while the value page and Markdown show a construction rule. Issue #124/card 174 makes value ownership reject call timing in every context and gives all three flag variants a focused regression.
+- **Astra's second reproduced defect:** an aggregate postcondition relating Plan Request.deadline to Plan Answer.arrival validates and renders both fields, but its detail page claims the fields come only from the answer/refusal. Issue #125/card 175 corrects the shared Svelte copy and tests the case before/after round-trip. Adjacent unflagged aggregate and context precondition leads are narrowed too.
+- **Both reviewers confirmed** the ninth blockers #121–#123 were corrected. Opus noted remaining incomplete guidance on composed values; card 174 corrects the schema comment, ref helper, translation table and generated outputs. Neither reviewer found a source-backed trigger for #35–#40. These blockers override any older approval. The next review waits for a clean committed head and full local gate.
+
+Prompt given to both verbatim:
+
+```text
+You are an independent final reviewer of the Open Domain Specification metamodel and reference models. Review exact committed HEAD edee33cb593c2cb48685e1c94843b8337fdb69f4 in this checkout, based on origin/develop a0e88e97. This is read-only: make no edits, commits, issue or PR comments, pushes, or agent delegations. Do not run the full verify-all.sh gate; it passed locally on this exact clean head. First check HEAD and worktree cleanliness.
+
+The owner's question: Is this a correct, clean, detailed specification for modelling software systems the Domain-Driven Design way, with the metamodel, validator, reference models and all four permanent reading surfaces telling the same truth? Give an explicit APPROVE or BLOCK on this exact head. Approval requires no unresolved semantic defect; it does not require every possible DDD construct. Deliberate model preferences are allowed when their costs and source-backed reopening conditions are honest.
+
+Read AGENTS.md, STATUS.md, the current positions and relevant amendments/notes of decisions 15, 16, 17, 18, 19, 20, 21, 22, 23, 27 and 28, card 160's evidence and nine review journals, cards 161-173, and each reference model's source notes. Inspect core schema, DSL, validator, derived maps, generated JSON schema, authoring skill, documentation site, shared Svelte renderer for VS Code/viewer/static export, and Markdown writer as needed. Review origin/develop a0e88e97..HEAD adversarially. The previous nine rounds each exposed real issues before this head; their records are on card 160. Confirm current fixes resolve them without changing pinned diagnostics or leaving false claims.
+
+Prior cases #107-#120 include NorthBank kernel ownership and Scorecard call; Markdown foreign value users; decision 15 reopening conditions; permitted value specialisation over three borrowing routes; nested, inherited and kind value/schema users with correct borrowing direction and identity/direct-carrier distinctions; stale generated Markdown files; a borrowed Money detail page's foreign aggregate rule; false context empty states for borrowed types; entity incoming references across aggregates and context rules; inherited relations and overbroad empty claims; context rule timing in Markdown and Svelte; and entity pages finding rules aimed at attributes. Challenge these fixes on this head, especially across all four readers.
+
+The ninth review of 3ee62a29 returned three BLOCKs. Opus found NorthBank PaymentInstruction's FundsAvailableAtInitiation precondition and Cards' AuthWithinAvailableBalance answer guarantee listed under the aggregate-page assertion that every rule holds after every change, with no aggregate Markdown timing (#121). Astra reproduced an external operation contract with both precondition and postcondition flags, zero diagnostics before/after JSON round-trip, although the answer was not available before the call (#122). Astra also found skill, interview, tactical and schema guidance contradicting valid inherited/composed value-object invariant reach and the actual request/answer boundary of pre/postconditions (#123). Challenge the corrections in core timing helper, aggregate and context Markdown, Svelte pages, external-is-boundary validation, authoring prose, decision notes, generated model reference and JSON schemas, and focused regressions before/after round-trip. Look for adjacent contradictory wording. The user asked to finalize the model before tooling work, so prioritize substantive semantic or reader-truth issues over optional tools.
+
+The unmodified full local gate passed on this exact committed head: core 1062, doc 52, skill 71, pages 1018 with 100% coverage, all five reference-model suites, schema comparison and ESM imports, and the complete Playwright browser suite. Check that pinned diagnostics and generated outputs still mean what they claim. Challenge conditional capability rulings #35-#40 against source-backed cases and actual behavior; do not edit them.
 
 For each blocking finding, give a concrete source-backed or runnable counterexample, actual versus expected behavior, exact file/line evidence, and smallest regression test that would prove a correction. Separate reproduced semantic defects and cross-surface lies from deliberate named costs, optional improvements and uncertain source questions. If you cannot substantiate an objection, state uncertainty rather than blocking. Note meaningful inspection limits.
 

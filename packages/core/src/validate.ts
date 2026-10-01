@@ -1478,6 +1478,13 @@ function compositionReachOf(vo: ValueObject): Set<Constrainable> {
 const invariantInValueObject: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const [vo, invariant] of valueObjectInvariantsOf(workspace)) {
+		if (invariant.precondition || invariant.postcondition)
+			diagnostics.push({
+				severity: "error",
+				rule: "invariant-in-value-object",
+				message: `Invariant "${invariant.name}" of value object "${vo.name}" sets call timing; a value's rule holds by construction and cannot be a precondition or postcondition. Move a rule about a call to the aggregate or context that owns it`,
+				ref: invariant.ref,
+			});
 		const reach = compositionReachOf(vo);
 		for (const target of invariant.targets) {
 			if (reach.has(target)) continue;
@@ -1740,11 +1747,10 @@ const contextInvariantIsChecked: Rule = (workspace) => {
 	return diagnostics;
 };
 
-/** Every invariant in the workspace, whatever it belongs to. */
+/** Invariants that may name a call; value rules have construction timing only. */
 function* invariantsOf(workspace: Workspace): Iterable<Invariant> {
 	for (const bc of modelledContexts(workspace)) {
 		yield* bc.invariants.values();
-		for (const vo of bc.valueobjects.values()) yield* vo.invariants.values();
 		for (const aggregate of bc.aggregates.values())
 			yield* aggregate.invariants.values();
 	}
@@ -5126,8 +5132,8 @@ const externalIsBoundary: Rule = (workspace) => {
 		// the rules on it — an IBAN's mod-97 checksum, an ISO 20022 field rule, a
 		// scheme's record layout — are that standard's published contract, known
 		// and citable rather than invented. They stay, and
-		// `invariant-in-value-object` checks them like any other (decision 28,
-		// third amendment).
+		// `invariant-in-value-object` checks their reach and construction-only
+		// timing like any other value rule (decision 28, third amendment).
 	}
 	return diagnostics;
 };
@@ -5536,9 +5542,9 @@ const RULES: CataloguedRule[] = [
 		rule: "invariant-in-value-object",
 		severities: ["error"],
 		summary:
-			"Every element a value object's invariant constrains is that value object, one of its attributes, or a value it composes and that value's attributes in turn.",
-		why: "A value is defined by what it holds, and a rule about it is kept by refusing to make one that breaks it: an IBAN whose checksum fails is not a badly configured IBAN, it is not an IBAN. What the value holds includes the values it is made of — an itinerary is constructed from its legs, so each leg's arrival preceding the next leg's departure is as much a rule of the itinerary's construction as the checksum is of the IBAN's, and reading only the owner's own attributes forced such a model to flatten its legs to say it. What stays out of reach is everything off that path: a value object knows nothing of the entity holding it, of a value nothing it composes holds, or of any operation, so a rule naming one of those is a rule the value cannot keep.",
-		fix: "Point the invariant at this value object's own attributes, or at those of a value it holds, followed as far as the composition runs: an Itinerary's invariant may name Leg.arrival because Itinerary.legs is typed by Leg. If the rule is really about the thing that holds the value — a transition, a balance across two entities — move it to that aggregate; if it is about several instances at once, it is the context's (decision 27).",
+			"A value object's invariant holds by construction and has no precondition or postcondition flag. Every element it constrains is that value object, one of its attributes, or a value it composes and that value's attributes in turn.",
+		why: "A value is defined by what it holds, and a rule about it is kept by refusing to make one that breaks it: an IBAN whose checksum fails is not a badly configured IBAN, it is not an IBAN. What the value holds includes the values it is made of — an itinerary is constructed from its legs, so each leg's arrival preceding the next leg's departure is as much a rule of the itinerary's construction as the checksum is of the IBAN's, and reading only the owner's own attributes forced such a model to flatten its legs to say it. Call-timing flags are also out of reach: a value rule is true or false when the value is constructed, without a call to check before or an answer to guarantee. What stays out of reach is everything off that path: a value object knows nothing of the entity holding it, of a value nothing it composes holds, or of any operation, so a rule naming one of those is a rule the value cannot keep.",
+		fix: "Remove precondition and postcondition flags from a value rule; if the rule is about a call, move it to the aggregate or context that owns it. Point a construction rule at this value object's own or inherited attributes, or at those of a value it holds, followed as far as the composition runs: an Itinerary's invariant may name Leg.arrival because Itinerary.legs is typed by Leg. If the rule is really about the thing that holds the value — a transition, a balance across two entities — move it to that aggregate; if it is about several instances at once, it is the context's (decision 27).",
 		check: invariantInValueObject,
 	},
 	{

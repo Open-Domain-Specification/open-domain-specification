@@ -162,7 +162,8 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   value alone — a checksum, a currency, a range — is that value object's:
   `valueObject.addInvariant(...)`, constraining its own and inherited attributes and the
   attributes of values it composes, transitively, but nothing outside that path. Nothing guards
-  it, because a value that breaks it is never constructed.
+  it, because a value that breaks it is never constructed. Do not mark it
+  `precondition` or `postcondition`: those flags describe call timing.
 - Per rule: "is this true of one of these, or of all of them together?" → one of them is the
   aggregate's invariant. Ask whether it holds on every save, is checked before a named operation,
   or guarantees its answer, and set the timing flag when needed. All of them together — at most

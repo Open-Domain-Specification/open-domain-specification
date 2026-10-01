@@ -2162,6 +2162,42 @@ describe("invariant-in-value-object", () => {
 		).toEqual([]);
 	});
 
+	it("refuses call timing on value rules in modelled and external contexts", () => {
+		for (const external of [false, true])
+			for (const flags of [
+				{ precondition: true },
+				{ postcondition: true },
+				{ precondition: true, postcondition: true },
+			]) {
+				const ws = emptyWorkspace();
+				const bc = ws.addBoundedContext("Standard", {
+					description: "",
+					external,
+				});
+				const iban = bc.addValueObject("IBAN", { description: "" });
+				const code = iban.addAttribute("code", { type: "string" });
+				iban
+					.addInvariant("Valid Checksum", { description: "" })
+					.constrains(code);
+				const timed = iban
+					.addInvariant("Timed Checksum", { description: "", ...flags })
+					.constrains(code);
+				for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+					expect(
+						model.validate().filter((d) => d.severity === "error"),
+					).toEqual([
+						{
+							severity: "error",
+							rule: "invariant-in-value-object",
+							message:
+								'Invariant "Timed Checksum" of value object "IBAN" sets call timing; a value\'s rule holds by construction and cannot be a precondition or postcondition. Move a rule about a call to the aggregate or context that owns it',
+							ref: timed.ref,
+						},
+					]);
+				}
+			}
+	});
+
 	it("refuses a value's rule that reaches for the entity holding it", () => {
 		const { ws, iban, account } = bank();
 		const rule = iban

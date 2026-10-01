@@ -78,7 +78,7 @@ const KIND = {
 	aggregate: {
 		label: "aggregate invariant",
 		title: "Holds inside the aggregate's boundary, every time it is saved.",
-		lead: "The elements this rule is about, all inside the aggregate that is saved as one.",
+		lead: "The held model elements this rule is about, plus any named operation of this context that keeps it.",
 		guards:
 			"The operations this rule is about. Naming one says which operation keeps the rule, not that the rule stops holding after it: balanced postings are still balanced once the posting is made.",
 		empty:
@@ -105,9 +105,9 @@ const KIND = {
 		label: "postcondition",
 		title:
 			"Guaranteed of what the operations it names answer with, every time they answer.",
-		lead: "The elements this rule is about, which are the fields of what the guarded call answers or refuses with.",
+		lead: "The elements this rule is about. A guarantee may relate the guarded call's request to its answer or refusal and to model elements of this boundary.",
 		guards:
-			"The operations this rule is a guarantee about. The answer does not exist before the call runs and is saved nowhere after it, so nothing but the operation itself keeps this true.",
+			"The operations this rule is a guarantee about. It describes what each call answers with, without claiming an aggregate keeps that answer true afterward.",
 		empty:
 			"No operation names this rule, so there is no answer for it to be about: a postcondition is a guarantee about what a call comes back with, and the model has to say which call.",
 	},
@@ -130,7 +130,7 @@ const KIND = {
 		label: "context invariant",
 		title:
 			"Checked before the operations it names run, across the instances and aggregates of the context. Never a promise about afterwards.",
-		lead: "The elements this rule is about: anything in the context, and the fields of what the guarded call carries.",
+		lead: "The elements this rule is about: model elements of the context, the guarded request, and facts already received by the guard or its front.",
 		guards:
 			"The operations this rule is checked before. What it was checked against may move on the moment the call returns, and a check across instances can race, so nothing re-establishes it afterwards.",
 		empty:
@@ -142,7 +142,7 @@ const KIND = {
 			"Checked of what the operations it names answer with, against the instances and aggregates of the context. Never a promise about afterwards.",
 		lead: "The elements this rule is about: anything in the context, and the fields of what the guarded call carries, request and answer alike.",
 		guards:
-			"The operations this rule is checked of. The answer does not exist before the call runs and is saved nowhere after it, so nothing but the operation itself makes this check.",
+			"The operations this rule is checked of. It describes what each call answers with, without claiming that answer remains true afterward.",
 		empty:
 			"No operation names this rule, so there is no answer for it to be about: a postcondition is checked of what a call comes back with, and the model has to say which call.",
 	},

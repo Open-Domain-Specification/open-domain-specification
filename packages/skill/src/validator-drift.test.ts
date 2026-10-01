@@ -33,11 +33,13 @@ const handWrittenFiles = [
 	"packages/skill/skill/SKILL.md",
 	"packages/skill/skill/references/interview-playbook.md",
 	"packages/skill/skill/references/ddd-glossary.md",
+	"packages/skill/skill/references/translation-table.md",
 	"packages/skill/skill/references/preferences.md",
 	"packages/skill/skill/references/json-mode.md",
 	"packages/skill/skill/references/dsl-api.md",
 	"apps/docs/docs/3-core/2-strategic-design.md",
 	"apps/docs/docs/3-core/3-tactical-design.md",
+	"apps/docs/docs/3-core/4-validation.md",
 	"packages/core/src/schema.ts",
 	// Not hand-authored prose, but a template that writes prose: the string
 	// literal in generate.mts is the source the generated model reference is
@@ -233,6 +235,72 @@ const currentFacts: Array<{
 		sentences: [
 			"This entity's own attributes, by id. Optional, and an absent map is an\n\t * empty one",
 			"The fields of this payload, by id. Optional, and an absent map is an\n\t * empty one",
+		],
+	},
+	{
+		fact: "an operation named by a rule does not determine its timing (translation table)",
+		file: "packages/skill/skill/references/translation-table.md",
+		sentences: [
+			"Persistent aggregate invariant naming the transition that keeps it true",
+			"Precondition checked before the operation",
+		],
+	},
+	{
+		fact: "a value invariant has construction timing, never call timing (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"it needs no guard and cannot carry `precondition` or `postcondition`",
+		],
+	},
+	{
+		fact: "a value invariant has construction timing, never call timing (interview playbook)",
+		file: "packages/skill/skill/references/interview-playbook.md",
+		sentences: [
+			"Do not mark it `precondition` or `postcondition`: those flags describe call timing",
+		],
+	},
+	{
+		fact: "a value invariant has construction timing, never call timing (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"It has neither `precondition` nor `postcondition`, which describe a call's timing",
+		],
+	},
+	{
+		fact: "a postcondition promises the answer at response time, not whether its facts are stored (schema source)",
+		file: "packages/core/src/schema.ts",
+		sentences: [
+			"The operation guarantees its answer when it responds; the rule does not",
+			"same facts are stored",
+		],
+	},
+	{
+		fact: "a postcondition promises the answer at response time, not whether its facts are stored (generated reference)",
+		file: "packages/skill/skill/references/model-reference.md",
+		sentences: [
+			"The operation guarantees its answer when it responds; the rule does not claim an aggregate keeps that answer true afterward, whether or not the same facts are stored",
+		],
+	},
+	{
+		fact: "a value invariant follows composition (value schema comment)",
+		file: "packages/core/src/schema.ts",
+		sentences: [
+			"its own and inherited attributes and the attributes of values it composes,",
+			"precondition or postcondition timing flag",
+		],
+	},
+	{
+		fact: "a value invariant follows composition (translation table)",
+		file: "packages/skill/skill/references/translation-table.md",
+		sentences: [
+			"with no timing flag and `constrains` naming its own or inherited attributes, or attributes of values it composes",
+		],
+	},
+	{
+		fact: "a value invariant has construction timing (validation guide)",
+		file: "apps/docs/docs/3-core/4-validation.md",
+		sentences: [
+			"a value object's invariant holds by construction without a precondition or postcondition flag",
 		],
 	},
 	{
