@@ -37,3 +37,18 @@ Decision 08's `WorkspaceSet` was never implemented; extension card 07 covers it.
 ## 7. Older extension cards
 
 Extension cards 01, 02, 04, 06, 09 predate the team way of working and need scoping with the human before dispatch.
+
+## Delivery retrospective after the twenty-second blocked model review
+
+Observed on 2026-10-01: 54 open issues, 25 model stories awaiting one merged signoff batch, zero merged model closures. The green gate on `39a33ad3` preceded a reproduced loss of a process ending in the flow projection. A bounded local audit then found two distinct local/borrowed refusal schemas serialized as one answer reference. Both source and reconstructed models validated with zero diagnostics. Neither the old gate nor diagnostic absence establishes a lossless model round trip.
+
+Five whys: final review found a missing semantic combination; the gate passed because that combination was absent from its cases; local matrices followed the latest helper/path rather than the whole input-to-reader contract; final signoff became the integration probe; a large unmerged batch accumulated review evidence without accepted closures. The first three are supported by concrete regressions; the last two are process inferences, and will be tested by the next delivery outcomes.
+
+Owned controls for the next checkpoint:
+
+- **Lead:** declare one bounded contract matrix before signoff: authored input and JSON, equal local/display ids with different full identities, actual route ownership, lifecycle role, duplicate controls, validator result and every affected reader. A bounded independent audit checks its missing axes; it finishes before the full gate and final reviewers.
+- **Integration lead:** keep one current evidence block with local candidate, clean/dirty state, gate head/result, reviewer head/verdict and remote PR head. Historical evidence stays in journals. Source changes invalidate current gate and approval claims.
+- **Delivery lead:** finish PR #132, verify the actual merged diff against each of the 25 acceptance-ledger rows, and close only proven stories. Then land PR #106 before opening the next reader package. Keep the two-implementation/one-audit work limit and use existing tickets for adjacent corrections.
+- **Lead:** after a blocker, record its omitted axis and one owned process correction; verify that correction at the next checkpoint. Report merged-and-accepted closures, new/reopened issues, net burn-down, first-review acceptance and local/remote verification cost. Do not count tests, review rounds or conditional closure forecasts as shipped work.
+
+These controls serve model trust now and the plugin later: `WorkspaceSet` and forms will need the same lossless identity/reference contract. They do not approve the current candidate or replace the mandatory landing gate.

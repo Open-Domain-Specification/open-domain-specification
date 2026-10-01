@@ -133,6 +133,77 @@ describe("flowMapToDigraph", () => {
 		expect((await digraph.toSVG()).match(/Fact \(ends\)/g)).toHaveLength(2);
 	});
 
+	// The reviewer's model: Run waits on First's completion and ends on
+	// Last's, both through Front. The digraph Markdown writes keeps both, the
+	// ending one dashed (issue #108, twenty-second review).
+	it("draws an ordinary and an ending completion through one front", async () => {
+		const ws = new Workspace("Flow", { description: "", version: "0" });
+		const bc = ws.addBoundedContext("Orders", { description: "" });
+		const op = (name: string) =>
+			bc
+				.addService(`${name} Handler`, {
+					description: "",
+					type: "application",
+				})
+				.provides(name, {
+					description: "",
+					type: "operation",
+					internal: true,
+				});
+		const [first, last, front, begin] = ["First", "Last", "Front", "Begin"].map(
+			op,
+		);
+		front!.provider.consumes(first!);
+		front!.provider.consumes(last!);
+		bc.addProcess("Run", { description: "" })
+			.starts(begin!)
+			.on(first!.completed())
+			.issues(front!)
+			.ends(last!.completed());
+		const digraph = flowMapToDigraph(ODSFlowMap.fromBoundedContext(bc));
+		const dot = digraph.toDot();
+		expect(dot).toMatch(/label = "completes"/);
+		expect(dot).toMatch(
+			/style = "dashed"[^\]]*label = "completes \(ends\)"|label = "completes \(ends\)"[^\]]*style = "dashed"/,
+		);
+		const svg = await digraph.toSVG();
+		expect(svg.match(/>completes</g)).toHaveLength(1);
+		expect(svg.match(/>completes \(ends\)</g)).toHaveLength(1);
+	});
+
+	// A local and a kernel-shared refusal share an id and a name: read back
+	// from JSON, both are drawn, each named by its shape's context.
+	it("draws both same-named refusals of one call, told apart by context", async () => {
+		const ws = kernelPair(true);
+		const digraph = flowMapToDigraph(ODSFlowMap.fromWorkspace(ws));
+		const dot = digraph.toDot();
+		const svg = await digraph.toSVG();
+		for (const label of [
+			"Local / Handler / Charge rejects with Foreign / Decline",
+			"Local / Handler / Charge rejects with Local / Decline",
+		]) {
+			expect(dot).toContain(`label = "${label}"`);
+			expect(svg).toContain(`>${label}<`);
+		}
+	});
+
+	it("draws mutually anchored deadlines without expanding their chains", async () => {
+		const source = mutualDeadlineAnchors();
+		for (const workspace of [
+			source,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(source.toSchema()))),
+		]) {
+			expect(workspace.validate()).toEqual([]);
+			const digraph = flowMapToDigraph(ODSFlowMap.fromWorkspace(workspace));
+			const dot = digraph.toDot();
+			const svg = await digraph.toSVG();
+			for (const label of ["after 1 day from A", "after 1 day from B"]) {
+				expect(dot).toContain(`label = "${label}"`);
+				expect(svg).toContain(`>${label}<`);
+			}
+		}
+	});
+
 	it("renders an empty map without throwing", async () => {
 		const ws = new Workspace("Empty", {
 			description: "",
@@ -142,3 +213,88 @@ describe("flowMapToDigraph", () => {
 		expect(svg).toContain("<svg");
 	});
 });
+
+function kernelPair(sameName: boolean) {
+	const ws = new Workspace("Refs", { description: "", version: "0" });
+	const served = ws
+		.addDomain("Payments", { description: "" })
+		.addSubdomain("Charging", { description: "", type: "core" });
+	const local = ws
+		.addBoundedContext("Local", { description: "" })
+		.serves(served);
+	const foreign = ws
+		.addBoundedContext("Foreign", { description: "" })
+		.serves(served);
+	local.sharesKernelWith(foreign);
+	const shape = (owner: typeof local, name: string) => {
+		const schema = owner.addSchema(sameName ? "Decline" : name, {
+			id: "decline",
+		});
+		schema.addAttribute("why", { type: "string" });
+		return schema;
+	};
+	const refusals = [
+		shape(local, "LocalRefusal"),
+		shape(foreign, "ForeignRefusal"),
+	];
+	const handler = local.addService("Handler", {
+		description: "",
+		type: "application",
+	});
+	const event = (name: string) =>
+		handler.provides(name, { description: "", type: "event", internal: true });
+	const start = event("Start");
+	const done = event("Done");
+	handler
+		.provides("Seed", { description: "", type: "operation", internal: true })
+		.raises(start);
+	const charge = handler
+		.provides("Charge", {
+			description: "",
+			type: "operation",
+			internal: true,
+			rejects: refusals,
+		})
+		.raises(done);
+	local
+		.addProcess("Run", { description: "" })
+		.starts(start)
+		.issues(charge)
+		.on(...refusals.map((it) => charge.rejected(it)))
+		.ends(done);
+	// Read back from JSON, so the readers draw what the file says.
+	return Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema())));
+}
+
+function mutualDeadlineAnchors() {
+	const ws = new Workspace("Timers", { description: "", version: "0" });
+	const served = ws
+		.addDomain("Delivery", { description: "" })
+		.addSubdomain("Orders", { description: "", type: "core" });
+	const bc = ws.addBoundedContext("Orders", { description: "" }).serves(served);
+	const app = bc.addService("Handler", {
+		description: "",
+		type: "application",
+	});
+	const event = (name: string) =>
+		app.provides(name, { description: "", type: "event", internal: true });
+	const start = event("Start");
+	const done = event("Done");
+	app
+		.provides("Seed", { description: "", type: "operation", internal: true })
+		.raises(start);
+	const act = app
+		.provides("Act", { description: "", type: "operation", internal: true })
+		.raises(done);
+	const run = bc
+		.addProcess("Run", { description: "" })
+		.starts(start)
+		.issues(act)
+		.ends(done);
+	const a = run.addDeadline("A", { description: "", after: "1 day" });
+	const b = run.addDeadline("B", { description: "", after: "1 day" });
+	run.on(a, b);
+	a.countsFrom(b);
+	b.countsFrom(a);
+	return ws;
+}

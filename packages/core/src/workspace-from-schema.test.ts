@@ -496,14 +496,14 @@ describe("a reaction that waits on one outcome of a refusal", () => {
 	};
 
 	it("resolves an outcome the refusal enumerates", () => {
-		const ref = `${rich.placeOrder.ref}/rejects/order_refused/out_of_stock`;
+		const ref = `${rich.placeOrder.ref}/rejects/ordering_bc/order_refused/out_of_stock`;
 		const { loaded, unresolved } = loadWith(on(ref));
 		expect(unresolved).toEqual([]);
 		expect(loaded.getAnswerByRef(ref)?.reason).toBe("out_of_stock");
 	});
 
 	it("reports one it does not, and leaves the link unset", () => {
-		const ref = `${rich.placeOrder.ref}/rejects/order_refused/never_heard_of_it`;
+		const ref = `${rich.placeOrder.ref}/rejects/ordering_bc/order_refused/never_heard_of_it`;
 		const { loaded, unresolved } = loadWith(on(ref));
 		expect(unresolved).toHaveLength(1);
 		expect(unresolved[0].message).toContain(ref);

@@ -89,7 +89,9 @@ test("draws steps as plain arrows and what completes a process as a dashed edge 
 	}
 
 	const ends = flow.locator(
-		`.svelte-flow__edge[data-id="${FULFILMENT}|${ORDER}/provides/order_delivered"]`,
+		// An edge's id is what it is: its two ends and, here, that it ends
+		// the instance (issue #108, twenty-second review).
+		`.svelte-flow__edge[data-id="${FULFILMENT}|${ORDER}/provides/order_delivered|ends"]`,
 	);
 	await expect(ends).toBeAttached();
 	await expect(ends).toHaveClass(/dashed/);

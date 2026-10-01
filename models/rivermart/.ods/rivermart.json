@@ -1643,7 +1643,7 @@
               "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
             },
             {
-              "$ref": "#/boundedcontexts/payments/services/payments_api/provides/authorise_payment/rejects/payment_declined"
+              "$ref": "#/boundedcontexts/payments/services/payments_api/provides/authorise_payment/rejects/payments/payment_declined"
             }
           ],
           "then": [
@@ -2925,7 +2925,7 @@
           ],
           "on": [
             {
-              "$ref": "#/boundedcontexts/payment_provider/services/acquirer_api/provides/hold_funds/rejects/provider_decline/issuer_unavailable"
+              "$ref": "#/boundedcontexts/payment_provider/services/acquirer_api/provides/hold_funds/rejects/payment_provider/provider_decline/issuer_unavailable"
             }
           ],
           "then": [

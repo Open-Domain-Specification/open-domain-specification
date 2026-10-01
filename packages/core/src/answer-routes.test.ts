@@ -938,10 +938,13 @@ describe("a starting operation's own answer stays its caller's", () => {
 			const process = run(built, ["Begin", "Loop"], ["Loop"]);
 			expectHeard(built.ws, process, {
 				routes: { Begin: ["Loop"], Loop: ["Begin", "Loop"] },
+				// Loop carries two answers home, Begin's and its own, and each
+				// is its own edge, named by its origin since both read alike.
 				edges: [
 					"Begin [completes]",
 					"Finish [completes (ends)]",
-					"Loop [completes]",
+					"Loop [Begin completes]",
+					"Loop [Loop completes]",
 				],
 				diagnostics: [
 					["reaction-cycle", "begin"],

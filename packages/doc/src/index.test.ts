@@ -50,6 +50,131 @@ describe("toDoc", () => {
 		}
 	});
 
+	// The process table and the flow map Markdown writes beside it tell one
+	// story: Run waits on First's completion and ends on Last's, both through
+	// Front (issue #108, twenty-second review).
+	it("draws in its flow map the ending its process table names", async () => {
+		const ws = new Workspace("Flow", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("Selling", { description: "" })
+			.addSubdomain("Orders", { description: "", type: "core" })
+			.addBoundedcontext("Orders", { description: "" });
+		const op = (name: string) =>
+			bc
+				.addService(`${name} Handler`, {
+					description: "",
+					type: "application",
+				})
+				.provides(name, {
+					description: "",
+					type: "operation",
+					internal: true,
+				});
+		const [first, last, front, begin] = ["First", "Last", "Front", "Begin"].map(
+			op,
+		);
+		front!.provider.consumes(first!);
+		front!.provider.consumes(last!);
+		bc.addProcess("Run", { description: "" })
+			.starts(begin!)
+			.on(first!.completed())
+			.issues(front!)
+			.ends(last!.completed());
+		for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+			expect(model.validate()).toEqual([]);
+			const docs = await toDoc(model);
+			expect(docs["boundedcontexts/orders/index.md"]).toMatch(
+				/\| Run \|[^\n]*\| Begin \| First \(completes\) \| Front \| Last \(completes\) \|/,
+			);
+			const svg = docs["boundedcontexts/orders/flowmap.svg"];
+			expect(svg.match(/>completes</g)).toHaveLength(1);
+			expect(svg.match(/>completes \(ends\)</g)).toHaveLength(1);
+		}
+	});
+
+	// Two refusals sharing a shape id, one local and one kernel-shared, read
+	// back from JSON: the table names both, and the flow map draws both.
+	it("lists and draws both refusals of one id from two contexts", async () => {
+		for (const sameName of [false, true]) {
+			const model = kernelPair(sameName);
+			expect(model.validate()).toEqual([]);
+			const docs = await toDoc(model);
+			const svg = docs["boundedcontexts/local/flowmap.svg"];
+			if (!sameName) {
+				expect(docs["boundedcontexts/local/index.md"]).toContain(
+					"| LocalRefusal (answer to Charge), ForeignRefusal (answer to Charge) |",
+				);
+				expect(svg).toContain(">LocalRefusal<");
+				expect(svg).toContain(">ForeignRefusal<");
+			} else {
+				// The table names each the way the diagram does, not twice
+				// as "Decline (answer to Charge)".
+				expect(docs["boundedcontexts/local/index.md"]).toContain(
+					"| Local / Handler / Charge rejects with Local / Decline, Local / Handler / Charge rejects with Foreign / Decline |",
+				);
+				for (const label of [
+					"Local / Handler / Charge rejects with Foreign / Decline",
+					"Local / Handler / Charge rejects with Local / Decline",
+				])
+					expect(svg).toContain(`>${label}<`);
+			}
+		}
+	});
+
+	// Two timers of one name and length, each counting from an answer that
+	// reads "completes": the table says which call each counts from.
+	it("names same-named timers in a process table by what each counts from", async () => {
+		const ws = kernelPair(false);
+		const local = ws.boundedcontexts.get("local")!;
+		const handler = local.services.get("handler")!;
+		const op = (name: string) =>
+			handler.provides(name, {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+		const [first, last] = [op("First"), op("Last")];
+		const run = local.processes.get("run")!;
+		run.issues(first!, last!).on(first!.completed(), last!.completed());
+		for (const [id, from] of [
+			["late_first", first!],
+			["late_last", last!],
+		] as const)
+			run.on(
+				run.addDeadline("Late", {
+					id,
+					description: "",
+					after: "1 day",
+					from: from.completed(),
+				}),
+			);
+		const back = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		expect(back.validate()).toEqual([]);
+		const md = (await toDoc(back))["boundedcontexts/local/index.md"];
+		expect(md).toContain(
+			"LocalRefusal (answer to Charge), ForeignRefusal (answer to Charge), First (completes), Last (completes), Late: after 1 day from First completes, Late: after 1 day from Last completes |",
+		);
+	});
+
+	it("writes mutually anchored deadlines without expanding their chains", async () => {
+		const source = mutualDeadlineAnchors();
+		for (const workspace of [
+			source,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(source.toSchema()))),
+		]) {
+			expect(workspace.validate()).toEqual([]);
+			const docs = await toDoc(workspace);
+			expect(docs["boundedcontexts/orders/index.md"]).toContain(
+				"A (after 1 day from B), B (after 1 day from A)",
+			);
+			const svg = docs["boundedcontexts/orders/flowmap.svg"];
+			for (const label of ["after 1 day from A", "after 1 day from B"])
+				expect(svg).toContain(`>${label}<`);
+		}
+	});
+
 	it("should generate documentation for empty workspace", async () => {
 		const workspace = new Workspace("Test Workspace", {
 			description: "A test workspace",
@@ -992,3 +1117,88 @@ describe("toDoc", () => {
 		expect(rowFor("Written")).not.toContain("generated");
 	});
 });
+
+function kernelPair(sameName: boolean) {
+	const ws = new Workspace("Refs", { description: "", version: "0" });
+	const served = ws
+		.addDomain("Payments", { description: "" })
+		.addSubdomain("Charging", { description: "", type: "core" });
+	const local = ws
+		.addBoundedContext("Local", { description: "" })
+		.serves(served);
+	const foreign = ws
+		.addBoundedContext("Foreign", { description: "" })
+		.serves(served);
+	local.sharesKernelWith(foreign);
+	const shape = (owner: typeof local, name: string) => {
+		const schema = owner.addSchema(sameName ? "Decline" : name, {
+			id: "decline",
+		});
+		schema.addAttribute("why", { type: "string" });
+		return schema;
+	};
+	const refusals = [
+		shape(local, "LocalRefusal"),
+		shape(foreign, "ForeignRefusal"),
+	];
+	const handler = local.addService("Handler", {
+		description: "",
+		type: "application",
+	});
+	const event = (name: string) =>
+		handler.provides(name, { description: "", type: "event", internal: true });
+	const start = event("Start");
+	const done = event("Done");
+	handler
+		.provides("Seed", { description: "", type: "operation", internal: true })
+		.raises(start);
+	const charge = handler
+		.provides("Charge", {
+			description: "",
+			type: "operation",
+			internal: true,
+			rejects: refusals,
+		})
+		.raises(done);
+	local
+		.addProcess("Run", { description: "" })
+		.starts(start)
+		.issues(charge)
+		.on(...refusals.map((it) => charge.rejected(it)))
+		.ends(done);
+	// Read back from JSON, so the readers draw what the file says.
+	return Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema())));
+}
+
+function mutualDeadlineAnchors() {
+	const ws = new Workspace("Timers", { description: "", version: "0" });
+	const served = ws
+		.addDomain("Delivery", { description: "" })
+		.addSubdomain("Orders", { description: "", type: "core" });
+	const bc = ws.addBoundedContext("Orders", { description: "" }).serves(served);
+	const app = bc.addService("Handler", {
+		description: "",
+		type: "application",
+	});
+	const event = (name: string) =>
+		app.provides(name, { description: "", type: "event", internal: true });
+	const start = event("Start");
+	const done = event("Done");
+	app
+		.provides("Seed", { description: "", type: "operation", internal: true })
+		.raises(start);
+	const act = app
+		.provides("Act", { description: "", type: "operation", internal: true })
+		.raises(done);
+	const run = bc
+		.addProcess("Run", { description: "" })
+		.starts(start)
+		.issues(act)
+		.ends(done);
+	const a = run.addDeadline("A", { description: "", after: "1 day" });
+	const b = run.addDeadline("B", { description: "", after: "1 day" });
+	run.on(a, b);
+	a.countsFrom(b);
+	b.countsFrom(a);
+	return ws;
+}

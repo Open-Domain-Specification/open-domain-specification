@@ -19,6 +19,7 @@ import {
 	Deadline,
 	ODSConsumableMap,
 	ODSContextMap,
+	distinguish,
 	ODSFlowMap,
 	type ProcessTrigger,
 	type SchemaUser,
@@ -152,6 +153,14 @@ const serviceColumns: Column[] = [
  * the row has to say which one this reaction waits on (decision 23). A
  * completion came back as nothing, so it links to the call itself.
  */
+/**
+ * What each trigger in one list is called: its own name, told apart where two
+ * in the list would read the same, the way every surface tells them apart (see
+ * `distinguish`; issue #108).
+ */
+const labelsOf = (triggers: ProcessTrigger[]) =>
+	distinguish(triggers, (it) => it.name, (it) => it);
+
 const triggerLink = (trigger: ProcessTrigger) => {
 	if (trigger instanceof Answer)
 		return { ref: answerRef(trigger), title: trigger.origin };
@@ -349,7 +358,7 @@ const termColumns: Column[] = [
 			{#if col.key === "name"}
 				<Lockup kind="policy" name={p.name} ref={p.ref} />
 			{:else if col.key === "when"}
-				<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
+				{@const labels = labelsOf(p.events)}<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "then"}
 				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else}
@@ -364,13 +373,13 @@ const termColumns: Column[] = [
 			{#if col.key === "name"}
 				<Lockup kind="process" name={p.name} ref={p.ref} />
 			{:else if col.key === "starts"}
-				<Joined>{#each p.startEvents as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+				{@const labels = labelsOf(p.startEvents)}<Joined>{#each p.startEvents as e (e.ref)}<Ref ref={e.ref} label={labels(e)} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else if col.key === "when"}
-				<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
+				{@const labels = labelsOf(p.events)}<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "then"}
 				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "ends"}
-				<Joined>{#each p.endEvents as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+				{@const labels = labelsOf(p.endEvents)}<Joined>{#each p.endEvents as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else}
 				{p.description}
 			{/if}

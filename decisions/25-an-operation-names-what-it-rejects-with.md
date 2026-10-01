@@ -6,9 +6,9 @@ Date: 2026-09-07
 
 Accepted
 
-## Current position (2026-09-10)
+## Current position (2026-10-01)
 
-Stable, and extended once. `rejects` on operations only, each a schema of the provider's context under `schema-context`, a rejection being neither an event nor a transport error; decision 13's contrary line is superseded. Since the amendment of 2026-09-10 (card 114) a rejection may name `reasons`, the contract's enumerated outcomes, each an answer a process may hear beside the shape-level answer; a reason is a named outcome, not a condition on data. A process or policy waits on a rejection by origin, `<op>/rejects/<schema>` (decision 23, cards 92 and 94; the note of 2026-09-08). A postcondition may constrain a rejection's attributes (decision 19, card 104), and a rejection carried by a downstream backs the upstream's role (decision 03, card 98). A second successful outcome is not a rejection: it is the `raises` list, or a second `returns` shape if decision 18's condition is ever met, and a rejection shape the operation also raises as an event draws a warning (decision 18, note after card 117, card 123).
+Stable, and extended once. `rejects` on operations only, a rejection being neither an event nor a transport error; decision 13's contrary line is superseded. Each rejection shape is one the operation's context may carry under `schema-context`: its own, one it borrows from a context it shares a kernel with, conforms to, or is the customer of in a customer-supplier relationship, or the caller's own shape on the operation that caller reaches through an anti-corruption layer translating from it (decision 03, card 98; correction of 2026-10-01). Since the amendment of 2026-09-10 (card 114) a rejection may name `reasons`, the contract's enumerated outcomes, each an answer a process may hear beside the shape-level answer; a reason is a named outcome, not a condition on data. A process or policy waits on a rejection by origin, `<op>/rejects/<context>/<schema>`, with `/<reason>` for one outcome (decision 23, cards 92 and 94, the note of 2026-09-08 and its sixth note of 2026-10-01). A postcondition may constrain a rejection's attributes (decision 19, card 104), and a rejection carried by a downstream backs the upstream's role (decision 03, card 98). A second successful outcome is not a rejection: it is the `raises` list, or a second `returns` shape if decision 18's condition is ever met, and a rejection shape the operation also raises as an event draws a warning (decision 18, note after card 117, card 123).
 
 Since then (cards 123, 126, 128): `rejection-raised` warns when an operation rejects with a shape it also raises as an event, and is quiet where any policy or process, the raising context's own included, hears the event.
 
@@ -43,3 +43,9 @@ A rejection is keyed by its shape, and a contract that refuses with one shape an
 ## Note (2026-09-10, second)
 
 The 2026-09-10 note said the rule is quiet where somebody hears the event; card 126 counted only other contexts' consumers, so a decline the raising context's own dunning policy reacts to still warned. Somebody includes the context's own reactors (card 128).
+
+## Correction (2026-10-01)
+
+Until today this record's current position said each rejection is "a schema of the provider's context under `schema-context`", and gave the ref as `<op>/rejects/<schema>`. Both were stale. `schema-context` has never required the provider's own schema. A rejection is a payload, and it is checked as `schema` and `returns` are: its own context's shape, one that context may borrow over a shared kernel, as a conformist or as the customer of a customer-supplier relationship (decision 16), or the caller's shape on the operation that caller reaches through an anti-corruption layer (decision 03, card 98). The identity audit before the twenty-third review relied on exactly that: `Local` and `Foreign` share a kernel, and Local's `Charge` refuses with its own `decline` and Foreign's, with zero diagnostics.
+
+What it exposed was the ref. Named by the shape's id alone, the two refusals had one ref, and the model read back from JSON kept one of them. A refusal's ref is now `<op>/rejects/<context>/<schema>[/<reason>]` (decision 23, sixth note of 2026-10-01; issue #108). This correction states the rule as it is; it adds no reach and no rule.

@@ -12377,7 +12377,7 @@ describe("waiting on an answer", () => {
 		);
 		const waited = rebuilt.getProcessByRefOrThrow(process.ref).events;
 		expect(waited.map((it) => it.ref)).toEqual([
-			`${authorise.ref}/rejects/${declined.id}`,
+			`${authorise.ref}/rejects/${declined.boundedcontext.id}/${declined.id}`,
 		]);
 		expect(rebuilt.toSchema()).toEqual(ws.toSchema());
 	});
@@ -12385,7 +12385,9 @@ describe("waiting on an answer", () => {
 	it("names an answer by its origin, and resolves that ref", () => {
 		const { ws, authorise, declined } = answered();
 		const rejected = authorise.rejected(declined);
-		expect(rejected.ref).toBe(`${authorise.ref}/rejects/payment_declined`);
+		expect(rejected.ref).toBe(
+			`${authorise.ref}/rejects/${declined.boundedcontext.id}/payment_declined`,
+		);
 		expect(ws.getByRef(rejected.ref)).toBe(rejected);
 		authorise.returns = declined;
 		expect(authorise.returned().ref).toBe(`${authorise.ref}/returns`);

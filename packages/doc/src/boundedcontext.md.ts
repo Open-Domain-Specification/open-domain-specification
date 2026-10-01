@@ -5,6 +5,7 @@ import {
 	constrainableLabel,
 	type DataSchema,
 	Deadline,
+	distinguish,
 	type Invariant,
 	invariantTimingLabel,
 	ODSConsumptionGraph,
@@ -46,19 +47,28 @@ ${aggregate.description}
  * whole of what there is to name. A deadline is named by how long the instance
  * had and, where the process anchors the clock, what it counts from: a limit
  * nobody outside can see is nothing but its length and its start.
+ *
+ * Where two of them would still read the same — a local and a borrowed shape
+ * of one name refusing the same call, two timers of one name and length from
+ * answers that both read "completes" — they are read the way every surface
+ * tells them apart (see `distinguish`; issue #108).
  */
-const triggerList = (triggers: ProcessTrigger[]) =>
-	triggers
-		.map((it) => {
-			if (it instanceof Answer)
-				return it.completion
-					? `${it.operation.name} (completes)`
-					: `${it.name} (answer to ${it.operation.name})`;
-			if (it instanceof Deadline)
-				return `${it.name} (after ${it.after}${it.from ? ` from ${it.from.name}` : ""})`;
-			return it.name;
-		})
-		.join(", ") || "-";
+const triggerList = (triggers: ProcessTrigger[]) => {
+	return (
+		triggers.map(distinguish(triggers, triggerText, (it) => it)).join(", ") ||
+		"-"
+	);
+};
+
+const triggerText = (it: ProcessTrigger) => {
+	if (it instanceof Answer)
+		return it.completion
+			? `${it.operation.name} (completes)`
+			: `${it.name} (answer to ${it.operation.name})`;
+	if (it instanceof Deadline)
+		return `${it.name} (after ${it.after}${it.from ? ` from ${it.from.name}` : ""})`;
+	return it.name;
+};
 
 const policySection = (policy: Policy) => [
 	policy.name,

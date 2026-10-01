@@ -13,6 +13,7 @@ export const sections = [
 import {
 	Answer,
 	Deadline,
+	distinguish,
 	ODSFlowMap,
 	type Process,
 	type ProcessTrigger,
@@ -90,6 +91,24 @@ const detailOf = (trigger: ProcessTrigger) =>
 		? `after ${trigger.after}${trigger.from ? ` from ${trigger.from.name}` : ""}`
 		: undefined;
 
+/**
+ * How a row reads across its name, provider, context and timing. Two rows of
+ * one table that would read the same — a local and a borrowed shape of one
+ * name refusing the same call, two timers of one name and length from answers
+ * that both read "completes" — are named the way every surface tells them
+ * apart (see `distinguish`; issue #108); every other row keeps its own name.
+ */
+const rowReading = (trigger: ProcessTrigger) =>
+	[
+		trigger.name,
+		sourceOf(trigger).name,
+		trigger.boundedcontext.name,
+		detailOf(trigger) ?? "",
+	].join(" · ");
+
+const namesOf = (rows: ProcessTrigger[]) =>
+	distinguish(rows, rowReading, (it) => it);
+
 /** Every table names the kind, since what a process waits for may be an answer. */
 const columnsFor = (label: string, withKind: boolean): Column[] => [
 	{ key: "name", label },
@@ -101,10 +120,12 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 </script>
 
 {#snippet consumables(rows: ProcessTrigger[], label: string, withKind: boolean, empty: string)}
+	{@const names = namesOf(rows)}
 	<DataTable columns={columnsFor(label, withKind)} {rows} {empty} rowId={(c) => c.ref}>
 		{#snippet cell(c, col)}
 			{#if col.key === "name"}
-				<Lockup kind={kindOf(c)} name={c.name} ref={linkOf(c)} detail={detailOf(c)} />
+				{@const told = names(c) !== rowReading(c)}
+				<Lockup kind={kindOf(c)} name={told ? names(c) : c.name} ref={linkOf(c)} detail={told ? undefined : detailOf(c)} />
 			{:else if col.key === "kind"}
 				{#if c instanceof Answer}<Keyword text={answerKeyword(c)} />{:else if c instanceof Deadline}<Keyword text="deadline" title="A time limit this process keeps on its own instances; it needs no clock outside the model." />{:else}<ConsumableKeywords consumable={c} />{/if}
 			{:else if col.key === "provider"}

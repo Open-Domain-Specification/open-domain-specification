@@ -528,47 +528,69 @@ export class Workspace
 	}
 
 	/**
-	 * Resolves an answer ref: `<operation ref>/returns`, `<operation
-	 * ref>/rejects/<schema id>` for one of its refusals, or that with a final
-	 * `/<reason>` for one enumerated outcome of it. The shape is looked up
-	 * among the ones that operation declares, and the reason among the ones
+	 * Resolves an answer ref, read by its structure rather than by the words
+	 * in it (see {@link Answer.ref} for the grammar). Each outcome first resolves
+	 * its whole operation prefix exactly, so an in-memory operation whose
+	 * explicit id contains `/` retains the direct answer lookup that
+	 * `getConsumableByRef` supports. The answer suffix is `returns`, `completed`,
+	 * or `rejects/<context>/<schema>` with an optional `/<reason>`. The refusal
+	 * delimiter candidates are read from the right until the prefix names an
+	 * exact operation, after its otherwise opaque ref; the context, schema and
+	 * reason are escaped single segments. The shape is looked up among the ones
+	 * that operation
+	 * declares, by its context and id together, and the reason among the ones
 	 * that refusal enumerates, because an answer is the operation coming back
 	 * and nothing else can say what it comes back as (decision 23, third
-	 * amendment; decision 25, amended). A reason nothing enumerates resolves
-	 * to nothing, which is what `unresolved-ref` reports.
+	 * amendment; decision 25, amended).
+	 *
+	 * Anything else resolves to nothing, never an exception, which is what
+	 * `unresolved-ref` reports: a ref in an older form, a shape or reason the
+	 * operation does not declare, a segment too many or too few, and a segment
+	 * whose `~` escape is not `~0` or `~1`.
+	 *
+	 * A completion is named by any operation, resolved the same way whether or
+	 * not it returns a shape: the mismatch between naming a completion and the
+	 * operation answering with a shape is `consumable-kind`'s to report once
+	 * the Answer exists to carry it (decision 13, second amendment; card 108).
 	 */
 	getAnswerByRef(ref: string): Answer | undefined {
-		// A completion is named by any operation, resolved the same way whether
-		// or not it returns a shape: refusing to resolve it here for an
-		// operation that does return one used to surface as an unresolved ref
-		// that said the operation did not exist, when it does; the mismatch
-		// between naming a completion and the operation answering with a shape
-		// is `consumable-kind`'s to report, the same diagnostic the DSL gives
-		// for the same mistake, once the Answer exists to carry it
-		// (decision 13, second amendment; card 108).
 		if (ref.endsWith("/completed")) {
 			const operation = this.getConsumableByRef(
 				ref.slice(0, -"/completed".length),
 			);
-			return operation?.completed();
+			if (operation) return operation.completed();
 		}
-		const [operationRef, refusal] = ref.endsWith("/returns")
-			? [ref.slice(0, -"/returns".length)]
-			: ref.split("/rejects/");
-		if (!operationRef) return undefined;
-		const operation = this.getConsumableByRef(operationRef);
-		if (!operation) return undefined;
-		if (refusal === undefined)
-			return operation.returns ? operation.returned() : undefined;
-		const [rejectionId, reason, ...rest] = refusal.split("/");
-		if (rest.length) return undefined;
-		const rejection = operation.rejections.find(
-			(it) => it.schema.id === rejectionId,
-		);
-		if (!rejection) return undefined;
-		if (reason !== undefined && !rejection.reasons.includes(reason))
-			return undefined;
-		return operation.rejected(rejection.schema, reason);
+		if (ref.endsWith("/returns")) {
+			const operation = this.getConsumableByRef(
+				ref.slice(0, -"/returns".length),
+			);
+			if (operation)
+				return operation.returns ? operation.returned() : undefined;
+		}
+		const delimiter = "/rejects/";
+		let before = ref.length;
+		while (before >= 0) {
+			const rejectionAt = ref.lastIndexOf(delimiter, before);
+			if (rejectionAt < 0) return undefined;
+			const operation = this.getConsumableByRef(ref.slice(0, rejectionAt));
+			if (operation) {
+				const rest = ref.slice(rejectionAt + delimiter.length).split("/");
+				if (rest.length < 2 || rest.length > 3) return undefined;
+				const [context, schema, reason] = rest.map(refSegmentValue);
+				if (!context || !schema || (rest.length === 3 && !reason))
+					return undefined;
+				const rejection = operation.rejections.find(
+					(it) =>
+						it.schema.boundedcontext.id === context && it.schema.id === schema,
+				);
+				if (!rejection) return undefined;
+				if (reason !== undefined && !rejection.reasons.includes(reason))
+					return undefined;
+				return operation.rejected(rejection.schema, reason);
+			}
+			before = rejectionAt - 1;
+		}
+		return undefined;
 	}
 
 	getAnswerByRefOrThrow(ref: string): Answer {
@@ -692,6 +714,8 @@ export class Workspace
 	 * polymorphic lookups above narrow this result by type.
 	 */
 	getByRef(ref: string): Referenceable | undefined {
+		const answer = this.getAnswerByRef(ref);
+		if (answer) return answer;
 		const segments = ref.split("/");
 		const kind = segments[segments.length - 2];
 		switch (kind) {
@@ -727,24 +751,8 @@ export class Workspace
 				return this.getTermByRef(ref);
 			case "attributes":
 				return this.getAttributeByRef(ref);
-			// An answer hangs off the operation it comes back from rather than
-			// off a collection, so its shapes are read here: a refusal by the
-			// `rejects` segment before the shape's id, and the successful answer
-			// or the bare completion by a final `returns` or `completed`, which
-			// no collection is named.
-			case "rejects":
-				return this.getAnswerByRef(ref);
 			default:
-				// One enumerated outcome of a refusal hangs one segment further
-				// down: `.../rejects/<schema id>/<reason>`, whose collection
-				// segment is the shape's id, so `rejects` is looked for one
-				// place back before the successful answer and the completion,
-				// which end in a segment no collection is named.
-				if (segments[segments.length - 3] === "rejects")
-					return this.getAnswerByRef(ref);
-				return ["returns", "completed"].includes(segments[segments.length - 1])
-					? this.getAnswerByRef(ref)
-					: undefined;
+				return undefined;
 		}
 	}
 
@@ -1715,6 +1723,20 @@ export class Consumable
 	}
 }
 
+/** One segment of an answer ref: `~` written `~0` and `/` written `~1`. */
+function refSegment(value: string): string {
+	return value.replace(/~/g, "~0").replace(/\//g, "~1");
+}
+
+/**
+ * What one segment of an answer ref says, or undefined where its escapes are
+ * not the two {@link refSegment} writes.
+ */
+function refSegmentValue(segment: string): string | undefined {
+	if (/~(?![01])/.test(segment)) return undefined;
+	return segment.replace(/~1/g, "/").replace(/~0/g, "~");
+}
+
 /**
  * One answer of one operation: what that call comes back with.
  *
@@ -1724,11 +1746,11 @@ export class Consumable
  * woken by both, and the reaction walk would draw a causal step from a call
  * nobody was waiting on. Naming the origin says which call came back:
  * `<operation ref>/returns` is the successful answer, `<operation
- * ref>/rejects/<schema id>` one of its refusals (decision 23, third
- * amendment), `<operation ref>/rejects/<schema id>/<reason>` one enumerated
- * outcome of that refusal (decision 25, amended), and `<operation
+ * ref>/rejects/<context>/<schema>` one of its refusals (decision 23, third
+ * amendment), `<operation ref>/rejects/<context>/<schema>/<reason>` one
+ * enumerated outcome of that refusal (decision 25, amended), and `<operation
  * ref>/completed` the bare completion of an operation that returns nothing
- * (decision 13, second amendment).
+ * (decision 13, second amendment). See {@link Answer.ref}.
  *
  * A completion is the one answer with no shape. There is nothing to say about
  * what it carries, because it carries nothing: it says only that the call came
@@ -1775,11 +1797,29 @@ export class Answer implements Referenceable {
 		return this.schema === undefined;
 	}
 
+	/**
+	 * The answer's ref: `<operation ref>/returns`, `<operation ref>/completed`,
+	 * or `<operation ref>/rejects/<context>/<schema>[/<reason>]`.
+	 *
+	 * An operation returns one shape and completes once, so those two need
+	 * nothing more. A refusal names its shape by the shape's context and id
+	 * together, because an id is unique only inside its own context: an
+	 * operation may refuse with its own `decline` and a kernel-shared `decline`
+	 * from next door, and named by the id alone the two were one ref, written
+	 * twice and read back as one (issue #108, identity audit before the
+	 * twenty-third review). Each of the three is one segment, escaped as a JSON
+	 * Pointer segment is — `~` as `~0`, `/` as `~1` — so a reason the contract
+	 * states with a slash in it is still one segment. An empty reason is no
+	 * reason, and names the refusal itself.
+	 */
 	get ref(): string {
 		if (!this.schema) return `${this.operation.ref}/completed`;
 		if (!this.rejection) return `${this.operation.ref}/returns`;
-		const rejects = `${this.operation.ref}/rejects/${this.schema.id}`;
-		return this.reason ? `${rejects}/${this.reason}` : rejects;
+		const shape = [this.schema.boundedcontext.id, this.schema.id]
+			.map(refSegment)
+			.join("/");
+		const rejects = `${this.operation.ref}/rejects/${shape}`;
+		return this.reason ? `${rejects}/${refSegment(this.reason)}` : rejects;
 	}
 
 	/**
@@ -1821,15 +1861,20 @@ export class Answer implements Referenceable {
 
 	/** Where the answer comes from, in words: "X returns many Y". */
 	get origin(): string {
-		if (!this.schema) return `${this.operation.name} completes`;
-		const verb = this.rejection
-			? this.many
-				? "rejects with many"
-				: "rejects with"
-			: this.many
-				? "returns many"
-				: "returns";
-		return `${this.operation.name} ${verb} ${this.name}`;
+		return this.schema
+			? `${this.operation.name} ${this.verb} ${this.name}`
+			: `${this.operation.name} ${this.verb}`;
+	}
+
+	/**
+	 * How the operation came back, as the verb its origin reads with:
+	 * "completes", "returns", "returns many", "rejects with" or "rejects with
+	 * many".
+	 */
+	get verb(): string {
+		if (!this.schema) return "completes";
+		const many = this.many ? " many" : "";
+		return this.rejection ? `rejects with${many}` : `returns${many}`;
 	}
 
 	/** The context the call went to, which is where the answer comes from. */

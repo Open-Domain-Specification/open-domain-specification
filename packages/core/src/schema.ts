@@ -138,12 +138,15 @@ export interface PolicySchema {
 	 * What triggers this policy: an event consumable, or an answer of an
 	 * operation this context consumes, which means "when that answer comes
 	 * back". An answer is named by its origin — `<operation ref>/returns`,
-	 * `<operation ref>/rejects/<schema id>`, `<operation
-	 * ref>/rejects/<schema id>/<reason>` for one enumerated outcome of that
-	 * refusal, or `<operation ref>/completed` for an operation that returns
-	 * nothing and whose completion is all there is to wait on — and never by
-	 * the shape alone, so two operations refusing with one schema wake only
-	 * whoever named the call that was made (decision 23).
+	 * `<operation ref>/rejects/<schema context id>/<schema id>`, that with a
+	 * further `/<reason>` for one enumerated outcome of the refusal, or
+	 * `<operation ref>/completed` for an operation that returns nothing and
+	 * whose completion is all there is to wait on — and never by the shape
+	 * alone, so two operations refusing with one schema wake only whoever
+	 * named the call that was made (decision 23). The shape is named by its
+	 * context as well as its id, because an id is unique only inside its
+	 * context; each of those segments and the reason is escaped as a JSON
+	 * Pointer segment is, `~` as `~0` and `/` as `~1`.
 	 */
 	on?: { $ref: string }[];
 	/** The operation consumables this policy issues. Optional, like every list in this schema: an absent list is an empty one. */
@@ -430,7 +433,9 @@ export interface ConsumableSchema {
 	returns?: { $ref: string; many?: boolean };
 	/**
 	 * For operations: the shapes the operation answers with when it refuses,
-	 * each one of the context's schemas. A rejection is not an event, because
+	 * each one its context may carry under `schema-context`, as `schema` and
+	 * `returns` are: its own, or one borrowed over a shared kernel, as a
+	 * conformist or as a customer. A rejection is not an event, because
 	 * nothing happened, and not a transport error, which stays outside the
 	 * model. Absent means the operation either always succeeds or refuses
 	 * without a domain-meaningful shape. Never valid on an event.
@@ -445,7 +450,8 @@ export interface ConsumableSchema {
 	 * `reasons` are the enumerated outcomes of that shape as the contract
 	 * states them — an acquirer's decline codes, ISO 8583 response codes —
 	 * each one an answer a reactor may wait on, `<operation ref>/rejects/<schema
-	 * id>/<reason>`, alongside the shape-level answer that hears them all. A
+	 * context id>/<schema id>/<reason>`, alongside the shape-level answer that
+	 * hears them all. A
 	 * reason is a named outcome the contract states and not a condition on
 	 * data, which stays out of the model (decisions 25, amended, and 15).
 	 */

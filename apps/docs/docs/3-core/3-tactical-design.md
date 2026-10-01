@@ -405,8 +405,12 @@ An operation may also list the schemas it `rejects` with: the shapes it
 answers with when it refuses. A declined payment, a transfer over the daily
 limit, a reservation the stock will not cover — nothing happened, so none of
 these is an event, and a transport error stays outside the model. Each
-rejection is a schema of the provider's own context, checked by
-`schema-context` exactly as `schema` and `returns` are. Leave `rejects` off
+rejection's shape is checked by `schema-context` exactly as `schema` and
+`returns` are: the provider's own context's, or one that context borrows over a
+shared kernel, as a conformist or as a customer, or the caller's shape on an
+operation that caller reaches through an anti-corruption layer. A process waits
+on one by its origin, `<operation ref>/rejects/<context>/<schema>`, the shape
+named by its context because an id is unique only inside its own. Leave `rejects` off
 when the operation always succeeds or refuses without a shape worth naming,
 which is honest for most commands; an event never lists one, because a fact
 that already happened has nothing left to refuse.

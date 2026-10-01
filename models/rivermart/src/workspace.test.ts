@@ -93,7 +93,7 @@ describe("RiverMart's acquirer and the outcomes it enumerates", () => {
 			(it): it is Answer => it instanceof Answer,
 		);
 		expect(waited.map((it) => it.ref)).toEqual([
-			`${holdFunds.ref}/rejects/provider_decline/issuer_unavailable`,
+			`${holdFunds.ref}/rejects/payment_provider/provider_decline/issuer_unavailable`,
 		]);
 		expect(waited[0].declared).toBe(true);
 		expect(waited[0].operation).toBe(holdFunds);
