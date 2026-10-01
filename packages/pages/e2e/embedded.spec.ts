@@ -75,7 +75,7 @@ test("follows navigate and reveal messages from the host", async ({ page }) => {
 	await expect(page.locator("main h1")).toContainText("Orders Team");
 
 	await page.evaluate(() => {
-		window.postMessage({ type: "navigate", ref: "#/" }, "*");
+		window.postMessage({ type: "navigate", ref: "#" }, "*");
 	});
 	await expect(page.locator("main h1")).toContainText("Swagger Petstore");
 

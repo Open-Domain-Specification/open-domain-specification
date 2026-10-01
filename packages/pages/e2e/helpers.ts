@@ -165,8 +165,8 @@ export const EXPORT_ORIGIN = "http://localhost:4174";
 export const DOCSIFY_DIR = join(__dirname, "../../../models/petstore/docs");
 export const DOCSIFY_ORIGIN = "http://localhost:4175";
 
-/** The viewer with the workspace already requested through the `?url=` import. */
-export const modelHash = (ref: string) => modelRefToHash(ref);
+/** A canonical model ref as a URL hash; empty means no requested route. */
+export const modelHash = (ref: string) => (ref ? modelRefToHash(ref) : "");
 
 export const viewerAt = (hash = "") =>
 	`/?url=${encodeURIComponent(PETSTORE_URL)}${hash ? modelHash(hash) : ""}`;
