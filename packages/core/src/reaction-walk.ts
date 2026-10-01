@@ -452,6 +452,19 @@ function callChainReaches(
 	return false;
 }
 
+/** The effective callers of an operation consumption, shared by walks and rules. */
+export function operationCallers(consumption: Consumption): Consumable[] {
+	if (consumption.consumable.type !== "operation") return [];
+	if (consumption.by.length > 0)
+		return consumption.by.filter(
+			(caller): caller is Consumable => caller instanceof Consumable,
+		);
+	const operations = [...consumption.consumer.consumables.values()].filter(
+		(it) => it.type === "operation",
+	);
+	return operations.length === 1 ? operations : [];
+}
+
 /**
  * The operations one operation calls out to: the consumptions its own
  * provider declares that name it in `by`. A consumption's `by` names
@@ -476,17 +489,9 @@ function callChainReaches(
  */
 export function callsOut(operation: Consumable): Consumable[] {
 	if (operation.type !== "operation") return [];
-	const { provider } = operation;
-	const soleCaller =
-		[...provider.consumables.values()].filter((it) => it.type === "operation")
-			.length === 1;
-	return provider.consumptions
-		.filter(
-			(c) =>
-				c.consumable.type === "operation" &&
-				(c.by.includes(operation) || (soleCaller && c.by.length === 0)),
-		)
-		.map((c) => c.consumable);
+	return operation.provider.consumptions
+		.filter((consumption) => operationCallers(consumption).includes(operation))
+		.map((consumption) => consumption.consumable);
 }
 
 /**

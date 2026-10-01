@@ -125,3 +125,7 @@ Card 126's transitive routing added a fourth clause to `routesTo` that returned 
 ## Amendment (2026-09-10, second)
 
 A consumer that provides no operation could consume a foreign operation and nothing asked who calls it: `consumption-by-required` skipped consumers with fewer than two operations and the single-operation inference had nothing to infer from, so the reaction walk dead-ended silently, the case this record's third amendment exists to report. An operation consumption on a consumer that provides no operation is reported; an external or mud consumer is not asked (card 130, architect's fourteenth round).
+
+## Note (2026-10-01)
+
+The single-operation inference already governed the reaction walk and answer routing, but aggregate and context precondition reach read only explicit `by`. A front whose sole operation called an aggregate guard and fetched an answer therefore made the same rule invalid when `by` was omitted; the same gap hid the payload the front's issuing reactor had heard. The validator and reaction walk now use one effective operation-caller lookup: an omitted `by` infers exactly one provided operation, while an ambiguous multi-operation consumer infers none (issue #130, card 180). This applies the existing decision; it adds no new borrowing or timing rule.

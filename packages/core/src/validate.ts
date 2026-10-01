@@ -17,6 +17,7 @@ import {
 import {
 	callsOut,
 	hearsAnswerOf,
+	operationCallers,
 	ReactionChain,
 	type Reactor,
 	reachedEvents,
@@ -1189,20 +1190,20 @@ function composedSchemas(roots: Iterable<DataSchema>): Set<DataSchema> {
  * rather than about the guard alone. A front is found through `by` read as the
  * causal link it is (decision 21's amendment), and only inside the guard's own
  * context: a consumption is the consumer's, and a rule of ours may not be fed
- * by somebody else's call.
+ * by somebody else's call. An omitted `by` on a single-operation consumer
+ * means that operation is the caller, as it does in the reaction walk.
  */
 function guardChain(guard: Consumable): {
 	consumptions: Consumption[];
-	callers: Set<Consumable | Policy | Process>;
+	callers: Set<Consumable>;
 } {
 	const bc = guard.boundedcontext;
 	const members = [...bc.aggregates.values(), ...bc.services.values()];
 	const consumptions = members.flatMap((member) => member.consumptions);
-	const callers = new Set<Consumable | Policy | Process>([guard]);
+	const callers = new Set<Consumable>([guard]);
 	for (const consumption of consumptions) {
 		if (consumption.consumable !== guard) continue;
-		for (const by of consumption.by)
-			if (by instanceof Consumable) callers.add(by);
+		for (const caller of operationCallers(consumption)) callers.add(caller);
 	}
 	return { consumptions, callers };
 }
@@ -1220,10 +1221,10 @@ function guardChain(guard: Consumable): {
  * rule a reader can follow to the call that feeds it and a sentence saying
  * "somewhere we look this up".
  *
- * Two ways a call belongs to a guard, and both are `by` read as the causal
- * link it is (decision 21's amendment). The guard makes the call itself: its
- * own provider's consumption names it in `by`. Or the front that calls the
- * guard makes it, which is the {@link guardChain}.
+ * Two ways a call belongs to a guard, and both use the effective caller from
+ * decision 21. The guard makes the call itself, or a front that calls the
+ * guard makes it (the {@link guardChain}). A sole operation with omitted `by`
+ * is inferred in both places; an ambiguous consumer gains no caller.
  */
 function fetchedByGuard(guard: Consumable): DataSchema[] {
 	const { consumptions, callers } = guardChain(guard);
@@ -1231,7 +1232,8 @@ function fetchedByGuard(guard: Consumable): DataSchema[] {
 	for (const consumption of consumptions) {
 		const { returns } = consumption.consumable;
 		if (!returns) continue;
-		if (!consumption.by.some((by) => callers.has(by))) continue;
+		if (!operationCallers(consumption).some((caller) => callers.has(caller)))
+			continue;
 		if (!answers.includes(returns)) answers.push(returns);
 	}
 	return answers;

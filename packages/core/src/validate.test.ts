@@ -1728,7 +1728,7 @@ describe("invariant-in-aggregate", () => {
 	 * name that answer's shape and still not the other context's entity
 	 * (decision 19, amendment of 2026-09-10, second; card 116).
 	 */
-	function goodStanding({ front = false } = {}) {
+	function goodStanding({ front = false, inferred = false } = {}) {
 		const ws = emptyWorkspace();
 		const customers = ws.addBoundedContext("Customers", { description: "" });
 		const sales = ws.addBoundedContext("Sales", { description: "" });
@@ -1772,11 +1772,11 @@ describe("invariant-in-aggregate", () => {
 		});
 		salesApp.consumes(getStanding, {
 			pattern: "anti-corruption-layer",
-			by: [check],
+			...(inferred ? {} : { by: [check] }),
 		});
 		// The front reaches the aggregate's transition, so the guard is
 		// `Approve` alone and the call belongs to what calls it.
-		if (front) salesApp.consumes(approve, { by: [check] });
+		if (front) salesApp.consumes(approve, inferred ? {} : { by: [check] });
 		return { ws, orders, approve, check, standing, theirStanding };
 	}
 
@@ -1801,6 +1801,27 @@ describe("invariant-in-aggregate", () => {
 			.constrains(approve, standing);
 		expect(inAggregate(ws)).toEqual([]);
 	});
+
+	it.each([false, true])(
+		"reads the answer through an inferred sole caller, front=%s",
+		(front) => {
+			const { ws, orders, approve, check, standing } = goodStanding({
+				front,
+				inferred: true,
+			});
+			orders
+				.addInvariant("Good Standing Without Redundant By", {
+					description: "",
+					precondition: true,
+				})
+				.constrains(approve, ...(front ? [] : [check]), standing);
+			for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+				expect(
+					model.validate().filter((d) => d.rule === "invariant-in-aggregate"),
+				).toEqual([]);
+			}
+		},
+	);
 
 	it("still refuses the other context's own attribute", () => {
 		const { ws, orders, approve, check, theirStanding } = goodStanding();
@@ -1827,9 +1848,11 @@ describe("invariant-in-aggregate", () => {
 	 */
 	function fulfilmentGate({
 		front = false,
+		inferred = false,
 		reactor = "process",
 	}: {
 		front?: boolean;
+		inferred?: boolean;
 		reactor?: "process" | "policy";
 	} = {}) {
 		const ws = emptyWorkspace();
@@ -1873,7 +1896,7 @@ describe("invariant-in-aggregate", () => {
 					internal: true,
 				})
 			: ship;
-		if (front) app.consumes(ship, { by: [doShip] });
+		if (front) app.consumes(ship, inferred ? {} : { by: [doShip] });
 		const heard =
 			reactor === "process"
 				? fulfilment
@@ -1910,6 +1933,24 @@ describe("invariant-in-aggregate", () => {
 			})
 			.constrains(ship, total, amount);
 		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("reads a heard payload through an inferred sole front", () => {
+		const { ws, shipments, ship, total, amount } = fulfilmentGate({
+			front: true,
+			inferred: true,
+		});
+		shipments
+			.addInvariant("Ship Only When Fully Paid", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(ship, total, amount);
+		for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+			expect(
+				model.validate().filter((d) => d.rule === "invariant-in-aggregate"),
+			).toEqual([]);
+		}
 	});
 
 	it("reads it when a stateless policy is what reacts", () => {
@@ -2182,6 +2223,140 @@ describe("invariant-in-context", () => {
 			],
 		]);
 	});
+});
+
+describe("invariant reach through inferred operation callers", () => {
+	it.each([false, true])(
+		"accepts the same fetched answer with explicit by=%s",
+		(explicit) => {
+			const ws = new Workspace("Review", { description: "", version: "0" });
+			const bc = ws
+				.addDomain("D", { description: "" })
+				.addSubdomain("S", { description: "", type: "core" })
+				.addBoundedcontext("Sales", { description: "" });
+			const answer = bc.addSchema("Standing");
+			const standing = answer.addAttribute("standing", { type: "string" });
+			const query = bc
+				.addService("Lookup", { description: "", type: "application" })
+				.provides("GetStanding", {
+					description: "",
+					type: "operation",
+					internal: true,
+					returns: answer,
+				});
+			const front = bc.addService("Front", {
+				description: "",
+				type: "application",
+			});
+			const approve = front.provides("Approve", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			front.consumes(query, explicit ? { by: [approve] } : {});
+			bc.addInvariant("GoodStanding", {
+				description: "",
+				precondition: true,
+			}).constrains(approve, standing);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(candidate.validate()).toEqual([]);
+		},
+	);
+
+	function model(
+		scope: "aggregate" | "context",
+		fact: "answer" | "event",
+		ambiguous = false,
+	) {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate.addRootEntity("Order", { description: "" });
+		const guard = aggregate.provides("Approve", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const shape = bc.addSchema("Standing");
+		const field = shape.addAttribute("standing", { type: "string" });
+		const front = bc.addService("Front", {
+			description: "",
+			type: "application",
+		});
+		const approve = front.provides("Approve", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		if (ambiguous)
+			front.provides("Other", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+		front.consumes(guard);
+		if (fact === "answer") {
+			const getStanding = bc
+				.addService("Lookup", { description: "", type: "application" })
+				.provides("Get Standing", {
+					description: "",
+					type: "operation",
+					internal: true,
+					returns: shape,
+				});
+			front.consumes(getStanding);
+		} else {
+			const captured = bc
+				.addService("Payments", { description: "", type: "application" })
+				.provides("Captured", {
+					description: "",
+					type: "event",
+					schema: shape,
+				});
+			const reactor = bc
+				.addPolicy("Approve on capture", { description: "" })
+				.on(captured)
+				.issues(approve);
+			front.consumes(captured, { by: [reactor] });
+		}
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("Standing required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(guard, field);
+		return { ws, rule };
+	}
+
+	it.each([
+		["aggregate", "answer"],
+		["context", "answer"],
+		["aggregate", "event"],
+		["context", "event"],
+	] as const)("%s precondition reads an inferred front's %s", (scope, fact) => {
+		const { ws } = model(scope, fact);
+		for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())]) {
+			expect(
+				candidate.validate().filter((d) => d.rule === `invariant-in-${scope}`),
+			).toEqual([]);
+		}
+	});
+
+	it.each(["aggregate", "context"] as const)(
+		"%s precondition does not infer an ambiguous front",
+		(scope) => {
+			const { ws, rule } = model(scope, "answer", true);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())]) {
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`)
+						.map((d) => d.ref),
+				).toEqual([rule.ref]);
+			}
+		},
+	);
 });
 
 describe("invariant-in-value-object", () => {
