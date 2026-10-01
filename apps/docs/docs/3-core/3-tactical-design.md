@@ -301,7 +301,12 @@ one on the current chain; the current invocation's future answer cannot.
 A fact must be held on every finite admitted entry-to-guard caller or
 reactor walk. Sequential local fronts and recursive callers keep facts from
 informed real entries; an uninformed alternate entry removes them, and a
-closed internal caller cycle with no entry supplies none. Nor may it name the other context's
+closed internal caller cycle with no entry supplies none. A local consumption
+whose caller cannot be identified adds an independent entry with no held facts,
+even beside known callers or reactors. Omitting `by` infers a sole operation;
+zero or several possible callers infer none, and no causal edge is invented.
+Fact reach does not establish reaction bootstrap or settle a reaction cycle.
+Nor may it name the other context's
 entities, which are never in reach. A postcondition constrains what its
 operation returns or rejects with, and the request it relates them to. Either
 follows composition: a rule about the amount of an order line is a rule about

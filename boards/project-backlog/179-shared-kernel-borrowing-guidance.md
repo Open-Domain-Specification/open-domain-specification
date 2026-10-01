@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [docs, model, bug]
 priority: high
 agent: lead
 live: false
-status: Guidance correction passing; full local gate and signoff pending
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 75
 clean-code-swept: true
-updatedAt: 2026-10-01T07:25:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # Guidance says a shared kernel borrows both ways
 
@@ -26,3 +26,5 @@ Issue #129. Astra's twelfth exact-head review found the hand-written authoring s
 
 - **lead** (2026-10-01): The reciprocal borrowing fixture and 65 focused drift tests pass. The reference was regenerated from core; no generated file was hand-edited.
 - **lead** (2026-10-01): Clean-code audit found no scored violation: the one-way condition remains in the directed relationship routes and the generated reference is downstream of the rule catalogue. The reciprocal fixture uses a valid domain/subdomain and asserts zero diagnostics on both forms.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

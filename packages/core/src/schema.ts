@@ -710,7 +710,12 @@ export interface InvariantSchema {
 	 * be held on every finite admitted entry-to-guard caller or reactor walk;
 	 * sequential local fronts retain it. Recursive callers keep facts from
 	 * informed real entries, but an uninformed alternate entry removes them,
-	 * and a closed internal caller cycle with no entry supplies none. A postcondition may
+	 * and a closed internal caller cycle with no entry supplies none. A local
+	 * consumption whose caller cannot be identified adds an independent entry
+	 * with no held facts, even beside known callers or reactors. Omitted `by`
+	 * still infers a sole operation; zero or several possible callers identify
+	 * none and do not invent a causal edge. Fact reach does not decide whether
+	 * a reaction can bootstrap or cycles. A postcondition may
 	 * relate the guarded operation's request to the shapes it returns or
 	 * rejects with; it guarantees what comes back. When several operations are
 	 * named, the postcondition's shape must be reachable from each of them.

@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [model, bug]
 priority: high
 agent: claude
 live: false
-status: Fifth signoff round found reverse borrowing claim; directional correction and focused tests pass, integrated gate pending
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 90
 clean-code-swept: true
-updatedAt: 2026-10-01T00:30:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # The context page lists every user of a value object
 
@@ -33,3 +33,5 @@ Issue #112. On the second signoff head `771a44e0`, Claude Opus 5.5 high reproduc
 - **claude** (2026-10-01T00:30:00Z): Picked up from `771a44e0`. The page lie was a second, local copy of the holder rule in `ContextPage.svelte`; Markdown had its own in `packages/doc`. Both now call core. The first e2e draft asserted no "nothing" anywhere in Ledger's table, which was wrong: `CustomerLedgerAccount` and `NominalLedgerAccount` have no users. The test now asserts the two named rows and that `NominalLedgerAccount` still says it. To show the old page fails, I rebuilt with the `771a44e0` ContextPage and ran the file: both hosts failed on the AccountNumber link; with the new page all ten pass. No agents, reviewers, push, PR or full gate were run.
 - **lead** (2026-09-30): The fourth signoff round on exact head `cb3ebb0aa9d3b99d574d5b06700f49dfe406a2f5` was Astra APPROVE and Opus BLOCK. Opus reproduced a specialisation-only borrower whose parent reads unused, and NorthBank's two ledger account kinds read unused although `JournalEntry` holds their parent. The lead accepts this as a blocker: the checker treats specialisation as borrowing, so a broad Used by column cannot call it nothing. Core tests first failed on the old helper in three cases. With the hierarchy correction, core (5), NorthBank Markdown (7), viewer/export browser (10), Svelte check and format pass. The corrected full gate and exact-head reviews remain.
 - **lead** (2026-10-01): The fifth signoff round on exact head `efc19483a078bcf6af06ebe7035f034ef0a8b574` was BLOCK from both reviewers. Opus reproduced the reverse direction: Accounts declares Money and holds it, Cards is its conformist and declares Fee as a kind of Money, but Fee's Used by listed Accounts / Account through Money. Accounts cannot borrow Fee. Core now shares the validator's `mayBorrowFrom` predicate, allowing a parent-typed holder only in the kind's context or a context that may borrow it. The core test asserts the negative and a positive Accounts/Overdraft kind used by Cards; Markdown and the Svelte context page assert the displayed direction. These focused tests pass; the full gate and new reviews remain.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

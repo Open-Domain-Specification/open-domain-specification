@@ -514,6 +514,49 @@ const currentFacts: Array<{
 		],
 	},
 	{
+		fact: "an unattributed local consumption is an empty independent entry (schema source)",
+		file: "packages/core/src/schema.ts",
+		sentences: [
+			"consumption whose caller cannot be identified adds an independent entry",
+			"still infers a sole operation",
+			"do not invent a causal edge",
+		],
+	},
+	{
+		fact: "an unattributed local consumption is an empty independent entry (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"consumption with no identifiable caller adds an independent entry with no held facts",
+			"omitting `by` still infers a sole operation",
+			"This reach check does not establish reaction bootstrap or resolve cycles",
+		],
+	},
+	{
+		fact: "an unattributed local consumption is an empty independent entry (DSL reference)",
+		file: "packages/skill/skill/references/dsl-api.md",
+		sentences: [
+			"consumption whose caller cannot be identified adds an independent entry with no held facts",
+			"omitted `by` still infers a sole operation",
+			"Fact reach does not decide reaction bootstrap or cycles",
+		],
+	},
+	{
+		fact: "an unattributed local consumption is an empty independent entry (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"consumption whose caller cannot be identified adds an independent entry with no held facts",
+			"Omitting `by` infers a sole operation",
+			"no causal edge is invented",
+		],
+	},
+	{
+		fact: "generated validation guidance names the empty entry explicitly",
+		file: "packages/skill/skill/references/validation-rules.md",
+		sentences: [
+			"A local consumption whose caller cannot be identified contributes an independent empty held-fact entry, even beside informed known callers or reactors.",
+		],
+	},
+	{
 		fact: "validation guidance states process and policy precondition timing",
 		file: "apps/docs/docs/3-core/4-validation.md",
 		sentences: [

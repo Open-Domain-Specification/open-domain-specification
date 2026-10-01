@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Focused correction passing; full local gate and signoff pending
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 75
 clean-code-swept: true
-updatedAt: 2026-10-01T07:25:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # A modelled rule names operations, not events, as guards
 
@@ -28,3 +28,5 @@ Issue #128. Astra's twelfth exact-head review found a context or aggregate preco
 - **lead** (2026-10-01): The first full local gate passed on `716d6989` (core 1067, skill 93, pages 1019 at 100% coverage, browser 430 passed/20 skipped). A final source check found the unflagged variant, so the guard validation was consolidated into one rule and the matrix expanded; the gate must repeat on the amended head. The clean-code audit across SRP, DRY, naming, coupling, dead code, KISS, boundaries and panic safety found no scored violation in the common rule; tests assert complete zero-diagnostic positives and only the expected errors in negatives.
 - **lead** (2026-10-01): The first full gate of the consolidated rule stopped at core's required catalogue coverage: every rule needs a family and a positive/negative pair. The new rule is now classified in the invariants family, represented by a nearest-valid pair, and fired in the all-rules fixture; the three focused catalogue suites pass. The full gate must run again on a clean head.
 - **lead** (2026-10-01): The second full gate passed core (1069) and stopped at the documentation site's hand-written rule table, which requires every catalogue id. The validation page now names the new rule and its external event exception; its table test and a guidance drift assertion will be checked before the next gate.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

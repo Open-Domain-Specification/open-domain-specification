@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Tenth signoff blocker in correction; local full gate pending
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 95
 clean-code-swept: true
-updatedAt: 2026-10-01T05:10:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # Value-object invariants have construction timing only
 
@@ -26,3 +26,5 @@ Issue #124. Both tenth-round reviewers reproduced a standard's value-object inva
 - **lead** (2026-10-01): The focused validator cases pass. The rule is checked by value ownership, so an external context cannot bypass it.
 
 - **lead** (2026-10-01): Clean-code audit found one rule owning construction timing and a separate call-timing iterator, with no duplicate timing error in modelled contexts. Generated references and all schema copies were rebuilt, and drift checks pass. No high-scored marker remains.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

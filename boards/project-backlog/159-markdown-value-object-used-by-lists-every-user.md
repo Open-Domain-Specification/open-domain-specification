@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [docs, bug]
 priority: high
 agent: claude
 live: false
-status: Committed locally; awaiting the lead's integrated gate and independent reviews
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 90
 clean-code-swept: true
-updatedAt: 2026-09-30T23:30:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # Markdown's value-object "Used by" lists every user
 
@@ -33,3 +33,5 @@ Issue #110. A reader of generated Markdown sees every user of a value object, in
 ## Comments
 
 - **claude** (2026-09-30T23:30:00Z): Picked up from `fcbbb93e`. Not touched: the Schemas table's "Used by" header lists a schema's consumables, not its users; that is a separate naming question, not #110. A value object's relations were already counted by the old column and stay counted.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Sixth signoff round found a foreign aggregate rule omitted from the value page; correction and focused test pass, integrated gate pending
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 85
 clean-code-swept: true
-updatedAt: 2026-10-01T00:40:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # A borrowed value page names foreign aggregate rules
 
@@ -33,3 +33,5 @@ Issue #115. On the sixth signoff head `a11bede2`, OpenAI Astra low reproduced a 
 - **lead** (2026-10-01): Issue #115 records the reader story. The page's local-only lookup was narrower than decision 27 and the validator: an aggregate may constrain a borrowed value it holds. I moved its search over all contexts' aggregates and added an optional Kept by column to the existing invariant table, showing `Cards / Card` for a foreign rule. The new test checks the runnable counterexample both as authored and after a JSON round-trip. No schema or validator rule changed. Focused tests and Svelte check pass; the full gate and final reviews remain.
 - **lead** (2026-10-01): Clean-code pass on the outgoing diff: one lookup remains in the page that alone needs it; the reusable invariant table only gains an optional owner column; no duplicate rule calculation, unchecked lookup or dead path was found. The recursive self-user guard is one early return. Format and diff-whitespace checks pass. The browser and full repository gate remain the required integration checks.
 - **lead** (2026-10-01): The `c1fc4bbd` full gate passed. Astra and Opus both verified the borrowed Money / PositiveBalance correction on that head. They found separate defects in the context and entity pages, tracked as issues #116 and #117; this card remains in `doing` until the integrated model head lands.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

@@ -106,7 +106,11 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   guarded invocation's future answer or raised event alone supplies no fact. A fact is reachable
   only if every finite admitted entry-to-guard caller or reactor walk holds it. Sequential local
   fronts and recursive callers keep facts from informed real entries; an uninformed alternate
-  entry removes them, and a closed internal caller cycle with no entry supplies none. Where a postcondition names
+  entry removes them, and a closed internal caller cycle with no entry supplies none. A local
+  consumption with no identifiable caller adds an independent entry with no held facts, even
+  beside known callers or reactors; omitting `by` still infers a sole operation, while zero or
+  several possible callers infer none. This reach check does not establish reaction bootstrap or
+  resolve cycles. Where a postcondition names
   several operations, it guarantees its target shape at each operation, through composition;
   their shapes are not combined into a union.
 - An external context is somebody else's machine: it states no aggregates, policies or

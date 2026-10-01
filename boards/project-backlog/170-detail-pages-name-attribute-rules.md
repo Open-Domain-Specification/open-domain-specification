@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Eighth signoff blocker corrected; full gate green on 5bb730fa, independent signoff pending
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 95
 clean-code-swept: true
-updatedAt: 2026-10-01T04:22:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # Detail pages name attribute rules
 
@@ -31,3 +31,5 @@ Issue #120. On exact head `a2cef010`, Claude Opus 5.5 high found NorthBank Accou
 
 - **lead** (2026-10-01): Issue #120 records the reader story. The shared leaf lookup now tests each rule target against the element and its `allAttributes`; the latter includes inherited attributes. It preserves direct target identity, does not infer that a rule on a held value applies to every entity, and leaves the aggregate/context owner column intact. Focused NorthBank and synthetic kind tests pass.
 - **lead** (2026-10-01): Clean-code pass: one lookup serves both detail pages; a set of the target's attributes avoids repeated hierarchy walks, and the template retains presentation only. No duplicate rule branch or unsafe product lookup remains.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

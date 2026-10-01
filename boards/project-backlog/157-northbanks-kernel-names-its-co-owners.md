@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [ddd, docs, bug]
 priority: high
 agent: claude
 live: false
-status: Committed locally; awaiting the landing gate and the lead's independent OpenAI and Claude reviews
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 90
 clean-code-swept: true
-updatedAt: 2026-09-30T22:20:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # NorthBank's shared kernel names the teams that co-own it
 
@@ -38,3 +38,5 @@ Issue #107. A reader of NorthBank's model can see that Accounts and Ledger co-ow
 - **claude** (2026-09-30T22:05:00Z): The model is in `models/northbank/src/workspace.ts:710-735`, where Money and AccountNumber are declared in Ledger and each description says who co-owns it. The kernel and Cards' relationship are at `models/northbank/src/workspace.ts:3273-3313`, and every borrowing comment was repointed. Ledger is the home and Accounts is not, because only Ledger has a borrowing route to the users: Payments and Cards take Accounts' operations through an anti-corruption layer, and Lending has no relationship with Accounts. Nothing the interviews do not say was added. The four users' use of the library is kept as the model's assumption, and the Cards relationship's description says so. The uncertainty is in the appended revision, `models/northbank/DISCOVERY.md` (the card 157 section). §2, §5 and §6 get dated notes, not rewrites. RiverMart's comparison with NorthBank gets a note (`models/rivermart/DISCOVERY.md`, the card 105 section).
 - **claude** (2026-09-30T22:05:00Z): The general case, probed in a throwaway workspace: a kernel context with three co-owners and one conformist user validates to exactly one `context-serves-subdomain` warning, on the kernel context. With co-owners only, it validates clean. NorthBank does not need that shape, so it is recorded in decision 16's amendment of 2026-09-30 as a named cost with a reopening condition, and in `packages/skill/skill/references/preferences.md` and `apps/docs/docs/3-core/3-tactical-design.md`. The false guidance is corrected: `interview-playbook.md` (the relationships question and the values question), `translation-table.md` (a new "we use their library" row), `SKILL.md`, `reconciliation.md`, `examples/petstore.md` and `apps/docs/docs/3-core/2-strategic-design.md`.
 - **claude** (2026-09-30T22:05:00Z): Surfaces. NorthBank's `.ods` and `docs/` come from a clean rebuild (`npm run clean && npm run build`); only the `.ods` is tracked. In Markdown, the one shared-kernel row is Accounts and Ledger. No page names a Shared Kernel context or team. The Cards relationship says the use is assumed. Money's description names both co-owners. The viewer and the static export are checked by `packages/pages/e2e/northbank-kernel-ownership.spec.ts`. The VS Code webview renders the same pages bundle from the same `.ods`. It was not driven separately for NorthBank, and the real-VS-Code suites were not run for this card. One separate gap, not fixed: Markdown's value-object "Used by" lists only the context's own holders, while the pages' value-object page lists every user. It existed before this change and states no ownership. Commits: `d22b892d` (decision and guidance) and `1fb33de8` (model, record, tests).
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

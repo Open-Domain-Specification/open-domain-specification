@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [model, bug]
 priority: high
 agent: claude
 live: false
-status: Fix and focused tests committed locally; awaiting the lead's integrated gate and a third signoff round
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 85
 clean-code-swept: true
-updatedAt: 2026-10-01T01:00:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # Stale generated model pages are removed
 
@@ -29,3 +29,5 @@ Issue #113. The second signoff round's Opus report found tracked generated pages
 ## Journal
 
 - **claude** (2026-10-01T01:00:00Z): Picked up from `16665ca5`. The generator only added files. It now replaces `docs/` from a sibling directory once `toDoc` has succeeded. I ran the new test against the old generator to confirm it fails (the old one also ignores `root`, so it writes into the package directory; I removed those strays). No agents, reviewers, push, PR or full gate were run.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

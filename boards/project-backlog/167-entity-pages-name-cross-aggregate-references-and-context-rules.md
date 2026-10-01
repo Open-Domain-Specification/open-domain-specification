@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Correction passed on a2cef010 and both eighth-round reviewers confirmed it; attribute-rule follow-up #120 in progress
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 95
 clean-code-swept: true
-updatedAt: 2026-10-01T04:15:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # Entity pages name cross-aggregate references and context rules
 
@@ -32,3 +32,5 @@ Issue #117. The seventh signoff round's Claude Opus 5.5 high review reproduced t
 - **lead** (2026-10-01): Issue #117 records the reader story. The old incoming lookup stopped at the entity's aggregate; the rule lookup stopped at aggregate rules. The shared Svelte page now reads direct incoming relations and rules throughout the workspace, and the optional Kept by column distinguishes aggregate and context invariants. Its empty relation state says direct, leaving parent-typed possible references to the broader model. The three focused cases pass. No schema or validator rule changed.
 - **lead** (2026-10-01): Clean-code pass: workspace lookups live once in the pages leaf module, the entity page only formats their result, and the invariant table shares its existing optional owner column. The loops are finite and preserve workspace order; no unchecked product lookup or high-scored clean-code finding remains. Focused tests, Svelte check and format pass.
 - **lead** (2026-10-01): The eighth Opus review confirmed direct entity and context rule fixes but found the adjacent attribute-target omission. Issue #120/card 170 corrects that reach in the shared lookup; this card's direct-target claim remains true.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [ddd, docs, bug]
 priority: high
 agent: claude
 live: false
-status: Committed locally; awaiting the lead's integrated gate and independent reviews
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 90
 clean-code-swept: true
-updatedAt: 2026-09-30T23:00:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # NorthBank's credit decision records its scorecard call
 
@@ -31,3 +31,5 @@ Issue #109. A reader following a credit decision sees `Decide` run the scorecard
 ## Comments
 
 - **claude** (2026-09-30T23:00:00Z): Picked up from `f9ef8b67`. The call is in `models/northbank/src/workspace.ts` beside `ScoreApplication`. `assertDocSite` in `models/_shared` now returns the files it renders, so a model test can read the Markdown. Ambiguity: whether the scorecard answers with `CreditScore`; left unrecorded, see the DISCOVERY revision.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

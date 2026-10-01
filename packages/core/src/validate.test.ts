@@ -3722,6 +3722,573 @@ describe("precondition facts held on every finite route to a guard", () => {
 	);
 });
 
+// A consumption whose caller nobody can name is still a call: decision 21
+// reads an omitted `by` as the whole consumer, and the guard's analysis has to
+// count that route even though it cannot say which operation runs it. It
+// holds nothing, beside any informed front or reactor, and in a big ball of
+// mud, where the caller is allowed to stay unnamed, it still holds nothing
+// (#131).
+describe("precondition facts beside a consumption whose caller is unnamed", () => {
+	type Scope = "aggregate" | "context";
+	type Shape = ReturnType<BoundedContext["addSchema"]>;
+	type Provider = ReturnType<BoundedContext["addService"]>;
+	const scopes = ["aggregate", "context"] as const;
+
+	function base(scope: Scope, mud = false) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", {
+				description: "",
+				...(mud ? { bigBallOfMud: true } : {}),
+			});
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const fact = bc.addSchema("Fact");
+		const value = fact.addAttribute("value", { type: "string" });
+		const service = (name: string) =>
+			bc.addService(name, { description: "", type: "application" });
+		const op = (
+			provider: Provider,
+			name: string,
+			extra: { internal?: boolean; returns?: Shape; schema?: Shape } = {},
+		) =>
+			provider.provides(name, { description: "", type: "operation", ...extra });
+		const known = service("Known");
+		const read = op(known, "Read", { returns: fact });
+		const constrain = (...guards: Consumable[]) =>
+			(scope === "aggregate" ? aggregate : bc)
+				.addInvariant("Fact required", { description: "", precondition: true })
+				.constrains(...guards, value);
+		return { ws, bc, fact, known, read, service, op, constrain };
+	}
+
+	/** The informed route: a public front that fetches the fact and calls the guard. */
+	function informedFront(scope: Scope, mud = false) {
+		const it = base(scope, mud);
+		const front = it.op(it.known, "Front");
+		const guard = it.op(it.known, "Guard", { internal: true });
+		it.known.consumes(it.read, { by: [front] });
+		it.known.consumes(guard, { by: [front] });
+		return { ...it, front, guard };
+	}
+
+	/** A local service that calls `called` without saying which operation does. */
+	function unnamed(
+		it: ReturnType<typeof base>,
+		called: Consumable,
+		operations: number,
+	) {
+		const other = it.service("Other");
+		for (let i = 1; i <= operations; i++) it.op(other, `Other ${i}`);
+		other.consumes(called);
+		return other;
+	}
+
+	function rulesIn(ws: Workspace, rule: string) {
+		return [
+			ws,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+		].map((candidate) =>
+			candidate
+				.validate()
+				.filter((d) => d.rule === rule)
+				.map((d) => d.ref),
+		);
+	}
+
+	const refused = (rule: { ref: string }) => [[rule.ref], [rule.ref]];
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["ordinary", "mud"] as const).flatMap((context) =>
+				([0, 2] as const).flatMap((operations) =>
+					(["first", "last"] as const).map(
+						(order) => [scope, context, operations, order] as const,
+					),
+				),
+			),
+		),
+	)(
+		"%s precondition in an %s context refuses an unnamed caller from %s operations declared %s beside an informed front",
+		(scope, context, operations, order) => {
+			const it = base(scope, context === "mud");
+			const front = it.op(it.known, "Front");
+			const guard = it.op(it.known, "Guard", { internal: true });
+			if (order === "first") unnamed(it, guard, operations);
+			it.known.consumes(it.read, { by: [front] });
+			it.known.consumes(guard, { by: [front] });
+			if (order === "last") unnamed(it, guard, operations);
+			const rule = it.constrain(guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(refused(rule));
+			// The warning is for the author; the invariant's truth is not.
+			expect(
+				rulesIn(it.ws, "consumption-by-required").map((refs) => refs.length),
+			).toEqual(context === "mud" ? [0, 0] : [1, 1]);
+		},
+	);
+
+	// The reviewer's reproducer, as written: the whole model was silent.
+	it("refuses the precondition in a big ball of mud with nothing else to say", () => {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "", bigBallOfMud: true });
+		const fact = bc.addSchema("Fact");
+		const value = fact.addAttribute("value", { type: "string" });
+		const app = bc.addService("Known", {
+			description: "",
+			type: "application",
+		});
+		const opts = { description: "", type: "operation" as const };
+		const read = app.provides("Read", { ...opts, returns: fact });
+		const front = app.provides("Front", opts);
+		const guard = app.provides("Guard", { ...opts, internal: true });
+		app.consumes(read, { by: [front] });
+		app.consumes(guard, { by: [front] });
+		const other = bc.addService("Other", {
+			description: "",
+			type: "application",
+		});
+		other.provides("A", opts);
+		other.provides("B", opts);
+		other.consumes(guard);
+		const rule = bc
+			.addInvariant("Fact required", { description: "", precondition: true })
+			.constrains(guard, value);
+		for (const candidate of [
+			ws,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+		])
+			expect(
+				candidate.validate().map((d) => [d.severity, d.rule, d.ref]),
+			).toEqual([["error", "invariant-in-context", rule.ref]]);
+	});
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["ordinary", "mud"] as const).map(
+				(context) => [scope, context] as const,
+			),
+		),
+	)(
+		"%s precondition in an %s context keeps the informed front once the unnamed call is gone",
+		(scope, context) => {
+			const { ws, guard, constrain } = informedFront(scope, context === "mud");
+			constrain(guard);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	function reactorIssues(
+		scope: Scope,
+		kind: "policy" | "process",
+		withUnnamed: boolean,
+	) {
+		const it = base(scope);
+		const guard = it.op(it.known, "Guard", { internal: true });
+		const observed = it.known.provides("Observed", {
+			description: "",
+			type: "event",
+			schema: it.fact,
+		});
+		it.op(it.known, "Publish", { internal: true }).raises(observed);
+		if (kind === "policy")
+			it.bc
+				.addPolicy("On Observed", { description: "" })
+				.on(observed)
+				.issues(guard);
+		else {
+			const done = it.known.provides("Done", {
+				description: "",
+				type: "event",
+			});
+			guard.raises(done);
+			it.bc
+				.addProcess("From Observed", { description: "" })
+				.starts(observed)
+				.issues(guard)
+				.ends(done);
+		}
+		if (withUnnamed) unnamed(it, guard, 2);
+		return { ws: it.ws, rule: it.constrain(guard) };
+	}
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["policy", "process"] as const).map((kind) => [scope, kind] as const),
+		),
+	)(
+		"%s precondition refuses an unnamed caller beside an informed %s",
+		(scope, kind) => {
+			const { ws, rule } = reactorIssues(scope, kind, true);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual(refused(rule));
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["policy", "process"] as const).map((kind) => [scope, kind] as const),
+		),
+	)(
+		"%s precondition keeps an informed %s's payload with no unnamed caller",
+		(scope, kind) => {
+			const { ws } = reactorIssues(scope, kind, false);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			([true, false] as const).map((fetches) => [scope, fetches] as const),
+		),
+	)(
+		"%s precondition reads an omitted by on a sole operation as that operation (fetches: %s)",
+		(scope, fetches) => {
+			const it = informedFront(scope);
+			const other = it.service("Other");
+			it.op(other, "Solo");
+			if (fetches) other.consumes(it.read);
+			other.consumes(it.guard);
+			const rule = it.constrain(it.guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				fetches ? [[], []] : refused(rule),
+			);
+			expect(rulesIn(it.ws, "consumption-by-required")).toEqual([[], []]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			([true, false] as const).map((informed) => [scope, informed] as const),
+		),
+	)(
+		"%s precondition follows an explicitly named caller (informed: %s)",
+		(scope, informed) => {
+			const it = informedFront(scope);
+			const other = it.service("Other");
+			const a = it.op(other, "A");
+			it.op(other, "B");
+			if (informed) other.consumes(it.read, { by: [a] });
+			other.consumes(it.guard, { by: [a] });
+			const rule = it.constrain(it.guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				informed ? [[], []] : refused(rule),
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["absent", "unnamed", "unnamed, middle fetches"] as const).map(
+				(shape) => [scope, shape] as const,
+			),
+		),
+	)(
+		"%s precondition carries an intermediate front's entry to the guard (%s)",
+		(scope, shape) => {
+			const it = base(scope);
+			const front = it.op(it.known, "Front");
+			const middle = it.op(it.known, "Middle", { internal: true });
+			const guard = it.op(it.known, "Guard", { internal: true });
+			it.known.consumes(it.read, {
+				by: shape === "unnamed, middle fetches" ? [front, middle] : [front],
+			});
+			it.known.consumes(middle, { by: [front] });
+			it.known.consumes(guard, { by: [middle] });
+			if (shape !== "absent") unnamed(it, middle, 2);
+			const rule = it.constrain(guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				shape === "unnamed" ? refused(rule) : [[], []],
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			([true, false] as const).map(
+				(withUnnamed) => [scope, withUnnamed] as const,
+			),
+		),
+	)(
+		"%s precondition over two informed fronts (unnamed caller: %s)",
+		(scope, withUnnamed) => {
+			const it = base(scope);
+			const a = it.op(it.known, "Front A");
+			const b = it.op(it.known, "Front B");
+			const guard = it.op(it.known, "Guard", { internal: true });
+			it.known.consumes(it.read, { by: [a, b] });
+			it.known.consumes(guard, { by: [a, b] });
+			if (withUnnamed) unnamed(it, guard, 2);
+			const rule = it.constrain(guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				withUnnamed ? refused(rule) : [[], []],
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["absent", "unnamed", "unnamed, guard fetches"] as const).map(
+				(shape) => [scope, shape] as const,
+			),
+		),
+	)("%s precondition over an informed recursive cycle (%s)", (scope, shape) => {
+		const it = base(scope);
+		const entry = it.op(it.known, "Entry");
+		const guard = it.op(it.known, "Guard", { internal: true });
+		const helper = it.op(it.known, "Helper", { internal: true });
+		it.known.consumes(it.read, {
+			by: shape === "unnamed, guard fetches" ? [entry, guard] : [entry],
+		});
+		it.known.consumes(guard, { by: [entry, helper] });
+		it.known.consumes(helper, { by: [guard] });
+		if (shape !== "absent") unnamed(it, helper, 2);
+		const rule = it.constrain(guard);
+		expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+			shape === "unnamed" ? refused(rule) : [[], []],
+		);
+	});
+
+	it.each(scopes)(
+		"%s precondition lets the guard's own fetch hold the fact on every entry",
+		(scope) => {
+			const it = informedFront(scope);
+			it.known.consumes(it.read, { by: [it.front, it.guard] });
+			unnamed(it, it.guard, 2);
+			it.constrain(it.guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	it.each(scopes)(
+		"%s precondition reads the request whoever calls",
+		(scope) => {
+			const it = base(scope);
+			const guard = it.op(it.known, "Guard", {
+				internal: true,
+				schema: it.fact,
+			});
+			unnamed(it, guard, 2);
+			it.constrain(guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["front", "guard"] as const).map((fetcher) => [scope, fetcher] as const),
+		),
+	)(
+		"%s precondition reads a composed answer the %s fetched beside an unnamed caller",
+		(scope, fetcher) => {
+			const it = informedFront(scope);
+			const envelope = it.bc.addSchema("Envelope");
+			envelope.addAttribute("fact", { type: "Fact", schema: it.fact });
+			const readEnvelope = it.op(it.known, "Read Envelope", {
+				returns: envelope,
+			});
+			it.known.consumes(readEnvelope, {
+				by: [fetcher === "front" ? it.front : it.guard],
+			});
+			unnamed(it, it.guard, 2);
+			const rule = it.constrain(it.guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				fetcher === "front" ? refused(rule) : [[], []],
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(
+				[
+					"none",
+					"unnamed off the route, guard fetches",
+					"unnamed",
+					"unnamed, guard fetches",
+					"unnamed, partner fetches",
+				] as const
+			).flatMap((shape) =>
+				(["guard first", "partner first"] as const).map(
+					(order) => [scope, shape, order] as const,
+				),
+			),
+		),
+	)("%s precondition over a closed cycle (%s, %s)", (scope, shape, order) => {
+		const it = base(scope);
+		const [guard, partner] =
+			order === "guard first"
+				? [
+						it.op(it.known, "Guard", { internal: true }),
+						it.op(it.known, "Partner", { internal: true }),
+					]
+				: [
+						it.op(it.known, "Partner", { internal: true }),
+						it.op(it.known, "Guard", { internal: true }),
+					].reverse();
+		if (shape.endsWith("guard fetches"))
+			it.known.consumes(it.read, { by: [guard] });
+		if (shape === "unnamed, partner fetches" || shape === "none")
+			it.known.consumes(it.read, { by: [partner] });
+		it.known.consumes(guard, { by: [partner] });
+		it.known.consumes(partner, { by: [guard] });
+		if (shape === "unnamed off the route, guard fetches")
+			unnamed(it, it.read, 2);
+		else if (shape !== "none") unnamed(it, partner, 2);
+		const rule = it.constrain(guard);
+		// A ring nobody enters holds nothing, even what it fetched; once an
+		// unnamed call genuinely enters it, a fetch on every route counts.
+		expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+			shape.startsWith("unnamed,") ? [[], []] : refused(rule),
+		);
+	});
+
+	it.each(
+		scopes.flatMap((scope) =>
+			([true, false] as const).map(
+				(withUnnamed) => [scope, withUnnamed] as const,
+			),
+		),
+	)(
+		"%s precondition naming two guards needs the fact on both (unnamed caller of the second: %s)",
+		(scope, withUnnamed) => {
+			const it = informedFront(scope);
+			const second = it.op(it.known, "Second Guard", { internal: true });
+			it.known.consumes(second, { by: [it.front] });
+			if (withUnnamed) unnamed(it, second, 2);
+			const rule = it.constrain(it.guard, second);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				withUnnamed ? refused(rule) : [[], []],
+			);
+		},
+	);
+
+	/** The rule that refuses each shape, which must survive the round trip too. */
+	const refusedBy = {
+		"another provider's operation": "consumption-by-resolves",
+		"a policy": "consumption-by-operation",
+		"an informed operation and a policy": "consumption-by-operation",
+		"an event": "consumption-by-resolves",
+		"another context's operation": "consumption-by-resolves",
+		"another context's consumer": "internal-consumable",
+		"another context's policy": "policy-in-context",
+	} as const;
+
+	/**
+	 * A `by` the model refuses still says a call is made. What it names cannot
+	 * be trusted to have made it, so the route counts and holds nothing: an
+	 * invalid model is not read more generously than a valid one.
+	 */
+	function invalidCaller(scope: Scope, shape: keyof typeof refusedBy) {
+		const it = informedFront(scope);
+		const other = it.service("Other");
+		const a = it.op(other, "A");
+		it.op(other, "B");
+		const foreign = it.ws.addBoundedContext("Elsewhere", { description: "" });
+		const away = foreign.addService("Away", {
+			description: "",
+			type: "application",
+		});
+		const awayOp = away.provides("Away Op", {
+			description: "",
+			type: "operation",
+		});
+		const heard = it.known.provides("Heard", {
+			description: "",
+			type: "event",
+		});
+		it.op(it.known, "Publish", { internal: true }).raises(heard);
+		if (shape === "another provider's operation")
+			other.consumes(it.guard, { by: [it.front] });
+		if (
+			shape === "a policy" ||
+			shape === "an informed operation and a policy"
+		) {
+			const policy = it.bc.addPolicy("On Heard", { description: "" }).on(heard);
+			if (shape === "a policy") other.consumes(it.guard, { by: [policy] });
+			else {
+				other.consumes(it.read, { by: [a] });
+				other.consumes(it.guard, { by: [a, policy] });
+			}
+		}
+		if (shape === "an event") {
+			const raised = other.provides("Raised", {
+				description: "",
+				type: "event",
+			});
+			a.raises(raised);
+			other.consumes(it.guard, { by: [raised] });
+		}
+		if (shape === "another context's operation")
+			other.consumes(it.guard, { by: [awayOp] });
+		if (shape === "another context's consumer") away.consumes(it.guard);
+		if (shape === "another context's policy") {
+			const elsewhere = away.provides("Elsewhere Heard", {
+				description: "",
+				type: "event",
+				schema: it.fact,
+			});
+			awayOp.raises(elsewhere);
+			foreign
+				.addPolicy("On Elsewhere", { description: "" })
+				.on(elsewhere)
+				.issues(it.guard);
+		}
+		return { ws: it.ws, rule: it.constrain(it.guard) };
+	}
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(Object.keys(refusedBy) as (keyof typeof refusedBy)[]).map(
+				(shape) => [scope, shape] as const,
+			),
+		),
+	)(
+		"%s precondition counts a call whose by names %s as a route holding nothing",
+		(scope, shape) => {
+			const { ws, rule } = invalidCaller(scope, shape);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual(refused(rule));
+			expect(
+				rulesIn(ws, refusedBy[shape]).map((refs) => refs.length > 0),
+			).toEqual([true, true]);
+		},
+	);
+
+	it("leaves a published request-only contract to its request", () => {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const scheme = ws.addBoundedContext("Scheme", {
+			description: "",
+			external: true,
+		});
+		const request = scheme.addSchema("Capture Request");
+		const amount = request.addAttribute("amount", { type: "int64" });
+		const capture = scheme
+			.addService("Scheme API", { description: "", type: "application" })
+			.provides("Capture", {
+				description: "",
+				type: "operation",
+				schema: request,
+			});
+		scheme
+			.addInvariant("Positive", { description: "", precondition: true })
+			.constrains(capture, amount);
+		const ours = ws.addBoundedContext("Payments", { description: "" });
+		const app = ours.addService("Payments App", {
+			description: "",
+			type: "application",
+		});
+		app.provides("Pay", { description: "", type: "operation" });
+		app.provides("Refund", { description: "", type: "operation" });
+		app.consumes(capture);
+		expect(rulesIn(ws, "external-is-boundary")).toEqual([[], []]);
+	});
+});
+
 describe("precondition event timing in a process", () => {
 	function lifecycle(
 		scope: "aggregate" | "context",

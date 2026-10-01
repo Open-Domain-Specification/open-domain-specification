@@ -129,3 +129,7 @@ A consumer that provides no operation could consume a foreign operation and noth
 ## Note (2026-10-01)
 
 The single-operation inference already governed the reaction walk and answer routing, but aggregate and context precondition reach read only explicit `by`. A front whose sole operation called an aggregate guard and fetched an answer therefore made the same rule invalid when `by` was omitted; the same gap hid the payload the front's issuing reactor had heard. The validator and reaction walk now use one effective operation-caller lookup: an omitted `by` infers exactly one provided operation, while an ambiguous multi-operation consumer infers none (issue #130, card 180). This applies the existing decision; it adds no new borrowing or timing rule.
+
+## Note (2026-10-01)
+
+An unknown caller does not erase the consumption. For the invariant timing analysis of decision 19, an omitted `by` that cannot infer a sole operation contributes a conservative empty held-fact entry at the called operation, independently of informed known callers or reactors. The flow and reaction walks still draw no invented causal edge. A caller entry that other rules refuse cannot lend held facts as though it were an accepted caller; the original diagnostics remain, and valid caller entries beside it retain their actual routes (issue #131, eighteenth signoff review).

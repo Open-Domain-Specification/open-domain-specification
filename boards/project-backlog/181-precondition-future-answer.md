@@ -1,10 +1,10 @@
 ---
-column: doing
+column: review
 labels: [core, model, bug]
 priority: high
 agent: lead
 live: false
-status: Source-aligned reach matrix and local audits passing; clean-head gate and signoff pending
+status: Adapter classification, guidance, generated output and local audits complete; clean-head full gate and signoff pending
 progress: 94
 clean-code-swept: true
 updatedAt: 2026-10-01T11:48:00Z
@@ -45,3 +45,9 @@ Issue #131. Astra's fourteenth review found that a front consuming a guarded ope
 - **lead and tester** (2026-10-01): The unmodified full gate on clean `ab8994f2` passed package, reference-model, schema and ESM checks plus 429 browser cases; one browser assertion still expected the old direct Petstore process-to-approval edge. The corrected source calls a check-and-approve front, then the aggregate transition. The E2E test now asserts both plain-arrow steps and the original dashed completion edge; its focused Playwright run passed. The full gate must run on the next clean commit before independent signoff.
 
 - **lead and delegated lanes** (2026-10-01): The seventeenth review found an immediate prior policy answer excluded by operation identity and informed recursive callers stripped of facts by least-fixed-point initialization. Decision 19 first specified admitted finite routes and prior occurrences. Claude implemented the greatest must-fact solver with 58 new direct/JSON tests (core 1206 pass); the architect independently compared 2,500 finite-route results and found no integration blocker. Closed caller components, uninformed alternatives and declaration order have regressions. Guidance and generated schema/reference outputs are rebuilt, pinned model diagnostics unchanged, clean-code sweep clear. Full clean-head gate and final signoff remain, with no new issue or GitHub CI run.
+
+- **lead** (2026-10-01): The full gate passed on clean `3f29142c`, but Astra's eighteenth review found an unattributed local call dropped beside an informed caller. A mud context suppressed the caller warning and wrongly produced zero diagnostics. This is the existing all-route claim's input-classification gap; no new issue was opened. Decision 19's ninth note records an independent empty entry for the unknown call. Claude owns broad unknown/known-route tests and correction, and the bounded adapter audit challenges input completeness before a new clean gate or final signoff.
+
+- **Claude and independent audit** (2026-10-01): The complete unknown-entry correction passes 1306 core tests and all five source model suites. Its 100 new cases include 51 failures against the prior source. Reverse-reachable operations now read all inbound consumptions; each supplies trusted caller edges or an empty unattributed entry, including intermediate fronts and recursive components. Local fetches use the same trusted-caller filter. Requests and guard-local fetches remain valid on all routes. Foreign/invalid routes keep their own refusal diagnostics and cannot lend local facts. The independent classification/clean-code audit found no actionable gap or introduced violation. Guidance/generated output integration, clean-head gate and signoff remain.
+
+- **Integrated readiness checkpoint** (2026-10-01): All owned lanes are complete. Core 1306 and skill 154 pass, generated schema and model references are rebuilt from sources, all five source-model suites retain their pinned diagnostics, Biome/diff checks pass, and the independent classification/clean-code audit is clear. The card moves to `review`; the next checkpoint is the required full gate on a clean commit, then final exact-head review. No final approval or closure is claimed.

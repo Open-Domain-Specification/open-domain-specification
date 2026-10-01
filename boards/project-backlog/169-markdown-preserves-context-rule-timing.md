@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Eighth signoff blocker corrected; full gate green on 5bb730fa, independent signoff pending
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 95
 clean-code-swept: true
-updatedAt: 2026-10-01T04:22:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # Markdown preserves context rule timing
 
@@ -34,3 +34,5 @@ Issue #119. On exact head `a2cef010`, OpenAI Astra low reproduced a valid `postc
 - **lead** (2026-10-01): Clean-code pass: the Markdown row derives its label from existing flags and guarded targets, and the Svelte page uses one event-only predicate for its heading and text. Generated reference changes come from the core build. No high-scored marker or unsafe lookup remains.
 - **lead** (2026-10-01): Adjacent reading check found the same old before-acting sentence on the Svelte context page and an empty state that claimed all other rules belonged to aggregates. Its copy is now scoped to context declarations and directs the reader to each rule's detail page. The edge-case fixture contains a postcondition and its regression rejects the old sentence.
 - **lead** (2026-10-01): The first integrated gate on `752238df` stopped at the pages 100% coverage threshold: the new mixed event-and-operation guarantee branch lacked a test. A valid external-context fixture now exercises that branch before and after round-trip in Svelte and Markdown. The pages unit suite passes at 100% coverage; the full gate will run on the corrected committed head. The build regenerated model schema descriptions and context Markdown, and those generated files are included in this correction.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

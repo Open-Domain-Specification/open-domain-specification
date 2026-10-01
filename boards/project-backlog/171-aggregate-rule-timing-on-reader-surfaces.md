@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Ninth signoff blocker in correction; local full gate pending
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 95
 clean-code-swept: true
-updatedAt: 2026-10-01T04:40:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # Aggregate pages distinguish checks from persistent rules
 
@@ -26,3 +26,5 @@ Issue #121. On exact head `3ee62a29`, Claude Opus 5.5 high found that NorthBank'
 - **lead** (2026-10-01): The focused Markdown and Svelte regressions pass. Full gate and signoff remain pending.
 
 - **lead** (2026-10-01): Clean-code audit across SRP, DRY, naming, coupling, dead code, KISS, boundaries and reachable failure paths found no new violation above 0.5. Focused checks are green; the exact-head landing gate remains.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

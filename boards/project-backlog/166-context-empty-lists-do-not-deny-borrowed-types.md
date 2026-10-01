@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Correction passed on a2cef010 and both eighth-round reviewers confirmed it; final integrated signoff pending
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 95
 clean-code-swept: true
-updatedAt: 2026-10-01T04:15:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # Context empty lists do not deny borrowed types
 
@@ -30,3 +30,5 @@ Issue #116. The seventh signoff round's OpenAI Astra low review reproduced a val
 
 - **lead** (2026-10-01): Issue #116 records the reader story. The lists are correctly local declarations; their old empty copy overclaimed what Cards can hold or carry. The replacement copy names local declarations, with a zero-diagnostic borrowed pair in the regression. No schema or validator rule changed.
 - **lead** (2026-10-01): Clean-code pass: the declaration lists stay local; only their empty copy changes, and the test checks both valid borrowed uses before and after round-trip. No duplicate lookup or new branch was needed. Format and focused tests pass.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [docs, model]
 priority: high
 agent: lead
 live: false
-status: Full gate passed on 658fbf41; seventeenth Astra BLOCK prompted bounded must-fact design and implementation
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 92
 clean-code-swept: true
-updatedAt: 2026-10-01T11:48:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # Final model sign-off: the record says only what holds
 
@@ -23,7 +23,7 @@ Issue #108. The owner wants the model complete before one exact-head review by C
 - [x] Evidence table below for #35, #36, #37, #38, #39, #40
 - [ ] The exact-head signoff: one Claude Opus 5.5 high and one OpenAI Astra low review of the same commit, each answering whether this is a correct, clean and detailed DDD specification, reproduced defects kept apart from named preferences (the lead)
 - [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (fifteen completed rounds found corrections; latest under expanded #131/card 181)
-- [x] Journal: seventeen exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
+- [x] Journal: eighteen exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
 
 ## Gates
 
@@ -406,3 +406,11 @@ The unmodified full gate passed on clean `658fbf41c7b6a0ae78f9102fab79c1cab45624
 - Prompt `/tmp/ods-final-model-review-658fbf41.txt`; report `/tmp/ods-astra-final-review-658fbf41.md`; gate `/tmp/ods-verify-658fbf41.log`. Existing issue #131/card 181 holds the adjacent cases, with no new issue growth.
 
 - **Integrated readiness checkpoint (2026-10-01):** Claude Opus 5.5 high completed the finite-entry/greatest-must-fact solver with 58 new direct/JSON cases; core 1206 tests pass. The architect independently compared 2,500 finite-route results and inspected integration without a blocker. The clean-code audit found no introduced violation. Schema comments, hand-written and generated rule guidance now distinguish a received prior occurrence from a future current invocation; drift coverage includes the corrected catalog claim. All five reference model builds preserve pinned diagnostics. Full clean-head gate and exact-head final signoff remain; no push or GitHub CI.
+
+## Eighteenth completed round (head `3f29142c`)
+
+The unmodified full gate passed on clean `3f29142c07b9bdbedeff6554633161c46d708ad4`: core 1206, skill 141, pages 1023, all reference-model/schema/import checks, browser 430 passed/20 skipped. Astra low returned **BLOCK** on the exact head. Claude final review was not called. A real consumption with unknown caller attribution disappeared beside an informed front, making a big-ball-of-mud model wrongly return zero diagnostics. The reviewer checked 48 adjacent cases; eight missed the invariant diagnostic. All five source models and 176 generated Markdown pages matched their writers. Decision 19's ninth note records conservative unknown entry semantics; Claude owns adapter implementation/tests and a bounded audit checks completeness. No new issue, push or GitHub CI resulted. Prompt `/tmp/ods-final-model-review-3f29142c.txt`; report `/tmp/ods-astra-final-review-3f29142c.md`; gate `/tmp/ods-verify-3f29142c.log`. Five-whys corrective action is recorded in sprint 04.
+
+- **Correction checkpoint:** Claude completed the whole unknown-entry adapter class with 100 new cases (51 failed against old source), core 1306 passing and all five source model suites unchanged. The bounded classification and clean-code audit found no remaining actionable gap. The lead reconciles decision 19/21 and generated rule metadata with guidance, then runs the full gate on the next clean commit. No Claude final review is requested while gate or integration is pending.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.

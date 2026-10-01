@@ -1,13 +1,13 @@
 ---
-column: doing
+column: review
 labels: [model, bug]
 priority: medium
 agent: lead
 live: false
-status: Corrections passed on a2cef010 and both eighth-round reviewers confirmed them; final integrated signoff pending
+status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
 progress: 95
 clean-code-swept: true
-updatedAt: 2026-10-01T04:15:00Z
+updatedAt: 2026-10-01T14:42:37Z
 ---
 # Detail pages show inherited relations and narrow empty claims
 
@@ -34,3 +34,5 @@ Issue #118. While correcting issues #116 and #117, the lead audited the other lo
 
 - **lead** (2026-10-01): Issue #118 records the additional reader story. `allRelations` already held the inherited facts in core; the detail pages had read only `relations`. They now show the inherited rows with their declaring parent. The copy corrections narrow the claims to what the local lists actually establish. No schema or validator rule changed; the workspace comment for `ValueObject.specialises` now lists the three permitted borrowing routes.
 - **lead** (2026-10-01): The local-only audit also found that an empty consumptions table said its caller depended on nothing outside itself, which is false when it borrows a value. The shared table and both empty flow diagrams now speak only about consumables; the service lead covers events as well as operations. Clean-code pass found no duplicate rule logic, dead path or unsafe product lookup. Focused tests, Svelte check and format pass.
+
+- **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.
