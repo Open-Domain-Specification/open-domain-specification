@@ -4,10 +4,10 @@ labels: [docs, model]
 priority: high
 agent: lead
 live: false
-status: Eighth round on a2cef010: both BLOCK on separate cross-surface lies; cards 169-170 corrections in progress
-progress: 90
+status: Eighth blockers corrected; full gate green on 5bb730fa, exact-head independent signoff pending
+progress: 95
 clean-code-swept: true
-updatedAt: 2026-10-01T05:05:00Z
+updatedAt: 2026-10-01T04:22:00Z
 ---
 # Final model sign-off: the record says only what holds
 

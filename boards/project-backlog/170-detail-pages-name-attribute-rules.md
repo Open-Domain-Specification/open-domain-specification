@@ -4,10 +4,10 @@ labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Eighth signoff found entity attribute-rule omissions; correction and focused tests pass, integrated gate pending
-progress: 85
+status: Eighth signoff blocker corrected; full gate green on 5bb730fa, independent signoff pending
+progress: 95
 clean-code-swept: true
-updatedAt: 2026-10-01T05:05:00Z
+updatedAt: 2026-10-01T04:22:00Z
 ---
 # Detail pages name attribute rules
 
@@ -19,12 +19,12 @@ Issue #120. On exact head `a2cef010`, Claude Opus 5.5 high found NorthBank Accou
 - [x] NorthBank Account and PaymentInstruction rule rows and keepers render before and after JSON round-trip
 - [x] An entity kind's inherited attribute and a borrowed value's attribute appear under the correct rule owner
 - [x] Detail-page copy and root tooltip make only claims their rows establish
-- [ ] Pinned diagnostics and generated outputs remain consistent
+- [x] Pinned diagnostics and generated outputs remain consistent
 
 ## Gates
 
 - [x] Focused entity/value-object tests and Svelte check
-- [ ] `bash scripts/verify-all.sh` on the corrected committed head
+- [x] `bash scripts/verify-all.sh` passed on `5bb730fa`: doc 51, pages 1017 with 100% coverage, browser 430 passed/20 skipped, all model/schema/import checks green
 - [ ] Exact-head independent final signoff
 
 ## Journal

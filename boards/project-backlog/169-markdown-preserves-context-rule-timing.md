@@ -4,10 +4,10 @@ labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Eighth signoff found false Markdown timing; correction and focused tests pass, integrated gate pending
-progress: 85
+status: Eighth signoff blocker corrected; full gate green on 5bb730fa, independent signoff pending
+progress: 95
 clean-code-swept: true
-updatedAt: 2026-10-01T05:05:00Z
+updatedAt: 2026-10-01T04:22:00Z
 ---
 # Markdown preserves context rule timing
 
@@ -20,12 +20,12 @@ Issue #119. On exact head `a2cef010`, OpenAI Astra low reproduced a valid `postc
 - [x] The Svelte invariant page reads an external event guarantee and links to the event with the correct kind
 - [x] The shared Svelte context page no longer says every rule is checked before acting or denies operation/event contracts when its local rule list is empty
 - [x] Schema comments, generated authoring reference, interview guide and tactical documentation describe the same timing
-- [ ] Pinned diagnostics and generated outputs remain consistent
+- [x] Pinned diagnostics and generated outputs remain consistent
 
 ## Gates
 
 - [x] Focused Markdown, Svelte and type checks
-- [ ] `bash scripts/verify-all.sh` on the corrected committed head
+- [x] `bash scripts/verify-all.sh` passed on `5bb730fa`: doc 51, pages 1017 with 100% coverage, browser 430 passed/20 skipped, all model/schema/import checks green
 - [ ] Exact-head independent final signoff
 
 ## Journal
