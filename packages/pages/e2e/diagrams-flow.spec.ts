@@ -8,6 +8,7 @@ import { openInteractiveDiagram } from "./helpers";
 
 const SALES = "#/boundedcontexts/sales_bc";
 const ORDER = `${SALES}/aggregates/order`;
+const CHECK_AND_APPROVE = `${SALES}/services/order_app/provides/check_and_approve_order`;
 const FULFILMENT = `${SALES}/processes/order_fulfilment`;
 
 test("draws a node per step in its own shape, with the kind's codicon", async ({
@@ -66,21 +67,26 @@ test("draws a node per step in its own shape, with the kind's codicon", async ({
 	).toContainText("Petstore");
 });
 
-test("draws a step as a plain arrow and what completes a process as a dashed edge saying so", async ({
+test("draws steps as plain arrows and what completes a process as a dashed edge saying so", async ({
 	page,
 }) => {
 	const flow = await openInteractiveDiagram(page, "flow map", SALES);
-	const step = flow.locator(
-		`.svelte-flow__edge[data-id="${FULFILMENT}|${ORDER}/provides/approve_order"]`,
-	);
-	await expect(step).toBeAttached();
-	await expect(step).not.toHaveClass(/dashed/);
-	await expect(step.locator(".edge-label")).toHaveCount(0);
-	await expect(step.locator("path.svelte-flow__edge-path")).toHaveAttribute(
-		"marker-end",
-		/.+/,
-	);
-	await expect(step).toHaveClass(/animated/);
+	for (const [source, target] of [
+		[FULFILMENT, CHECK_AND_APPROVE],
+		[CHECK_AND_APPROVE, `${ORDER}/provides/approve_order`],
+	]) {
+		const step = flow.locator(
+			`.svelte-flow__edge[data-id="${source}|${target}"]`,
+		);
+		await expect(step).toBeAttached();
+		await expect(step).not.toHaveClass(/dashed/);
+		await expect(step.locator(".edge-label")).toHaveCount(0);
+		await expect(step.locator("path.svelte-flow__edge-path")).toHaveAttribute(
+			"marker-end",
+			/.+/,
+		);
+		await expect(step).toHaveClass(/animated/);
+	}
 
 	const ends = flow.locator(
 		`.svelte-flow__edge[data-id="${FULFILMENT}|${ORDER}/provides/order_delivered"]`,
