@@ -3020,6 +3020,105 @@ function* attributesOf(bc: BoundedContext): Iterable<Attribute> {
 	for (const owner of attributeOwnersIn(bc)) yield* owner.attributes.values();
 }
 
+/** One declaration by which a context takes another context's language. */
+type LanguageBorrowing =
+	| {
+			kind: "value-attribute";
+			owner: BoundedContext;
+			attribute: Attribute;
+			valueobject: ValueObject;
+			ref: string;
+	  }
+	| {
+			kind: "value-specialisation";
+			owner: BoundedContext;
+			valueobject: ValueObject;
+			parent: ValueObject;
+			ref: string;
+	  }
+	| {
+			kind: "schema-attribute";
+			owner: BoundedContext;
+			attribute: Attribute;
+			schema: DataSchema;
+			ref: string;
+	  }
+	| {
+			kind: "schema-contract";
+			owner: BoundedContext;
+			schema: DataSchema;
+			position: "request" | "return" | "rejection";
+			ref: string;
+	  };
+
+/**
+ * Every declaration by which one context takes another's value or schema
+ * language. Relationship backing and separate ways share this inventory. It
+ * records the declaration that introduces the dependency rather than inferring
+ * a second crossing from inherited or composed members reached through it.
+ */
+function* languageBorrowingsOf(
+	borrower: BoundedContext,
+): Iterable<LanguageBorrowing> {
+	for (const valueobject of borrower.valueobjects.values()) {
+		const parent = valueobject.specialises;
+		if (parent && parent.boundedcontext !== borrower)
+			yield {
+				kind: "value-specialisation",
+				owner: parent.boundedcontext,
+				valueobject,
+				parent,
+				ref: valueobject.ref,
+			};
+	}
+	for (const attribute of attributesOf(borrower)) {
+		const valueobject = attribute.valueobject;
+		if (valueobject && valueobject.boundedcontext !== borrower)
+			yield {
+				kind: "value-attribute",
+				owner: valueobject.boundedcontext,
+				attribute,
+				valueobject,
+				ref: attribute.ref,
+			};
+		const schema = attribute.schema;
+		if (schema && schema.boundedcontext !== borrower)
+			yield {
+				kind: "schema-attribute",
+				owner: schema.boundedcontext,
+				attribute,
+				schema,
+				ref: attribute.ref,
+			};
+	}
+	for (const provider of [
+		...borrower.aggregates.values(),
+		...borrower.services.values(),
+	])
+		for (const consumable of provider.consumables.values()) {
+			const contracts: Array<
+				[DataSchema | undefined, "request" | "return" | "rejection"]
+			> = [
+				[consumable.schema, "request"],
+				[consumable.returns, "return"],
+				...consumable.rejects.map((schema): [DataSchema, "rejection"] => [
+					schema,
+					"rejection",
+				]),
+			];
+			for (const [schema, position] of contracts) {
+				if (!schema || schema.boundedcontext === borrower) continue;
+				yield {
+					kind: "schema-contract",
+					owner: schema.boundedcontext,
+					schema,
+					position,
+					ref: consumable.ref,
+				};
+			}
+		}
+}
+
 /**
  * Whether anything in `borrower` is typed by a value object `owner` declares,
  * is a kind of one, nests one of its schemas, or carries one on a consumable —
@@ -3038,22 +3137,8 @@ function* attributesOf(bc: BoundedContext): Iterable<Attribute> {
  * issue #111).
  */
 function borrowsFrom(borrower: BoundedContext, owner: BoundedContext): boolean {
-	for (const valueobject of borrower.valueobjects.values())
-		if (valueobject.specialises?.boundedcontext === owner) return true;
-	for (const attribute of attributesOf(borrower)) {
-		if (attribute.valueobject?.boundedcontext === owner) return true;
-		if (attribute.schema?.boundedcontext === owner) return true;
-	}
-	for (const p of [
-		...borrower.aggregates.values(),
-		...borrower.services.values(),
-	]) {
-		for (const c of p.consumables.values()) {
-			if (c.schema?.boundedcontext === owner) return true;
-			if (c.returns?.boundedcontext === owner) return true;
-			if (c.rejects.some((it) => it.boundedcontext === owner)) return true;
-		}
-	}
+	for (const borrowing of languageBorrowingsOf(borrower))
+		if (borrowing.owner === owner) return true;
 	return false;
 }
 
@@ -3347,19 +3432,40 @@ const separateWays: Rule = (workspace) => {
 			ref: crossing.attribute.ref,
 		});
 	}
-	// A value object borrowed from over there is the other context's language
-	// in this one, which separate ways says is not shared.
-	for (const { attribute, valueobject, from } of valueObjectBorrowings(
-		workspace,
-	)) {
-		const owner = valueobject.boundedcontext;
-		if (!apart(from, owner)) continue;
-		diagnostics.push({
-			severity: "error",
-			rule: "separate-ways",
-			message: `"${from.name}" types "${attribute.owner.name}"'s "${attribute.name}" by "${valueobject.name}" from "${owner.name}" although the contexts declare separate ways`,
-			ref: attribute.ref,
-		});
+	// Borrowing any part of the other context's language contradicts separate
+	// ways. Permission to borrow it over another relationship answers a different
+	// question and does not erase this pair's declaration that it stays apart.
+	for (const from of workspace.boundedcontexts.values()) {
+		for (const borrowing of languageBorrowingsOf(from)) {
+			if (!apart(from, borrowing.owner)) continue;
+			let message: string;
+			switch (borrowing.kind) {
+				case "value-attribute":
+					message = `"${from.name}" types "${borrowing.attribute.owner.name}"'s "${borrowing.attribute.name}" by "${borrowing.valueobject.name}" from "${borrowing.owner.name}"`;
+					break;
+				case "value-specialisation":
+					message = `"${from.name}" specialises "${borrowing.valueobject.name}" from "${borrowing.parent.name}" in "${borrowing.owner.name}"`;
+					break;
+				case "schema-attribute":
+					message = `"${from.name}" types "${borrowing.attribute.owner.name}"'s "${borrowing.attribute.name}" by schema "${borrowing.schema.name}" from "${borrowing.owner.name}"`;
+					break;
+				case "schema-contract":
+					message = `"${from.name}" ${
+						{
+							request: "carries",
+							return: "returns",
+							rejection: "rejects with",
+						}[borrowing.position]
+					} schema "${borrowing.schema.name}" from "${borrowing.owner.name}"`;
+					break;
+			}
+			diagnostics.push({
+				severity: "error",
+				rule: "separate-ways",
+				message: `${message} although the contexts declare separate ways`,
+				ref: borrowing.ref,
+			});
+		}
 	}
 	return diagnostics;
 };
@@ -5638,9 +5744,9 @@ const RULES: CataloguedRule[] = [
 		rule: "separate-ways",
 		severities: ["error"],
 		summary:
-			"Contexts that declare separate ways exchange no consumables, react to none of each other's events, hold none of each other's identities and borrow none of each other's value objects.",
-		why: "Separate ways is a deliberate decision not to integrate, so it rules out every crossing the model can record and not only the consumption. A policy subscribing to the other's events is the same integration by another route. An identity naming the other context's entity is a dependency on that context's identity scheme, stored here and true until somebody edits it. An attribute typed by the other's value object is that context's language in this one. This is the only rule that speaks about a crossing across a declared separate ways: relationship-declared asks whether the pair has been described at all, and a pair declaring separate ways has described itself, so saying beside this error that no relationship says how the two stand was untrue and made one mistake report twice.",
-		fix: "Remove the crossing — the consumption, the subscription, the identity attribute or the borrowed type — or remove the separate-ways relationship and declare the real one the two contexts have.",
+			"Contexts that declare separate ways exchange no consumables, react to none of each other's events, hold none of each other's identities and borrow none of each other's value objects or schemas.",
+		why: "Separate ways is a deliberate decision not to integrate, so it rules out every crossing the model can record and not only the consumption. A policy subscribing to the other's events is the same integration by another route. An identity naming the other context's entity is a dependency on that context's identity scheme, stored here and true until somebody edits it. A value object attribute or specialisation borrows the other context's value language; a schema attribute, request, return or rejection borrows its payload language. This is the only rule that speaks about a crossing across a declared separate ways: relationship-declared asks whether the pair has been described at all, and a pair declaring separate ways has described itself, so saying beside this error that no relationship says how the two stand was untrue and made one mistake report twice.",
+		fix: "Remove the crossing — the consumption, the subscription, the identity attribute, the value-object borrowing or the schema borrowing — or remove the separate-ways relationship and declare the real one the two contexts have.",
 		check: separateWays,
 	},
 	{

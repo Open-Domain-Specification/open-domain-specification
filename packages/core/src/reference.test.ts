@@ -117,17 +117,23 @@ describe("model reference identity", () => {
 			id: "~",
 			type: "string",
 		});
+		const nonscalarAttribute = schema.addAttribute("Nonscalar attribute", {
+			id: "\ud800",
+			type: "string",
+		});
 
 		for (const model of [workspace, roundTrip(workspace)]) {
 			for (const attribute of [
 				entityAttribute,
 				valueAttribute,
 				schemaAttribute,
+				nonscalarAttribute,
 			]) {
 				expect(model.getAttributeByRef(attribute.ref)?.ref).toBe(attribute.ref);
 				expect(model.getByRef(attribute.ref)?.ref).toBe(attribute.ref);
 			}
 			for (const malformed of [
+				"#/boundedcontexts",
 				`${entity.ref}/attributes/a/b`,
 				`${entity.ref}/attributes/~2`,
 				`${entityAttribute.ref}/tail`,
@@ -136,6 +142,46 @@ describe("model reference identity", () => {
 				expect(model.getByRef(malformed)).toBeUndefined();
 			}
 		}
+	});
+
+	it.each([
+		["a short nested attribute suffix", "/attributes/a".repeat(2)],
+		["six thousand nested attribute suffixes", "/attributes/a".repeat(6000)],
+	])("leaves %s unresolved without recursive lookup", (_name, suffix) => {
+		const workspace = new Workspace("Malformed attribute ref", {
+			description: "",
+			version: "0",
+		});
+		const context = workspace.addBoundedContext("Context", {
+			id: "c",
+			description: "",
+		});
+		const schema = context.addSchema("Schema", { id: "s" });
+		context.addTerm("Term", {
+			id: "t",
+			definition: "",
+			embodiedBy: schema,
+		});
+		const malformedRef = `${schema.ref}${suffix}`;
+
+		expect(workspace.getAttributeByRef(malformedRef)).toBeUndefined();
+		expect(workspace.getByRef(malformedRef)).toBeUndefined();
+
+		const written = workspace.toSchema();
+		written.boundedcontexts.c.glossary!.t.embodiedBy = {
+			$ref: malformedRef,
+		};
+		const loaded = Workspace.fromSchema(structuredClone(written));
+		expect(loaded.getAttributeByRef(malformedRef)).toBeUndefined();
+		expect(loaded.getByRef(malformedRef)).toBeUndefined();
+		const unresolved = loaded
+			.validate()
+			.filter((diagnostic) => diagnostic.rule === "unresolved-ref");
+		expect(unresolved).toHaveLength(1);
+		expect(unresolved[0].message).toContain(malformedRef);
+		expect(loaded.toSchema().boundedcontexts.c.glossary!.t.embodiedBy).toEqual({
+			$ref: malformedRef,
+		});
 	});
 
 	it("keeps compound map keys injective when parts contain old delimiters", () => {

@@ -495,20 +495,54 @@ export class Workspace
 		return invariant;
 	}
 
-	/**
-	 * Resolves an attribute ref (`<owner ref>/attributes/<id>`) by first
-	 * resolving its owner, which may be an entity, value object or schema.
-	 */
+	/** Resolves an attribute from one of the three exact owner ref shapes. */
 	getAttributeByRef(ref: string): Attribute | undefined {
 		const segments = ref.split("/");
-		if (segments.length < 3 || segments[segments.length - 2] !== "attributes")
+		if (
+			(segments.length !== 7 && segments.length !== 9) ||
+			segments[0] !== "#" ||
+			segments[1] !== "boundedcontexts"
+		)
 			return undefined;
-		const ownerRef = segments.slice(0, -2).join("/");
-		const attributeId = decodeRefSegment(segments[segments.length - 1]);
-		if (attributeId === undefined) return undefined;
-		const owner =
-			this.getEntityOrValueobjectByRef(ownerRef) ??
-			this.getSchemaByRef(ownerRef);
+		const contextId = decodeRefSegment(segments[2]);
+		if (contextId === undefined) return undefined;
+		const context = this.boundedcontexts.get(contextId);
+		if (!context) return undefined;
+
+		let owner: AttributeOwner | undefined;
+		let attributeId: string | undefined;
+		if (
+			segments.length === 7 &&
+			segments[5] === "attributes" &&
+			(segments[3] === "valueobjects" || segments[3] === "schemas")
+		) {
+			const ownerId = decodeRefSegment(segments[4]);
+			attributeId = decodeRefSegment(segments[6]);
+			if (ownerId === undefined || attributeId === undefined) return undefined;
+			owner =
+				segments[3] === "valueobjects"
+					? context.valueobjects.get(ownerId)
+					: context.schemas.get(ownerId);
+		} else if (
+			segments.length === 9 &&
+			segments[3] === "aggregates" &&
+			segments[5] === "entities" &&
+			segments[7] === "attributes"
+		) {
+			const aggregateId = decodeRefSegment(segments[4]);
+			const entityId = decodeRefSegment(segments[6]);
+			attributeId = decodeRefSegment(segments[8]);
+			if (
+				aggregateId === undefined ||
+				entityId === undefined ||
+				attributeId === undefined
+			)
+				return undefined;
+			owner = context.aggregates.get(aggregateId)?.entities.get(entityId);
+		} else {
+			return undefined;
+		}
+
 		const attribute = owner?.attributes.get(attributeId);
 		return attribute?.ref === ref ? attribute : undefined;
 	}

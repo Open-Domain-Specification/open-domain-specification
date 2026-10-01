@@ -302,11 +302,11 @@
 
 ## `separate-ways` (error)
 
-**Requires:** Contexts that declare separate ways exchange no consumables, react to none of each other's events, hold none of each other's identities and borrow none of each other's value objects.
+**Requires:** Contexts that declare separate ways exchange no consumables, react to none of each other's events, hold none of each other's identities and borrow none of each other's value objects or schemas.
 
-**Why it matters:** Separate ways is a deliberate decision not to integrate, so it rules out every crossing the model can record and not only the consumption. A policy subscribing to the other's events is the same integration by another route. An identity naming the other context's entity is a dependency on that context's identity scheme, stored here and true until somebody edits it. An attribute typed by the other's value object is that context's language in this one. This is the only rule that speaks about a crossing across a declared separate ways: relationship-declared asks whether the pair has been described at all, and a pair declaring separate ways has described itself, so saying beside this error that no relationship says how the two stand was untrue and made one mistake report twice.
+**Why it matters:** Separate ways is a deliberate decision not to integrate, so it rules out every crossing the model can record and not only the consumption. A policy subscribing to the other's events is the same integration by another route. An identity naming the other context's entity is a dependency on that context's identity scheme, stored here and true until somebody edits it. A value object attribute or specialisation borrows the other context's value language; a schema attribute, request, return or rejection borrows its payload language. This is the only rule that speaks about a crossing across a declared separate ways: relationship-declared asks whether the pair has been described at all, and a pair declaring separate ways has described itself, so saying beside this error that no relationship says how the two stand was untrue and made one mistake report twice.
 
-**Usual fix:** Remove the crossing — the consumption, the subscription, the identity attribute or the borrowed type — or remove the separate-ways relationship and declare the real one the two contexts have.
+**Usual fix:** Remove the crossing — the consumption, the subscription, the identity attribute, the value-object borrowing or the schema borrowing — or remove the separate-ways relationship and declare the real one the two contexts have.
 
 ## `internal-consumable` (error, warning)
 
