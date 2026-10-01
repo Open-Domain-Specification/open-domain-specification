@@ -4,7 +4,7 @@ labels: [core, model, bug]
 priority: high
 agent: lead
 live: false
-status: Adapter classification, guidance, generated output and local audits complete; clean-head full gate and signoff pending
+status: Uniform local-fetch rule and 96-case matrix passing; clean committed gate and final signoff pending
 progress: 94
 clean-code-swept: true
 updatedAt: 2026-10-01T11:48:00Z
@@ -51,3 +51,7 @@ Issue #131. Astra's fourteenth review found that a front consuming a guarded ope
 - **Claude and independent audit** (2026-10-01): The complete unknown-entry correction passes 1306 core tests and all five source model suites. Its 100 new cases include 51 failures against the prior source. Reverse-reachable operations now read all inbound consumptions; each supplies trusted caller edges or an empty unattributed entry, including intermediate fronts and recursive components. Local fetches use the same trusted-caller filter. Requests and guard-local fetches remain valid on all routes. Foreign/invalid routes keep their own refusal diagnostics and cannot lend local facts. The independent classification/clean-code audit found no actionable gap or introduced violation. Guidance/generated output integration, clean-head gate and signoff remain.
 
 - **Integrated readiness checkpoint** (2026-10-01): All owned lanes are complete. Core 1306 and skill 154 pass, generated schema and model references are rebuilt from sources, all five source-model suites retain their pinned diagnostics, Biome/diff checks pass, and the independent classification/clean-code audit is clear. The card moves to `review`; the next checkpoint is the required full gate on a clean commit, then final exact-head review. No final approval or closure is claimed.
+
+- **lead and bounded audit** (2026-10-01): On exact clean `635bcc7e`, Astra APPROVED and Opus BLOCKED a named queried operation's completed answer removed from another guard. The reproduced defect overrides the approval. The proposed caller-only remedy was challenged locally and found too narrow because the current guard itself may fetch the query under decision 19's existing convention. The lead rules that each guard's held facts are independent of other names; only its reverse caller route excludes future answers, then all guards are intersected. Claude owns both current-guard and front-fetch positive twins, uninformed named-query negatives and retained true future cases. The prior claim returns to active correction under #131, with a fresh clean-code sweep/gate/signoff pending and no new issue.
+
+- **Integrated readiness checkpoint** (2026-10-01): Claude removed the obsolete named-operation dependency from locallyFetched/heldByGuard entirely. New96cases include20failing-before positives and cover current/one-front/two-front, explicit/inferred, one/both named, independently informed/uninformed query, unknown caller and true future cases, both scopes/directJSON. Core1402, skill154 and allfive model suites pass, TypeScript/Biome clean. The semantic/clean-code and guidance audits are clear; existing current invocation wording already matches, so no generated prose change is necessary. Card returns to review with clean-code exit true; final clean-head gate/signoff and landing remain.

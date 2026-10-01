@@ -4,7 +4,7 @@ date: 2026-09-06
 ---
 # Decision 19 — An invariant may constrain the operations that guard it
 
-## Current position (2026-09-10)
+## Current position (2026-10-01)
 
 Status is Accepted (2026-09-10, after thirteen review rounds; it had read Proposed while its rules were errors the models were pinned to). An invariant may name the operations that guard it, and invariants stay prose; stable. The guard may be an operation of the invariant's aggregate (the decision, card 50) or of any service, application or domain, of its own context (amendments of 2026-09-08, cards 90 and 91). A precondition is stated with `precondition: true` and must name the operation it guards (decision 27, card 94); a postcondition with `postcondition: true` (second amendment of 2026-09-09, card 99).
 
@@ -16,11 +16,14 @@ Since the note of 2026-10-01 (card 178), every aggregate or modelled-context inv
 
 Since the fifth and eighth notes of 2026-10-01, a process contributes a starting event's payload, not an unordered `on`/`ends` fact or a starting operation's later answer. A policy contributes its immediate received event or returned/refused answer as a prior occurrence, regardless of whether a new invocation can produce the same identity. Reach requires the fact on every finite admitted caller route to every named guard; recursive calls retain facts supplied at all real entries, and an unentered internal caller component contributes no route. These are timing and route claims, not proof that a reaction bootstraps or avoids a cycle.
 
+Since the ninth note of 2026-10-01, an unattributed local consumption is a conservative empty held-fact entry to the called operation, even beside a known caller or issuing reactor. Missing caller identity removes no declared invocation route.
+
+Since the tenth note of 2026-10-01, held-fact reach is computed independently for each named guard and only then intersected. Naming another guard does not erase a completed local fetch by the current guard or its front. A call to the current guard or a predecessor on its reverse caller route still cannot lend that invocation's future answer.
+
 ## Context
 
 `InvariantSchema.constrains` names entities, value objects and attributes (decision 05). Many invariants are transition rules: petstore's `SoldNotReopen` ("once sold, a pet does not revert to available") is about what `ChangePetStatus` may do, and today it can only point at the status attribute.
 
-Since the ninth note of 2026-10-01, an unattributed local consumption is a conservative empty held-fact entry to the called operation, even beside a known caller or issuing reactor. Missing caller identity removes no declared invocation route.
 
 ## Decision
 
@@ -106,3 +109,11 @@ Local caller facts are the intersection over every finite call walk from an admi
 A consumption declares a call even when its particular calling operation is unknown. Decision 21 infers a sole operation and otherwise leaves the caller unattributed; a big-ball-of-mud consumer is allowed to leave it so. In neither case may fact reach erase that consumption. An unattributed local call contributes an independent empty held-fact entry to its target, including where an informed named caller or reactor also reaches that target. The current invocation's request and eligible facts fetched by the target remain available as before, but another route's fetched or received fact cannot be lent to the unknown call. The reaction walk continues to follow known caller identities only; conservative invariant reach does not invent a causal edge. The same entry accounting applies at each predecessor on a local call chain (issue #131, card 181; eighteenth signoff review).
 
 The conservative adapter also refuses to credit held facts to a `by` entry naming a different provider's operation, an event or a reactor. Valid caller names alongside invalid ones retain their known routes, and the unattributed part contributes an empty entry. A foreign consumer or reactor contributes no local held payload. These models retain their existing caller, internal-consumable or reactor-context diagnostics; an additional invariant-reach error is allowed and does not legalise their routes. The reaction walk and single-operation inference are unchanged. A public operation already has an empty direct entry, while a valid foreign call cannot enter an internal operation.
+
+## Note (2026-10-01, tenth)
+
+An invariant naming several guards adds a check at each guard; it does not change which completed facts any one invocation holds. Under the second amendment's local-fetch abstraction, a current guard or its predecessor front may already have fetched another operation's returned shape. Naming that queried operation as another guard does not retroactively make the fetch future. Its own check must independently hold the constrained fact, and the final intersection still rejects a guard that lacks it. Thus a `CheckStanding` that independently fetches `LookupStanding`, returns `Standing`, and is fetched by `Approve` or its front can participate in the same precondition as `Approve` when both independently hold `Standing`.
+
+The future-answer exclusion is exactly the current guard's reverse caller route, including the guard itself, its predecessors and cycles: their answer comes after this invocation's guarded call. It is not the full set of names in the invariant, and it is not determined by whether the current guard or a front made the eligible fetch. Existing independent and future-only named-guard negatives remain rejected by per-guard reach followed by intersection. This extends the prior-occurrence distinction uniformly to local fetched facts without adding an ordering field or changing reactor entry/solver semantics (issue #131, nineteenth signoff round; Claude counterexample and bounded architecture ruling).
+
+The Current position date is refreshed to the latest amendments, and the ninth-note summary has moved from Context into that Current position. Historical amendments and their original wording remain intact.

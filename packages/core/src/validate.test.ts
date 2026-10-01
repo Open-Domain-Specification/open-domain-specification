@@ -2824,6 +2824,298 @@ describe("transport shape intersection across named guards", () => {
 	);
 });
 
+/**
+ * Naming an earlier query as a guard of its own adds a check at it; it does
+ * not take away the fact its completed call hands the later guard. What a
+ * guard holds depends on its own routes, never on which other operations the
+ * invariant names: only an answer on the guard's own reverse call route, its
+ * own included, is still to come (decision 19, fifth, sixth and eighth notes).
+ */
+describe("a named query's completed answer at another named guard", () => {
+	type Scope = "aggregate" | "context";
+	type Fetcher = "self" | "front" | "two fronts";
+
+	const refused = (ws: Workspace, scope: Scope) =>
+		[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+			candidate
+				.validate()
+				.filter((d) => d.rule === `invariant-in-${scope}`)
+				.map((d) => d.ref),
+		);
+
+	/**
+	 * LookupStanding → CheckStanding, which returns Standing too, fetched before
+	 * Approve by Approve itself, by its one front, or by the outer of two
+	 * fronts. Every provider offers one operation, so an omitted `by` infers it.
+	 */
+	function standing(
+		scope: Scope,
+		fetcher: Fetcher,
+		options: {
+			explicit?: boolean;
+			bothNamed?: boolean;
+			queryInformed?: boolean;
+			approveReturnsStanding?: boolean;
+			unknownCaller?: boolean;
+		} = {},
+	) {
+		const {
+			explicit = true,
+			bothNamed = true,
+			queryInformed = true,
+			approveReturnsStanding = false,
+			unknownCaller = false,
+		} = options;
+		const by = (caller: Consumable) => (explicit ? { by: [caller] } : {});
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const shape = bc.addSchema("Standing");
+		const status = shape.addAttribute("status", { type: "string" });
+		const lookup = bc
+			.addService("Lookup", { description: "", type: "application" })
+			.provides("LookupStanding", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: shape,
+			});
+		const checks = bc.addService("Checks", {
+			description: "",
+			type: "application",
+		});
+		const check = checks.provides("CheckStanding", {
+			description: "",
+			type: "operation",
+			internal: true,
+			returns: shape,
+		});
+		if (queryInformed) checks.consumes(lookup, by(check));
+		const approve = aggregate.provides("Approve", {
+			description: "",
+			type: "operation",
+			internal: true,
+			...(approveReturnsStanding ? { returns: shape } : {}),
+		});
+		if (fetcher === "self") aggregate.consumes(check, by(approve));
+		else {
+			const front = bc.addService("Front", {
+				description: "",
+				type: "application",
+			});
+			const approveFront = front.provides("ApproveFront", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			front.consumes(approve, by(approveFront));
+			if (fetcher === "front") front.consumes(check, by(approveFront));
+			else {
+				const outer = bc.addService("Outer", {
+					description: "",
+					type: "application",
+				});
+				const outerFront = outer.provides("OuterFront", {
+					description: "",
+					type: "operation",
+					internal: true,
+				});
+				outer.consumes(check, by(outerFront));
+				outer.consumes(approveFront, by(outerFront));
+			}
+		}
+		if (unknownCaller) {
+			const stranger = bc.addService("Stranger", {
+				description: "",
+				type: "application",
+			});
+			for (const name of ["One", "Two"])
+				stranger.provides(name, {
+					description: "",
+					type: "operation",
+					internal: true,
+				});
+			stranger.consumes(approve);
+		}
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("Good standing", { description: "", precondition: true })
+			.constrains(...(bothNamed ? [check, approve] : [approve]), status);
+		return { ws, rule };
+	}
+
+	const scopes = ["aggregate", "context"] as const;
+	const fetchers = ["self", "front", "two fronts"] as const;
+	const matrix = scopes.flatMap((scope) =>
+		fetchers.flatMap((fetcher) =>
+			[true, false].flatMap((explicit) =>
+				[true, false].flatMap((bothNamed) =>
+					[true, false].map(
+						(queryInformed) =>
+							[scope, fetcher, explicit, bothNamed, queryInformed] as const,
+					),
+				),
+			),
+		),
+	);
+
+	it.each(matrix)(
+		"%s, fetched by %s, explicit=%s, both named=%s, query informed=%s",
+		(scope, fetcher, explicit, bothNamed, queryInformed) => {
+			const { ws, rule } = standing(scope, fetcher, {
+				explicit,
+				bothNamed,
+				queryInformed,
+			});
+			// Approve always holds CheckStanding's completed answer; a named
+			// CheckStanding must hold the fact by its own route as well.
+			const held = !bothNamed || queryInformed;
+			expect(refused(ws, scope)).toEqual(
+				held ? [[], []] : [[rule.ref], [rule.ref]],
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			fetchers.flatMap((fetcher) =>
+				[true, false].map((bothNamed) => [scope, fetcher, bothNamed] as const),
+			),
+		),
+	)(
+		"%s keeps a distinct prior query when Approve returns the same shape, fetched by %s, both named=%s",
+		(scope, fetcher, bothNamed) => {
+			const { ws } = standing(scope, fetcher, {
+				bothNamed,
+				approveReturnsStanding: true,
+			});
+			expect(refused(ws, scope)).toEqual([[], []]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			fetchers.flatMap((fetcher) =>
+				[true, false].map((bothNamed) => [scope, fetcher, bothNamed] as const),
+			),
+		),
+	)(
+		"%s lets an unknown caller of Approve remove the fact unless Approve fetched it, fetched by %s, both named=%s",
+		(scope, fetcher, bothNamed) => {
+			const { ws, rule } = standing(scope, fetcher, {
+				bothNamed,
+				unknownCaller: true,
+			});
+			expect(refused(ws, scope)).toEqual(
+				fetcher === "self" ? [[], []] : [[rule.ref], [rule.ref]],
+			);
+		},
+	);
+
+	/**
+	 * Answers that are still to come at Approve: its own, its front's when an
+	 * outer front fetched that, and CheckStanding's where CheckStanding calls
+	 * Approve back. Each sits on Approve's own reverse route, so naming it or
+	 * not changes nothing.
+	 */
+	function future(
+		scope: Scope,
+		kind: "current" | "predecessor" | "cycle",
+		explicit: boolean,
+		bothNamed: boolean,
+	) {
+		const by = (caller: Consumable) => (explicit ? { by: [caller] } : {});
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const shape = bc.addSchema("Standing");
+		const status = shape.addAttribute("status", { type: "string" });
+		const approve = aggregate.provides("Approve", {
+			description: "",
+			type: "operation",
+			internal: true,
+			...(kind === "current" ? { returns: shape } : {}),
+		});
+		const front = bc.addService("Front", {
+			description: "",
+			type: "application",
+		});
+		const approveFront = front.provides("ApproveFront", {
+			description: "",
+			type: "operation",
+			internal: true,
+			...(kind === "predecessor" ? { returns: shape } : {}),
+		});
+		front.consumes(approve, by(approveFront));
+		let other: Consumable = approveFront;
+		if (kind === "predecessor") {
+			const outer = bc.addService("Outer", {
+				description: "",
+				type: "application",
+			});
+			const outerFront = outer.provides("OuterFront", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			outer.consumes(approveFront, by(outerFront));
+		}
+		if (kind === "cycle") {
+			const lookup = bc
+				.addService("Lookup", { description: "", type: "application" })
+				.provides("LookupStanding", {
+					description: "",
+					type: "operation",
+					internal: true,
+					returns: shape,
+				});
+			const checks = bc.addService("Checks", {
+				description: "",
+				type: "application",
+			});
+			const check = checks.provides("CheckStanding", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: shape,
+			});
+			checks.consumes(lookup, by(check));
+			checks.consumes(approve, by(check));
+			aggregate.consumes(check, by(approve));
+			other = check;
+		}
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("Good standing", { description: "", precondition: true })
+			.constrains(...(bothNamed ? [other, approve] : [approve]), status);
+		return { ws, rule };
+	}
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["current", "predecessor", "cycle"] as const).flatMap((kind) =>
+				[true, false].flatMap((explicit) =>
+					[true, false].map(
+						(bothNamed) => [scope, kind, explicit, bothNamed] as const,
+					),
+				),
+			),
+		),
+	)(
+		"%s still refuses a %s future answer, explicit=%s, both named=%s",
+		(scope, kind, explicit, bothNamed) => {
+			const { ws, rule } = future(scope, kind, explicit, bothNamed);
+			expect(refused(ws, scope)).toEqual([[rule.ref], [rule.ref]]);
+		},
+	);
+});
+
 describe("precondition facts across a local call chain", () => {
 	function chain(
 		scope: "aggregate" | "context",

@@ -23,7 +23,7 @@ Issue #108. The owner wants the model complete before one exact-head review by C
 - [x] Evidence table below for #35, #36, #37, #38, #39, #40
 - [ ] The exact-head signoff: one Claude Opus 5.5 high and one OpenAI Astra low review of the same commit, each answering whether this is a correct, clean and detailed DDD specification, reproduced defects kept apart from named preferences (the lead)
 - [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (fifteen completed rounds found corrections; latest under expanded #131/card 181)
-- [x] Journal: eighteen exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
+- [x] Journal: nineteen exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
 
 ## Gates
 
@@ -414,3 +414,9 @@ The unmodified full gate passed on clean `3f29142c07b9bdbedeff6554633161c46d708a
 - **Correction checkpoint:** Claude completed the whole unknown-entry adapter class with 100 new cases (51 failed against old source), core 1306 passing and all five source model suites unchanged. The bounded classification and clean-code audit found no remaining actionable gap. The lead reconciles decision 19/21 and generated rule metadata with guidance, then runs the full gate on the next clean commit. No Claude final review is requested while gate or integration is pending.
 
 - **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.
+
+## Nineteenth completed round (head `635bcc7e`)
+
+The unmodified full gate passed on clean `635bcc7ed1902e7b06a31d0e5f43863d1fbd264b`: core1306, skill154, pages1023, all models/schema/import checks, browser430passed/20skipped. Astra low **APPROVED**; Claude Opus5.5high **BLOCKED** the same unchanged head. Naming `CheckStanding` as a second guard removed its completed answer fetched by `ApproveFront`, despite both guards independently holding the fact. The source-backed reproduction overrides approval. The bounded local audit rejected a caller-only identity exception and specified per-guard reach independent of other names, followed by intersection; decision19tenth records the ruling. Claude owns the full current-guard/front fetch class under131. PR132 is draft, zero GitHub Actions runs, no new issue/closure. Prompt `/tmp/ods-final-model-review-635bcc7e.txt`; Astra report `/tmp/ods-astra-final-review-635bcc7e.md`; Claude report `/tmp/ods-claude-final-review-635bcc7e.md`; gate `/tmp/ods-verify-635bcc7e.log`.
+
+- **Correction checkpoint after nineteenth round:** the uniform per-guard implementation and96newcases pass (20failedbefore, core1402); skill154/allfive model suites, TypeScript/Biome pass. Both local semantic/clean-code and guidance audits are clear. Current/predecessor/cycle future negatives remain rejected through each guard's independent reach and intersection. All implementation lanes complete; fresh clean committed full gate and final exact-head signoff remain.

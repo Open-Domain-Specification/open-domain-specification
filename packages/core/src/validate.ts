@@ -1294,25 +1294,22 @@ function addComposedSchema(target: Set<DataSchema>, schema: DataSchema): void {
  * The answers each operation on a guard's local routes fetched itself, by the
  * effective caller of decision 21 (see {@link routeCallers}); an answer whose
  * caller is not known is fetched by nobody. A call to an operation on those
- * routes, or to one the invariant names, is not a fetched fact: its answer
- * does not exist until after the guarded call, and another call may return the
- * same shape, so those are excluded by identity rather than by schema.
+ * routes, the guard's own included, is not a fetched fact: its answer does not
+ * exist until after the guarded call, and another call may return the same
+ * shape, so those are excluded by identity rather than by schema. A call to
+ * any other operation has completed by then, whether or not the invariant
+ * names that operation as a guard of its own.
  */
 function locallyFetched(
 	bc: BoundedContext,
 	consumptions: readonly Consumption[],
 	operations: ReadonlySet<Consumable>,
-	namedOperations: ReadonlySet<Consumable>,
 ): Map<Consumable, Set<DataSchema>> {
 	const local = new Map(
 		[...operations].map((operation) => [operation, new Set<DataSchema>()]),
 	);
 	for (const consumption of consumptions) {
-		if (
-			operations.has(consumption.consumable) ||
-			namedOperations.has(consumption.consumable)
-		)
-			continue;
+		if (operations.has(consumption.consumable)) continue;
 		const answer = consumption.consumable.returns;
 		if (!answer) continue;
 		for (const caller of routeCallers(consumption, bc).callers) {
@@ -1443,14 +1440,11 @@ function reachedFromEntries(
  * each operation's missing set at most once, so the propagation is bounded by the
  * shapes times the operations, calls and entries.
  */
-function heldByGuard(
-	guard: Consumable,
-	namedOperations: ReadonlySet<Consumable>,
-): DataSchema[] {
+function heldByGuard(guard: Consumable): DataSchema[] {
 	const bc = guard.boundedcontext;
 	const { consumptions, operations, callers, unattributed } = guardGraph(guard);
 	const reactors = reactorsOf(bc);
-	const local = locallyFetched(bc, consumptions, operations, namedOperations);
+	const local = locallyFetched(bc, consumptions, operations);
 	const entries = new Map(
 		[...operations].map((operation) => [
 			operation,
@@ -1512,7 +1506,9 @@ function heldByGuard(
  * The payload shapes this invariant's named operations put within reach,
  * composition included. A named operation may be a front that supplies a fact
  * for another guard. Its current invocation cannot lend a future answer or event;
- * a prior occurrence already received by an issuing reactor remains a fact.
+ * a prior occurrence already received by an issuing reactor remains a fact, and
+ * so does its completed answer fetched before another guard. What each guard
+ * holds is read from its own routes alone, whatever else the invariant names.
  *
  * A precondition is checked before the call runs, so what it can read is what
  * has arrived: the request, and the shapes the request composes. The answer
@@ -1553,11 +1549,10 @@ function heldByGuard(
  */
 function guardedSchemas(invariant: Invariant): Set<DataSchema> {
 	const operations = invariant.guarded.filter((it) => it.type === "operation");
-	const named = new Set(operations);
 	const reachable = operations.map((operation) => {
 		const roots: DataSchema[] = [];
 		if (operation.schema) roots.push(operation.schema);
-		if (invariant.precondition) roots.push(...heldByGuard(operation, named));
+		if (invariant.precondition) roots.push(...heldByGuard(operation));
 		if (invariant.postcondition) {
 			if (operation.returns) roots.push(operation.returns);
 			roots.push(...operation.rejects);
