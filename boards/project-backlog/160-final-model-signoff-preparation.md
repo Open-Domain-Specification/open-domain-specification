@@ -4,10 +4,10 @@ labels: [docs, model]
 priority: high
 agent: lead
 live: false
-status: Tenth blockers in correction; full gate and exact-head independent signoff pending
+status: Eleventh blocker corrections in progress; full gate and exact-head independent signoff pending
 progress: 90
 clean-code-swept: true
-updatedAt: 2026-10-01T05:50:00Z
+updatedAt: 2026-10-01T06:25:00Z
 ---
 # Final model sign-off: the record says only what holds
 
@@ -340,3 +340,13 @@ For each blocking finding, give a concrete source-backed or runnable counterexam
 
 End with VERDICT: APPROVE or VERDICT: BLOCK, exact HEAD, and a concise answer to the owner's question. Do not approve an older head.
 ```
+
+## Eleventh round (head `300d8aa0`)
+
+The unmodified full local gate passed on exact clean head `300d8aa04fd41f977e918ee2e5898fe14ab12858`: core 1063, graphviz 35, doc 52, skill 90, all five reference-model suites, shared 12, pages 1019 at 100% coverage, apps/docs 24, VS Code 18, scripts 31, schema and ESM checks, browser 430 passed/20 skipped. OpenAI Astra low performed the read-only review first. It returned **BLOCK** with two runnable validator cases; Claude was not called because the head was already blocked. No GitHub CI minutes were used.
+
+- **Inherited value kind (#126/card 176):** an Invoice holding Fee, which specialises Money, could not constrain inherited Money.amount in either an aggregate or context rule. `valueObjectsHeldIn` recorded Fee but omitted its ancestor Money. The corrected walk and direct/JSON-round-trip regression preserve the negative case of an unheld sibling Rate.
+- **Mixed external event precondition (#127/card 177):** an external precondition targeting both Capture and Captured had zero diagnostics, whereas event-only was rejected. The contract reach now excludes events from preconditions and explains that an event has no request. Direct/round-trip tests retain valid operation-only preconditions and mixed operation/event postconditions.
+- **Previous corrections:** Astra confirmed #124 and #125 hold, exact pinned diagnostics and generated outputs match, and found no substantiated source-backed reason to reopen #35–#40. The two new defects override any earlier approval. The next independent signoff waits for a clean committed head and a passing unmodified full local gate.
+
+Review prompt: `/tmp/ods-final-model-review-300d8aa0.txt`; report: `/tmp/ods-astra-final-review-300d8aa0.txt`. These are local review artifacts, not model files.

@@ -1385,7 +1385,8 @@ function valueObjectOf(target: Constrainable): ValueObject | undefined {
 
 /**
  * Every value object something inside `boundary` holds, followed through the
- * values those values hold in turn.
+ * values those values hold in turn. A held kind also holds the attributes of
+ * each parent it specialises; this does not make an unheld child kind held.
  *
  * An invariant's boundary holds instances, not type definitions. A value
  * object borrowed over a shared kernel or conformed to upstream is defined in
@@ -1410,8 +1411,12 @@ function valueObjectsHeldIn(
 		for (const attribute of holder.allAttributes) {
 			const vo = attribute.valueobject;
 			if (!vo || held.has(vo)) continue;
-			held.add(vo);
 			holders.push(vo);
+			let ancestor: ValueObject | undefined = vo;
+			while (ancestor && !held.has(ancestor)) {
+				held.add(ancestor);
+				ancestor = ancestor.specialises;
+			}
 		}
 	}
 	return held;
@@ -4902,7 +4907,8 @@ function externalContractReach(
 	const reach = new Set<Constrainable>();
 	for (const provider of [...bc.aggregates.values(), ...bc.services.values()])
 		for (const consumable of provider.consumables.values())
-			reach.add(consumable);
+			if (consumable.type === "operation" || invariant.postcondition)
+				reach.add(consumable);
 	for (const schema of guardedSchemas(invariant))
 		for (const attribute of schema.attributes.values()) reach.add(attribute);
 	for (const schema of publishedPayloads(bc, invariant))
@@ -5097,10 +5103,18 @@ const externalIsBoundary: Rule = (workspace) => {
 			const reach = externalContractReach(bc, invariant);
 			for (const target of invariant.targets) {
 				if (reach.has(target)) continue;
-				const elsewhere =
-					target instanceof Consumable && target.boundedcontext !== bc
-						? `"${target.name}", ${target.type === "event" ? "an event" : "an operation"} of "${target.boundedcontext.name}"; a system we do not own publishes the contract of what it offers and sends, and promises nothing about anybody else's. Move the rule to the context that ${target.type === "event" ? "raises the event" : "provides the operation"}`
-						: `"${constrainableLabel(target)}", which is not part of that contract. ${externalContractMay}`;
+				let elsewhere: string;
+				if (
+					target instanceof Consumable &&
+					target.type === "event" &&
+					target.boundedcontext === bc &&
+					invariant.precondition
+				)
+					elsewhere = `"${target.name}", an event of this context; an event has no request to check before it is published, so only a postcondition may name it`;
+				else if (target instanceof Consumable && target.boundedcontext !== bc)
+					elsewhere = `"${target.name}", ${target.type === "event" ? "an event" : "an operation"} of "${target.boundedcontext.name}"; a system we do not own publishes the contract of what it offers and sends, and promises nothing about anybody else's. Move the rule to the context that ${target.type === "event" ? "raises the event" : "provides the operation"}`;
+				else
+					elsewhere = `"${constrainableLabel(target)}", which is not part of that contract. ${externalContractMay}`;
 				diagnostics.push({
 					severity: "error",
 					rule: "external-is-boundary",

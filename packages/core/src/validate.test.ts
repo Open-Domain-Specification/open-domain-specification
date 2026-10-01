@@ -1496,6 +1496,55 @@ describe("invariant-in-aggregate", () => {
 		).toEqual([]);
 	});
 
+	it("treats inherited attributes of a held value kind as held, but not an unheld sibling kind", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Billing", { description: "" });
+		const money = bc.addValueObject("Money", { description: "" });
+		const amount = money.addAttribute("amount", { type: "decimal" });
+		const fee = bc.addValueObject("Fee", {
+			description: "",
+			specialises: money,
+		});
+		const rate = bc.addValueObject("Rate", {
+			description: "",
+			specialises: money,
+		});
+		const invoice = bc.addAggregate("Invoice", { description: "" });
+		const root = invoice.addRootEntity("Invoice", { description: "" });
+		root.addAttribute("id", { type: "uuid", identity: true });
+		root.addAttribute("fee", { type: "Fee", valueobject: fee });
+		const issue = invoice.provides("Issue", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		invoice.addInvariant("Fee cap", { description: "" }).constrains(amount);
+		bc.addInvariant("Total fee cap", {
+			description: "",
+			precondition: true,
+		}).constrains(issue, amount);
+		const aggregateOutsider = invoice
+			.addInvariant("Unheld aggregate rate", { description: "" })
+			.constrains(rate);
+		const contextOutsider = bc
+			.addInvariant("Unheld context rate", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(issue, rate);
+		for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+			const boundaryErrors = model
+				.validate()
+				.filter((d) =>
+					["invariant-in-aggregate", "invariant-in-context"].includes(d.rule),
+				);
+			expect(boundaryErrors.map((d) => [d.rule, d.ref])).toEqual([
+				["invariant-in-aggregate", aggregateOutsider.ref],
+				["invariant-in-context", contextOutsider.ref],
+			]);
+		}
+	});
+
 	/**
 	 * The review's freight quotation: pickup before delivery and a positive
 	 * weight are checked on the request, before anything is saved, and no
@@ -7898,13 +7947,62 @@ describe("external-is-boundary", () => {
 		expect(boundary(ws).map((d) => [d[0], d[2]])).toEqual([
 			["error", before.ref],
 			["error", before.ref],
+			["error", before.ref],
 		]);
 		expect(boundary(ws)[0][1]).toContain(
 			'states precondition "Captured Within The Authorisation" on none of its own operations',
 		);
 		expect(boundary(ws)[1][1]).toContain(
+			'states a precondition on "Payment Captured", an event of this context; an event has no request to check before it is published',
+		);
+		expect(boundary(ws)[2][1]).toContain(
 			'states a precondition on "Capture Notification.amount", which is not part of that contract',
 		);
+	});
+
+	it("rejects an event target even beside a valid operation precondition", () => {
+		for (const { precondition, operation, event, valid } of [
+			{ precondition: true, operation: true, event: false, valid: true },
+			{ precondition: true, operation: false, event: true, valid: false },
+			{ precondition: true, operation: true, event: true, valid: false },
+			{ precondition: false, operation: true, event: true, valid: true },
+		]) {
+			const { ws, external } = scheme();
+			const api = external.addService("Scheme API", {
+				description: "",
+				type: "application",
+			});
+			const capture = api.provides("Capture", {
+				description: "",
+				type: "operation",
+			});
+			const captured = api.provides("Captured", {
+				description: "",
+				type: "event",
+			});
+			const contract = external.addInvariant("Ready", {
+				description: "",
+				precondition,
+				postcondition: !precondition,
+			});
+			if (operation) contract.constrains(capture);
+			if (event) contract.constrains(captured);
+			for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+				const errors = boundary(model);
+				if (valid) expect(errors).toEqual([]);
+				else {
+					expect(
+						errors.some((d) =>
+							d[1].includes(
+								'states a precondition on "Captured", an event of this context; an event has no request to check before it is published',
+							),
+						),
+					).toBe(true);
+					if (operation) expect(errors).toHaveLength(1);
+					else expect(errors).toHaveLength(2);
+				}
+			}
+		}
 	});
 
 	it("refuses a postcondition on another context's event", () => {

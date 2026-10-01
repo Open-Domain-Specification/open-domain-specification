@@ -14,6 +14,8 @@ The consequence bullet that `aggregate-tree` walks `includes` only no longer hol
 
 Since then (card 133): a value object may be a kind of one borrowed through a shared kernel, as a conformist, or as a customer of a supplier, following decision 16's borrowing predicate.
 
+Since the note of 2026-10-01 (card 176), an aggregate holding a value kind also holds the inherited attributes of its parent kinds for invariant reach. It does not thereby hold a different, uninstantiated child kind.
+
 ## Context
 
 Decision 15 refused subtyping: a hierarchy usually hides a missing concept, and modelling it as `includes` would be wrong, so the model refused rather than misdrew. The condition for reopening was a reference model that cannot name its concept without inheritance. Two do. NorthBank's accounts are current, savings and loan accounts: one identity scheme, one lifecycle, one set of invariants on balances, and attributes each kind has and the others do not. An insurer's coverages, a marketplace's offers, a logistics network's legs are the same shape. Flattening them into one entity leaves attributes that apply only sometimes, which decision 24 can now mark optional but cannot explain; splitting them into three aggregates says they are consistent separately, which is false. The ubiquitous language has a word for this relation, "is a kind of", and the model should be able to write it.
@@ -48,3 +50,7 @@ The context claimed that splitting kinds into separate aggregates "says they are
 ## Note (2026-09-10)
 
 Decision 16's second amendment widened borrowing to a customer-supplier downstream, and `specialisation-in-boundary` follows the same predicate, so a value object may be a kind of one borrowed through a shared kernel, as a conformist, or as a customer of a supplier; this record's text, the rule's catalogue text, the schema comment and the docs said the first two only (card 133, architect's fifteenth round).
+
+## Note (2026-10-01)
+
+The inherited attribute promise applies when an aggregate holds a specialised value: a Fee held by Invoice has the attributes of Money, so Invoice's and its context's rules may constrain Money.amount. The holding walk had counted Fee but omitted its parent and falsely said nothing held Money (issue #126, card 176). The walk now counts ancestors of a held kind, while it does not count unheld sibling or child kinds.

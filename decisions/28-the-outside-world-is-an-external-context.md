@@ -22,6 +22,8 @@ Since the note of 2026-10-01 (card 172), the `precondition` or `postcondition` c
 
 Since the second note of 2026-10-01 (card 174), a published standard's value-object rule stays by construction and may carry neither call-timing flag, just like a value rule in a modelled context.
 
+Since the third note of 2026-10-01 (card 177), an external precondition may not name an event even alongside one of the context's own operations. The event has no request; a published guarantee about its payload is a postcondition.
+
 Since then: an external context's invariant may name one of its own events, flagged `postcondition`, and constrain that event's payload (fifth amendment, card 128); `boundaryOnly` is the third kind of context, ours and coherent and modelled at its boundary only, with its own rule and stereotype (sixth amendment, card 132); an external or boundary-only consumer is not asked for a downstream role (card 135); the Clock route's ceremony is named and the scheduled operation is the usual route; `subscription-backed` skips a mud consumer (card 124).
 
 ## Context
@@ -111,3 +113,7 @@ The published contract of an external operation chooses one timing: a `precondit
 ## Note (2026-10-01, second)
 
 The allowance for published invariants on an external context's value objects never made them operation contracts. A checksum is true when the value is constructed, and is not checked before a call or guaranteed of a call's answer. The value-object rule now rejects `precondition` and `postcondition` there as it does inside modelled contexts (card 174, issue #124).
+
+## Note (2026-10-01, third)
+
+The fifth amendment permits a published event payload guarantee as a postcondition, never as a precondition. `external-is-boundary` already rejected an event-only precondition for lacking an operation, but admitted the same event target beside an operation because its contract reach included every local consumable. The reach now excludes event targets from preconditions, including mixed operation and event rules (issue #127, card 177).
