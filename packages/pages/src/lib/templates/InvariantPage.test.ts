@@ -56,5 +56,32 @@ describe("InvariantPage", () => {
 				"The operations this rule is checked of.",
 			);
 		}
+
+		const lookup = service.provides("Get Capture", {
+			type: "operation",
+			description: "",
+			pattern: "open-host-service",
+			returns: payload,
+		});
+		context.invariants.get("nonnegative_capture")!.constrains(lookup);
+		for (const ws of [workspace, Workspace.fromSchema(workspace.toSchema())]) {
+			expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+			const invariant = ws.boundedcontexts
+				.get("scheme")!
+				.invariants.get("nonnegative_capture")!;
+			const model = { workspace: ws, fileLabel: "feeds.json", diagnostics: [] };
+			const { container } = render(Harness, {
+				model,
+				component: InvariantPage,
+				args: { invariant },
+			});
+			const guards = container.querySelector("#guards") as HTMLElement;
+			expect(guards.querySelector("h2")).toHaveTextContent("Guaranteed by");
+			expect(guards).toHaveTextContent(
+				"The operations and events that carry this guarantee.",
+			);
+			expect(guards).toHaveTextContent("Captured");
+			expect(guards).toHaveTextContent("Get Capture");
+		}
 	});
 });

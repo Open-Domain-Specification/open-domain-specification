@@ -29,7 +29,7 @@ Open-host service for /user endpoints
 
 
 ## Invariants
-> No invariants across aggregates.
+> No context invariants declared.
 
 ## Value Objects
 | Name | Description | Attributes | Invariants | Used by |

@@ -32,11 +32,11 @@ Fronts Records for the rest of the clinic.
 
 
 ## Invariants
-Rules that hold across this context's instances and aggregates; each names the operation that checks it before acting.
+Rules checked or guaranteed by this context's consumables. The Check column distinguishes preconditions, postconditions and checks without a timing flag.
 
-| Name | Description | Constrains |
-| --- | --- | --- |
-| One External Reference Per System | A patient never holds two references from the same outside system -- if a second one turns up, it is a mistake to catch, not a second identity to keep. | GP Practice Reference, Lab Reference, Link GP Practice Reference, Link Lab Reference |
+| Name | Description | Check | Constrains |
+| --- | --- | --- | --- |
+| One External Reference Per System | A patient never holds two references from the same outside system -- if a second one turns up, it is a mistake to catch, not a second identity to keep. | Checked before | GP Practice Reference, Lab Reference, Link GP Practice Reference, Link Lab Reference |
 
 
 ## Value Objects

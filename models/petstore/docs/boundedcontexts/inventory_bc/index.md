@@ -28,7 +28,7 @@ Open-host service for /store/inventory: a projection is a service that provides 
 
 
 ## Invariants
-> No invariants across aggregates.
+> No context invariants declared.
 
 ## Value Objects
 > No value objects.

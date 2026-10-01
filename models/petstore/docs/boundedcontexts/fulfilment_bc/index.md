@@ -39,7 +39,7 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 
 
 ## Invariants
-> No invariants across aggregates.
+> No context invariants declared.
 
 ## Value Objects
 | Name | Description | Attributes | Invariants | Used by |

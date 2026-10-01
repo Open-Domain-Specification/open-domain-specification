@@ -21,7 +21,7 @@ Publishes the national clinical coding standard every clinical record must follo
 > No services.
 
 ## Invariants
-> No invariants across aggregates.
+> No context invariants declared.
 
 ## Value Objects
 | Name | Description | Attributes | Invariants | Used by |

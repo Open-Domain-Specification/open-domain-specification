@@ -35,11 +35,11 @@ Sends a patient for testing at the lab, and folds the result back into our own c
 
 
 ## Invariants
-Rules that hold across this context's instances and aggregates; each names the operation that checks it before acting.
+Rules checked or guaranteed by this context's consumables. The Check column distinguishes preconditions, postconditions and checks without a timing flag.
 
-| Name | Description | Constrains |
-| --- | --- | --- |
-| One Active Referral Per Patient | A patient never has more than one active referral open with us at a time. | Referral.patientId, Register Referral |
+| Name | Description | Check | Constrains |
+| --- | --- | --- | --- |
+| One Active Referral Per Patient | A patient never has more than one active referral open with us at a time. | Checked before | Referral.patientId, Register Referral |
 
 
 ## Value Objects

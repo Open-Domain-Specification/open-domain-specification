@@ -25,7 +25,7 @@ What the lab offers us, and what it publishes back.
 
 
 ## Invariants
-> No invariants across aggregates.
+> No context invariants declared.
 
 ## Value Objects
 > No value objects.

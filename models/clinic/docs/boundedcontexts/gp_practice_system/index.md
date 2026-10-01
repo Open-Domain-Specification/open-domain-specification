@@ -25,7 +25,7 @@ What the practice system publishes to us.
 
 
 ## Invariants
-> No invariants across aggregates.
+> No context invariants declared.
 
 ## Value Objects
 > No value objects.

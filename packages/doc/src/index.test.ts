@@ -389,6 +389,21 @@ describe("toDoc", () => {
 			);
 			expect(page).not.toContain("checks it before acting");
 		}
+
+		const lookup = service.provides("Get Capture", {
+			type: "operation",
+			description: "",
+			pattern: "open-host-service",
+			returns: payload,
+		});
+		context.invariants.get("nonnegative_capture")!.constrains(lookup);
+		for (const ws of [workspace, Workspace.fromSchema(workspace.toSchema())]) {
+			expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+			const page = (await toDoc(ws))["boundedcontexts/scheme/index.md"];
+			expect(page).toContain(
+				"| NonnegativeCapture | The captured amount is nonnegative. | Guaranteed by | Notification.amount, Captured, Get Capture |",
+			);
+		}
 	});
 
 	it("says a context has no invariants across aggregates when it has none", async () => {

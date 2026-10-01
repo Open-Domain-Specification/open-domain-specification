@@ -38,11 +38,11 @@ Offers the patient a slot once triage accepts their case.
 
 
 ## Invariants
-Rules that hold across this context's instances and aggregates; each names the operation that checks it before acting.
+Rules checked or guaranteed by this context's consumables. The Check column distinguishes preconditions, postconditions and checks without a timing flag.
 
-| Name | Description | Constrains |
-| --- | --- | --- |
-| Slot Offered Once | A slot is never offered to a second patient while it is already held. | Slot.status, Offer Slot |
+| Name | Description | Check | Constrains |
+| --- | --- | --- | --- |
+| Slot Offered Once | A slot is never offered to a second patient while it is already held. | Checked before | Slot.status, Offer Slot |
 
 
 ## Value Objects
