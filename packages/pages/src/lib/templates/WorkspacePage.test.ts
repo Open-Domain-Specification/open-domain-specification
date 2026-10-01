@@ -82,7 +82,7 @@ describe("WorkspacePage", () => {
 		expect(health.querySelector(".health-report")).toBeInTheDocument();
 		expect(
 			screen.getByRole("link", { name: /Open the full health report/ }),
-		).toHaveAttribute("href", "#/health");
+		).toHaveAttribute("data-ref", "#/health");
 	});
 
 	it("badges Structure with the problem count and says the good news in the icon colour rather than in green", () => {

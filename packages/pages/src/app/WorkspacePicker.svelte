@@ -7,7 +7,7 @@ import { ICONS, type Model } from "../lib/model";
 let { models, onpick }: { models: Model[]; onpick: (index: number) => void } =
 	$props();
 /** Picking keeps whatever hash the visitor arrived with, so deep links into an export survive. */
-const keep = location.hash.length > 2 ? location.hash : "#/";
+const keep = location.hash.length > 1 ? location.hash : "#";
 </script>
 
 <div class="screen">

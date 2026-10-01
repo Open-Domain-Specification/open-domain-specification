@@ -52,3 +52,7 @@ Owned controls for the next checkpoint:
 - **Lead:** after a blocker, record its omitted axis and one owned process correction; verify that correction at the next checkpoint. Report merged-and-accepted closures, new/reopened issues, net burn-down, first-review acceptance and local/remote verification cost. Do not count tests, review rounds or conditional closure forecasts as shipped work.
 
 These controls serve model trust now and the plugin later: `WorkspaceSet` and forms will need the same lossless identity/reference contract. They do not approve the current candidate or replace the mandatory landing gate.
+
+## Twenty-third review correction (2026-10-01T20:52:23Z)
+
+The existing model package now includes a complete reference identity contract, because ambiguous canonical refs changed an answer silently through JSON. Core, readers and guidance are delegated as three disjoint subsets; the lead integrates them against a finite producer-to-reader identity matrix. This supports the model now and multi-file authoring later without beginning plugin tooling. A separate iterative shared flow walk already passes its bounded source/JSON scale and ordering cases. No new backlog ticket is needed. The owner’s Claude-quota fallback uses SOL coding and OpenAI-only final approval until the quota resets. Current outcome remains zero merged model closures; implementation evidence does not count as burn-down.

@@ -10005,11 +10005,15 @@ describe("consumption-once", () => {
 		// The pair repeats, so each ref carries its first caller and the two
 		// are reachable one at a time (decision 26).
 		const pairRef =
-			"#/boundedcontexts/down/services/reader/consumes/boundedcontexts~up~services~feed~provides~happened";
+			"#/boundedcontexts/down/services/reader/consumes/#~1boundedcontexts~1up~1services~1feed~1provides~1happened";
 		// The caller's collection is part of the segment, so an operation and
 		// a policy sharing an id stay apart (card 95).
-		expect(asIs.ref).toBe(`${pairRef}/provides/archive`);
-		expect(translated.ref).toBe(`${pairRef}/policies/decide`);
+		expect(asIs.ref).toBe(
+			`${pairRef}/by/#~1boundedcontexts~1down~1services~1reader~1provides~1archive`,
+		);
+		expect(translated.ref).toBe(
+			`${pairRef}/by/#~1boundedcontexts~1down~1policies~1decide`,
+		);
 		expect(ws.findConsumption(asIs.ref)).toBe(asIs);
 		expect(ws.findConsumption(translated.ref)).toBe(translated);
 	});
@@ -10069,7 +10073,7 @@ describe("consumption-once", () => {
 			by: [archive],
 		});
 		expect(only.ref).toBe(
-			"#/boundedcontexts/down/services/reader/consumes/boundedcontexts~up~services~feed~provides~happened",
+			"#/boundedcontexts/down/services/reader/consumes/#~1boundedcontexts~1up~1services~1feed~1provides~1happened",
 		);
 		expect(once(ws)).toEqual([]);
 	});
@@ -10167,8 +10171,8 @@ describe("relationship-duplicate", () => {
 		});
 		expect(duplicates(ws)).toEqual([]);
 		expect([api.ref, feed.ref]).toEqual([
-			"#/relationships/a~upstream-downstream~b~fulfilment_api",
-			"#/relationships/a~upstream-downstream~b~legacy_feed",
+			"#/relationships/a/upstream-downstream/b/fulfilment_api",
+			"#/relationships/a/upstream-downstream/b/legacy_feed",
 		]);
 		expect(ws.findRelationship(feed.ref)).toBe(feed);
 	});

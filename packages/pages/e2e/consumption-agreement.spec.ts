@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { serveModel } from "./helpers";
+import { modelHash, serveModel } from "./helpers";
 
 /**
  * A pair of contexts that holds two agreements says, on each exchange, which
@@ -12,7 +12,9 @@ test("the consumes table names the agreement each exchange runs under", async ({
 	page,
 }) => {
 	const url = await serveModel(page, "rivermart");
-	await page.goto(`/?url=${encodeURIComponent(url)}${WAREHOUSE_API}`);
+	await page.goto(
+		`/?url=${encodeURIComponent(url)}${modelHash(WAREHOUSE_API)}`,
+	);
 	await expect(page.locator("main h1")).toContainText("WarehouseAPI");
 
 	const table = page

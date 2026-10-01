@@ -2,24 +2,26 @@
 
 ## Goal / health
 
-Clear the ODS backlog autonomously, with model finality before tooling. Health: pending. Observed backlog: 54 open issues, including 25 model stories #107–#131; zero merged model closures. Draft PR #132 is the model integration batch. Twenty-two completed final-review rounds blocked older heads on reproduced defects; none approves this candidate.
+Clear the ODS backlog autonomously, with model finality before tooling. There are 54 open issues, including 25 model stories #107–#131; zero model stories have merged and closed. Draft PR #132 holds the model batch. Twenty-three completed final reviews blocked older heads; none approves this working tree.
 
 ## Now
 
-The integrated identity correction under [card 160](boards/project-backlog/160-final-model-signoff-preparation.md) is locally accepted and ready to freeze. Distinct answers and ordinary/ending roles survive the flow projection; rejection references identify the full schema context/id and escaped reason; JSON preserves local and borrowed refusals sharing an id. Shared trigger readings distinguish actual ambiguities in Svelte and Markdown text as well as diagrams. Immediate deadline anchors render without unbounded recursion. Exact operation-prefix resolution preserves completion, return and refusal lookup without treating keyword reasons as outcomes.
+SOL implementation is complete for the reference contract and iterative flow traversal. Raw string IDs and JSON keys stay exact; one escaped segment identifies each ID, and derived refs retain complete nested identity. Metamodel 3.0.0 records the deliberate wire break; package versions and release stay unchanged.
 
-Focused evidence: core1535; Graphviz39, Markdown57 and pages1030 passed before the final prefix-only correction; all five reference pins remain0/2/4/3/0. Earlier affected-page Chromium checks passed52 tests. No real VS Code host run is claimed. Generated references, schema copies and RiverMart refusal refs were rebuilt. All eight clean-code principles were checked; introduced resolver and mutable-policy findings are corrected and independently reconciled. Optional low-severity formatter extraction is deferred. No marker above0.5 occurs in the outgoing changed production files.
+Local evidence: core 1,545, pages 1,048, Markdown 81, Graphviz 50 and extension 22 tests. The lead reran 19 reference/scale cases and the full Markdown suite. Source and JSON retain 4,001 flow nodes / 4,003 edges. Real filesystem and SVG regressions now cover long filenames and control-character identity twins. Generated models, fixture and skill were rebuilt; reference diagnostics remain 0 / 2 / 4 / 3 / 0.
 
-Claude reached its weekly limit, resetting2026-10-03 at01:00 Europe/London. The owner's explicit fallback is active: SOL completed coding; final independent signoff is OpenAI Astra low only. No unavailable Claude approval is claimed.
+The mandatory eight-principle quality audit found a canonical attribute alias, now fixed; narrow physical/DOT addenda are clear by inspection. Browser preflight passed 87 relevant Chromium journeys and 14 navigation checks, including embedded refs, percent text and empty identities. Lead owns acceptance, delivery and records. Whole gate, real hosts and final approval are pending.
+
+Claude quota is exhausted until 2026-10-03 01:00 Europe/London. The owner's SOL coding and OpenAI-only final approval exception is active; no unavailable Claude approval is claimed.
 
 ## Next
 
-Freeze a clean candidate, run the unmodified `bash scripts/verify-all.sh` on that exact commit, then request Astra low final whole-model review. Only after approval: update PR #132 to the reviewed head, recheck actual merge requirements, merge normally into `develop`, reconcile the merged diff against each of the25 issue acceptances and close only proven stories/cards. Conserve GitHub CI minutes under the owner's instruction; no release is planned.
+Freeze this reconciled candidate, then run actual VS Code hosts and the unmodified whole gate on that commit. Request Astra low whole-model review when the candidate is complete. After approval, update PR #132, recheck merge requirements, merge into develop, and reconcile each of the 25 stories against the actual merged result before closure. Conserve GitHub CI minutes; no release.
 
 ## Later
 
-PR #106 (diagram fitting) stays parked until model signoff and closeout; then rebase, run its required local gate and actual VS Code host checks. Subsequent bounded reader packages and plugin dependencies are in [ROADMAP.md](docs/bots/ROADMAP.md). Multi-file resolution #59 precedes workspace-aware forms #54. Overlapping capability epics #63–#65 do not run together; #35–#40 reopen only on their recorded evidence conditions.
+PR #106 stays parked until model landing and closeout. [ROADMAP.md](docs/bots/ROADMAP.md) orders subsequent reader and plugin batches; multi-file resolution #59 precedes forms #54. Decision-contingent requests #35–#40 reopen only on recorded evidence conditions.
 
 ## Working state
 
-Updated: 2026-10-01T20:28:15Z. Branch: `codex/model-fidelity-northbank`, base `origin/develop` at `a0e88e97`, candidate parent `39a33ad3`. Candidate identity is the committed HEAD for this freeze. Its full gate and final approval are pending at freeze. Remote draft PR #132 still points to `635bcc7e`; no current-candidate push, CI, merge or closure. Historical prompts, verdicts, gates, corrections and retrospectives remain in card160 and [sprint04](docs/bots/sprints/2026-10-01-sprint-04.md).
+Updated: 2026-10-01T21:44:15Z. Branch: codex/model-fidelity-northbank. Develop base: a0e88e97. Committed head: d9c4a980, with reconciled corrections being committed. Its old gate and BLOCK verdict are historical. Remote PR #132 still points to 635bcc7e. No current-candidate push, CI, merge or closure. [Card 160](boards/project-backlog/160-final-model-signoff-preparation.md) and [sprint 04](docs/bots/sprints/2026-10-01-sprint-04.md) retain the evidence and retrospectives.

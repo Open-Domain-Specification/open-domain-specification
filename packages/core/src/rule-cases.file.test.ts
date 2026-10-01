@@ -38,7 +38,7 @@ const fileCases: Case[] = [
 		fires: ["ods-version"],
 		build: (hostile) => {
 			const json = file();
-			if (hostile) json.odsVersion = "1.0.0";
+			if (hostile) json.odsVersion = "2.0.0";
 			return load(json);
 		},
 	},
@@ -49,7 +49,7 @@ const fileCases: Case[] = [
 		build: (hostile) => {
 			const json = file();
 			if (hostile) delete json.odsVersion;
-			else json.odsVersion = "2.99.0";
+			else json.odsVersion = "3.99.0";
 			return load(json);
 		},
 	},

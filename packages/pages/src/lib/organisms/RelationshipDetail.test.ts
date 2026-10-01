@@ -2,6 +2,7 @@ import {
 	type ContextRelationship,
 	isSymmetricRelationship,
 	PATTERNS,
+	relationshipRef,
 	relationshipTitle,
 } from "@open-domain-specification/core";
 import { fireEvent, render, screen } from "@testing-library/svelte";
@@ -105,7 +106,11 @@ describe("RelationshipDetail", () => {
 		const relationship = northbank.workspace.relationships.find(
 			(r) =>
 				r.ref ===
-				"#/relationships/customer_&_kyc~upstream-downstream~branch_&_contact_centre",
+				relationshipRef(
+					"customer_&_kyc",
+					"upstream-downstream",
+					"branch_&_contact_centre",
+				),
 		) as ContextRelationship;
 		expect(relationship.upstreamRoles).toEqual([
 			"open-host-service",

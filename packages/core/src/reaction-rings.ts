@@ -471,7 +471,9 @@ function shortestBack(
 	const start: Item = { segment: anchor.out, met: !needs || needs(anchor) };
 	// The anchor joins a segment to itself: that segment alone is the walk.
 	if (anchor.out === anchor.into && start.met) return [anchor.into];
-	const seen = new Set<string>([`${start.segment.key}|${start.met}`]);
+	const seen = new Set<string>([
+		JSON.stringify([start.segment.key, start.met]),
+	]);
 	const queue: Item[] = [start];
 	for (let head = 0; head < queue.length; head++) {
 		const item = queue[head]!;
@@ -484,7 +486,7 @@ function shortestBack(
 					walk.splice(1, 0, at.segment);
 				return walk;
 			}
-			const key = `${pass.out.key}|${met}`;
+			const key = JSON.stringify([pass.out.key, met]);
 			if (seen.has(key)) continue;
 			seen.add(key);
 			queue.push({ segment: pass.out, met, parent: item });
@@ -544,7 +546,7 @@ function segmentsOf(walk: InvocationWalk): Segment[] {
 					continue;
 				}
 				const depth = Math.min(item.depth + 1, 2);
-				const seenKey = `${walk.keyOf(next)}|${open}|${depth}`;
+				const seenKey = JSON.stringify([walk.keyOf(next), open, depth]);
 				if (seen.has(seenKey)) continue;
 				seen.add(seenKey);
 				queue.push({ state: next, open, depth, parent: item });
@@ -560,7 +562,7 @@ const segmentKey = (
 	open: boolean,
 	to: Reactor,
 	before: Reactor,
-) => `${from.ref}|${open}|${to.ref}|${before.ref}`;
+) => JSON.stringify([from.ref, open, to.ref, before.ref]);
 
 /**
  * The rings of bare calls inside one context that the depth-first walk could

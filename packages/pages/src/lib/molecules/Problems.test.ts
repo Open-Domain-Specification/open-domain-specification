@@ -31,7 +31,7 @@ describe("Problems", () => {
 		// The rule id reads as a token, and the row ends in a link to the element.
 		expect(screen.getByText("aggregate-root")).toHaveClass("mono");
 		expect(screen.getAllByRole("link", { name: "go to" })[0]).toHaveAttribute(
-			"href",
+			"data-ref",
 			"#/boundedcontexts/catalog_bc",
 		);
 	});

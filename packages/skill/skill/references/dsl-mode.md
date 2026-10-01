@@ -43,10 +43,12 @@ VS Code extension keep the file associated with `schema.json`.
 
 ## Ids and renames
 
-Ids are derived from names with `snake_case` unless `id` is passed. Because ids are the JSON
-keys and the ref segments, renaming an element by changing its name silently changes its id
-and breaks anything outside the source that points at it (documentation links, bookmarks,
-other files). When renaming, pass the old id explicitly:
+Ids are derived from names with `snake_case` unless `id` is passed. An explicit id is the raw
+identity and JSON key: keep it verbatim rather than pre-encoding it. Refs encode each complete id
+as one JSON Pointer segment (`~` as `~0`, then `/` as `~1`), so raw id `a/b~c` appears in a ref as
+`a~1b~0c`. Renaming an element by changing its name silently changes a derived id and breaks
+anything outside the source that points at it (documentation links, bookmarks, other files).
+When renaming, pass the old id explicitly:
 
 ```ts
 // was: catalogBC.addAggregate("Pet", {...})

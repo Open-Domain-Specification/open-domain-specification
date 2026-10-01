@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page } from "@playwright/test";
+import { modelRefToHash } from "../src/lib/ref-transport";
 
 /**
  * Everything a page can tell us went wrong: console errors, uncaught page
@@ -165,8 +166,10 @@ export const DOCSIFY_DIR = join(__dirname, "../../../models/petstore/docs");
 export const DOCSIFY_ORIGIN = "http://localhost:4175";
 
 /** The viewer with the workspace already requested through the `?url=` import. */
+export const modelHash = (ref: string) => modelRefToHash(ref);
+
 export const viewerAt = (hash = "") =>
-	`/?url=${encodeURIComponent(PETSTORE_URL)}${hash}`;
+	`/?url=${encodeURIComponent(PETSTORE_URL)}${hash ? modelHash(hash) : ""}`;
 
 /** Fulfils every request for the example workspace from the repository file. */
 export async function servePetstore(page: Page): Promise<void> {

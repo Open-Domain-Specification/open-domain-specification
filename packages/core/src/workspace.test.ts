@@ -20,7 +20,7 @@ describe("Workspace", () => {
 
 		expect(workspace.name).toBe("Test Workspace");
 		expect(workspace.id).toBe("test_workspace");
-		expect(workspace.odsVersion).toBe("2.0.0");
+		expect(workspace.odsVersion).toBe("3.0.0");
 		expect(workspace.description).toBe("A test workspace");
 		expect(workspace.version).toBe("0.1.0");
 		expect(workspace.path).toBe("test_workspace");
@@ -137,7 +137,7 @@ describe("Workspace", () => {
 		const schema = workspace.toSchema();
 
 		expect(schema.name).toBe("Test Workspace");
-		expect(schema.odsVersion).toBe("2.0.0");
+		expect(schema.odsVersion).toBe("3.0.0");
 		expect(schema.description).toBe("A test workspace");
 		expect(schema.version).toBe("0.1.0");
 		expect(schema.homepage).toBe("https://example.com");

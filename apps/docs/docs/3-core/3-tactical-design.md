@@ -118,9 +118,9 @@ Each of these costs something, and the cost is named rather than hidden:
   the source says it is a fact. It reopens when delivery changes an answer route or a reaction, or makes a
   `reaction-cycle` finding false that no repair states truthfully (decision 15).
 - **A consumption's ref moves.** The ref is computed from the pair it joins
-  and only carries a caller's name once a second consumption of the same
-  pair exists, so adding that second consumption changes the first one's ref
-  (decision 26).
+  and only carries the first caller's complete ref once a second consumption
+  of the same pair exists, so adding that second consumption changes the
+  first one's ref (decision 26).
 - **A kernel's co-owners are not listed, and a context keeps one team.** A
   kernel context's `team` names whoever keeps it, not the sharers who jointly
   own it, because the model gives every context exactly one team; its co-owners
@@ -409,8 +409,10 @@ rejection's shape is checked by `schema-context` exactly as `schema` and
 `returns` are: the provider's own context's, or one that context borrows over a
 shared kernel, as a conformist or as a customer, or the caller's shape on an
 operation that caller reaches through an anti-corruption layer. A process waits
-on one by its origin, `<operation ref>/rejects/<context>/<schema>`, the shape
-named by its context because an id is unique only inside its own. Leave `rejects` off
+on one by its origin,
+`<operation ref>/rejects/<encoded context>/<encoded schema>`, the shape named
+by its context because an id is unique only inside its own. Every id in the
+operation ref is one encoded segment too. Leave `rejects` off
 when the operation always succeeds or refuses without a shape worth naming,
 which is honest for most commands; an event never lists one, because a fact
 that already happened has nothing left to refuse.

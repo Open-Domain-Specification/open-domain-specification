@@ -3,6 +3,7 @@ import type { Kind } from "../atoms/kinds";
 import Lockup from "../atoms/Lockup.svelte";
 import Logo from "../atoms/Logo.svelte";
 import { useModel } from "../model";
+import { modelRefToHash } from "../ref-transport";
 import { resolvePage } from "../resolve";
 
 /**
@@ -83,7 +84,7 @@ const here = $derived(resolvePage(workspace, current).pageRef);
 {/snippet}
 
 <nav class="tree" aria-label="Workspace elements">
-	<p class="brand"><Logo size={16} /><a href="#/">{workspace.name}</a></p>
+	<p class="brand"><Logo size={16} /><a href={modelRefToHash("#")}>{workspace.name}</a></p>
 	{@render list(items)}
 </nav>
 

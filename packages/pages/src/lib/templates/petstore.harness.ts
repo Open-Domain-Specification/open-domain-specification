@@ -24,7 +24,7 @@ export const PETSTORE_REFS = {
 	domain: "#/domains/petstore_commerce",
 	subdomain: "#/domains/petstore_commerce/subdomains/catalog",
 	context: "#/boundedcontexts/sales_bc",
-	relationship: "#/relationships/catalog_bc~shared-kernel~inventory_bc",
+	relationship: "#/relationships/catalog_bc/shared-kernel/inventory_bc",
 	team: "#/teams/pet_shop_team",
 	aggregate: "#/boundedcontexts/catalog_bc/aggregates/pet",
 	entity: "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet",

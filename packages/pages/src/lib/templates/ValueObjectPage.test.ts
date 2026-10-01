@@ -64,9 +64,18 @@ describe("ValueObjectPage", () => {
 			) as HTMLElement;
 			expect(row.querySelectorAll("a")).toHaveLength(3);
 			expect(row.querySelectorAll("td")[1]).toHaveTextContent("Cards / Card");
-			expect(row.querySelectorAll("a")[0]).toHaveAttribute("href", rule.ref);
-			expect(row.querySelectorAll("a")[1]).toHaveAttribute("href", cards.ref);
-			expect(row.querySelectorAll("a")[2]).toHaveAttribute("href", card.ref);
+			expect(row.querySelectorAll("a")[0]).toHaveAttribute(
+				"data-ref",
+				rule.ref,
+			);
+			expect(row.querySelectorAll("a")[1]).toHaveAttribute(
+				"data-ref",
+				cards.ref,
+			);
+			expect(row.querySelectorAll("a")[2]).toHaveAttribute(
+				"data-ref",
+				card.ref,
+			);
 		}
 	});
 

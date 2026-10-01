@@ -8,6 +8,15 @@ export * from "./namespace";
 export * from "./narrative";
 export * from "./patterns";
 export * from "./reaction-walk";
+export {
+	consumptionRef,
+	decodeRefSegment,
+	encodeRefSegment,
+	parseConsumptionRef,
+	parseRelationshipRef,
+	relationshipRef,
+} from "./reference";
+export type { ConsumptionRef, RelationshipRef } from "./reference";
 export * from "./relation-map";
 export * from "./relationship";
 export * from "./schema";

@@ -40,7 +40,7 @@ describe("AttributesSection", () => {
 		const link = row.querySelector("a") as HTMLAnchorElement;
 		expect(link).toHaveTextContent("Category");
 		expect(link).toHaveAttribute(
-			"href",
+			"data-ref",
 			"#/boundedcontexts/catalog_bc/valueobjects/category",
 		);
 		// A plain type is code, not a link.

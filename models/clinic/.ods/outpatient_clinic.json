@@ -4,7 +4,7 @@
   "name": "Outpatient Clinic",
   "description": "Referral, triage, scheduling and diagnostics for patients referred to an outpatient clinic by their GP.",
   "version": "0.1.0",
-  "odsVersion": "2.0.0",
+  "odsVersion": "3.0.0",
   "domains": {
     "outpatient_care": {
       "name": "Outpatient Care",

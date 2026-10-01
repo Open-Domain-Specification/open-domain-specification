@@ -70,7 +70,7 @@ export class InvocationWalk {
 
 	/** A stable key for a state, for ordering and de-duplicating rings. */
 	keyOf(state: Invocation): string {
-		return `${state.node.ref}|${state.caller?.ref ?? ""}`;
+		return JSON.stringify([state.node.ref, state.caller?.ref]);
 	}
 
 	private at(node: Reactor, caller?: Policy | Process): Invocation {

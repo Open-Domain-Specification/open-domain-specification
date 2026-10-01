@@ -4,7 +4,7 @@
   "name": "Swagger Petstore (v3)",
   "description": "DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a status→count map; Orders use placed|approved|delivered.",
   "version": "0.2.0",
-  "odsVersion": "2.0.0",
+  "odsVersion": "3.0.0",
   "options": {
     "rules": {
       "commentsRequired": true

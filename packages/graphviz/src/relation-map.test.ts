@@ -124,6 +124,44 @@ describe("relationMapToDigraph", () => {
 		`);
 	});
 
+	it("keeps punctuation-distinct canonical refs as distinct PlantUML aliases", () => {
+		const map = new ODSRelationMap([]);
+		for (const id of ["#/things/a-b", "#/things/a/b", "#/things/a~1b"]) {
+			map.addNode({
+				id,
+				name: id,
+				type: "entity",
+				namespace,
+				attributes: [],
+			});
+		}
+		const aliases = [
+			...relationMapToPlantUML(map).matchAll(/ as (ref_[0-9a-f]+) /g),
+		].map((match) => match[1]);
+		expect(new Set(aliases).size).toBe(3);
+	});
+
+	it("keeps distinct unpaired UTF-16 refs distinct in every output", async () => {
+		const map = new ODSRelationMap([]);
+		for (const id of ["#/things/\ud800", "#/things/\udc00"]) {
+			map.addNode({
+				id,
+				name: "Malformed code unit",
+				type: "entity",
+				namespace,
+				attributes: [],
+			});
+		}
+		const drawn = relationMapToDigraph(map);
+		const aliases = [
+			...drawn.toPlantUML().matchAll(/ as (ref_[0-9a-f]+) /g),
+		].map((match) => match[1]);
+		expect(new Set(aliases).size).toBe(2);
+		const dot = drawn.toDot();
+		expect(dot.match(/__ods_utf16_[0-9a-f]+/g)).toHaveLength(2);
+		expect((await drawn.toSVG()).match(/class="node"/g)).toHaveLength(2);
+	});
+
 	it("draws an identity as a dotted, stereotyped edge to the foreign root", () => {
 		const map = buildMap();
 		const order = map.nodes.get(
@@ -151,8 +189,8 @@ describe("relationMapToDigraph", () => {
 		expect(drawn.toDot()).toContain(
 			'arrowhead = "vee";\n    arrowtail = "none";\n    style = "dashed";\n    label = "«identifies» petId"',
 		);
-		expect(drawn.toPlantUML()).toContain(
-			"boundedcontexts_ordering_aggregates_order_entities_order ..> boundedcontexts_catalog_aggregates_pet_entities_pet : «identifies» petId",
+		expect(drawn.toPlantUML()).toMatch(
+			/ref_[0-9a-f]+ \.\.> ref_[0-9a-f]+ : «identifies» petId/,
 		);
 	});
 
@@ -231,8 +269,8 @@ describe("relationMapToDigraph", () => {
 		// the value belongs to.
 		expect(drawn.toDot()).toContain("«borrowed value object»<BR/><B>Money</B>");
 		expect(drawn.toDot()).toContain('label = "Shared Kernel"');
-		expect(drawn.toPlantUML()).toContain(
-			'class "Money" as boundedcontexts_shared_kernel_valueobjects_money <<borrowed value object>>',
+		expect(drawn.toPlantUML()).toMatch(
+			/class "Money" as ref_[0-9a-f]+ <<borrowed value object>>/,
 		);
 		expect(drawn.toPlantUML()).toContain('package "Shared Kernel" {');
 	});
@@ -262,9 +300,7 @@ describe("relationMapToDigraph", () => {
 		expect(drawn.toDot()).toContain(
 			'"#/boundedcontexts/ordering/aggregates/order/entities/gift_order" -> "#/boundedcontexts/ordering/aggregates/order/entities/order" [\n    arrowhead = "onormal";\n    arrowtail = "none";\n    style = "solid";\n    label = "";',
 		);
-		expect(drawn.toPlantUML()).toContain(
-			"boundedcontexts_ordering_aggregates_order_entities_gift_order --|> boundedcontexts_ordering_aggregates_order_entities_order",
-		);
+		expect(drawn.toPlantUML()).toMatch(/ref_[0-9a-f]+ --\|> ref_[0-9a-f]+/);
 	});
 
 	it("marks an optional attribute with {opt} beside {id}", () => {
@@ -308,18 +344,18 @@ describe("relationMapToPlantUML", () => {
 			hide empty members
 			skinparam classAttributeIconSize 0
 			package "Sales / Orders / Ordering / Order" {
-			  class "Order" as boundedcontexts_ordering_aggregates_order_entities_order <<root entity>> {
+			  class "Order" as ref_0023002f0062006f0075006e0064006500640063006f006e00740065007800740073002f006f00720064006500720069006e0067002f0061006700670072006500670061007400650073002f006f0072006400650072002f0065006e007400690074006900650073002f006f0072006400650072 <<root entity>> {
 			    {field} {id} id: OrderId
 			    placedAt: Instant
 			  }
-			  class "Order Line" as boundedcontexts_ordering_aggregates_order_entities_line <<entity>> {
+			  class "Order Line" as ref_0023002f0062006f0075006e0064006500640063006f006e00740065007800740073002f006f00720064006500720069006e0067002f0061006700670072006500670061007400650073002f006f0072006400650072002f0065006e007400690074006900650073002f006c0069006e0065 <<entity>> {
 			  }
-			  class "Money" as boundedcontexts_ordering_aggregates_order_valueobjects_money <<value object>> {
+			  class "Money" as ref_0023002f0062006f0075006e0064006500640063006f006e00740065007800740073002f006f00720064006500720069006e0067002f0061006700670072006500670061007400650073002f006f0072006400650072002f00760061006c00750065006f0062006a0065006300740073002f006d006f006e00650079 <<value object>> {
 			    amount: Decimal <2dp>
 			  }
 			}
-			boundedcontexts_ordering_aggregates_order_entities_order *-- "1..*" boundedcontexts_ordering_aggregates_order_entities_line : lines
-			boundedcontexts_ordering_aggregates_order_entities_order ..> boundedcontexts_ordering_aggregates_order_valueobjects_money : totals
+			ref_0023002f0062006f0075006e0064006500640063006f006e00740065007800740073002f006f00720064006500720069006e0067002f0061006700670072006500670061007400650073002f006f0072006400650072002f0065006e007400690074006900650073002f006f0072006400650072 *-- "1..*" ref_0023002f0062006f0075006e0064006500640063006f006e00740065007800740073002f006f00720064006500720069006e0067002f0061006700670072006500670061007400650073002f006f0072006400650072002f0065006e007400690074006900650073002f006c0069006e0065 : lines
+			ref_0023002f0062006f0075006e0064006500640063006f006e00740065007800740073002f006f00720064006500720069006e0067002f0061006700670072006500670061007400650073002f006f0072006400650072002f0065006e007400690074006900650073002f006f0072006400650072 ..> ref_0023002f0062006f0075006e0064006500640063006f006e00740065007800740073002f006f00720064006500720069006e0067002f0061006700670072006500670061007400650073002f006f0072006400650072002f00760061006c00750065006f0062006a0065006300740073002f006d006f006e00650079 : totals
 			@enduml"
 		`);
 	});

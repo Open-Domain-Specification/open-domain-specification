@@ -1,9 +1,10 @@
 <script lang="ts">
+import { modelRefToHash } from "../ref-transport";
 import { iconColor, type Kind } from "./kinds";
 
 /**
- * A link. Inside the model a ref is the hash route, so plain navigation works
- * in every host; `external` marks a link that leaves the model, which gets the
+ * A link. A model ref is encoded as the URL fragment while `data-ref` keeps
+ * the canonical model identity for hosts; `external` marks a link that leaves the model, which gets the
  * trailing codicon VS Code puts after external links in Settings and release
  * notes. The look is the platform's: link colour, no underline until hover,
  * the focus ring in `focusBorder`. An icon, when given, takes the kind's
@@ -36,7 +37,7 @@ const {
 
 <a
 	class="ref"
-	href={ref}
+	href={external ? ref : modelRefToHash(ref)}
 	data-ref={external ? undefined : ref}
 	rel={external ? "external noreferrer" : undefined}
 	{title}

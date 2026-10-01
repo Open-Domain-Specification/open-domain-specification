@@ -80,15 +80,20 @@ for the reasoning behind each one.
 
 ## Identity and refs
 
-Every element has an `id` that becomes its key in the JSON document and the
-last segment of its ref, for example `#/boundedcontexts/sales/aggregates/order`.
-When you omit `id` in the DSL it is derived from the name (`"Order Line"`
-becomes `order_line`); pass `id` explicitly when a name is likely to change
-and other elements point at it. When a document is loaded, the JSON keys are
-the ids, so a document round-trips regardless of how its names are spelled.
+Every keyed element has an `id` that becomes its raw key in the JSON document and
+one segment of its ref, for example `#/boundedcontexts/sales/aggregates/order`.
+The key stays exactly as authored, including an empty or Unicode string. The
+ref encodes that complete key as one JSON Pointer segment: `~` becomes `~0`
+and `/` becomes `~1`, so raw id `orders/a~b` is segment `orders~1a~0b`, while
+raw id `orders~1a~0b` is the distinct segment `orders~01a~00b`. When you omit
+`id` in the DSL it is derived from the name (`"Order Line"` becomes
+`order_line`); pass `id` explicitly when a name is likely to change and other
+elements point at it. When a document is loaded, the raw JSON keys are the ids,
+so a document round-trips regardless of how its names are spelled.
 
 Refs never embed the domain or subdomain of a bounded context, so renaming
-those never breaks a ref.
+those never breaks a ref. A canonical ref is the model identity; links and
+generated Markdown filenames encode that identity for their own transport.
 
 ## Reference models
 

@@ -30,7 +30,7 @@ function contextNode(bc: BoundedContext): ODSContextMapNode {
 }
 
 function pairKey(a: BoundedContext, b: BoundedContext): string {
-	return [a.ref, b.ref].sort().join("|");
+	return JSON.stringify([a.ref, b.ref].sort());
 }
 
 /**
@@ -65,7 +65,12 @@ export class ODSContextMap {
 		// The name is part of the id because one pair may hold two agreements
 		// in one direction — a negotiated API and a tolerated feed — and the
 		// map draws one line for each (decision 15, card 103).
-		const id = `${edge.source.id}|${edge.target.id}|${edge.type}|${edge.name ?? ""}`;
+		const id = JSON.stringify([
+			edge.source.id,
+			edge.target.id,
+			edge.type,
+			edge.name ?? "",
+		]);
 		const existingEdge = this.edges.get(id);
 		if (existingEdge) {
 			return existingEdge;

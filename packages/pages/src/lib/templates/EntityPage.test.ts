@@ -57,7 +57,7 @@ describe("EntityPage", () => {
 			expect(row).toHaveTextContent("Lending");
 			expect(row.querySelectorAll("td")[1]).toHaveTextContent("Lending");
 			expect(row.querySelector("a")).toHaveAttribute(
-				"href",
+				"data-ref",
 				ws.boundedcontexts
 					.get("lending")!
 					.invariants.get("one_open_application_per_customer")!.ref,
@@ -121,7 +121,7 @@ describe("EntityPage", () => {
 				"Payments Hub",
 			);
 			expect(dailyLimit.querySelector("a")).toHaveAttribute(
-				"href",
+				"data-ref",
 				ws.boundedcontexts.get("payments_hub")!.invariants.get("daily_limit")!
 					.ref,
 			);

@@ -8,7 +8,7 @@ The user endpoints and the record they answer with, modelled at the boundary onl
 **Owned by:** [Platform Team](https://petstore.swagger.io/#/user)
 
 ## Serves
-- [Identity & Accounts / Users](../../domains/identity_&_accounts/subdomains/users/index.md) (generic)
+- [Identity & Accounts / Users](../../domains/_ods_006900640065006e0074006900740079005f0026005f006100630063006f0075006e00740073/subdomains/users/index.md) (generic)
 
 ![contextmap](./contextmap.svg)
 

@@ -8,7 +8,7 @@ describe("TeamLockup", () => {
 		const team = [...petstoreModel().workspace.teams.values()][0];
 		const { container } = render(TeamLockup, { team });
 		expect(screen.getByRole("link", { name: team.name })).toHaveAttribute(
-			"href",
+			"data-ref",
 			team.ref,
 		);
 		expect(

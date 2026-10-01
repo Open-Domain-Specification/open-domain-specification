@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 import { Workspace } from "@open-domain-specification/core";
 import { expect, type Page, test } from "@playwright/test";
 import { exportSite } from "../dist/site.js";
-import { serveModel } from "./helpers";
+import { modelHash, serveModel } from "./helpers";
 
 /**
  * Issue #107, card 157. NorthBank's interview names two owners of Money and
@@ -19,8 +19,8 @@ import { serveModel } from "./helpers";
  */
 const LEDGER = "#/boundedcontexts/ledger";
 const MONEY = `${LEDGER}/valueobjects/money`;
-const KERNEL = "#/relationships/accounts~shared-kernel~ledger";
-const CARDS_ON_LEDGER = "#/relationships/ledger~upstream-downstream~cards";
+const KERNEL = "#/relationships/accounts/shared-kernel/ledger";
+const CARDS_ON_LEDGER = "#/relationships/ledger/upstream-downstream/cards";
 
 let exportDir: string;
 
@@ -49,14 +49,14 @@ const hosts: [string, (page: Page, ref: string) => Promise<void>][] = [
 		"viewer",
 		async (page, ref) => {
 			const url = await serveModel(page, "northbank");
-			await page.goto(`/?url=${encodeURIComponent(url)}${ref}`);
+			await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(ref)}`);
 		},
 	],
 	[
 		"export",
 		async (page, ref) => {
 			await page.goto(
-				`${pathToFileURL(join(exportDir, "index.html")).href}${ref}`,
+				`${pathToFileURL(join(exportDir, "index.html")).href}${modelHash(ref)}`,
 			);
 		},
 	],

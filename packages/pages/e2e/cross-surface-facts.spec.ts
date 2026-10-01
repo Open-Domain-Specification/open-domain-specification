@@ -14,6 +14,7 @@ import {
 	FIXTURE_FILE,
 } from "../../../apps/ods-vscode/src/test/fixtures/cross-surface/expected";
 import { exportSite } from "../dist/site.js";
+import { modelHash } from "./helpers";
 
 /**
  * The same facts on the two hosts that render pages in a browser: the hosted
@@ -51,7 +52,7 @@ const hosts: Host[] = [
 				}),
 			);
 			await page.goto(
-				`/?url=${encodeURIComponent("https://workspaces.test/.ods/cross_surface.json")}${ref}`,
+				`/?url=${encodeURIComponent("https://workspaces.test/.ods/cross_surface.json")}${modelHash(ref)}`,
 			);
 		},
 	},
@@ -59,7 +60,7 @@ const hosts: Host[] = [
 		name: "a static export",
 		open: async (page, ref) => {
 			await page.goto(
-				`${pathToFileURL(join(exportDir, "index.html")).href}${ref}`,
+				`${pathToFileURL(join(exportDir, "index.html")).href}${modelHash(ref)}`,
 			);
 		},
 	},

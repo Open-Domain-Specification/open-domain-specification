@@ -195,15 +195,31 @@ export class ODSFlowMap {
 	private walk(node: Reactor, chain: ReactionChain, walked: Set<Reactor>) {
 		if (walked.has(node)) return;
 		walked.add(node);
-		const from = this.addNode(nodeFor(node));
-		for (const { to, answer, deadline } of chain.stepsFrom(node)) {
+		// Keep one frame per active node so a long finite chain uses heap space
+		// rather than the JavaScript call stack. Advancing only the top frame
+		// preserves the recursive walk's depth-first edge and node order.
+		const frameFor = (reactor: Reactor) => ({
+			from: this.addNode(nodeFor(reactor)),
+			steps: chain.stepsFrom(reactor)[Symbol.iterator](),
+		});
+		const frames = [frameFor(node)];
+		while (frames.length > 0) {
+			const frame = frames[frames.length - 1]!;
+			const next = frame.steps.next();
+			if (next.done) {
+				frames.pop();
+				continue;
+			}
+			const { to, answer, deadline } = next.value;
 			this.addEdge({
-				source: from,
+				source: frame.from,
 				target: this.addNode(nodeFor(to)),
 				...(answer && { answer: answerOf(answer) }),
 				...(deadline && { deadline: deadlineOf(deadline) }),
 			});
-			this.walk(to, chain, walked);
+			if (walked.has(to)) continue;
+			walked.add(to);
+			frames.push(frameFor(to));
 		}
 	}
 

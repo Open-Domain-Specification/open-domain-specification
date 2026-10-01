@@ -1,6 +1,7 @@
 import { ODSFlowMap, Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { flowMapToDigraph } from "./flow-map";
+import { graphIdentifier } from "./identifier";
 
 function makeWorkspace() {
 	const ws = new Workspace("Flow", {
@@ -26,6 +27,61 @@ function makeWorkspace() {
 }
 
 describe("flowMapToDigraph", () => {
+	it.each([
+		["newline", "a\nb", "a\\nb"],
+		["NUL", "a\0b", "a\\0b"],
+	])(
+		"keeps %s and its literal escape identity distinct after source and JSON loading",
+		async (_case, aId, bId) => {
+			const source = new Workspace("Unsafe identities", {
+				description: "",
+				version: "0",
+			});
+			const served = source
+				.addDomain("Business", { description: "" })
+				.addSubdomain("Work", { description: "", type: "core" });
+			const bc = source
+				.addBoundedContext("Work", { description: "" })
+				.serves(served);
+			const service = bc.addService("Handler", {
+				description: "",
+				type: "application",
+			});
+			const operation = (name: string, id: string) =>
+				service.provides(name, {
+					id,
+					description: "",
+					type: "operation",
+					internal: true,
+				});
+			const begin = operation("Begin", "begin");
+			const a = operation("A", aId);
+			const b = operation("B", bId);
+			bc.addProcess("Run", { description: "" })
+				.starts(begin)
+				.issues(a, b)
+				.ends(b.completed());
+
+			for (const workspace of [
+				source,
+				Workspace.fromSchema(JSON.parse(JSON.stringify(source.toSchema()))),
+			]) {
+				expect(workspace.validate()).toEqual([]);
+				const map = ODSFlowMap.fromWorkspace(workspace);
+				expect(map.nodes.size).toBe(4);
+				expect(map.edges.size).toBe(4);
+				const drawn = flowMapToDigraph(map);
+				const dot = drawn.toDot();
+				for (const ref of [a.ref, b.ref])
+					expect(dot).toContain(`"${graphIdentifier(ref)}" [`);
+				expect(dot.match(/ -> /g)).toHaveLength(4);
+				const svg = await drawn.toSVG();
+				expect(svg.match(/class="node"/g)).toHaveLength(4);
+				expect(svg.match(/class="edge"/g)).toHaveLength(4);
+			}
+		},
+	);
+
 	it("renders events, policies and commands with their edges", () => {
 		const { bc } = makeWorkspace();
 		const dot = flowMapToDigraph(ODSFlowMap.fromBoundedContext(bc)).toDot();

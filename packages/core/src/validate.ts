@@ -2267,7 +2267,7 @@ const relationshipDeclared: Rule = (workspace) => {
 	) => {
 		// Keyed by the pair rather than by the direction, because one
 		// relationship either way round is what clears it.
-		const key = [upstream.ref, downstream.ref].sort().join("|");
+		const key = JSON.stringify([upstream.ref, downstream.ref].sort());
 		if (missing.has(key) || relationshipJoins(workspace, upstream, downstream))
 			return;
 		missing.set(key, {
@@ -2355,11 +2355,10 @@ const relationshipDeclared: Rule = (workspace) => {
  */
 function relationshipKey(relationship: ContextRelationship): string {
 	const { source, target, type, nameId } = relationship;
-	const called = nameId ? `~${nameId}` : "";
 	if (isDirectedRelationshipType(type))
-		return `${source.id}~directed~${target.id}${called}`;
+		return JSON.stringify([source.id, "directed", target.id, nameId]);
 	const ends = [source.id, target.id].sort();
-	return `${ends[0]}~${type}~${ends[1]}${called}`;
+	return JSON.stringify([ends[0], type, ends[1], nameId]);
 }
 
 /**

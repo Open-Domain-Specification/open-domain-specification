@@ -107,9 +107,9 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
   does not exempt it; the repair is an anti-corruption layer, a partnership or an event when the
   source says it is a fact. Reopens when delivery changes an answer route or a reaction, or makes a `reaction-cycle` finding false
   that no repair states truthfully (decision 15).
-- **A consumption's ref moves.** The ref is computed from the pair it joins and only carries a
-  caller's name once a second consumption of the same pair exists, so adding that second
-  consumption changes the first one's ref.
+- **A consumption's ref moves.** The ref is computed from the pair it joins and only carries the
+  first caller's complete ref once a second consumption of the same pair exists, so adding that
+  second consumption changes the first one's ref.
 - **A kernel's co-owners are not listed, and a context keeps one team.** A kernel context's team
   field names whoever keeps it, not the sharers who jointly own it, because the model gives every
   context exactly one team; its co-owners are its `shared-kernel` sharers. A pairwise kernel's

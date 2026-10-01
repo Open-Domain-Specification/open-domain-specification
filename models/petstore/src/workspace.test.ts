@@ -6,7 +6,7 @@ import { workspace } from "./workspace";
 describe("Swagger Petstore Example Workspace", () => {
 	it("should create a valid workspace", () => {
 		expect(workspace.name).toBe("Swagger Petstore (v3)");
-		expect(workspace.odsVersion).toBe("2.0.0");
+		expect(workspace.odsVersion).toBe("3.0.0");
 		expect(workspace.description).toContain("Swagger Petstore v3");
 		expect(workspace.homepage).toBe("https://petstore.swagger.io/");
 		expect(workspace.primaryColor).toBe("#0ea5e9");
@@ -52,7 +52,7 @@ describe("Swagger Petstore Example Workspace", () => {
 		const schema = workspace.toSchema();
 
 		expect(schema.name).toBe("Swagger Petstore (v3)");
-		expect(schema.odsVersion).toBe("2.0.0");
+		expect(schema.odsVersion).toBe("3.0.0");
 		expect(schema.domains).toBeDefined();
 		expect(Object.keys(schema.domains).length).toBe(2);
 	});

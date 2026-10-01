@@ -1,3 +1,5 @@
+import { encodeRefSegment } from "./reference";
+
 /**
  * @title Attribute
  * @description A named, typed property of an entity, value object or schema.
@@ -872,12 +874,11 @@ export interface WorkspaceOptionsSchema {
  * It is a constant of the library rather than something an author sets: every
  * file core writes carries it, and a file that carries a different major was
  * written against a metamodel this core does not read the same way. The major
- * is bumped by the decision that breaks the metamodel — this is `2.0.0` for
- * everything since the version started being compared at all, because the
- * five decisions that promised the bump never got one (decision 29, noted
- * 2026-09-10). The `ods-version` rule is where a mismatch is reported.
+ * is bumped by the decision that breaks the metamodel. Version `3.0.0`
+ * introduces the injective canonical reference grammar. The `ods-version`
+ * rule is where a mismatch is reported (decision 29).
  */
-export const ODS_VERSION = "2.0.0" as const;
+export const ODS_VERSION = "3.0.0" as const;
 
 /**
  * @title Workspace
@@ -919,13 +920,13 @@ export interface WorkspaceSchema {
 
 export function teamRef(team: string) {
 	return {
-		$ref: `#/teams/${team}`,
+		$ref: `#/teams/${encodeRefSegment(team)}`,
 	};
 }
 
 export function domainRef(domain: string) {
 	return {
-		$ref: `#/domains/${domain}`,
+		$ref: `#/domains/${encodeRefSegment(domain)}`,
 	};
 }
 
@@ -933,13 +934,13 @@ export function subdomainRef(domain: string, subdomain: string) {
 	const { $ref } = domainRef(domain);
 
 	return {
-		$ref: `${$ref}/subdomains/${subdomain}`,
+		$ref: `${$ref}/subdomains/${encodeRefSegment(subdomain)}`,
 	};
 }
 
 export function boundedcontextRef(boundedcontext: string) {
 	return {
-		$ref: `#/boundedcontexts/${boundedcontext}`,
+		$ref: `#/boundedcontexts/${encodeRefSegment(boundedcontext)}`,
 	};
 }
 
@@ -947,7 +948,7 @@ export function serviceRef(boundedcontext: string, service: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/services/${service}`,
+		$ref: `${$ref}/services/${encodeRefSegment(service)}`,
 	};
 }
 
@@ -955,7 +956,7 @@ export function termRef(boundedcontext: string, term: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/glossary/${term}`,
+		$ref: `${$ref}/glossary/${encodeRefSegment(term)}`,
 	};
 }
 
@@ -963,7 +964,7 @@ export function policyRef(boundedcontext: string, policy: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/policies/${policy}`,
+		$ref: `${$ref}/policies/${encodeRefSegment(policy)}`,
 	};
 }
 
@@ -971,7 +972,7 @@ export function processRef(boundedcontext: string, process: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/processes/${process}`,
+		$ref: `${$ref}/processes/${encodeRefSegment(process)}`,
 	};
 }
 
@@ -979,7 +980,7 @@ export function aggregateRef(boundedcontext: string, aggregate: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/aggregates/${aggregate}`,
+		$ref: `${$ref}/aggregates/${encodeRefSegment(aggregate)}`,
 	};
 }
 
@@ -991,7 +992,7 @@ export function entityRef(
 	const { $ref } = aggregateRef(boundedcontext, aggregate);
 
 	return {
-		$ref: `${$ref}/entities/${entity}`,
+		$ref: `${$ref}/entities/${encodeRefSegment(entity)}`,
 	};
 }
 
@@ -999,7 +1000,7 @@ export function valueObjectRef(boundedcontext: string, valueobject: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/valueobjects/${valueobject}`,
+		$ref: `${$ref}/valueobjects/${encodeRefSegment(valueobject)}`,
 	};
 }
 
@@ -1011,7 +1012,7 @@ export function invariantRef(
 	const { $ref } = aggregateRef(boundedcontext, aggregate);
 
 	return {
-		$ref: `${$ref}/invariants/${invariant}`,
+		$ref: `${$ref}/invariants/${encodeRefSegment(invariant)}`,
 	};
 }
 
@@ -1024,7 +1025,7 @@ export function valueObjectInvariantRef(
 	const { $ref } = valueObjectRef(boundedcontext, valueobject);
 
 	return {
-		$ref: `${$ref}/invariants/${invariant}`,
+		$ref: `${$ref}/invariants/${encodeRefSegment(invariant)}`,
 	};
 }
 
@@ -1033,7 +1034,7 @@ export function contextInvariantRef(boundedcontext: string, invariant: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/invariants/${invariant}`,
+		$ref: `${$ref}/invariants/${encodeRefSegment(invariant)}`,
 	};
 }
 
@@ -1041,7 +1042,7 @@ export function schemaRef(boundedcontext: string, schema: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/schemas/${schema}`,
+		$ref: `${$ref}/schemas/${encodeRefSegment(schema)}`,
 	};
 }
 
@@ -1057,6 +1058,6 @@ export function consumableRef(
 			: serviceRef(boundedcontext, provider);
 
 	return {
-		$ref: `${$ref}/provides/${consumable}`,
+		$ref: `${$ref}/provides/${encodeRefSegment(consumable)}`,
 	};
 }

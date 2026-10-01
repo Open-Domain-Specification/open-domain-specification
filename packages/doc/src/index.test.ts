@@ -1,5 +1,12 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import {
 	narrativeText,
 	PATTERNS,
@@ -8,6 +15,7 @@ import {
 } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { toDoc } from "./index";
+import { pathToIndexMd } from "./lib/paths";
 
 const petstoreSchema = JSON.parse(
 	readFileSync(
@@ -24,6 +32,89 @@ const northbankSchema = JSON.parse(
 );
 
 describe("toDoc", () => {
+	it("writes distinct portable paths and links for adversarial identities", async () => {
+		const ws = new Workspace("Docs", { description: "", version: "0" });
+		const slash = ws.addDomain("Slash", { description: "", id: "a/b" });
+		ws.addDomain("Literal escape", { description: "", id: "a~1b" });
+		ws.addDomain("Percent", { description: "", id: "%2F" });
+		ws.addDomain("Keyword", { description: "", id: "returns" });
+		ws.addDomain("Empty", { description: "", id: "" });
+		ws.addDomain("Unicode", { description: "", id: "é" });
+		ws.addDomain("Dot", { description: "", id: "." });
+		ws.addDomain("Backslash", { description: "", id: "a\\b" });
+		ws.addDomain("Case", { description: "", id: "Case" });
+		slash.addSubdomain("Empty child", {
+			description: "",
+			type: "core",
+			id: "",
+		});
+
+		const docs = await toDoc(ws);
+		const slashPath = "domains/_ods_0061007e00310062/index.md";
+		const literalPath = "domains/_ods_0061007e003000310062/index.md";
+		expect(docs).toHaveProperty(slashPath);
+		expect(docs).toHaveProperty(literalPath);
+		expect(slashPath).not.toBe(literalPath);
+		expect(docs[slashPath]).toContain("(subdomains/_ods_/index.md)");
+		expect(docs).toHaveProperty(
+			"domains/_ods_0061007e00310062/subdomains/_ods_/index.md",
+		);
+	});
+
+	it("writes bounded physical components for long identities and links to them", async () => {
+		const ws = new Workspace("Long paths", { description: "", version: "0" });
+		const longTilde = ws.addDomain("Long tilde", {
+			description: "",
+			id: "~".repeat(70),
+		});
+		const literalEscape = ws.addDomain("Literal escape", {
+			description: "",
+			id: "~0".repeat(70),
+		});
+		const prefixSpoof = ws.addDomain("Prefix spoof", {
+			description: "",
+			id: `_ods_long_bc_${"0".repeat(110)}`,
+		});
+		const child = longTilde.addSubdomain("Child", {
+			description: "",
+			type: "core",
+			id: "child",
+		});
+		const longSafe = ws.addDomain("Long safe", {
+			description: "",
+			id: "a".repeat(260),
+		});
+
+		const docs = await toDoc(ws);
+		const tildePath = pathToIndexMd(longTilde.path);
+		const literalPath = pathToIndexMd(literalEscape.path);
+		const spoofPath = pathToIndexMd(prefixSpoof.path);
+		const safePath = pathToIndexMd(longSafe.path);
+		const childPath = pathToIndexMd(child.path);
+		expect(
+			new Set([tildePath, literalPath, spoofPath, safePath, childPath]).size,
+		).toBe(5);
+		expect(spoofPath.split("/")).not.toContain(prefixSpoof.id);
+		for (const path of Object.keys(docs))
+			expect(path.split("/").every((part) => part.length <= 240)).toBe(true);
+
+		const childLink = pathToIndexMd(child.path, longTilde.path);
+		expect(docs[tildePath]).toContain(`(${childLink})`);
+
+		const output = mkdtempSync(join(tmpdir(), "ods-long-path-"));
+		try {
+			for (const [path, contents] of Object.entries(docs)) {
+				const destination = join(output, path);
+				mkdirSync(dirname(destination), { recursive: true });
+				writeFileSync(destination, contents);
+			}
+			expect(
+				readFileSync(join(dirname(join(output, tildePath)), childLink), "utf8"),
+			).toContain("# Child (core)");
+		} finally {
+			rmSync(output, { recursive: true, force: true });
+		}
+	});
 	it("prints NorthBank aggregate rule timing before and after JSON round-trip", async () => {
 		const workspace = Workspace.fromSchema(northbankSchema);
 		for (const model of [
@@ -861,6 +952,9 @@ describe("toDoc", () => {
 
 		expect(Object.keys(docs).sort()).toMatchInlineSnapshot(`
 			[
+			  "_ods_0073007700610067006700650072005f00700065007400730074006f00720065005f0028007600330029/contextmap.svg",
+			  "_ods_0073007700610067006700650072005f00700065007400730074006f00720065005f0028007600330029/glossary.md",
+			  "_ods_0073007700610067006700650072005f00700065007400730074006f00720065005f0028007600330029/index.md",
 			  "_sidebar.md",
 			  "boundedcontexts/catalog_bc/aggregates/pet/consumablemap.svg",
 			  "boundedcontexts/catalog_bc/aggregates/pet/index.md",
@@ -899,10 +993,10 @@ describe("toDoc", () => {
 			  "boundedcontexts/sales_bc/index.md",
 			  "boundedcontexts/sales_bc/services/order_app/consumablemap.svg",
 			  "boundedcontexts/sales_bc/services/order_app/index.md",
-			  "domains/identity_&_accounts/contextmap.svg",
-			  "domains/identity_&_accounts/index.md",
-			  "domains/identity_&_accounts/subdomains/users/contextmap.svg",
-			  "domains/identity_&_accounts/subdomains/users/index.md",
+			  "domains/_ods_006900640065006e0074006900740079005f0026005f006100630063006f0075006e00740073/contextmap.svg",
+			  "domains/_ods_006900640065006e0074006900740079005f0026005f006100630063006f0075006e00740073/index.md",
+			  "domains/_ods_006900640065006e0074006900740079005f0026005f006100630063006f0075006e00740073/subdomains/users/contextmap.svg",
+			  "domains/_ods_006900640065006e0074006900740079005f0026005f006100630063006f0075006e00740073/subdomains/users/index.md",
 			  "domains/petstore_commerce/contextmap.svg",
 			  "domains/petstore_commerce/index.md",
 			  "domains/petstore_commerce/subdomains/catalog/contextmap.svg",
@@ -914,16 +1008,13 @@ describe("toDoc", () => {
 			  "domains/petstore_commerce/subdomains/sales/contextmap.svg",
 			  "domains/petstore_commerce/subdomains/sales/index.md",
 			  "index.html",
-			  "swagger_petstore_(v3)/contextmap.svg",
-			  "swagger_petstore_(v3)/glossary.md",
-			  "swagger_petstore_(v3)/index.md",
 			]
 		`);
 	});
 
 	it("prints the health report on the workspace page, in the same three lists as the pages surface", async () => {
 		const docs = await toDoc(petstore);
-		const health = docs["swagger_petstore_(v3)/index.md"]
+		const health = docs[pathToIndexMd(petstore.path)]
 			.split("## Health")[1]
 			.split("## Teams")[0];
 

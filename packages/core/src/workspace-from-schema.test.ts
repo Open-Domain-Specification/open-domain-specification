@@ -23,7 +23,7 @@ describe("a file that leaves its empty collections out", () => {
 	const bare: WorkspaceSchema = {
 		id: "bare",
 		name: "Bare",
-		odsVersion: "2.0.0",
+		odsVersion: "3.0.0",
 		description: "",
 		version: "0",
 		domains: {},
@@ -425,15 +425,15 @@ describe("a file that says which metamodel it was written against", () => {
 	});
 
 	it("says nothing about a later minor or patch of the same major", () => {
-		expect(loadAt("2.7.3").version).toEqual([]);
+		expect(loadAt("3.7.3").version).toEqual([]);
 	});
 
-	it("reports a file whose major is not this one, and loads it anyway", () => {
-		const { loaded, version } = loadAt("1.0.0");
+	it("reports a prior 2.x file and loads every node anyway", () => {
+		const { loaded, version } = loadAt("2.9.0");
 		expect(version).toHaveLength(1);
 		expect(version[0].severity).toBe("error");
 		expect(version[0].ref).toBe("#/odsVersion");
-		expect(version[0].message).toContain("written against ODS 1.0.0");
+		expect(version[0].message).toContain("written against ODS 2.9.0");
 		expect(version[0].message).toContain(`this is ODS ${ODS_VERSION}`);
 		expect(loaded.boundedcontexts.size).toBe(
 			Object.keys(clean.boundedcontexts).length,
@@ -455,7 +455,7 @@ describe("a file that says which metamodel it was written against", () => {
 	it("leaves every other rule to run over what did load", () => {
 		// The mismatch is the only new diagnostic: the file is the fixture's,
 		// which is otherwise the same file.
-		const mismatched = loadAt("1.0.0")
+		const mismatched = loadAt("2.9.0")
 			.loaded.validate()
 			.filter((d) => d.rule !== "ods-version")
 			.map((d) => `${d.rule}|${d.ref}`);
@@ -530,7 +530,7 @@ describe("a file that writes a field this metamodel does not know", () => {
 	const bare: WorkspaceSchema = {
 		id: "bare",
 		name: "Bare",
-		odsVersion: "2.0.0",
+		odsVersion: "3.0.0",
 		description: "",
 		version: "0",
 		domains: {},

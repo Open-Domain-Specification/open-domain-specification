@@ -6,7 +6,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { Workspace } from "@open-domain-specification/core";
 import { expect, type Page, test } from "@playwright/test";
 import { exportSite } from "../dist/site.js";
-import { PETSTORE_SCHEMA, servePetstore, viewerAt } from "./helpers";
+import { modelHash, PETSTORE_SCHEMA, servePetstore, viewerAt } from "./helpers";
 
 /**
  * The reader can tell where they are. The tree marks the page being read with
@@ -186,10 +186,14 @@ for (const host of hosts) {
 			page,
 		}) => {
 			const SERVICE = "#/boundedcontexts/catalog_bc/services/pet_app";
-			await page.evaluate((ref) => {
-				location.hash = `${ref}/consumes/boundedcontexts~catalog_bc~aggregates~pet~provides~reserve_pet`;
-			}, SERVICE);
+			const consumption = `${SERVICE}/consumes/#~1boundedcontexts~1catalog_bc~1aggregates~1pet~1provides~1reserve_pet`;
+			await page.evaluate((hash) => {
+				location.hash = hash;
+			}, modelHash(consumption));
 			await expect(page.locator("main h1")).toContainText("PetApp");
+			expect(await page.evaluate(() => location.hash)).toBe(
+				modelHash(consumption),
+			);
 			expect(await marked(page)).toEqual({ page: [SERVICE] });
 		});
 
@@ -205,6 +209,41 @@ for (const host of hosts) {
 		});
 	});
 }
+
+test("browser transport keeps percent text and a terminal empty identity exact", async ({
+	page,
+}) => {
+	const workspace = new Workspace("Transport", {
+		description: "",
+		version: "0",
+	});
+	const percent = workspace.addDomain("Percent", {
+		description: "",
+		id: "%2F",
+	});
+	const empty = workspace.addDomain("Empty", { description: "", id: "" });
+	const url = "https://workspaces.test/.ods/transport.json";
+	await page.route("**/transport.json", (route) =>
+		route.fulfill({
+			status: 200,
+			headers: {
+				"content-type": "application/json",
+				"access-control-allow-origin": "*",
+			},
+			body: JSON.stringify(workspace.toSchema()),
+		}),
+	);
+
+	await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(percent.ref)}`);
+	await expect(page.locator("main h1")).toContainText("Percent");
+	expect(await page.evaluate(() => location.hash)).toBe("#/domains/%252F");
+
+	await page.evaluate((hash) => {
+		location.hash = hash;
+	}, modelHash(empty.ref));
+	await expect(page.locator("main h1")).toContainText("Empty");
+	expect(await page.evaluate(() => location.hash)).toBe("#/domains/");
+});
 
 test("the embedded bundle has the page and its contents as landmarks and no tree (browser, not VS Code)", async ({
 	page,

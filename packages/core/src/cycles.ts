@@ -62,7 +62,7 @@ export function cyclesOf<N>(
 				const next = step.value;
 				if (onPath.has(next)) {
 					const ring = leadWithLowestKey(path.slice(path.indexOf(next)), keyOf);
-					const key = ring.map(keyOf).join(">");
+					const key = JSON.stringify(ring.map(keyOf));
 					if (seen.has(key)) continue;
 					seen.add(key);
 					rings.push(ring);

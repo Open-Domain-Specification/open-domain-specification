@@ -4,7 +4,7 @@
   "name": "RiverMart",
   "description": "A fictional online marketplace: catalogue, search, sellers and the buy box, cart and checkout, payments, warehousing, last mile, advertising, customer service and fraud.",
   "version": "1.0.0",
-  "odsVersion": "2.0.0",
+  "odsVersion": "3.0.0",
   "primaryColor": "#f59e0b",
   "domains": {
     "shopping": {
@@ -3711,7 +3711,7 @@
               },
               "pattern": "anti-corruption-layer",
               "relationship": {
-                "$ref": "#/relationships/vendor_purchasing_(legacy)~upstream-downstream~warehouse~legacy_stock_feed"
+                "$ref": "#/relationships/vendor_purchasing_(legacy)/upstream-downstream/warehouse/legacy_stock_feed"
               }
             },
             {
@@ -3725,7 +3725,7 @@
                 }
               ],
               "relationship": {
-                "$ref": "#/relationships/vendor_purchasing_(legacy)~customer-supplier~warehouse~purchase_order_lookup"
+                "$ref": "#/relationships/vendor_purchasing_(legacy)/customer-supplier/warehouse/purchase_order_lookup"
               }
             },
             {

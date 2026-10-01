@@ -5,6 +5,12 @@ import {
 	type EvidenceOptions,
 	normaliseDisposition,
 } from "./evidence";
+import {
+	consumptionRef,
+	decodeRefSegment,
+	encodeRefSegment,
+	relationshipRef,
+} from "./reference";
 import type * as ods from "./schema";
 import {
 	type DownstreamRole,
@@ -24,6 +30,10 @@ function snakeCase(str: string): string {
 		.replace(/([a-z])([A-Z])/g, "$1_$2") // Insert underscore before uppercase letters
 		.replace(/[\s-]+/g, "_") // Replace spaces and hyphens with underscores
 		.toLowerCase(); // Convert to lowercase
+}
+
+function idOf(name: string, explicit: string | undefined): string {
+	return explicit ?? snakeCase(name);
 }
 
 interface SchemaConvertible<T> {
@@ -209,12 +219,12 @@ export class Workspace
 	odsVersionMismatch?: { found?: string };
 
 	get path(): string {
-		return `${this.id}`;
+		return encodeRefSegment(this.id);
 	}
 
 	constructor(name: string, attributes: WorkspaceAttributes) {
 		this.debug = getDebug(`workspace:${name}`);
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.homepage = attributes.homepage;
 		this.logoUrl = attributes.logoUrl;
@@ -490,12 +500,17 @@ export class Workspace
 	 * resolving its owner, which may be an entity, value object or schema.
 	 */
 	getAttributeByRef(ref: string): Attribute | undefined {
-		const [ownerRef, attributeId] = ref.split("/attributes/");
-		if (!attributeId) return undefined;
+		const segments = ref.split("/");
+		if (segments.length < 3 || segments[segments.length - 2] !== "attributes")
+			return undefined;
+		const ownerRef = segments.slice(0, -2).join("/");
+		const attributeId = decodeRefSegment(segments[segments.length - 1]);
+		if (attributeId === undefined) return undefined;
 		const owner =
 			this.getEntityOrValueobjectByRef(ownerRef) ??
 			this.getSchemaByRef(ownerRef);
-		return owner?.attributes.get(attributeId);
+		const attribute = owner?.attributes.get(attributeId);
+		return attribute?.ref === ref ? attribute : undefined;
 	}
 
 	getAttributeByRefOrThrow(ref: string): Attribute {
@@ -534,9 +549,8 @@ export class Workspace
 	 * explicit id contains `/` retains the direct answer lookup that
 	 * `getConsumableByRef` supports. The answer suffix is `returns`, `completed`,
 	 * or `rejects/<context>/<schema>` with an optional `/<reason>`. The refusal
-	 * delimiter candidates are read from the right until the prefix names an
-	 * exact operation, after its otherwise opaque ref; the context, schema and
-	 * reason are escaped single segments. The shape is looked up among the ones
+	 * operation prefix has fixed collection arity; the context, schema and reason
+	 * are escaped single segments. The shape is looked up among the ones
 	 * that operation
 	 * declares, by its context and id together, and the reason among the ones
 	 * that refusal enumerates, because an answer is the operation coming back
@@ -554,43 +568,40 @@ export class Workspace
 	 * the Answer exists to carry it (decision 13, second amendment; card 108).
 	 */
 	getAnswerByRef(ref: string): Answer | undefined {
-		if (ref.endsWith("/completed")) {
-			const operation = this.getConsumableByRef(
-				ref.slice(0, -"/completed".length),
-			);
-			if (operation) return operation.completed();
-		}
-		if (ref.endsWith("/returns")) {
-			const operation = this.getConsumableByRef(
-				ref.slice(0, -"/returns".length),
-			);
-			if (operation)
-				return operation.returns ? operation.returned() : undefined;
-		}
-		const delimiter = "/rejects/";
-		let before = ref.length;
-		while (before >= 0) {
-			const rejectionAt = ref.lastIndexOf(delimiter, before);
-			if (rejectionAt < 0) return undefined;
-			const operation = this.getConsumableByRef(ref.slice(0, rejectionAt));
-			if (operation) {
-				const rest = ref.slice(rejectionAt + delimiter.length).split("/");
-				if (rest.length < 2 || rest.length > 3) return undefined;
-				const [context, schema, reason] = rest.map(refSegmentValue);
-				if (!context || !schema || (rest.length === 3 && !reason))
-					return undefined;
-				const rejection = operation.rejections.find(
-					(it) =>
-						it.schema.boundedcontext.id === context && it.schema.id === schema,
-				);
-				if (!rejection) return undefined;
-				if (reason !== undefined && !rejection.reasons.includes(reason))
-					return undefined;
-				return operation.rejected(rejection.schema, reason);
-			}
-			before = rejectionAt - 1;
-		}
-		return undefined;
+		const segments = ref.split("/");
+		if (
+			segments.length < 8 ||
+			segments[0] !== "#" ||
+			segments[1] !== "boundedcontexts" ||
+			(segments[3] !== "services" && segments[3] !== "aggregates") ||
+			segments[5] !== "provides"
+		)
+			return undefined;
+		const operation = this.getConsumableByRef(segments.slice(0, 7).join("/"));
+		if (!operation) return undefined;
+		const rest = segments.slice(7);
+		if (rest.length === 1 && rest[0] === "completed")
+			return operation.completed();
+		if (rest.length === 1 && rest[0] === "returns")
+			return operation.returns ? operation.returned() : undefined;
+		if (rest[0] !== "rejects") return undefined;
+		rest.shift();
+		if (rest.length < 2 || rest.length > 3) return undefined;
+		const [context, schema, reason] = rest.map(decodeRefSegment);
+		if (
+			context === undefined ||
+			schema === undefined ||
+			(rest.length === 3 && (reason === undefined || reason === ""))
+		)
+			return undefined;
+		const rejection = operation.rejections.find(
+			(it) =>
+				it.schema.boundedcontext.id === context && it.schema.id === schema,
+		);
+		if (!rejection) return undefined;
+		if (reason !== undefined && !rejection.reasons.includes(reason))
+			return undefined;
+		return operation.rejected(rejection.schema, reason);
 	}
 
 	getAnswerByRefOrThrow(ref: string): Answer {
@@ -887,7 +898,7 @@ export class Domain implements Visitable, SchemaConvertible<ods.DomainSchema> {
 	workspace: Workspace;
 
 	get path(): string {
-		return `domains/${this.id}`;
+		return `domains/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -899,7 +910,7 @@ export class Domain implements Visitable, SchemaConvertible<ods.DomainSchema> {
 		name: string,
 		attributes: DomainAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.workspace = workspace;
@@ -948,7 +959,7 @@ export class Subdomain
 	}
 
 	get path(): string {
-		return `${this.domain.path}/subdomains/${this.id}`;
+		return `${this.domain.path}/subdomains/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -956,7 +967,7 @@ export class Subdomain
 	}
 
 	constructor(domain: Domain, name: string, attributes: SubdomainAttributes) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.type = attributes.type;
@@ -1033,7 +1044,7 @@ export class BoundedContext
 	team?: Team;
 
 	get path(): string {
-		return `boundedcontexts/${this.id}`;
+		return `boundedcontexts/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -1058,7 +1069,7 @@ export class BoundedContext
 		name: string,
 		attributes: BoundedContextAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.workspace = workspace;
@@ -1243,7 +1254,7 @@ export class Service
 	consumptions: Consumption[] = [];
 
 	get path(): string {
-		return `${this.boundedcontext.path}/services/${this.id}`;
+		return `${this.boundedcontext.path}/services/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -1255,7 +1266,7 @@ export class Service
 		name: string,
 		attributes: ServiceAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.type = attributes.type;
@@ -1318,7 +1329,7 @@ export class Aggregate
 	consumptions: Consumption[] = [];
 
 	get path(): string {
-		return `${this.boundedcontext.path}/aggregates/${this.id}`;
+		return `${this.boundedcontext.path}/aggregates/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -1330,7 +1341,7 @@ export class Aggregate
 		name: string,
 		attributes: AggregateAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.boundedcontext = boundedcontext;
@@ -1496,7 +1507,7 @@ export class Consumable
 	disposition?: ods.Disposition;
 
 	get path(): string {
-		return `${this.provider.path}/provides/${this.id}`;
+		return `${this.provider.path}/provides/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -1511,7 +1522,7 @@ export class Consumable
 		name: string,
 		attributes: ConsumableAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.pattern = attributes.pattern;
@@ -1723,20 +1734,6 @@ export class Consumable
 	}
 }
 
-/** One segment of an answer ref: `~` written `~0` and `/` written `~1`. */
-function refSegment(value: string): string {
-	return value.replace(/~/g, "~0").replace(/\//g, "~1");
-}
-
-/**
- * What one segment of an answer ref says, or undefined where its escapes are
- * not the two {@link refSegment} writes.
- */
-function refSegmentValue(segment: string): string | undefined {
-	if (/~(?![01])/.test(segment)) return undefined;
-	return segment.replace(/~1/g, "/").replace(/~0/g, "~");
-}
-
 /**
  * One answer of one operation: what that call comes back with.
  *
@@ -1816,10 +1813,12 @@ export class Answer implements Referenceable {
 		if (!this.schema) return `${this.operation.ref}/completed`;
 		if (!this.rejection) return `${this.operation.ref}/returns`;
 		const shape = [this.schema.boundedcontext.id, this.schema.id]
-			.map(refSegment)
+			.map(encodeRefSegment)
 			.join("/");
 		const rejects = `${this.operation.ref}/rejects/${shape}`;
-		return this.reason ? `${rejects}/${refSegment(this.reason)}` : rejects;
+		return this.reason
+			? `${rejects}/${encodeRefSegment(this.reason)}`
+			: rejects;
 	}
 
 	/**
@@ -1995,7 +1994,7 @@ export class Entity
 	}
 
 	get path(): string {
-		return `${this.aggregate.path}/entities/${this.id}`;
+		return `${this.aggregate.path}/entities/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -2010,7 +2009,7 @@ export class Entity
 		name: string,
 		attributes: EntityAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.root = attributes.root || false;
@@ -2169,7 +2168,7 @@ export class ValueObject
 	}
 
 	get path(): string {
-		return `${this.boundedcontext.path}/valueobjects/${this.id}`;
+		return `${this.boundedcontext.path}/valueobjects/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -2184,7 +2183,7 @@ export class ValueObject
 		name: string,
 		attributes: ValueObjectAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.specialises = attributes.specialises;
@@ -2356,7 +2355,7 @@ export class Invariant
 	postcondition: boolean;
 
 	get path(): string {
-		return `${this.owner.path}/invariants/${this.id}`;
+		return `${this.owner.path}/invariants/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -2384,7 +2383,7 @@ export class Invariant
 		name: string,
 		attributes: InvariantAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.precondition = attributes.precondition ?? false;
@@ -2515,17 +2514,6 @@ export class EntityRelation
  */
 export type ConsumptionCaller = Consumable | Policy | Process;
 
-/**
- * How a caller reads inside a consumption's ref: the collection it lives in,
- * then its id. Two callers of one consumer may share an id — an operation and
- * the policy named after it — and only the collection tells them apart.
- */
-function callerSegment(caller: ConsumptionCaller): string {
-	if (caller instanceof Policy) return `policies/${caller.id}`;
-	if (caller instanceof Process) return `processes/${caller.id}`;
-	return `provides/${caller.id}`;
-}
-
 export type ConsumptionAttributes = {
 	pattern?: DownstreamRole;
 	/**
@@ -2563,36 +2551,36 @@ export class Consumption
 
 	/**
 	 * A consumption has no id of its own, so its ref is derived from the pair
-	 * it joins: the consumer's path, `consumes`, and the consumable's path
-	 * with `/` replaced by `~`, the one ref-safe character no collection name
-	 * or id contains. Deriving it from the pair rather than the position in
-	 * `consumes[]` keeps it stable when the array is reordered, and flattening
-	 * the whole consumable path rather than its ids alone keeps two providers
-	 * of the same id — one aggregate, one service — apart.
+	 * it joins: `<consumer ref>/consumes/<E(full consumable ref)>`, where `E`
+	 * encodes one JSON Pointer segment. Deriving it from the pair rather than
+	 * the position in `consumes[]` keeps it stable when the array is reordered,
+	 * and carrying the whole consumable ref keeps two providers of the same id
+	 * — one aggregate, one service — apart.
 	 *
 	 * One consumer may take one consumable more than once when the exchanges
 	 * differ, an archive taking a response as it stands beside a decision that
 	 * translates it, so the pair alone does not always identify a consumption.
-	 * Where it does not, the first caller named in `by` is appended as a
-	 * further segment; `consumption-once` is what makes that caller present and
-	 * the callers of the sibling consumptions disjoint, so the segment tells
-	 * the two apart. A pair declared once keeps the ref it always had
-	 * (decision 26, card 89).
+	 * Where it does not, `/by/<E(full first caller ref)>` is appended;
+	 * `consumption-once` is what makes that caller present and the callers of
+	 * the sibling consumptions disjoint, so the segment tells the two apart. A
+	 * pair declared once carries no caller discriminator (decision 26, card 89).
 	 *
-	 * That segment names the caller's collection as well as its id, because an
-	 * id is only unique within one. A context whose policy is named after the
+	 * That nested ref names the caller's whole location, because an id is only
+	 * unique within one collection. A context whose policy is named after the
 	 * operation it issues — Petstore's "Reserve Pet" is both — gave two
 	 * consumptions one ref while `consumption-once` saw two different callers
-	 * and said nothing (card 95). `provides`, `policies` or `processes` is the
-	 * same word the caller's own ref uses, so the two agree by construction.
+	 * and said nothing (card 95).
 	 */
 	get path(): string {
-		const pair = `${this.consumer.path}/consumes/${this.consumable.path.split("/").join("~")}`;
 		const shared = this.consumer.consumptions.some(
 			(other) => other !== this && other.consumable === this.consumable,
 		);
 		const caller = this.by[0];
-		return shared && caller ? `${pair}/${callerSegment(caller)}` : pair;
+		return consumptionRef(
+			this.consumer.ref,
+			this.consumable.ref,
+			shared ? caller?.ref : undefined,
+		).slice(2);
 	}
 
 	get ref(): string {
@@ -2728,19 +2716,23 @@ export class ContextRelationship
 	/**
 	 * A relationship is the one model element with no id of its own, so its ref
 	 * is derived from what does identify it: the two contexts it joins and the
-	 * pattern that joins them. `~` separates the parts because it is the one
-	 * ref-safe character no id can contain.
+	 * pattern that joins them. Each authored identity occupies one encoded
+	 * segment, so delimiter characters inside ids remain data.
 	 *
 	 * One pair may hold two agreements in one direction — a negotiated
 	 * fulfilment API and a tolerated legacy feed from the same warehouse — and
 	 * then the pair and the type no longer tell them apart, so a named
-	 * relationship appends its name as a fourth part, in the same snake case an
+	 * relationship appends its name as a fourth identity segment, in the same snake case an
 	 * id is written in. A relationship with no name keeps the ref it always had
 	 * (decision 15, card 103).
 	 */
 	get path(): string {
-		const pair = `relationships/${this.source.id}~${this.type}~${this.target.id}`;
-		return this.nameId ? `${pair}~${this.nameId}` : pair;
+		return relationshipRef(
+			this.source.id,
+			this.type,
+			this.target.id,
+			this.nameId || undefined,
+		).slice(2);
 	}
 
 	/**
@@ -2751,7 +2743,7 @@ export class ContextRelationship
 	 * them as one name.
 	 */
 	get nameId(): string {
-		return this.name ? snakeCase(this.name) : "";
+		return this.name ? idOf(this.name, undefined) : "";
 	}
 
 	get ref(): string {
@@ -2807,7 +2799,7 @@ export class Team implements SchemaConvertible<ods.TeamSchema> {
 	workspace: Workspace;
 
 	get path(): string {
-		return `teams/${this.id}`;
+		return `teams/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -2822,7 +2814,7 @@ export class Team implements SchemaConvertible<ods.TeamSchema> {
 	}
 
 	constructor(workspace: Workspace, name: string, attributes: TeamAttributes) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.homepage = attributes.homepage;
@@ -2908,7 +2900,7 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 	owner: AttributeOwner;
 
 	get path(): string {
-		return `${this.owner.path}/attributes/${this.id}`;
+		return `${this.owner.path}/attributes/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -2956,7 +2948,7 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 		name: string,
 		attributes: AttributeOptions,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.type = attributes.type;
 		this.description = attributes.description;
@@ -3005,7 +2997,7 @@ export class DataSchema
 	boundedcontext: BoundedContext;
 
 	get path(): string {
-		return `${this.boundedcontext.path}/schemas/${this.id}`;
+		return `${this.boundedcontext.path}/schemas/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -3017,7 +3009,7 @@ export class DataSchema
 		name: string,
 		attributes: DataSchemaAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.boundedcontext = boundedcontext;
@@ -3129,7 +3121,7 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 	commands: Consumable[] = [];
 
 	get path(): string {
-		return `${this.boundedcontext.path}/policies/${this.id}`;
+		return `${this.boundedcontext.path}/policies/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -3144,7 +3136,7 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 		name: string,
 		attributes: PolicyAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.boundedcontext = boundedcontext;
@@ -3275,7 +3267,7 @@ export class Deadline
 	process: Process;
 
 	get path(): string {
-		return `${this.process.path}/deadlines/${this.id}`;
+		return `${this.process.path}/deadlines/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -3291,7 +3283,7 @@ export class Deadline
 	readonly unresolvedWrites = new UnresolvedWrites();
 
 	constructor(process: Process, name: string, attributes: DeadlineAttributes) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.after = attributes.after;
@@ -3386,7 +3378,7 @@ export class Process
 	disposition?: ods.Disposition;
 
 	get path(): string {
-		return `${this.boundedcontext.path}/processes/${this.id}`;
+		return `${this.boundedcontext.path}/processes/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -3401,7 +3393,7 @@ export class Process
 		name: string,
 		attributes: ProcessAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.description = attributes.description;
 		this.boundedcontext = boundedcontext;
@@ -3531,7 +3523,7 @@ export class GlossaryTerm
 	boundedcontext: BoundedContext;
 
 	get path(): string {
-		return `${this.boundedcontext.path}/glossary/${this.id}`;
+		return `${this.boundedcontext.path}/glossary/${encodeRefSegment(this.id)}`;
 	}
 
 	get ref(): string {
@@ -3546,7 +3538,7 @@ export class GlossaryTerm
 		name: string,
 		attributes: GlossaryTermAttributes,
 	) {
-		this.id = attributes.id || snakeCase(name);
+		this.id = idOf(name, attributes.id);
 		this.name = name;
 		this.definition = attributes.definition;
 		this.aliases = attributes.aliases ?? [];

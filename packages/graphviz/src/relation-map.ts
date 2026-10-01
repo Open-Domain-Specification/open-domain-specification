@@ -14,6 +14,7 @@ import {
 	toDot,
 } from "ts-graphviz";
 import { getDebug } from "./debug";
+import { graphIdentifier } from "./identifier";
 import { STEREOTYPES } from "./role-labels";
 import {
 	escapeHtml,
@@ -123,7 +124,10 @@ function edgeAttributes(edge: ODSRelationMapEdge): EdgeAttributesObject {
 }
 
 function plantUmlAlias(node: ODSRelationMapNode): string {
-	return node.id.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+	let hex = "";
+	for (let index = 0; index < node.id.length; index += 1)
+		hex += node.id.charCodeAt(index).toString(16).padStart(4, "0");
+	return `ref_${hex}`;
 }
 
 function plantUmlClass(node: ODSRelationMapNode): string {
@@ -189,7 +193,7 @@ export function relationMapToDigraph(relationMap: ODSRelationMap): {
 		let cluster = clusters.get(aggregate.id);
 		if (!cluster) {
 			cluster = new Subgraph(
-				aggregate.id,
+				graphIdentifier(aggregate.id),
 				namespaceCluster(clusterLabel(node)),
 			);
 			clusters.set(aggregate.id, cluster);
@@ -197,7 +201,7 @@ export function relationMapToDigraph(relationMap: ODSRelationMap): {
 		}
 
 		debug(`Creating class ${id} in ${aggregate.id}`);
-		const graphvizNode = new Node(id, {
+		const graphvizNode = new Node(graphIdentifier(id), {
 			label: classLabel(node),
 			shape: "plain",
 			tooltip: node.description,

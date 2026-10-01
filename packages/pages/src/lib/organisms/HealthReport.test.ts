@@ -9,6 +9,7 @@ import {
 	petstoreModel,
 	rivermartModel,
 } from "../fixtures";
+import { modelRefToHash } from "../ref-transport";
 import HealthReport from "./HealthReport.svelte";
 
 const report = (model: ReturnType<typeof petstoreModel>) =>
@@ -110,8 +111,8 @@ describe("HealthReport", () => {
 					r?.target.name,
 				]);
 				expect(links.map((a) => a.getAttribute("href"))).toEqual([
-					r?.source.ref,
-					r?.target.ref,
+					modelRefToHash(r?.source.ref ?? "#"),
+					modelRefToHash(r?.target.ref ?? "#"),
 				]);
 				seen.add(cell.querySelector(".arrow")?.textContent ?? "");
 				if (r?.name) named.add(text);

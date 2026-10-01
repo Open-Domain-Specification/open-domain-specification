@@ -94,7 +94,7 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(when).toHaveTextContent("completion");
 		// No shape to link to, so the name links to the call that came back.
 		expect(
-			[...when.querySelectorAll("a")].map((a) => a.getAttribute("href")),
+			[...when.querySelectorAll("a")].map((a) => a.getAttribute("data-ref")),
 		).toContain(
 			"#/boundedcontexts/main_context/aggregates/rootless_aggregate/provides/silent_operation",
 		);
@@ -111,7 +111,7 @@ describe("the tactical templates on the alternate branches", () => {
 		const facts = container.querySelector(".page-header dd") as HTMLElement;
 		expect(facts).toHaveTextContent("Main Context");
 		expect(facts.querySelector("a")).toHaveAttribute(
-			"href",
+			"data-ref",
 			"#/boundedcontexts/main_context",
 		);
 		expect(container.textContent).toContain(

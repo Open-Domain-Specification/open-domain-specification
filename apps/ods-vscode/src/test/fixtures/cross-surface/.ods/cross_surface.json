@@ -3,7 +3,7 @@
 	"name": "Cross surface",
 	"description": "One small model holding every fact the four surfaces are compared on.",
 	"version": "0.1.0",
-	"odsVersion": "2.0.0",
+	"odsVersion": "3.0.0",
 	"domains": {
 		"trade": {
 			"name": "Trade",
@@ -219,7 +219,7 @@
 							},
 							"pattern": "anti-corruption-layer",
 							"relationship": {
-								"$ref": "#/relationships/vendor~upstream-downstream~warehouse~purchase_feed"
+								"$ref": "#/relationships/vendor/upstream-downstream/warehouse/purchase_feed"
 							}
 						},
 						{
@@ -233,7 +233,7 @@
 								}
 							],
 							"relationship": {
-								"$ref": "#/relationships/vendor~upstream-downstream~warehouse~price_lookup"
+								"$ref": "#/relationships/vendor/upstream-downstream/warehouse/price_lookup"
 							}
 						},
 						{

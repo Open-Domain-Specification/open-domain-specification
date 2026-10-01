@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeRichTestWs } from "./makeTestWs";
+import { consumptionRef, relationshipRef } from "./reference";
 import { teamRef } from "./schema";
 import { Workspace } from "./workspace";
 
@@ -294,7 +295,7 @@ describe("consumption refs", () => {
 	it("names a consumption by the consumer and the consumable it takes", () => {
 		const consumption = fixture.invoiceConsumesOrderPlaced;
 		expect(consumption.ref).toBe(
-			`${consumption.consumer.ref}/consumes/${consumption.consumable.path.split("/").join("~")}`,
+			consumptionRef(consumption.consumer.ref, consumption.consumable.ref),
 		);
 		expect(consumption.path).toBe(consumption.ref.slice(2));
 	});
@@ -307,7 +308,9 @@ describe("consumption refs", () => {
 			fixture.orderAppConsumesSalesFigures,
 		);
 		expect(
-			ws.findConsumption(`${fixture.invoiceApp.ref}/consumes/nothing~here`),
+			ws.findConsumption(
+				consumptionRef(fixture.invoiceApp.ref, "#/nothing/here"),
+			),
 		).toBeUndefined();
 	});
 
@@ -335,7 +338,7 @@ describe("relationship refs", () => {
 			participants: [orderingBc, reportingBc],
 		});
 		expect(relationship.ref).toBe(
-			`#/relationships/${orderingBc.id}~shared-kernel~${reportingBc.id}`,
+			relationshipRef(orderingBc.id, "shared-kernel", reportingBc.id),
 		);
 		expect(relationship.path).toBe(relationship.ref.slice(2));
 	});
@@ -346,9 +349,9 @@ describe("relationship refs", () => {
 			participants: [orderingBc, reportingBc],
 		});
 		expect(ws.findRelationship(relationship.ref)).toBe(relationship);
-		expect(ws.findRelationship("#/relationships/nope~partnership~nope")).toBe(
-			undefined,
-		);
+		expect(
+			ws.findRelationship(relationshipRef("nope", "partnership", "nope")),
+		).toBe(undefined);
 	});
 
 	// One pair may hold two agreements in one direction, and the name is the
@@ -366,7 +369,7 @@ describe("relationship refs", () => {
 			upstream: orderingBc,
 			downstream: reportingBc,
 		});
-		expect(feed.ref.endsWith("~legacy_feed")).toBe(true);
+		expect(feed.ref.endsWith("/legacy_feed")).toBe(true);
 		expect(ws.findRelationship(api.ref)).toBe(api);
 		expect(ws.findRelationship(feed.ref)).toBe(feed);
 	});

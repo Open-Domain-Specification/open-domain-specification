@@ -166,7 +166,10 @@ describe("InvariantPage", () => {
 			expect(guards).toHaveTextContent(
 				"Every event named here carries this guarantee in its own published payload.",
 			);
-			expect(guards.querySelector("a")).toHaveAttribute("href", captured.ref);
+			expect(guards.querySelector("a")).toHaveAttribute(
+				"data-ref",
+				captured.ref,
+			);
 			expect(guards).not.toHaveTextContent(
 				"The operations this rule is checked of.",
 			);

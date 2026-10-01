@@ -1046,7 +1046,7 @@ describe("a starting operation's own answer stays its caller's", () => {
 			diagnostics: [
 				[
 					"consumption-by-operation",
-					"boundedcontexts~orders~services~begin_handler~provides~begin",
+					"#~1boundedcontexts~1orders~1services~1begin_handler~1provides~1begin",
 				],
 				["consumable-kind", "run"],
 			],

@@ -1,4 +1,9 @@
 import {
+	decodeRefSegment,
+	parseConsumptionRef,
+	parseRelationshipRef,
+} from "@open-domain-specification/core";
+import {
 	findNodeAtLocation,
 	getNodeValue,
 	type Node,
@@ -7,13 +12,14 @@ import {
 
 export type Span = { start: number; end: number };
 
-/** Splits a model ref such as `#/boundedcontexts/x/aggregates/y` into JSON path segments. */
-export function refToPath(ref: string): string[] {
-	return ref
-		.replace(/^#\/?/, "")
-		.split("/")
-		.filter(Boolean)
-		.map((s) => s.replace(/~1/g, "/").replace(/~0/g, "~"));
+/** Splits a canonical model ref into its raw JSON path segments. */
+export function refToPath(ref: string): string[] | undefined {
+	if (ref === "#") return [];
+	if (!ref.startsWith("#/")) return undefined;
+	const decoded = ref.slice(2).split("/").map(decodeRefSegment);
+	return decoded.every((segment) => segment !== undefined)
+		? (decoded as string[])
+		: undefined;
 }
 
 function spanOf(node: Node): Span {
@@ -25,14 +31,12 @@ function spanOf(node: Node): Span {
 }
 
 /**
- * A relationship's ref is `#/relationships/<source>~<type>~<target>`, but in the
- * file relationships are an array with no keys, so the triple has to be matched
- * against each element rather than looked up by path.
+ * Relationships are stored in an array, so their parsed identity is matched
+ * against each element rather than looked up as an object path.
  */
-const RELATIONSHIP = /^#\/relationships\/([^~]+)~([^~]+)~([^~]+)$/;
-
 type RelationshipJson = {
 	type?: string;
+	name?: string;
 	upstream?: { $ref?: string };
 	downstream?: { $ref?: string };
 	participants?: { $ref?: string }[];
@@ -40,53 +44,66 @@ type RelationshipJson = {
 
 /** The two context ids of a relationship element, in the order its ref uses. */
 function endsOf(value: RelationshipJson): [string, string] | undefined {
-	const id = ($ref?: string) => $ref?.replace("#/boundedcontexts/", "");
+	const id = ($ref?: string) => {
+		const path = $ref ? refToPath($ref) : undefined;
+		return path?.length === 2 && path[0] === "boundedcontexts"
+			? path[1]
+			: undefined;
+	};
 	// Directed: source is the upstream side. Symmetric: the order as written.
 	const [a, b] = value.participants
 		? [id(value.participants[0]?.$ref), id(value.participants[1]?.$ref)]
 		: [id(value.upstream?.$ref), id(value.downstream?.$ref)];
-	return a && b ? [a, b] : undefined;
+	return a !== undefined && b !== undefined ? [a, b] : undefined;
 }
 
+const relationshipNameId = (name?: string) =>
+	name
+		?.replace(/([a-z])([A-Z])/g, "$1_$2")
+		.replace(/[\s-]+/g, "_")
+		.toLowerCase();
+
 function locateRelationship(tree: Node, ref: string): Span | undefined {
-	const match = ref.match(RELATIONSHIP);
-	if (!match) return undefined;
-	const [, source, type, target] = match;
+	const identity = parseRelationshipRef(ref);
+	if (!identity) return undefined;
 	const array = findNodeAtLocation(tree, ["relationships"]);
 	for (const element of array?.children ?? []) {
 		const value = getNodeValue(element) as RelationshipJson;
 		const ends = endsOf(value);
-		if (value.type === type && ends?.[0] === source && ends[1] === target)
+		const nameId = value.name ? relationshipNameId(value.name) : undefined;
+		if (
+			value.type === identity.type &&
+			ends?.[0] === identity.sourceId &&
+			ends[1] === identity.targetId &&
+			nameId === identity.nameId
+		)
 			return { start: element.offset, end: element.offset + element.length };
 	}
 	return undefined;
 }
 
 /**
- * A consumption's ref is `<consumer>/consumes/<consumable path with ~ for />`,
- * and, where the consumer takes that consumable more than once, a final
- * segment holding the id of the first caller named in `by`. In the file
- * `consumes` is an array with no keys, so the consumable has to be matched
- * against each element's `$ref` rather than looked up by path, and the caller
- * against the last segment of the element's first `by` ref.
+ * Consumptions are stored in an array, so their parsed full target and caller
+ * refs are matched exactly against the element rather than treated as paths.
  */
-const CONSUMPTION = /^(#\/.+)\/consumes\/([^/]+)(?:\/([^/]+))?$/;
-
 type ConsumptionJson = {
 	consumable?: { $ref?: string };
 	by?: { $ref?: string }[];
 };
 
 function locateConsumption(tree: Node, ref: string): Span | undefined {
-	const match = ref.match(CONSUMPTION);
-	if (!match) return undefined;
-	const [, consumer, flattened, caller] = match;
-	const consumable = `#/${flattened.split("~").join("/")}`;
-	const array = findNodeAtLocation(tree, [...refToPath(consumer), "consumes"]);
+	const identity = parseConsumptionRef(ref);
+	if (!identity) return undefined;
+	const consumerPath = refToPath(identity.consumerRef);
+	if (!consumerPath) return undefined;
+	const array = findNodeAtLocation(tree, [...consumerPath, "consumes"]);
 	for (const element of array?.children ?? []) {
 		const value = getNodeValue(element) as ConsumptionJson;
-		if (value.consumable?.$ref !== consumable) continue;
-		if (caller && refToPath(value.by?.[0]?.$ref ?? "").pop() !== caller)
+		if (value.consumable?.$ref !== identity.consumableRef) continue;
+		if (
+			identity.callerRef !== undefined &&
+			value.by?.[0]?.$ref !== identity.callerRef
+		)
 			continue;
 		return { start: element.offset, end: element.offset + element.length };
 	}
@@ -104,7 +121,7 @@ export function locateRef(text: string, ref: string): Span {
 	if (relationship) return relationship;
 	const consumption = locateConsumption(tree, ref);
 	if (consumption) return consumption;
-	const segments = refToPath(ref);
+	const segments = refToPath(ref) ?? [];
 	for (let n = segments.length; n > 0; n--) {
 		const node = findNodeAtLocation(tree, segments.slice(0, n));
 		if (node) return spanOf(node);

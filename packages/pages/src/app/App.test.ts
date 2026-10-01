@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import petstore from "../../../../models/petstore/.ods/petstore.json";
+import { modelRefToHash } from "../lib/ref-transport";
 import type { Bootstrap, HostMessage, WorkspacePayload } from "../protocol";
 import App from "./App.svelte";
 
@@ -128,7 +129,7 @@ describe("App (standalone host)", () => {
 	it("navigates to initial.ref on mount", async () => {
 		const initial: Bootstrap = { workspaces: [payload()], ref: "#/x" };
 		render(App, { initial });
-		await waitFor(() => expect(location.hash).toBe("#/x"));
+		await waitFor(() => expect(location.hash).toBe(modelRefToHash("#/x")));
 	});
 
 	it("does not touch the hash when initial.ref is absent", async () => {
@@ -207,7 +208,7 @@ describe("App (embedded in VS Code)", () => {
 			expect(api.postMessage).toHaveBeenCalledWith({ type: "ready" }),
 		);
 		post({ type: "navigate", ref: "#/y" });
-		await waitFor(() => expect(location.hash).toBe("#/y"));
+		await waitFor(() => expect(location.hash).toBe(modelRefToHash("#/y")));
 	});
 
 	it("answers a probe with the links and images inside rendered descriptions only", async () => {
@@ -305,7 +306,7 @@ describe("App (embedded in VS Code)", () => {
 		await waitFor(() =>
 			expect(document.querySelector(".site")).toBeInTheDocument(),
 		);
-		await waitFor(() => expect(location.hash).toBe("#/z"));
+		await waitFor(() => expect(location.hash).toBe(modelRefToHash("#/z")));
 	});
 
 	it("handles a model message without a ref, leaving the route untouched", async () => {

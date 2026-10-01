@@ -21,7 +21,7 @@ describe("InvariantsSection", () => {
 		const link = row.querySelector("a") as HTMLAnchorElement;
 		expect(link).toHaveTextContent("NameRequired");
 		expect(link).toHaveAttribute(
-			"href",
+			"data-ref",
 			"#/boundedcontexts/catalog_bc/aggregates/pet/invariants/name_required",
 		);
 		expect(row.textContent).toContain("Pet.name must be non-empty");
@@ -50,7 +50,7 @@ describe("InvariantsSection", () => {
 		);
 		expect(named).toHaveTextContent("Pet.name");
 		expect(named.querySelector("a")).toHaveAttribute(
-			"href",
+			"data-ref",
 			"#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet/attributes/name",
 		);
 

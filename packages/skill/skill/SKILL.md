@@ -65,10 +65,13 @@ and the generated docs read, so your words match what the user is looking at.
 
 Follow the mode reference for mechanics. Rules that hold in both modes:
 
-- Ids are the JSON keys and the segments of every `$ref`. They are derived from the name at
-  creation (`snake_case`) and then frozen. To rename something, change its `name` and keep the
-  id (in the DSL, pass `id` explicitly at the moment of renaming). Rewriting a key means
-  updating every ref that uses it, and confirming with the user first.
+- Ids are the raw JSON keys and the identities carried by `$ref` segments. They are derived from
+  the name at creation (`snake_case`) and then frozen. Keep a JSON key or explicit DSL `id`
+  verbatim; when writing a ref, encode that complete id as one JSON Pointer segment (`~` as
+  `~0`, then `/` as `~1`). To rename something, change its `name` and keep the id (in the DSL,
+  pass `id` explicitly at the moment of renaming). Rewriting a key means updating every ref that
+  uses it, and confirming with the user first. The complete grammar and the extra encoding layer
+  for refs embedded in consumption refs are in `references/model-reference.md`.
 - Every collection is optional and leaving one out is the same as writing it empty: a context's
   `aggregates`, `services`, `policies`, `processes`, `glossary`, `valueobjects`, `schemas`,
   `invariants` and `subdomains`; an aggregate's `entities`, `invariants`, `provides`, `consumes`;

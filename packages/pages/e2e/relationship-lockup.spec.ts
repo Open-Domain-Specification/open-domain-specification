@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 import { Workspace } from "@open-domain-specification/core";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { exportSite } from "../dist/site.js";
-import { expectNoSidewaysScroll, serveModel } from "./helpers";
+import { expectNoSidewaysScroll, modelHash, serveModel } from "./helpers";
 
 /**
  * Issue #85. At 1300x900 beside the tree the crossings table sits under the
@@ -18,7 +18,7 @@ import { expectNoSidewaysScroll, serveModel } from "./helpers";
  * page never scrolls sideways; the table's own frame may.
  */
 const NB_KYC_ACCOUNTS =
-	"#/relationships/customer_&_kyc~upstream-downstream~accounts";
+	"#/relationships/customer_&_kyc/upstream-downstream/accounts";
 /** The width the defect was found at: a desktop window with the site tree open. */
 const BESIDE_THE_TREE = { width: 1300, height: 900 };
 
@@ -49,14 +49,16 @@ const hosts: [string, (page: Page) => Promise<void>][] = [
 		"viewer",
 		async (page) => {
 			const url = await serveModel(page, "northbank");
-			await page.goto(`/?url=${encodeURIComponent(url)}${NB_KYC_ACCOUNTS}`);
+			await page.goto(
+				`/?url=${encodeURIComponent(url)}${modelHash(NB_KYC_ACCOUNTS)}`,
+			);
 		},
 	],
 	[
 		"export",
 		async (page) => {
 			await page.goto(
-				`${pathToFileURL(join(exportDir, "index.html")).href}${NB_KYC_ACCOUNTS}`,
+				`${pathToFileURL(join(exportDir, "index.html")).href}${modelHash(NB_KYC_ACCOUNTS)}`,
 			);
 		},
 	],
