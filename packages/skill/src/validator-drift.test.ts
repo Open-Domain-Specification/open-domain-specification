@@ -156,6 +156,11 @@ const oldClaims: Array<{ claim: string; sentences: string[] }> = [
 	},
 	{
 		claim:
+			"shared-kernel borrowing is symmetric, unlike conformist and customer-supplier borrowing (decision 16)",
+		sentences: ["All three run downstream only"],
+	},
+	{
+		claim:
 			"every required collection is present even when empty (card 104: an absent collection is an empty one)",
 		sentences: ["Every required collection is present even when empty."],
 	},
@@ -171,6 +176,58 @@ const currentFacts: Array<{
 	file: string;
 	sentences: string[];
 }> = [
+	{
+		fact: "modelled invariants name operation guards, not event targets (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"In a modelled aggregate or context, an event is never another guard beside the operation",
+		],
+	},
+	{
+		fact: "modelled invariants name operation guards, not event targets (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"An event is never a guard of a modelled aggregate or context invariant, even beside an operation",
+		],
+	},
+	{
+		fact: "modelled invariants name operation guards, not event targets (validation guide)",
+		file: "apps/docs/docs/3-core/4-validation.md",
+		sentences: [
+			"an invariant of a modelled aggregate or context names operations, never events, as guards",
+		],
+	},
+	{
+		fact: "modelled invariants name operation guards, not event targets (generated rule reference)",
+		file: "packages/skill/skill/references/validation-rules.md",
+		sentences: [
+			"An invariant of a modelled aggregate or context names operations, not events, as its guards.",
+		],
+	},
+	{
+		fact: "modelled invariants name operation guards, not event targets (schema source)",
+		file: "packages/core/src/schema.ts",
+		sentences: ["No modelled invariant may name an event as a guard"],
+	},
+	{
+		fact: "modelled invariants name operation guards, not event targets (generated model reference)",
+		file: "packages/skill/skill/references/model-reference.md",
+		sentences: ["No modelled invariant may name an event as a guard"],
+	},
+	{
+		fact: "a shared kernel borrows in both directions (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"A shared kernel works in both directions; conformist and customer-supplier borrowing run downstream only.",
+		],
+	},
+	{
+		fact: "a shared kernel borrows in both directions (generated rule reference)",
+		file: "packages/skill/skill/references/validation-rules.md",
+		sentences: [
+			"The shared-kernel route works both ways; the conformist and customer-supplier routes run downstream only",
+		],
+	},
 	{
 		fact: "borrowing runs on three routes — a shared kernel, a conformist downstream, or the customer of a customer-supplier pair (decision 16, second amendment of 2026-09-10)",
 		file: "packages/skill/skill/SKILL.md",

@@ -96,7 +96,9 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   uniqueness, a quota, a limit — or where the context has no aggregate at all and the rule is
   the contract of its operation. A context's invariant names at least one operation of the
   context that checks it, says with `precondition` or `postcondition` which side of that call
-  the check is made on, and reaches no further than that context.
+  the check is made on, and reaches no further than that context. In a modelled aggregate or
+  context, an event is never another guard beside the operation; a precondition may instead
+  constrain the reachable attributes of an event payload its issuing reactor already heard.
 - An external context is somebody else's machine: it states no aggregates, policies or
   processes, and no rule it keeps at rest. What it publishes it may state — the rules on its
   value objects, and a `precondition` or `postcondition` on one of its own operations, which is
@@ -109,8 +111,9 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
 - A payload schema belongs to the context that publishes the consumable. A value object or a
   schema may be named across a boundary on exactly three routes: where the two contexts declare a
   `shared-kernel` relationship, where the naming context is a conformist downstream of the one
-  that owns it, or where it is the customer of a `customer-supplier` relationship with it. All
-  three run downstream only, and the same three routes let a `specialises` reach across.
+  that owns it, or where it is the customer of a `customer-supplier` relationship with it. A
+  shared kernel works in both directions; conformist and customer-supplier borrowing run
+  downstream only. The same three routes let a `specialises` reach across.
 - Reference another aggregate only through its root entity, or a kind of that root, with
   `references`.
 - No delivery flag, no modules, no actors, no read-model element, no operations on a value

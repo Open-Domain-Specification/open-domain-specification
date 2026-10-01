@@ -1770,17 +1770,14 @@ function* invariantsOf(workspace: Workspace): Iterable<Invariant> {
 const preconditionNamesOperation: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const invariant of invariantsOf(workspace)) {
-		if (
-			!invariant.precondition ||
-			invariant.guarded.some((it) => it.type === "operation")
-		)
-			continue;
-		diagnostics.push({
-			severity: "error",
-			rule: "precondition-names-operation",
-			message: `Invariant "${invariant.name}" is marked a precondition but names no operation; a precondition is checked before something runs, so say what`,
-			ref: invariant.ref,
-		});
+		if (!invariant.precondition) continue;
+		if (!invariant.guarded.some((it) => it.type === "operation"))
+			diagnostics.push({
+				severity: "error",
+				rule: "precondition-names-operation",
+				message: `Invariant "${invariant.name}" is marked a precondition but names no operation; a precondition is checked before something runs, so say what`,
+				ref: invariant.ref,
+			});
 	}
 	return diagnostics;
 };
@@ -1812,14 +1809,33 @@ const postconditionNamesOperation: Rule = (workspace) => {
 			});
 			continue;
 		}
-		if (invariant.guarded.some((it) => it.type === "operation")) continue;
-		diagnostics.push({
-			severity: "error",
-			rule: "postcondition-names-operation",
-			message: `Invariant "${invariant.name}" is marked a postcondition but names no operation; a postcondition is a guarantee about what a call answers with, so say which call`,
-			ref: invariant.ref,
-		});
+		if (!invariant.guarded.some((it) => it.type === "operation"))
+			diagnostics.push({
+				severity: "error",
+				rule: "postcondition-names-operation",
+				message: `Invariant "${invariant.name}" is marked a postcondition but names no operation; a postcondition is a guarantee about what a call answers with, so say which call`,
+				ref: invariant.ref,
+			});
 	}
+	return diagnostics;
+};
+
+/**
+ * Every invariant of a modelled aggregate or context names operations as its
+ * guards. Events can be facts a reactor heard before issuing an operation,
+ * but they are not themselves calls that check or keep a rule. An external
+ * context's published event contract is checked separately by decision 28.
+ */
+const invariantGuardsAreOperations: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const invariant of invariantsOf(workspace))
+		for (const event of invariant.guarded.filter((it) => it.type === "event"))
+			diagnostics.push({
+				severity: "error",
+				rule: "invariant-guards-are-operations",
+				message: `Invariant "${invariant.name}" names event "${event.name}" as a guard; a modelled aggregate or context names operations that check or keep a rule, not events. A precondition may constrain the reachable payload attributes of an event its issuing reactor already heard; an external context may separately guarantee a published event's payload`,
+				ref: invariant.ref,
+			});
 	return diagnostics;
 };
 
@@ -3917,7 +3933,8 @@ const valueObjectContext: Rule = (workspace) => {
  * regulator's message formats or a scheme's record layouts enter a model
  * without anybody pretending they are ours (decisions 03 and 28). The third is
  * a supplier this context is the customer of, whose interface with it is
- * negotiated. All three run downstream only.
+ * negotiated. The kernel route works in both directions; the other two run
+ * downstream only.
  *
  * On a consumable there is a fourth, and it is the boundary rather than the
  * model: an anti-corruption layer toward the upstream, where the shape is the
@@ -5607,6 +5624,15 @@ const RULES: CataloguedRule[] = [
 		check: postconditionNamesOperation,
 	},
 	{
+		rule: "invariant-guards-are-operations",
+		severities: ["error"],
+		summary:
+			"An invariant of a modelled aggregate or context names operations, not events, as its guards.",
+		why: "An operation is a moment when a rule can be checked or kept. An event records that something happened; it has no request to check beforehand and is not another operation answer. Listing one beside an operation makes the readers call the event a guard, even though the model gives it no such meaning. A precondition may still read the reachable payload attributes of an event its issuing reactor already heard. An external context may separately publish a postcondition on the payload of its own event (decisions 19 and 28).",
+		fix: "Remove the event target from the modelled invariant. Name the operation that checks or keeps the rule; where its precondition reads a fact the issuing reactor heard, constrain the reachable attributes of that event's payload instead. Put a published event-payload guarantee on the external context that sends it.",
+		check: invariantGuardsAreOperations,
+	},
+	{
 		rule: "relationship-roles-backed",
 		severities: ["warning"],
 		summary:
@@ -5871,7 +5897,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["error"],
 		summary:
 			"A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, to one it shares a kernel with, to an upstream it has declared itself a conformist of, or to a supplier it is the customer of; a consumable may also carry the shape of an upstream it translates behind an anti-corruption layer.",
-		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. Three declarations say the tie is intended. A shared kernel is where two teams have said they keep part of one model between them and accepted the price. A conformist is a downstream that has said it takes the upstream's model as it stands rather than translating it, which is exactly what carrying the upstream's shapes is — it is how a regulator's formats or a scheme's record layouts enter a model honestly. A customer-supplier pair has negotiated the interface between them, so the supplier's published shapes are a language the customer had a say in settling, and it declares no downstream role because a conformist is the downstream with no say. All three run downstream only; the upstream is never shaped by those below it. An anti-corruption layer is the fourth case and belongs to consumables alone: upstream is who dictates the language, so a caller that sends its own format is upstream of the context it calls, and the operation it reaches carries the caller's shape with the translation behind it. An attribute is inside the model and past the layer, so it gets no such exception. A partnership is not a route at all: partners plan and release together, which is not the same as keeping one model between them.",
+		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. Three declarations say the tie is intended. A shared kernel is where two teams have said they keep part of one model between them and accepted the price. A conformist is a downstream that has said it takes the upstream's model as it stands rather than translating it, which is exactly what carrying the upstream's shapes is — it is how a regulator's formats or a scheme's record layouts enter a model honestly. A customer-supplier pair has negotiated the interface between them, so the supplier's published shapes are a language the customer had a say in settling, and it declares no downstream role because a conformist is the downstream with no say. The shared-kernel route works both ways; the conformist and customer-supplier routes run downstream only, so those upstreams are never shaped by their downstreams. An anti-corruption layer is the fourth case and belongs to consumables alone: upstream is who dictates the language, so a caller that sends its own format is upstream of the context it calls, and the operation it reaches carries the caller's shape with the translation behind it. An attribute is inside the model and past the layer, so it gets no such exception. A partnership is not a route at all: partners plan and release together, which is not the same as keeping one model between them.",
 		fix: "Move or copy the schema into the publishing context and point the consumable or attribute at that one; or declare the shared kernel if the two contexts really do keep that shape between them; or, if this context genuinely takes the other's model as it stands, declare the directed relationship with conformist among its downstreamRoles; or, if the two have negotiated the interface between them, declare that relationship customer-supplier with this context as the downstream, and no downstream role is asked for; or, where the other context is the caller and this one translates its format at the boundary, declare that context upstream with anti-corruption-layer among this one's downstreamRoles and let its consumption of this operation say that it calls it. Where the pair are partners, the partnership is not what shares a shape: declare a shared kernel beside it, which is a second relationship of a different type between the same pair.",
 		check: schemaContext,
 	},

@@ -4,10 +4,10 @@ labels: [docs, model]
 priority: high
 agent: lead
 live: false
-status: Eleventh blocker corrections in progress; full gate and exact-head independent signoff pending
+status: Twelfth blocker corrections in progress; full gate and exact-head independent signoff pending
 progress: 90
 clean-code-swept: true
-updatedAt: 2026-10-01T06:25:00Z
+updatedAt: 2026-10-01T07:25:00Z
 ---
 # Final model sign-off: the record says only what holds
 
@@ -350,3 +350,13 @@ The unmodified full local gate passed on exact clean head `300d8aa04fd41f977e918
 - **Previous corrections:** Astra confirmed #124 and #125 hold, exact pinned diagnostics and generated outputs match, and found no substantiated source-backed reason to reopen #35–#40. The two new defects override any earlier approval. The next independent signoff waits for a clean committed head and a passing unmodified full local gate.
 
 Review prompt: `/tmp/ods-final-model-review-300d8aa0.txt`; report: `/tmp/ods-astra-final-review-300d8aa0.txt`. These are local review artifacts, not model files.
+
+## Twelfth round (head `af5421a1`)
+
+The unmodified full local gate passed on exact clean head `af5421a185f6dad723bf57ee8b041018490bc3b1`: core 1065, graphviz 35, doc 52, skill 90, all five reference-model suites and shared fixtures, pages 1019 at 100% coverage, apps/docs 24, VS Code 18, scripts 31, schema and ESM checks, browser 430 passed/20 skipped. OpenAI Astra low reviewed read-only first and returned **BLOCK**; Claude was not called. No GitHub CI minutes were used.
+
+- **Mixed modelled event guards (#128/card 178):** a modelled context or aggregate precondition naming Capture and Captured validated and rendered the event as an operation checked before execution. The adjacent mixed postcondition and unflagged rule had the same gap. A common guard rule now rejects event targets while retaining operation guards and valid previously heard event-payload attributes. A direct/JSON-round-trip regression covers both owners and all three timings.
+- **Shared-kernel guidance (#129/card 179):** the skill and generated `schema-context` reference said all three borrowing routes run downstream only, whereas the validator and decision 16 make the shared kernel symmetric. The corrected source and generated reference distinguish it from conformist and customer-supplier borrowing; reciprocal schema, value and kind borrowing and guidance drift are tested.
+- **Previous corrections:** Astra reproduced #126 and #127's fixes, pinned diagnostics and generated file sets, and found no substantiated source-backed trigger to reopen #35–#40. These two new findings override older approval. The next exact-head signoff waits for a clean commit and full local gate.
+
+Review prompt: `/tmp/ods-final-model-review-af5421a1.txt`; report: `/tmp/ods-astra-final-review-af5421a1.txt`. These are local review artifacts, not model files.

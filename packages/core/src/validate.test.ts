@@ -3797,6 +3797,69 @@ describe("postcondition-names-operation", () => {
 	});
 });
 
+describe("invariant-guards-are-operations", () => {
+	it("rejects event targets at every timing and both modelled ownership scopes", () => {
+		for (const ownerKind of ["aggregate", "context"] as const)
+			for (const timing of [
+				"unflagged",
+				"precondition",
+				"postcondition",
+			] as const)
+				for (const [operationTarget, eventTarget] of [
+					[true, false],
+					[false, true],
+					[true, true],
+				] as const) {
+					const ws = emptyWorkspace();
+					const bc = ws
+						.addDomain("Billing", { description: "" })
+						.addSubdomain("Capture", { description: "", type: "core" })
+						.addBoundedcontext("Payments", { description: "" });
+					const payment = bc.addAggregate("Payment", { description: "" });
+					payment
+						.addRootEntity("Payment", { description: "" })
+						.addAttribute("id", { type: "uuid", identity: true });
+					const captured = payment.provides("Captured", {
+						description: "",
+						type: "event",
+						internal: true,
+					});
+					const capture = payment
+						.provides("Capture", {
+							description: "",
+							type: "operation",
+							internal: true,
+						})
+						.raises(captured);
+					const owner = ownerKind === "aggregate" ? payment : bc;
+					const flags = timing === "unflagged" ? {} : { [timing]: true };
+					const rule = owner.addInvariant("Ready", {
+						description: "",
+						...flags,
+					});
+					if (operationTarget) rule.constrains(capture);
+					if (eventTarget) rule.constrains(captured);
+					for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+						const diagnostics = model.validate();
+						const expected = [
+							...(!operationTarget &&
+							timing === "unflagged" &&
+							ownerKind === "context"
+								? ["context-invariant-is-checked"]
+								: []),
+							...(!operationTarget && timing !== "unflagged"
+								? [`${timing}-names-operation`]
+								: []),
+							...(eventTarget ? ["invariant-guards-are-operations"] : []),
+						];
+						expect(diagnostics.map((d) => d.rule).sort()).toEqual(
+							expected.sort(),
+						);
+					}
+				}
+	});
+});
+
 describe("term-in-context", () => {
 	it("keeps a term's embodiment inside the term's own context", () => {
 		const ws = emptyWorkspace();
@@ -6017,6 +6080,30 @@ describe("shared-kernel-backed", () => {
 
 	const backed = (ws: Workspace) =>
 		ws.validate().filter((d) => d.rule === "shared-kernel-backed");
+
+	it("allows reciprocal schema, value and kind borrowing across a shared kernel", () => {
+		const ws = emptyWorkspace();
+		const subdomain = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" });
+		const a = subdomain.addBoundedcontext("A", { description: "" });
+		const b = subdomain.addBoundedcontext("B", { description: "" });
+		a.sharesKernelWith(b);
+		const aValue = a.addValueObject("AValue", { description: "" });
+		const bValue = b.addValueObject("BValue", { description: "" });
+		a.addSchema("RequestA", { description: "" }).addAttribute("value", {
+			type: "BValue",
+			valueobject: bValue,
+		});
+		b.addSchema("RequestB", { description: "" }).addAttribute("value", {
+			type: "AValue",
+			valueobject: aValue,
+		});
+		a.addValueObject("AKind", { description: "", specialises: bValue });
+		b.addValueObject("BKind", { description: "", specialises: aValue });
+		for (const model of [ws, Workspace.fromSchema(ws.toSchema())])
+			expect(model.validate()).toEqual([]);
+	});
 
 	it("warns about a kernel with nothing in it", () => {
 		const { ws, relationship } = kernel();

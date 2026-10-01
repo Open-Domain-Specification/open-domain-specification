@@ -2350,9 +2350,10 @@ export class Invariant
 
 	/**
 	 * The consumables this invariant is a rule for: for an aggregate's rule the
-	 * operations that make the transition it describes, for a context's rule the
-	 * operations or events that check or guarantee it. Either way, the ones
-	 * responsible for it.
+	 * operations that make the transition it describes, for a modelled context's
+	 * rule the operations that check it, and for an external context's published
+	 * contract its own operations or events. Either way, the ones responsible
+	 * for it; an event target on a modelled rule is reported by the validator.
 	 */
 	get guarded(): Consumable[] {
 		return this.targets.filter((it) => it instanceof Consumable);

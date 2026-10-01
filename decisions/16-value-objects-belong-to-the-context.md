@@ -14,6 +14,8 @@ No aggregate-private value objects (note of 2026-09-07); an entity has one home,
 
 Since then (card 130): a downstream of a `customer-supplier` relationship borrows the supplier's value objects and schemas as a conformist does; partners share no shape through the partnership and declare a shared kernel beside it, and the fix text says so. A value object that specialises another context's counts as that borrowing for the relationship-backing rules (note of 2026-09-30, issue #111).
 
+Since the note of 2026-10-01 (card 179), the authoring skill and generated rule reference say explicitly what the shared-kernel exception has always allowed: co-owners may borrow either way. Conformist and customer-supplier borrowing alone runs downstream.
+
 ## Context
 
 `ValueObjectSchema` lives under an aggregate (`schema.ts:34`), so a value object used by several aggregates of one context, NorthBank's `Money` or petstore's `PetStatus`, is declared once per aggregate, and `models/_shared/src/index.ts` exists only to repeat the declaration. In DDD a value object is part of the context's ubiquitous language, not an aggregate's. Separately, `shared-kernel` is a relationship type the map draws but no rule reads: two contexts declaring it still cannot reference one another's value objects or schemas (`schema-context`, decision 08's cross-file table). The relationship claims a sharing the model forbids.
@@ -88,3 +90,7 @@ A kernel context is for three or more co-owners, or for an entity two teams own.
 The amendment of 2026-09-30 above says Accounts would not work as the home of Money because Payments and Cards take Accounts' operations "through an anti-corruption layer, which carries no borrowing". That wording blames the layer, and it is the relationship's type that decides. An anti-corruption layer is a role on a consumption: it says that call is translated, and it is backed per consumption. Whether a context may borrow a value object or schema follows the relationship type (shared kernel, conformist or customer-supplier), however many of its calls are translated. So NorthBank's Payments and Lending are valid customers of Ledger, borrowing its Money while their calls to Ledger's `PostEntry` run behind an anti-corruption layer; a plain upstream-downstream relationship that declares the layer borrows nothing and is refused by `valueobject-context`. The clause belongs to that sentence: a layer carries no borrowing *by itself*. The sentence stands as written on the day.
 
 A value object that specialises another context's is borrowing too (issue #111, decision 22). `specialisation-in-boundary` admitted it over the same three routes, but the common `borrowsFrom` predicate behind `shared-kernel-backed`, `conformist-backed` and `relationship-roles-backed` did not count it, so a relationship that existed only because of the specialisation was reported as sharing nothing. It counts now.
+
+## Note (2026-10-01)
+
+The skill and `schema-context` rule reference said all three borrowing routes run downstream only, contradicting this decision's symmetric shared kernel. The validator already admitted reciprocal schema, value and value-kind borrowing across a shared kernel. The prose now distinguishes it from conformist and customer-supplier relationships, which are directional (issue #129, card 179).

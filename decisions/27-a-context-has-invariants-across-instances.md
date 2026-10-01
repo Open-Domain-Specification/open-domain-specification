@@ -22,6 +22,8 @@ Since the second note of 2026-10-01 (card 174), a value-object invariant also ca
 
 Since the third note of 2026-10-01 (card 175), saying a precondition is not kept true afterward means the model makes no later promise. The checked fact may remain true; it is not asserted to become false.
 
+Since the fourth note of 2026-10-01 (card 178), every modelled context check names an operation as its guard. Naming an event alongside it does not make that event an operation; only an external context's published event-payload postcondition uses an event target (decision 28).
+
 The note of 2026-09-07 stands: five cross-instance rules, not eleven, and a rule checked against another context's data is a precondition on the aggregate's operation (decision 19). The bullet "nothing crosses a context" stands for targets, with a qualification recorded in decision 19: a precondition may constrain the `returns` of a consumed consumable or a consumed event's payload held in the same context (cards 116 and 124), never another context's entities. An external context may state flagged invariants on its own operations, reaching their request and answer schemas and its own value objects (decision 28, cards 107 and 116). An obligation across contexts is a process (amendment of 2026-09-08).
 
 ## Context
@@ -96,3 +98,7 @@ A value object's invariant holds by construction and names no operation. The gen
 ## Note (2026-10-01, third)
 
 A check made before a call can remain true afterwards by chance or by some other mechanism. `precondition: true` promises the check at the moment before the call, and does not promise the result persists. The schema, validator guidance and reader pages now use that precise claim (card 175, issue #125). A context precondition may also read an event payload that the policy or process issuing its guard already heard, as decision 19's third amendment permits.
+
+## Note (2026-10-01, fourth)
+
+A context rule names operations as guards at every timing. The validator previously accepted a local event target beside one operation, letting Markdown and the shared page call it an operation checked at call time or simply checked by an event. `invariant-guards-are-operations` now rejects such a target for modelled contexts; a precondition may still constrain the payload of an event its issuing reactor already heard (issue #128, card 178; decision 19).

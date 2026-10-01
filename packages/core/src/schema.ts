@@ -683,8 +683,10 @@ export interface InvariantSchema {
 	 * own and inherited attributes and the attributes of values it composes,
 	 * transitively, but nothing outside that composition path. An aggregate's
 	 * reaches inside its own aggregate, values it holds including borrowed ones,
-	 * and operations of services in its context. A context's reaches its own
-	 * held model and the contracts of its operations or published events.
+	 * and operations of services in its context. A modelled context's reaches
+	 * its own held model and the contracts of its operations. Only an external
+	 * context may state a published event-payload postcondition.
+	 * No modelled invariant may name an event as a guard (`invariant-guards-are-operations`).
 	 *
 	 * An aggregate's invariant naming a value object means that aggregate's
 	 * instances of it — the amounts this payment holds, not every Money in the

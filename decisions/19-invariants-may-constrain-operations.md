@@ -12,6 +12,8 @@ Reach is by flag. A precondition may constrain the request schema and what it co
 
 Context invariants and external contexts use the same flags (decision 27, card 103; decision 28, cards 107 and 116).
 
+Since the note of 2026-10-01 (card 178), every aggregate or modelled-context invariant names operations as guards, never an event target beside one, whether flagged or unflagged. A precondition may still read the attributes of an already-heard event's payload under the conditions above. An external context's published event-payload postcondition is the separate decision 28 case.
+
 ## Context
 
 `InvariantSchema.constrains` names entities, value objects and attributes (decision 05). Many invariants are transition rules: petstore's `SoldNotReopen` ("once sold, a pet does not revert to available") is about what `ChangePetStatus` may do, and today it can only point at the status attribute.
@@ -56,3 +58,7 @@ The 2026-09-10 amendment fixed a precondition's reach to the request and what it
 ## Amendment (2026-09-10, third)
 
 The second amendment let a precondition reach what the guard or its front fetched, "a fact we hold, in the shape it came in", and the same words apply to the payload of an event the reactor heard before issuing the guarded operation: "ship only when the captured amount covers the order total" reads `PaymentCaptured.amount`, which the context holds through its subscription, and the model asked for the amount to be copied into the request so a rule could point at it. A precondition may constrain attributes of the payload schema of an event consumed by the policy or process that issues the guarded operation, in the same context; still never another context's entities (card 124, architect's eleventh round).
+
+## Note (2026-10-01)
+
+`precondition-names-operation` used to stop asking once it found any operation, so a rule could name a local event beside it and all readers called that event an operation checked before execution. The same mixed target was also accepted on a modelled postcondition and an unflagged rule. An event is not another call guard, so `invariant-guards-are-operations` now refuses event targets on every modelled aggregate or context invariant, even when an operation is present (issue #128, card 178). This does not narrow the third amendment's already-heard payload attributes, and decision 28 still allows an external context to guarantee its own published event's payload.

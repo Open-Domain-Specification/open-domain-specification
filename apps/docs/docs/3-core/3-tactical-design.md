@@ -278,6 +278,12 @@ the moment before the call and the other about what comes back. Without either
 flag the rule is still true after the operation it names: `PostEntry` must
 produce balanced postings, and the postings stay balanced.
 
+An event is never a guard of a modelled aggregate or context invariant, even
+beside an operation (`invariant-guards-are-operations`). A precondition may
+instead constrain the reachable attributes of an event payload its issuing
+reactor already heard. An external context's own published-event guarantee is
+a separate `postcondition` case below.
+
 Both may reach the payload the call carries. A precondition may constrain the
 attributes of the schema its guarded operation takes, and those of what a call
 that guard — or the front that calls it in the same context — already made

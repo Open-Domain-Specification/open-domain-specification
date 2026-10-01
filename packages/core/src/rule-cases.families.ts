@@ -92,6 +92,7 @@ export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	"context-invariant-is-checked": covered("invariants"),
 	"precondition-names-operation": covered("invariants"),
 	"postcondition-names-operation": covered("invariants"),
+	"invariant-guards-are-operations": covered("invariants"),
 
 	// Context relationships, their roles and what backs them.
 	"relationship-roles-backed": covered("relationships-and-roles"),
