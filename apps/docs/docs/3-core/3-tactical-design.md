@@ -307,6 +307,15 @@ shapes are not combined into a union. No other invariant may name a schema's
 attribute at all — a rule kept true on every save is a rule about the model,
 and a transport shape is not the model.
 
+An external context may state a published contract as a flagged context
+invariant on its own operation, or as a `postcondition` on its own event's
+payload. If a postcondition names several operations or events, it must reach
+a relevant attribute in **each** named operation's published request, answer or
+refusal and **each** named event's payload, including nested shapes. Their fields cannot be pooled to
+make one guarantee. An event has no request, so a precondition cannot name it.
+An external precondition reaches the operation's published request, not an
+answer fetched by a call inside the external system.
+
 An invariant may instead belong to a value object. A rule that is about a
 value alone — an IBAN's mod-97 checksum, a Money's single currency — holds by
 construction: a value that breaks it is never made, so no save keeps it and no
@@ -447,6 +456,8 @@ the flow map stop there and an answer to the call reaches nobody.
 
 A **policy** lives on a bounded context and says "on these events, then
 these operations" (`policy.on(...events).issues(...operations)`). The
+`on` entry is the immediate trigger on that reaction route; a later event or
+answer may wake the policy on another route. The
 operations it issues are always this context's own; reaching into another
 context to run an operation there is that context acting through someone
 else's model instead of through the boundary it published, and

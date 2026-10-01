@@ -176,6 +176,56 @@ describe("the tactical templates on the alternate branches", () => {
 		);
 	});
 
+	it("InvariantPage: an external postcondition describes each published answer and event payload", () => {
+		const externalModel = edgeCaseModel();
+		const outside = [...externalModel.workspace.boundedcontexts.values()].find(
+			(context) => context.external,
+		);
+		if (!outside) throw new Error("Missing external context fixture");
+		const receipt = outside.addSchema("Receipt", {
+			description: "Published shape.",
+		});
+		const amount = receipt.addAttribute("Amount", { type: "number" });
+		const provider = outside.addService("Provider", {
+			description: "Published boundary.",
+			type: "application",
+		});
+		const capture = provider.addConsumable("Capture", {
+			type: "operation",
+			description: "Returns a receipt.",
+			returns: receipt,
+		});
+		const captured = provider.addConsumable("Captured", {
+			type: "event",
+			description: "Publishes a receipt.",
+			schema: receipt,
+		});
+		outside
+			.addInvariant("Amount guarantee", {
+				description: "Each receipt has an amount.",
+				postcondition: true,
+			})
+			.constrains(capture, captured, amount);
+		const { container } = render(Harness, {
+			model: externalModel,
+			ref: contextInvariantRef("outside_system", "amount_guarantee").$ref,
+		});
+		expect(container.querySelector(".page-header .keyword")).toHaveTextContent(
+			"published postcondition",
+		);
+		expect(container.querySelector("#guards h2")).toHaveTextContent(
+			"Guaranteed by",
+		);
+		expect(container.querySelector("#guards")).toHaveTextContent("Capture");
+		expect(container.querySelector("#guards")).toHaveTextContent("Captured");
+		expect(container.textContent).toContain(
+			"Each named operation or event publishes this guarantee",
+		);
+		expect(container.textContent).toContain(
+			"Fields from different contracts cannot be pooled",
+		);
+	});
+
 	it("InvariantPage: an aggregate's rule still says it is the aggregate that keeps it", () => {
 		const { container } = render(Harness, {
 			model,

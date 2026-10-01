@@ -64,6 +64,7 @@ const model = useModel();
 const owner = $derived(i.owner);
 const inAggregate = $derived(owner instanceof Aggregate);
 const inContext = $derived(owner instanceof BoundedContext);
+const isExternal = $derived(owner instanceof BoundedContext && owner.external);
 const KIND = {
 	value: {
 		label: "value invariant",
@@ -147,18 +148,32 @@ const KIND = {
 			"No operation names this rule, so there is no answer for it to be about: a postcondition is checked of what a call comes back with, and the model has to say which call.",
 	},
 	contextEvent: {
-		label: "context invariant",
-		title: "Guaranteed of the event's payload whenever this external context sends it.",
-		lead: "The fields of the event payload this external context guarantees.",
-		guards: "The event whose payload carries this guarantee.",
+		label: "published postcondition",
+		title: "Guaranteed of every named event's payload whenever this external context sends it.",
+		lead: "The fields of every named event payload, including composed shapes, and this external context's own value objects. An event without the target field cannot share this guarantee.",
+		guards: "Every event named here carries this guarantee in its own published payload.",
 		empty: "No event names this guarantee.",
 	},
 	contextMixed: {
-		label: "context invariant",
-		title: "Guaranteed of the named consumables' answers or payloads.",
-		lead: "The fields this context guarantees of the named consumables.",
-		guards: "The operations and events that carry this guarantee.",
+		label: "published postcondition",
+		title: "Guaranteed separately by every named operation and event.",
+		lead: "The fields every named operation carries in its own published request, answer or refusal, and every named event carries in its payload, including composed shapes. Fields from different contracts cannot be pooled.",
+		guards: "Each named operation or event publishes this guarantee in its own contract.",
 		empty: "No consumable names this guarantee.",
+	},
+	externalBefore: {
+		label: "published precondition",
+		title: "The published requirement checked before each named operation runs.",
+		lead: "The fields of every named operation's published request, including composed shapes, and this external context's own value objects. Its internal calls cannot supply a fact here.",
+		guards: "The operations whose published request requires this before each call. An event has no request and cannot name a precondition.",
+		empty: "Name the external operation whose request this precondition is about.",
+	},
+	externalAfter: {
+		label: "published postcondition",
+		title: "Guaranteed separately by every named operation.",
+		lead: "The fields of every named operation's published request, answer or refusal, including composed shapes, and this external context's own value objects. Fields from separate contracts cannot be pooled.",
+		guards: "Every named operation publishes this guarantee in its own contract.",
+		empty: "Name the external operation whose published contract carries this guarantee.",
 	},
 } as const;
 // The elements the rule holds true of and the consumables responsible for it
@@ -173,13 +188,17 @@ const guarded = $derived(i.guarded);
 const words = $derived(
 	inContext
 		? i.precondition
-			? KIND.contextBefore
+			? isExternal
+				? KIND.externalBefore
+				: KIND.contextBefore
 			: i.postcondition
 				? eventOnlyPostcondition(i)
 					? KIND.contextEvent
 					: i.guarded.some((it) => it.type === "event")
 						? KIND.contextMixed
-						: KIND.contextAfter
+						: isExternal
+							? KIND.externalAfter
+							: KIND.contextAfter
 				: KIND.context
 		: KIND[
 				i.precondition

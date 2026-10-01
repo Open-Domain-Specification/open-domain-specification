@@ -1288,19 +1288,25 @@ function heldByGuard(
 		}
 	}
 
-	const futureEvents = new Set<Consumable>(
-		[...operations, ...namedOperations].flatMap((operation) => [
-			...operation.raisedEvents,
-			...reachedEvents(operation),
-		]),
-	);
 	const out = new Map(
 		[...operations].map((operation) => [operation, new Set<DataSchema>()]),
+	);
+	// A trigger raised by the issued operation (or a call it makes) cannot
+	// supply that same invocation. Compute this per route, once for the walk.
+	const futureEventsByOperation = new Map(
+		[...operations].map((operation) => [
+			operation,
+			new Set<Consumable>([
+				...operation.raisedEvents,
+				...reachedEvents(operation),
+			]),
+		]),
 	);
 	let changed = true;
 	while (changed) {
 		changed = false;
 		for (const operation of operations) {
+			const futureEvents = futureEventsByOperation.get(operation);
 			const sources: Set<DataSchema>[] = [];
 			for (const caller of callers.get(operation) ?? [])
 				sources.push(out.get(caller) ?? new Set());
@@ -1318,7 +1324,7 @@ function heldByGuard(
 						trigger instanceof Consumable &&
 						trigger.type === "event" &&
 						trigger.schema &&
-						!futureEvents.has(trigger)
+						!futureEvents?.has(trigger)
 					)
 						addComposedSchema(facts, trigger.schema);
 					if (
@@ -4965,13 +4971,13 @@ const contextServesSubdomain: Rule = (workspace) => {
  * every refusal of one says the same thing.
  */
 const externalContractMay =
-	"A published contract states what one of this system's own operations takes and answers with, in the attributes of its own request and answer schemas, what one of its own events carries, in the attributes of that event's payload, and what its own value objects are; anything else about that system is ours to guess and not to state";
+	"A published precondition reaches only an operation's request; a postcondition reaches its request, answer or refusal, or an event's payload. Every named operation or event must carry each constrained shape. This context's own value objects are also in reach; anything else about that system is ours to guess and not to state";
 
 /**
  * Everything a published contract of an external context may constrain: the
- * context's own operations and events, the attributes of the shapes those
- * operations carry and of the payloads of the events it guards, and the
- * context's own value objects with their attributes.
+ * context's own operations and events, the attributes of the shapes every
+ * named operation or event carries, and the context's own value objects with
+ * their attributes.
  *
  * The reach is the contract and nothing beside it. A payment provider
  * documents that capture takes a capturable payment reference and answers with
@@ -4984,11 +4990,12 @@ const externalContractMay =
  * the modelled ones, so until card 116 nothing did (decision 28, amendment of
  * 2026-09-10, fourth).
  *
- * The shapes come from {@link guardedSchemas}, so the reach follows the flag
- * the same way a modelled context's does: a precondition reads the request it
- * is checked against, a postcondition the request and what comes back. A
- * standard's published rule about a value is left to the value objects, which
- * an external context has always been allowed to state (third amendment).
+ * The operation shapes are the published request, answer and refusal. A
+ * modelled precondition can also use {@link heldByGuard} to read an answer
+ * fetched along its own call route; we cannot know that route inside an
+ * external system. A standard's published rule about a value is left to the
+ * value objects, which an external context has always been allowed to state
+ * (third amendment).
  *
  * An event of the context's own is the fourth thing in reach, and its payload
  * is the fifth. A provider that only sends — a webhook, a settlement feed —
@@ -5011,38 +5018,27 @@ function externalContractReach(
 		for (const consumable of provider.consumables.values())
 			if (consumable.type === "operation" || invariant.postcondition)
 				reach.add(consumable);
-	for (const schema of guardedSchemas(invariant))
-		for (const attribute of schema.attributes.values()) reach.add(attribute);
-	for (const schema of publishedPayloads(bc, invariant))
+	const operationGuards = invariant.guarded.filter(
+		(it) => it.type === "operation" && it.boundedcontext === bc,
+	);
+	const shapeSources: Set<DataSchema>[] = operationGuards.map((operation) => {
+		const roots: DataSchema[] = [];
+		if (operation.schema) roots.push(operation.schema);
+		if (invariant.postcondition) {
+			if (operation.returns) roots.push(operation.returns);
+			roots.push(...operation.rejects);
+		}
+		return composedSchemas(roots);
+	});
+	for (const event of publishedFacts(bc, invariant))
+		shapeSources.push(composedSchemas(event.schema ? [event.schema] : []));
+	for (const schema of intersectSchemas(shapeSources))
 		for (const attribute of schema.attributes.values()) reach.add(attribute);
 	for (const vo of bc.valueobjects.values()) {
 		reach.add(vo);
 		for (const attribute of vo.allAttributes) reach.add(attribute);
 	}
 	return reach;
-}
-
-/**
- * The payload shapes an external context's postcondition puts within its
- * reach: those of the context's own events it guards, and what those payloads
- * compose.
- *
- * `guardedSchemas` reads operations, because in a modelled context an
- * invariant's guard is an operation — the moment at which somebody checks a
- * rule (decisions 19 and 27). An external context has moments nobody here can
- * check and facts everybody here can read, so the guard of a published
- * contract may be one of its events; the reading is kept here rather than in
- * `guardedSchemas` so that no modelled context's reach moves with it.
- */
-function publishedPayloads(
-	bc: BoundedContext,
-	invariant: Invariant,
-): Set<DataSchema> {
-	return composedSchemas(
-		publishedFacts(bc, invariant)
-			.map((event) => event.schema)
-			.filter((schema): schema is DataSchema => !!schema),
-	);
 }
 
 /**
@@ -6087,9 +6083,9 @@ const RULES: CataloguedRule[] = [
 		rule: "external-is-boundary",
 		severities: ["error"],
 		summary:
-			"An external context declares no aggregates, no policies, no processes and no internal operations or events, and is not a big ball of mud as well; its value objects may carry invariants and it may state exactly one of a precondition or a postcondition on one of its own operations, or a postcondition on one of its own events, because a published contract is citable. Such an invariant names one of that context's own operations, or for a postcondition one of its own events, and constrains only the attributes of the shapes that operation carries or that event's payload, and the context's own value objects.",
+			"An external context declares no aggregates, no policies, no processes and no internal operations or events, and is not a big ball of mud as well; its value objects may carry invariants and it may state exactly one of a precondition or a postcondition on one of its own operations, or a postcondition on one of its own events, because a published contract is citable. Such an invariant names its own operations, or for a postcondition its own events. A precondition reaches only the published request; a postcondition reaches the request, answer or refusal of each named operation and the payload of each named event, through composition. Every named contract must carry each constrained shape; their shapes are not pooled. The context's own value objects remain in reach.",
 		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. The contract of one of its own operations is the same kind of published fact: a payment provider documents that capturing needs a capturable payment and what the capture answers with, and the merchant integrating with it is in no position to promise that, so the rule is stated where it is published — as a precondition or a postcondition of that provider's own operation. What one of its own events carries is that same fact again: a provider that only sends — a webhook, a settlement feed — has no operation to hang a contract on, and the promise that every capture notification carries an amount no greater than the authorisation is published, citable and not the receiver's to promise, so a postcondition may name that event and constrain the attributes of its payload. Only a postcondition, because an event has no request and so no moment before it at which anything could be checked. A rule with neither flag is different, because a rule the machine keeps at rest is exactly the invention we cannot make, and so is a precondition guarding somebody else's operation. The reach is the contract and nothing beside it: a flagged rule that names no operation at all is a contract about nothing, and one that constrains an entity of ours is that system promising something about our model. Neither was reported until card 116, because every reach rule walks the contexts whose insides we state and an external context is not one of them. Internal is the same invention in one word: it says an operation, or an event, never leaves that system, and the ones of somebody else's system we can name at all are those that reach us or that we reach. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
-		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy or process into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside. Where the aggregate was standing in for a kind that system publishes, the honest form is a schema of this context rather than an invented entity: declare the schema and let an identity attribute of ours name it directly. For an invariant, the question is which of two things it is. If it is the published contract of one of this context's own operations, mark it precondition (checked before that operation runs) or postcondition (guaranteed of what it answers with) and name that operation in constrains; exactly one flag is required, because an unflagged rule is a claim about the machine at rest and both flags contradict the contract timing. If it is what one of this context's own events always carries — a webhook payload, a settlement feed record — mark it postcondition and name that event, which is how a provider that only sends states its contract. What it may then constrain is the attributes of that operation's request and answer shapes, or of that event's payload, and this context's own value objects; anything else names something the provider does not publish. If it is a rule about several instances of a context of ours, or a precondition guarding another context's operation, move it to the context that keeps it. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both context flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
+		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy or process into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside. Where the aggregate was standing in for a kind that system publishes, the honest form is a schema of this context rather than an invented entity: declare the schema and let an identity attribute of ours name it directly. For an invariant, the question is which of two things it is. If it is the published contract of one of this context's own operations, mark it precondition (checked before that operation runs) or postcondition (guaranteed of what it answers with) and name that operation in constrains; exactly one flag is required, because an unflagged rule is a claim about the machine at rest and both flags contradict the contract timing. If it is what one of this context's own events always carries — a webhook payload, a settlement feed record — mark it postcondition and name that event, which is how a provider that only sends states its contract. A precondition may constrain only the published request's attributes; an internal call's fetched answer is not part of that request. A postcondition may constrain the request, answer or refusal of each named operation and the payload of each named event, through composition. Every named contract must carry the constrained shape; split distinct guarantees into distinct invariants rather than pooling their fields. This context's own value objects remain in reach; anything else names something the provider does not publish. If it is a rule about several instances of a context of ours, or a precondition guarding another context's operation, move it to the context that keeps it. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both context flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
 		check: externalIsBoundary,
 	},
 	{

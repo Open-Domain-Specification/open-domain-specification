@@ -3051,6 +3051,91 @@ describe("precondition facts across a local call chain", () => {
 });
 
 describe("precondition facts across independent reactor triggers", () => {
+	function eventRaisedAfterAnotherGuardRoute(
+		separatePublisher: boolean,
+		fetchFact: boolean,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const value = fact.addAttribute("value", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const read = service.provides("Read", {
+			description: "",
+			type: "operation",
+			returns: fact,
+		});
+		const guard = service.provides("Guard", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const initial = service.provides("Initial", {
+			description: "",
+			type: "operation",
+		});
+		if (fetchFact) service.consumes(read, { by: [initial] });
+		service.consumes(guard, { by: [initial] });
+		const observed = service.provides("Observed", {
+			description: "",
+			type: "event",
+			schema: fact,
+		});
+		if (separatePublisher)
+			service
+				.provides("Publish Observed", {
+					description: "",
+					type: "operation",
+				})
+				.raises(observed);
+		else initial.raises(observed);
+		bc.addPolicy("On Observed", { description: "" }).on(observed).issues(guard);
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(guard, value);
+		return { ws, rule };
+	}
+
+	it.each([
+		[false, "is also a guard caller"],
+		[true, "is separate from guard callers"],
+	] as const)(
+		"keeps an immediate policy payload when its publisher %s",
+		(separatePublisher, _description) => {
+			const { ws } = eventRaisedAfterAnotherGuardRoute(separatePublisher, true);
+			for (const candidate of [
+				ws,
+				Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+			])
+				expect(
+					candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+				).toEqual([]);
+		},
+	);
+
+	it("still requires the other entry to fetch the fact", () => {
+		const { ws, rule } = eventRaisedAfterAnotherGuardRoute(false, false);
+		for (const candidate of [
+			ws,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+		])
+			expect(
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			).toEqual([rule.ref]);
+	});
+
 	function independentTriggers(
 		kind: "policy" | "process",
 		everyTriggerCarriesFact: boolean,
@@ -9101,6 +9186,164 @@ describe("external-is-boundary", () => {
 		expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
 	});
 
+	it.each([false, true])(
+		"limits an external precondition to its published request, request carries fact=%s",
+		(requestCarriesFact) => {
+			const { ws, external } = scheme();
+			const api = external.addService("Scheme API", {
+				description: "",
+				type: "application",
+			});
+			const fact = external.addSchema("Fact");
+			const value = fact.addAttribute("value", { type: "string" });
+			const query = api.provides("Query", {
+				description: "",
+				type: "operation",
+				returns: fact,
+			});
+			const guard = api.provides("Guard", {
+				description: "",
+				type: "operation",
+				...(requestCarriesFact ? { schema: fact } : {}),
+			});
+			api.consumes(query, { by: [guard] });
+			const rule = external
+				.addInvariant("Fact required", {
+					description: "",
+					precondition: true,
+				})
+				.constrains(guard, value);
+			for (const candidate of [
+				ws,
+				Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+			]) {
+				const errors = boundary(candidate);
+				if (requestCarriesFact) expect(errors).toEqual([]);
+				else
+					expect(errors).toEqual([
+						[
+							"error",
+							expect.stringContaining(
+								'states a precondition on "Fact.value", which is not part of that contract',
+							),
+							rule.ref,
+						],
+					]);
+			}
+		},
+	);
+
+	it.each([false, true])(
+		"intersects composed operation answers with event payloads, event carries shape=%s",
+		(eventCarriesShape) => {
+			const { ws, external } = scheme();
+			const api = external.addService("Scheme API", {
+				description: "",
+				type: "application",
+			});
+			const fact = external.addSchema("Fact");
+			const value = fact.addAttribute("value", { type: "string" });
+			const envelope = external.addSchema("Envelope");
+			envelope.addAttribute("fact", { type: "Fact", schema: fact });
+			const capture = api.provides("Capture", {
+				description: "",
+				type: "operation",
+				returns: envelope,
+			});
+			const captured = api.provides("Captured", {
+				description: "",
+				type: "event",
+				...(eventCarriesShape ? { schema: envelope } : {}),
+			});
+			const rule = external
+				.addInvariant("Fact guaranteed", {
+					description: "",
+					postcondition: true,
+				})
+				.constrains(capture, captured, value);
+			for (const candidate of [
+				ws,
+				Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+			]) {
+				const errors = boundary(candidate);
+				if (eventCarriesShape) expect(errors).toEqual([]);
+				else expect(errors.map(([, , ref]) => ref)).toEqual([rule.ref]);
+			}
+		},
+	);
+
+	it.each([false, true])(
+		"requires every named operation to carry a postcondition shape even beside an event, shared answer=%s",
+		(sharedAnswer) => {
+			const { ws, external, capture, amount } = publishedCapture();
+			const api = external.services.get("scheme_api");
+			if (!api) throw new Error("no scheme API");
+			const receipt = external.schemas.get("captured_payment");
+			if (!receipt) throw new Error("no captured payment schema");
+			const ping = api.provides("Ping", {
+				description: "",
+				type: "operation",
+				...(sharedAnswer ? { returns: receipt } : {}),
+			});
+			const captured = api.provides("Captured", {
+				description: "",
+				type: "event",
+				schema: receipt,
+			});
+			const rule = external
+				.addInvariant("Positive amount", {
+					description: "",
+					postcondition: true,
+				})
+				.constrains(capture, ping, captured, amount);
+			for (const candidate of [
+				ws,
+				Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+			]) {
+				const errors = boundary(candidate);
+				if (sharedAnswer) expect(errors).toEqual([]);
+				else
+					expect(errors).toEqual([
+						[
+							"error",
+							expect.stringContaining(
+								'states a postcondition on "Captured Payment.amount", which is not part of that contract',
+							),
+							rule.ref,
+						],
+					]);
+			}
+		},
+	);
+
+	it.each([false, true])(
+		"requires both guarded events to carry the postcondition shape, shared payload=%s",
+		(sharedPayload) => {
+			const { ws, external, notified, amount } = webhook();
+			const api = external.services.get("scheme_api");
+			if (!api) throw new Error("no scheme API");
+			const other = api.provides("Second Notification", {
+				description: "",
+				type: "event",
+				...(sharedPayload ? { schema: notified.schema } : {}),
+			});
+			const rule = external
+				.addInvariant("Published amount", {
+					description: "",
+					postcondition: true,
+				})
+				.constrains(notified, other, amount);
+			for (const candidate of [
+				ws,
+				Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+			]) {
+				const errors = boundary(candidate);
+				if (sharedPayload) expect(errors).toEqual([]);
+				else expect(errors.map(([, , ref]) => ref)).toEqual([rule.ref]);
+			}
+		},
+	);
+
 	it("rejects an external contract marked both before and after", () => {
 		const { ws, external, capture, amount } = publishedCapture();
 		const both = external
@@ -9179,7 +9422,7 @@ describe("external-is-boundary", () => {
 		expect(boundary(ws)).toEqual([
 			[
 				"error",
-				'External context "Card Scheme" states precondition "Never Overdrawn" on none of its own operations; what a system we do not own publishes is the contract of an operation it offers, so name that operation. A published contract states what one of this system\'s own operations takes and answers with, in the attributes of its own request and answer schemas, what one of its own events carries, in the attributes of that event\'s payload, and what its own value objects are; anything else about that system is ours to guess and not to state',
+				'External context "Card Scheme" states precondition "Never Overdrawn" on none of its own operations; what a system we do not own publishes is the contract of an operation it offers, so name that operation. A published precondition reaches only an operation\'s request; a postcondition reaches its request, answer or refusal, or an event\'s payload. Every named operation or event must carry each constrained shape. This context\'s own value objects are also in reach; anything else about that system is ours to guess and not to state',
 				unguarded.ref,
 			],
 		]);
@@ -9208,7 +9451,7 @@ describe("external-is-boundary", () => {
 			["error", reaching.ref],
 		]);
 		expect(boundary(ws)[1][1]).toBe(
-			'External context "Card Scheme" states a postcondition on "Order.total", which is not part of that contract. A published contract states what one of this system\'s own operations takes and answers with, in the attributes of its own request and answer schemas, what one of its own events carries, in the attributes of that event\'s payload, and what its own value objects are; anything else about that system is ours to guess and not to state',
+			'External context "Card Scheme" states a postcondition on "Order.total", which is not part of that contract. A published precondition reaches only an operation\'s request; a postcondition reaches its request, answer or refusal, or an event\'s payload. Every named operation or event must carry each constrained shape. This context\'s own value objects are also in reach; anything else about that system is ours to guess and not to state',
 		);
 	});
 

@@ -24,6 +24,8 @@ Since the second note of 2026-10-01 (card 174), a published standard's value-obj
 
 Since the third note of 2026-10-01 (card 177), an external precondition may not name an event even alongside one of the context's own operations. The event has no request; a published guarantee about its payload is a postcondition.
 
+Since the fourth note of 2026-10-01, a postcondition that names several operations or events may constrain a shape attribute only when each named contract carries it. A payload on one event cannot stand in for a missing operation answer or another event's payload.
+
 Since then: an external context's invariant may name one of its own events, flagged `postcondition`, and constrain that event's payload (fifth amendment, card 128); `boundaryOnly` is the third kind of context, ours and coherent and modelled at its boundary only, with its own rule and stereotype (sixth amendment, card 132); an external or boundary-only consumer is not asked for a downstream role (card 135); the Clock route's ceremony is named and the scheduled operation is the usual route; `subscription-backed` skips a mud consumer (card 124).
 
 ## Context
@@ -117,3 +119,11 @@ The allowance for published invariants on an external context's value objects ne
 ## Note (2026-10-01, third)
 
 The fifth amendment permits a published event payload guarantee as a postcondition, never as a precondition. `external-is-boundary` already rejected an event-only precondition for lacking an operation, but admitted the same event target beside an operation because its contract reach included every local consumable. The reach now excludes event targets from preconditions, including mixed operation and event rules (issue #127, card 177).
+
+## Note (2026-10-01, fourth)
+
+A published postcondition that names several operations or events claims the constrained payload attribute of each named contract. An event carrying `Receipt.amount` does not make an unrelated `Ping` operation guarantee that attribute; nor does one event's payload lend the attribute to a second event without it. Reach is the intersection of each named operation's request, answer and refusal shapes and each named event's payload, after composition, rather than a union of event payloads over the operation intersection. A provider may split distinct guarantees into distinct invariants (issue #108, sixteenth signoff review).
+
+## Note (2026-10-01, fifth)
+
+Decision 19 lets a modelled context's precondition read a fact an earlier call fetched along the local route. That does not extend the published contract of an external context: we do not know the internal call route of somebody else's operation. An external `Guard` operation with no request cannot state a precondition on `Fact.value` merely because the model says it consumes a `Query` returning `Fact`. Its precondition reaches its published request shape only; its postcondition reaches the request, answer and refusal shapes. The external boundary checker must use those contract shapes without borrowing `heldByGuard` (issue #108, local adjacency audit after the sixteenth signoff review).

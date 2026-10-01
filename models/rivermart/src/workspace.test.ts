@@ -34,6 +34,22 @@ describe("RiverMart reference workspace", () => {
 		assertStressTestWorkspace(workspace, deliberate);
 	});
 
+	it("pins the retained cross-aggregate finding to Cart's saved items", () => {
+		expect(
+			workspace
+				.validate()
+				.filter(({ rule }) => rule === "cross-aggregate-reference"),
+		).toEqual([
+			{
+				severity: "error",
+				rule: "cross-aggregate-reference",
+				message:
+					'"Cart" includes "WishlistItem" in another aggregate; across aggregates only "references" is allowed',
+				ref: "#/boundedcontexts/cart_&_checkout/aggregates/cart/entities/cart",
+			},
+		]);
+	});
+
 	// Rendering every diagram through graphviz-wasm takes tens of seconds on
 	// the larger models, so this one test gets a generous timeout.
 	it("generates a complete docsify site and names the provider payment's identity user", async () => {

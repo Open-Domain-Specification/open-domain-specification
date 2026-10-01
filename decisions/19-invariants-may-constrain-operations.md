@@ -86,3 +86,7 @@ This also narrows the second amendment's suggestion to name a fetching operation
 ## Note (2026-10-01, sixth)
 
 An invariant that names several operations makes its timed claim at each one; the target list does not assert a sequence or a joint call. For a precondition, a request or already-held fact must be reachable at every named operation and on every possible route to each. For a postcondition, a request, returned or refused shape must be reachable at every named operation whose result the invariant claims to guarantee. Composition is expanded before intersecting those reachable shapes: a guard holding an `Envelope` that contains `Fact` and another holding `Fact` directly can both constrain `Fact.result`. Intersecting only the outer schema names would wrongly refuse that shared fact (issue #131, card 181).
+
+## Note (2026-10-01, seventh)
+
+The fifth note's future-event exclusion is local to an invocation route. If an operation raises `Observed`, that operation cannot borrow the event before raising it; a policy that later receives `Observed` has the payload as its immediate trigger before it issues a guarded operation, even when the earlier publisher is also an independent caller of that guard. Treating `Observed` as future everywhere because one caller raises it erases a fact the policy demonstrably holds. Each route must be checked at its own call time (issue #131, card 181; sixteenth signoff review).

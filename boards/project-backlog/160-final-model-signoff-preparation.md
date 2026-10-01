@@ -4,8 +4,8 @@ labels: [docs, model]
 priority: high
 agent: lead
 live: false
-status: Local route matrix and cross-reader audit integrated; final clean-head gate and signoff pending
-progress: 94
+status: Full gate passed on c7b5a5ad; Astra BLOCK findings assigned for correction before new signoff
+progress: 92
 clean-code-swept: true
 updatedAt: 2026-10-01T11:48:00Z
 ---
@@ -23,7 +23,7 @@ Issue #108. The owner wants the model complete before one exact-head review by C
 - [x] Evidence table below for #35, #36, #37, #38, #39, #40
 - [ ] The exact-head signoff: one Claude Opus 5.5 high and one OpenAI Astra low review of the same commit, each answering whether this is a correct, clean and detailed DDD specification, reproduced defects kept apart from named preferences (the lead)
 - [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (fifteen completed rounds found corrections; latest under expanded #131/card 181)
-- [x] Journal: fifteen exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
+- [x] Journal: sixteen exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
 
 ## Gates
 
@@ -384,3 +384,14 @@ The unmodified full local gate passed on exact clean head `a40226e937bcf0d48f098
 - **Three related reach defects, consolidated under #131/card 181:** naming both a front and its guarded operation re-admitted the latter's future answer; a process's `ends` event (or a self-raised `on` event) looked already heard by the precondition of the command that raises it; and an already-held answer or event payload was lost when the local call chain had two fronts. Each reproduced for aggregate/context owners, explicit/inferred callers and direct/JSON-round-trip. Astra confirmed the narrow prior #131 fix, #130, #128, #129, and exact reference diagnostic counts 0 / 2 / 4 / 3 / 0. No substantiated trigger for #35–#40 was found.
 - **Owner's five-whys assessment:** the open issue count had reached 54, including 16 created on 2026-10-01; 25 board cards were `doing`. The branch had not landed any of them on `develop`. The process gap was using final reviews as the first adversarial semantic matrix, then adding tickets for local patches. The lead stopped reviewer calls, broadened existing #131 rather than opening three issues, and is verifying guard count, lifecycle stage, local call depth, caller ambiguity, owner and JSON round-trip together before another signoff request.
 - **Evidence:** prompt `/tmp/ods-final-model-review-a40226e9.txt`, full report `/tmp/ods-astra-final-review-a40226e9.txt`, gate `/tmp/ods-verify-a40226e9.log`. The next independent review waits for a coherent clean commit and the full local gate.
+
+## Sixteenth completed round (head `c7b5a5ad`)
+
+The unmodified full local gate passed on exact clean `c7b5a5ad1bc886849e52dc5a947b96e6102701ea`: core 1137, graphviz 35, doc 53, skill 137, all five reference-model suites, generated-schema match and ESM imports, pages 1020, browser 430 passed/20 skipped. OpenAI `gpt-6-astra` low reviewed the same head and returned **BLOCK**. Claude was not called. No GitHub CI minutes were used.
+
+- **Reproduced reach defect:** a policy's immediate trigger event payload disappeared from one independent route when that same event was future on another publisher's invocation. The graph-wide future-event set crossed route identity. A bounded correction and direct/round-trip twins are assigned to the core owner under #131.
+- **Reproduced guarantee defect:** an external postcondition constrained two operations and an event. One operation did not carry the constrained shape, but unioning the event payload after intersecting operations accepted it. Mixed operation/event and two-event twins are assigned to the core owner under model signoff #108.
+- **Reference-model fidelity defect:** RiverMart's discovery prose still named a Case-to-OrderLine relation while the actual pinned diagnostic is Cart-to-WishlistItem. The RiverMart owner is correcting the prose and pinning exact message/ref without changing the pinned rule/severity list.
+- **Local adjacency blocker:** an external precondition on a guard with no request accepted a fact returned by an internal query the guard consumed. The external contract can state the published request only; decision 28's fifth note records why modelled-context held-fact reach does not apply. The core owner is separating those reach calculations and adding direct/round-trip twins before the next gate. The shared diagnostic wording and a mixed composed-shape twin are included in that bounded correction.
+- **Next checkpoint:** integrate corrections, sweep clean code, run the full gate on a new clean exact head, and only then request another independent review. Prompt `/tmp/ods-final-model-review-c7b5a5ad.txt`; report `/tmp/ods-astra-final-review-c7b5a5ad.md`; gate `/tmp/ods-verify-c7b5a5ad.log`.
+- **Integrated correction:** core 1148, RiverMart 7 and skill 137 tests pass, plus 43 focused reader tests and Svelte check. The external checker now uses published request/answer/refusal shapes without borrowing internal fetched facts; mixed and composed operation/event twins verify intersection. RiverMart's exact diagnostic is pinned without editing its deliberate rule/severity list. Hand-written and generated guidance agree. The clean-code audit caught a duplicate Svelte timing classification, removed so Markdown and Svelte retain the shared core label; no remaining introduced finding exceeds 0.5. The complete gate and a new final review remain.

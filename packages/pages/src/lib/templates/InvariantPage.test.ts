@@ -1,5 +1,5 @@
 import { Workspace } from "@open-domain-specification/core";
-import { render } from "@testing-library/svelte";
+import { render, within } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import Harness from "../evidence/WithModel.harness.svelte";
 import InvariantPage from "./InvariantPage.svelte";
@@ -164,7 +164,7 @@ describe("InvariantPage", () => {
 				"Guaranteed on event",
 			);
 			expect(guards).toHaveTextContent(
-				"The event whose payload carries this guarantee.",
+				"Every event named here carries this guarantee in its own published payload.",
 			);
 			expect(guards.querySelector("a")).toHaveAttribute("href", captured.ref);
 			expect(guards).not.toHaveTextContent(
@@ -193,10 +193,76 @@ describe("InvariantPage", () => {
 			const guards = container.querySelector("#guards") as HTMLElement;
 			expect(guards.querySelector("h2")).toHaveTextContent("Guaranteed by");
 			expect(guards).toHaveTextContent(
-				"The operations and events that carry this guarantee.",
+				"Each named operation or event publishes this guarantee in its own contract.",
 			);
 			expect(guards).toHaveTextContent("Captured");
 			expect(guards).toHaveTextContent("Get Capture");
 		}
 	});
+
+	it.each(["precondition", "postcondition"] as const)(
+		"describes an external operation's published %s without claiming its internals",
+		(timing) => {
+			const workspace = new Workspace("Contracts", {
+				description: "",
+				version: "test",
+			});
+			const context = workspace.addBoundedContext("Provider", {
+				description: "",
+				external: true,
+			});
+			const request = context.addSchema("Request");
+			const requested = request.addAttribute("amount", { type: "number" });
+			const answer = context.addSchema("Receipt");
+			const returned = answer.addAttribute("amount", { type: "number" });
+			const service = context.addService("API", {
+				description: "",
+				type: "application",
+			});
+			const operation = service.provides("Capture", {
+				description: "",
+				type: "operation",
+				schema: request,
+				returns: answer,
+			});
+			context
+				.addInvariant("Amount contract", { description: "", [timing]: true })
+				.constrains(
+					operation,
+					timing === "precondition" ? requested : returned,
+				);
+			for (const ws of [
+				workspace,
+				Workspace.fromSchema(workspace.toSchema()),
+			]) {
+				expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+				const invariant = ws.boundedcontexts
+					.get("provider")!
+					.invariants.get("amount_contract")!;
+				const { container } = render(Harness, {
+					model: {
+						workspace: ws,
+						fileLabel: "contracts.json",
+						diagnostics: [],
+					},
+					component: InvariantPage,
+					args: { invariant },
+				});
+				expect(
+					container.querySelector(".page-header .keyword"),
+				).toHaveTextContent(`published ${timing}`);
+				expect(
+					within(container).getByRole("heading", {
+						name:
+							timing === "precondition" ? /^Checked before/ : /^Checked after/,
+					}),
+				).toBeVisible();
+				expect(container.textContent).toContain(
+					timing === "precondition"
+						? "Its internal calls cannot supply a fact here."
+						: "published request, answer or refusal",
+				);
+			}
+		},
+	);
 });

@@ -115,8 +115,13 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   the contract of the payload it sends us. Such a rule names one of that context's own
   operations or, flagged `postcondition`, one of its own events, and constrains only the
   attributes of the shapes that operation carries or that event's payload, and the context's own
-  value objects; it says nothing about a context of ours. Its services still carry a `type`, but
-  nothing reads it.
+  value objects. A `postcondition` naming several operations or events is a guarantee about
+  each named operation's published request, answer or refusal and each named event's payload
+  separately, following composed schemas; fields from different contracts cannot be pooled to
+  satisfy it. A `precondition`
+  names operations only, never events, and reaches only the published request, not an answer
+  fetched by an internal call. The rule says nothing about a context of ours. Its
+  services still carry a `type`, but nothing reads it.
 - A payload schema belongs to the context that publishes the consumable. A value object or a
   schema may be named across a boundary on exactly three routes: where the two contexts declare a
   `shared-kernel` relationship, where the naming context is a conformist downstream of the one
