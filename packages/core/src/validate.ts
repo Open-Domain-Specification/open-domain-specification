@@ -3,6 +3,7 @@ import {
 	mayBorrowFrom,
 	sharesKernelWith,
 } from "./borrowing";
+import { cyclesOf } from "./cycles";
 import {
 	dispositionOf,
 	intentsWithoutComments,
@@ -14,14 +15,13 @@ import {
 	identityCrossings,
 	identityNamed,
 } from "./identity-crossings";
+import { reactionRings } from "./reaction-rings";
 import {
 	callsOut,
 	hearsAnswerOf,
 	operationCallers,
 	ReactionChain,
-	type Reactor,
 	reachedEvents,
-	routesTo,
 } from "./reaction-walk";
 import { ODS_VERSION, RelationType, type UpstreamRole } from "./schema";
 import {
@@ -41,7 +41,7 @@ import {
 	type EntityRelation,
 	type Invariant,
 	isDirectedRelationshipType,
-	Policy,
+	type Policy,
 	Process,
 	type ProcessTrigger,
 	type Service,
@@ -723,58 +723,6 @@ function append<K, V>(index: Map<K, V[]>, key: K, value: V): void {
 	const existing = index.get(key);
 	if (existing) existing.push(value);
 	else index.set(key, [value]);
-}
-
-/** Rotates a ring so its lowest key leads, so the same ring always reads the same way. */
-function leadWithLowestKey<N>(ring: N[], keyOf: (node: N) => string): N[] {
-	let lead = 0;
-	for (let i = 1; i < ring.length; i++) {
-		if (keyOf(ring[i]) < keyOf(ring[lead])) lead = i;
-	}
-	return [...ring.slice(lead), ...ring.slice(0, lead)];
-}
-
-/**
- * The rings a directed graph closes on itself, each as its nodes in order.
- *
- * One ring per back edge of the depth-first walk, the shape `aggregate-tree`
- * already uses for `includes`: every cycle carries at least one back edge, so
- * nothing cyclic goes unreported, while a graph with none is walked once.
- * Rings are rotated to their lowest key and de-duplicated by it, so which node
- * the walk happened to start from changes neither the message nor the ref.
- */
-function cyclesOf<N>(
-	nodes: Iterable<N>,
-	nextOf: (node: N) => Iterable<N>,
-	keyOf: (node: N) => string,
-): N[][] {
-	const rings: N[][] = [];
-	const seen = new Set<string>();
-	const path: N[] = [];
-	const onPath = new Set<N>();
-	const walked = new Set<N>();
-
-	const walk = (node: N) => {
-		onPath.add(node);
-		path.push(node);
-		for (const next of nextOf(node)) {
-			if (onPath.has(next)) {
-				const ring = leadWithLowestKey(path.slice(path.indexOf(next)), keyOf);
-				const key = ring.map(keyOf).join(">");
-				if (seen.has(key)) continue;
-				seen.add(key);
-				rings.push(ring);
-				continue;
-			}
-			if (!walked.has(next)) walk(next);
-		}
-		path.pop();
-		onPath.delete(node);
-		walked.add(node);
-	};
-
-	for (const node of nodes) if (!walked.has(node)) walk(node);
-	return rings;
 }
 
 /**
@@ -4713,272 +4661,6 @@ const policyComplete: Rule = (workspace) => {
 };
 
 /**
- * Whether a ring is one process's own lifecycle rather than a cycle.
- *
- * A process issues an operation, the operation raises the event the process
- * waits for next, and so on to the end: that is the ordinary multi-step
- * process, and the chain walks it as a ring back into the same process. It is
- * not one. The process holds state — it remembers which of its events have
- * arrived — so the second pass round is a later step of the same instance, and
- * what ends it is the `ends` the process declares (decision 23). Two things
- * make that safe to say. The walk came back to the process itself and to no
- * other reactor that is living on this ring: a ring through two live
- * processes, or through a process and a policy, is a genuine loop nobody on it
- * can see the whole of, and is reported, while a process the ring calls and
- * hears back from is not a second reactor at all (see {@link isCalledProcess}).
- * And it came back to an instance that is already running, which is
- * {@link reEntersWhileAlive}.
- *
- * The contexts the ring crosses do not come into it. A process that issues
- * its own operation, whose call reaches the next context through a
- * consumption's `by`, and that waits for the fact that context raises is
- * exactly the shape decision 23 describes; it is one process's lifecycle
- * however far the call travels, and NorthBank's onboarding and RiverMart's
- * checkout are both written that way. Card 102 tried narrowing this to steps
- * of the process's own context and made both of them warn. The two-caller
- * defect card 100 found was closed by routing an answer to the call that
- * asked for it (decision 23, fourth amendment), not here, so this exemption
- * was carrying no weight in it (card 102, the lead's ruling).
- */
-function isProcessLifecycle(cycle: Reactor[]): boolean {
-	const process = lifecycleProcessOf(cycle);
-	if (!process) return false;
-	return reEntersWhileAlive(process, beforeOnRing(cycle, process));
-}
-
-/**
- * Every reactor on a ring except the processes the ring merely calls: the ones
- * whose own life the ring might be.
- *
- * A ring holding two processes was reported as a genuine loop, and for the
- * commonest shape a second process takes on a ring that is wrong. A triage
- * process issues a booking operation, a scheduling process starts on that
- * operation and its end is the slot the triage process was waiting for: at
- * process granularity that is a call and an answer, one lifecycle asking
- * another to do something and hearing that it is done. Decision 23 already
- * says a process may be started by a command and that its `ends` is how it
- * finishes; reading the second process as a reactor living on the same ring
- * asserted something the model denies — that its instance is kept alive by the
- * ring — and reported a shape every referral, booking and sub-case model has
- * (decision 23, amendment of 2026-09-10, second; card 116).
- *
- * What is left is the live reactors, and the lifecycle test is asked of
- * those: one live process, alone or among policies that only translate here,
- * is {@link lifecycleProcessOf}, and two live processes is the loop the
- * message has always described.
- */
-function liveReactorsOf(cycle: Reactor[]): Array<Policy | Process> {
-	return cycle.filter(
-		(node): node is Policy | Process =>
-			node instanceof Policy ||
-			(node instanceof Process && !isCalledProcess(node, cycle)),
-	);
-}
-
-/**
- * Whether the ring calls this process rather than running through its life:
- * it comes in on one of the process's `starts` and leaves on one of its
- * `ends`.
- *
- * Those two facts are what a call is, said at the granularity of a process.
- * Something the ring did began an instance — a command addressed to this
- * context, or a fact it starts on — and the step by which the ring carries on
- * is the very event that completes that instance, so the process did its work
- * and answered. Nothing about the ring keeps this instance alive: it was born
- * on the way in and finished on the way out, and the next turn of the ring
- * makes a different one, exactly as a second call to an operation is a second
- * call. The process whose life the ring might be is the one that is waiting
- * while all of this happens.
- *
- * The exit is looked for along the ring's own steps out of the process, up to
- * the next reactor: a process leaves by an operation it issues, that operation
- * raises the fact, and it is the fact that has to be an `ends`. Read as "the
- * ring holds an `ends` of this process somewhere" it would exempt a process
- * that ends on a fact raised in a different arm of the ring, which is not this
- * shape. An `ends` never wakes the process again — the walk takes no step from
- * an ending trigger — so a ring reaching one has genuinely left.
- */
-function isCalledProcess(process: Process, cycle: Reactor[]): boolean {
-	const entry = beforeOnRing(cycle, process);
-	if (!(entry instanceof Consumable) || !process.startEvents.includes(entry))
-		return false;
-	const at = cycle.indexOf(process);
-	for (let step = 1; step < cycle.length; step++) {
-		const node = cycle[(at + step) % cycle.length];
-		if (node instanceof Policy || node instanceof Process) return false;
-		if (process.endEvents.includes(node)) return true;
-	}
-	return false;
-}
-
-/**
- * Whether the step that closes a ring wakes an instance that is already
- * running, rather than beginning another one.
- *
- * The lifecycle argument is that the ring is one instance moving through its
- * steps and stopping at its `ends`. A step into a `starts` trigger is not
- * that: it makes an instance, so a process whose own operation raises the
- * event it starts on begins a new instance every time round, and nothing in
- * the model says what stops the next one from doing it again. Each pass is a
- * different instance, so no instance's state is holding the ring together and
- * the exemption's whole reason is gone (card 104).
- *
- * Three ways the ring closes into something the instance was waiting for: the
- * process's own deadline, which runs from the process back to itself; an event
- * or an answer named in `on`; and an answer routed through one of the process's
- * calls, which is the same wait seen from the call that carries it (see
- * {@link routesTo}). A trigger that is both a `starts` and an `on` is a wait
- * as well as a start, and is left exempt.
- *
- * A node the process only starts on closes the ring by starting an instance,
- * whatever else routes through that node, and the answer clause used to say
- * otherwise. The shortest workaround for a process that could not hear its own
- * first call — start on the operation and issue it too — put the starting
- * command on the ring and made it the process's caller as well, so the ring
- * read as "the answer I was waiting for came back" when what it does is make
- * another instance every turn. The start is asked about before the answer, so
- * such a ring is reported for what it does (decision 23, third amendment of
- * 2026-09-10; card 135).
- */
-function reEntersWhileAlive(process: Process, before: Reactor): boolean {
-	if (before === process) return true;
-	if (process.events.some((trigger) => trigger === before)) return true;
-	if (before instanceof Consumable && process.startEvents.includes(before))
-		return false;
-	return process.events.some(
-		(trigger) =>
-			trigger instanceof Answer &&
-			routesTo(process, trigger.operation).includes(before),
-	);
-}
-
-/** The step of a ring that leads into a node: what happened just before it. */
-function beforeOnRing(cycle: Reactor[], node: Reactor): Reactor {
-	const at = cycle.indexOf(node);
-	return cycle[(at + cycle.length - 1) % cycle.length];
-}
-
-/** The step of a ring that follows a node: what it leads to. */
-function afterOnRing(cycle: Reactor[], node: Reactor): Reactor {
-	return cycle[(cycle.indexOf(node) + 1) % cycle.length];
-}
-
-/**
- * Whether a policy is translating on this ring: the trigger it hears here is
- * its anti-corruption-layer subscription, and the operation it issues here
- * raises the very event that carries the ring on.
- *
- * That is the gateway policy NorthBank's honest wiring needed: the scheme
- * answers, the policy hears the answer as the event it publishes through its
- * own translated consumption, and it republishes it as the bank's own fact.
- * It starts nothing the process did not start and holds no state of its own,
- * so it is not a second reactor for {@link lifecycleProcessOf}'s purposes —
- * it is the layer the process's lifecycle runs through.
- *
- * Read on the policy alone, as it was until card 113, this asked less than it
- * claimed: a policy with an anti-corruption subscription anywhere and any
- * operation raising any event counted as translating, whatever it was doing on
- * this particular ring. The ring's own steps are what the exemption is about,
- * so they are what is checked — the trigger this ring wakes the policy with,
- * and the operation this ring leaves it by.
- */
-function isTranslatingPolicy(policy: Policy, cycle: Reactor[]): boolean {
-	const trigger = beforeOnRing(cycle, policy);
-	const bc = policy.boundedcontext;
-	const members = [...bc.aggregates.values(), ...bc.services.values()];
-	const hearsThroughLayer =
-		trigger instanceof Consumable &&
-		members.some((member) =>
-			member.consumptions.some(
-				(c) =>
-					c.consumable === trigger &&
-					c.pattern === "anti-corruption-layer" &&
-					c.by.includes(policy),
-			),
-		);
-	if (!hearsThroughLayer) return false;
-	const issued = afterOnRing(cycle, policy);
-	if (!(issued instanceof Consumable) || !policy.commands.includes(issued))
-		return false;
-	const carried = afterOnRing(cycle, issued);
-	return carried instanceof Consumable && issued.raisedEvents.includes(carried);
-}
-
-/**
- * The one process a ring could be the life of, or undefined where the ring is
- * not that shape: the ring's only live process, every other live reactor on it
- * being a policy that merely translates there.
- *
- * The plainest shape is a process alone on its ring — it issues an operation,
- * the operation raises the event it waits for next, and so on to the end
- * (decision 23). NorthBank's honest gateway wiring put a second reactor on
- * that ring: the policy that hears the scheme's answer through an
- * anti-corruption-layer consumption and republishes it as the bank's own
- * event, which the process then hears. That policy translates; it starts
- * nothing the process did not start and holds no state between events of its
- * own, so a ring on which one process sits and every other reactor is such a
- * translating policy is the same lifecycle carried through the layer rather
- * than two cycles, one for each direction of the same call (decision 23,
- * amended 2026-09-10, second; card 108). The two readings are one question
- * with one answer, so they are asked once: a ring with no policy on it passes
- * the "every policy translates" test vacuously.
- *
- * A process the ring calls and hears back from is not one of the reactors
- * counted here, for {@link liveReactorsOf}'s reason: it is a call at process
- * granularity, so a ring on which one process waits while a gateway translates
- * and a sub-process is called and finishes is still that one process's
- * lifecycle (card 116).
- *
- * The shape alone is not the exemption, only its first half; whether the
- * process is living or being born again on this ring is
- * {@link reEntersWhileAlive}'s question, asked by {@link isProcessLifecycle}
- * and answered the other way by {@link spawnsInstances}.
- */
-function lifecycleProcessOf(cycle: Reactor[]): Process | undefined {
-	const reactors = liveReactorsOf(cycle);
-	const processes = reactors.filter(
-		(node): node is Process => node instanceof Process,
-	);
-	const policies = reactors.filter(
-		(node): node is Policy => node instanceof Policy,
-	);
-	if (processes.length !== 1) return undefined;
-	if (!policies.every((policy) => isTranslatingPolicy(policy, cycle)))
-		return undefined;
-	return processes[0];
-}
-
-/**
- * The process a ring spawns a new instance of every time round: one whose ring
- * has the lifecycle shape in every respect except that what comes back to it
- * there is a `starts` trigger.
- *
- * The exemption's premise is that the step coming back into the process
- * continues an instance, and card 108 asserted it without checking it. A
- * translated event named in the process's `starts` does not continue one; it
- * makes another every time round, so no instance's state holds the ring
- * together and the lifecycle argument is gone. Codex's ninth review drew
- * exactly that ring through a gateway and it validated clean (decision 23,
- * note of 2026-09-10, second; card 113), and the architect's sixteenth round
- * drew the same thing with no gateway at all — a process that starts on and
- * issues one operation — which the message now names for what it does as well
- * (card 135).
- *
- * What continues an instance is {@link reEntersWhileAlive}: a trigger the
- * process waits on while alive, an answer routed back through one of its
- * calls, or its own deadline. An ending trigger closes no ring at all — the
- * walk takes no step from one, because a fact that completes an instance does
- * not wake it — so `ends` never reaches this question.
- */
-function spawnsInstances(cycle: Reactor[]): Process | undefined {
-	const process = lifecycleProcessOf(cycle);
-	if (!process) return undefined;
-	return reEntersWhileAlive(process, beforeOnRing(cycle, process))
-		? undefined
-		: process;
-}
-
-/**
  * The reactions form no cycle: no operation raises an event whose policy or
  * process issues an operation that leads, however far around, back to the
  * first.
@@ -4993,11 +4675,11 @@ function spawnsInstances(cycle: Reactor[]): Process | undefined {
  *
  * One shape is exempt: a process fed by its own steps, which is a lifecycle
  * and not a ring, whether it runs through policies that only translate on the
- * ring or through nothing but its own operations (see
- * {@link isProcessLifecycle} and {@link lifecycleProcessOf}). The exemption
- * asks that what comes back to the process continues an instance; where it
- * starts one instead, the ring is reported for what it does — every turn
- * spawns another instance (see {@link spawnsInstances}; cards 113 and 135).
+ * ring, processes it merely calls, or nothing but its own operations. The
+ * exemption asks that what comes back to the process continues an instance;
+ * where it starts one instead, the ring is reported for what it does — every
+ * turn spawns another instance (cards 113 and 135). What each ring is, and
+ * which rings there are, is `reaction-rings.ts`'s.
  *
  * A ring with no policy or process on it at all is not a chain of reactions —
  * nothing on it wakes on anything, it is a call reaching the next operation
@@ -5011,46 +4693,42 @@ function spawnsInstances(cycle: Reactor[]): Process | undefined {
  * cannot see it at all, since that rule walks relationships between
  * contexts, so this rule reports it once, honestly, as calls (decision 20,
  * note of 2026-09-10; card 108).
+ *
+ * A ring is one invocation's steps, not any path the drawn chain allows, and
+ * an exempt ring never hides one that must be reported (see
+ * {@link reactionRings}). Read over the drawn chain, a process whose root was a
+ * hop of another process's call borrowed that call's answer, and the two read
+ * as a loop neither of them runs (issue #108, twentieth review); read one
+ * back edge at a time, a process's lifecycle hid feedback through a second
+ * live process (issue #108, local audit before the twenty-first review).
  */
-const reactionCycle: Rule = (workspace) => {
-	const chain = new ReactionChain(workspace.boundedcontexts.values());
-	return cyclesOf(
-		chain.steps,
-		(node) => chain.after(node),
-		(node) => node.ref,
-	)
-		.filter((cycle) => !isProcessLifecycle(cycle))
-		.flatMap((cycle) => {
-			const contexts = [...new Set(cycle.map((n) => n.boundedcontext))];
+const reactionCycle: Rule = (workspace) =>
+	reactionRings(new ReactionChain(workspace.boundedcontexts.values())).map(
+		({ nodes, verdict }) => {
+			const contexts = [...new Set(nodes.map((n) => n.boundedcontext))];
 			const across =
 				contexts.length > 1
 					? `; it runs through ${contexts.map((c) => `"${c.name}"`).join(" and ")}, so no one context can see the whole ring`
 					: "";
-			const hasReactor = cycle.some(
-				(node) => node instanceof Policy || node instanceof Process,
-			);
-			if (!hasReactor && contexts.length > 1) return [];
-			const named = [...cycle, cycle[0]].map((n) => `"${n.name}"`).join(" -> ");
-			// A ring that would be a lifecycle but for the step coming back
-			// into the process's `starts` is named for what it does: each turn
-			// begins another instance, so a reader who drew it as one
-			// instance's life sees why it is not.
-			const spawning = spawnsInstances(cycle);
-			const message = spawning
-				? `Reactions run in a cycle that spawns instances: ${named}; what closes the ring starts "${spawning.name}" rather than continuing it, so every turn begins another instance and nothing in the model says what ends them${across}`
-				: hasReactor
-					? `Reactions run in a cycle: ${named}; the chain triggers itself and nothing in the model says what ends it${across}`
-					: `Calls run in a cycle: ${named}; each of these calls the next and nothing on the ring reacts to anything, so it is a loop of calls rather than a chain of reactions${across}`;
-			return [
-				{
-					severity: "warning" as const,
-					rule: "reaction-cycle",
-					message,
-					ref: cycle[0].ref,
-				},
-			];
-		});
-};
+			const named = [...nodes, nodes[0]].map((n) => `"${n.name}"`).join(" -> ");
+			// A ring that would be a lifecycle but for the step coming back into
+			// the process's `starts` is named for what it does: each turn begins
+			// another instance, so a reader who drew it as one instance's life
+			// sees why it is not.
+			const message =
+				verdict.kind === "spawns"
+					? `Reactions run in a cycle that spawns instances: ${named}; what closes the ring starts "${verdict.process.name}" rather than continuing it, so every turn begins another instance and nothing in the model says what ends them${across}`
+					: verdict.kind === "calls"
+						? `Calls run in a cycle: ${named}; each of these calls the next and nothing on the ring reacts to anything, so it is a loop of calls rather than a chain of reactions${across}`
+						: `Reactions run in a cycle: ${named}; the chain triggers itself and nothing in the model says what ends it${across}`;
+			return {
+				severity: "warning" as const,
+				rule: "reaction-cycle",
+				message,
+				ref: nodes[0]!.ref,
+			};
+		},
+	);
 
 /**
  * Whether a context is a shared kernel: every relationship it has is a shared
@@ -6211,7 +5889,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"The reactions form no cycle: no operation raises an event whose policy or process issues an operation that leads back to the first.",
-		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one exemption that is the whole point of it, read over the ring's live reactors. A process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). And a ring on which one process sits and every other reactor is a policy that only translates — hearing its event through an anti-corruption-layer consumption and republishing it as its own context's fact — is the same lifecycle carried through the layer, not a second reactor (decision 23, amended 2026-09-10, second); the policy has to be translating on this ring — woken here by its anti-corruption subscription and leaving here by an operation that raises the event carrying the ring on — and not merely to have such a subscription somewhere. A process the ring merely calls is not a second reactor either: where the ring enters a process on one of its `starts` and leaves it on one of its `ends`, that is a call at process granularity — a triage process booking with a scheduling process and hearing the slot — and the instance it made was born on the way in and finished on the way out, so nothing on the ring keeps it alive (decision 23, amendment of 2026-09-10, second). So a cycle is reported only when the walk comes back to a reactor other than that process, such a translating policy or such a called process: a ring through two processes each waiting on it while alive, or through a process and an ordinary policy, is a genuine loop and is reported. The exemption asks for one more thing, that the ring comes back to an instance already running: a process that hears what comes back — round its own steps or through the layer — as one of its `starts` makes a new instance every time round, so no instance's state holds the ring together and nothing says what stops the next one; that ring is reported as a cycle that spawns instances, in those words (cards 113 and 135). The shortest way to write it is a process that starts on and issues the same operation, and it is reported in those words too, with no policy on the ring at all. A ring with no policy or process on it at all is not a chain of reactions — nothing on it wakes on anything — so it is worded as calls rather than reactions, and reported once: where every step of it crosses a context, `relationship-cycle` already reports the same ring as a ring of calls between contexts, and this rule stays quiet there (decision 20, note of 2026-09-10).",
+		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one exemption that is the whole point of it, read over the ring's live reactors. A process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). And a ring on which one process sits and every other reactor is a policy that only translates — hearing its event through an anti-corruption-layer consumption and republishing it as its own context's fact — is the same lifecycle carried through the layer, not a second reactor (decision 23, amended 2026-09-10, second); the policy has to be translating on this ring — woken here by its anti-corruption subscription and leaving here by an operation that raises the event carrying the ring on — and not merely to have such a subscription somewhere. A process the ring merely calls is not a second reactor either: where the ring enters a process on one of its `starts` and leaves it on one of its `ends`, that is a call at process granularity — a triage process booking with a scheduling process and hearing the slot — and the instance it made was born on the way in and finished on the way out, so nothing on the ring keeps it alive (decision 23, amendment of 2026-09-10, second). So a cycle is reported only when the walk comes back to a reactor other than that process, such a translating policy or such a called process: a ring through two processes each waiting on it while alive, or through a process and an ordinary policy, is a genuine loop and is reported. The exemption asks for one more thing, that the ring comes back to an instance already running: a process that hears what comes back — round its own steps or through the layer — as one of its `starts` makes a new instance every time round, so no instance's state holds the ring together and nothing says what stops the next one; that ring is reported as a cycle that spawns instances, in those words (cards 113 and 135). The shortest way to write it is a process that starts on and issues the same operation, and it is reported in those words too, with no policy on the ring at all. A ring with no policy or process on it at all is not a chain of reactions — nothing on it wakes on anything — so it is worded as calls rather than reactions, and reported once: where every step of it crosses a context, `relationship-cycle` already reports the same ring as a ring of calls between contexts, and this rule stays quiet there (decision 20, note of 2026-09-10). A ring is one run of steps a single invocation takes: an answer comes back only to the reactor whose call it was, so where one reactor's call passes through an operation another reactor also issues, that other reactor's answer is not a step of this call, and no ring is closed through both (decision 23; issue #108). An exempt ring never hides one that must be reported: where a process's lifecycle, a translating policy or a called process shares its steps with feedback through a second live reactor, a ring that only spawns instances, or calls inside one context, the rule still reports one such ring for that part of the chain, the shortest it finds.",
 		fix: "Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. Where the ring closes on a process's own starting event, the step that restarts it is the one to look at: wait on that fact with `on` if the instance is meant to carry on, or raise a different event if a fresh instance is really meant each time and say in the process's description what stops the next one. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there. If the ring is nothing but calls with no reactor at all, the fix is `relationship-cycle`'s: an anti-corruption layer, a partnership, or turning a call into an event.",
 		check: reactionCycle,
 	},

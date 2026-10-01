@@ -1,7 +1,8 @@
-import type {
+import {
 	ODSFlowMap,
-	ODSFlowMapEdge,
-	ODSFlowMapNode,
+	type ODSFlowMapEdge,
+	type ODSFlowMapNode,
+	Workspace,
 } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { ICONS } from "../icons";
@@ -154,6 +155,47 @@ describe("flowGraph", () => {
 		expect(g.nodes[0].groupId).toBeUndefined();
 		expect(g.nodes[0].groupPath).toBeUndefined();
 		expect(g.groups).toEqual([]);
+	});
+
+	// The extension, the viewer and the static export draw core's map edge for
+	// edge, so a process answered along a direct and an indirect call shows
+	// both answers arriving (issue #108, twentieth review).
+	it("draws every answer route core's map carries", () => {
+		const ws = new Workspace("Routes", { description: "", version: "0" });
+		const bc = ws.addBoundedContext("Orders", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const app = bc.addService("Orders App", {
+			description: "",
+			type: "application",
+		});
+		const [start, direct, indirect, middle, query] = [
+			"Start",
+			"Direct",
+			"Indirect",
+			"Middle",
+			"Query",
+		].map((name) =>
+			app.provides(name, {
+				description: "",
+				type: "operation",
+				internal: true,
+				...(name === "Query" && { returns: fact }),
+			}),
+		);
+		app.consumes(query!, { by: [direct!, middle!] });
+		app.consumes(middle!, { by: [indirect!] });
+		const run = bc
+			.addProcess("Run", { description: "" })
+			.starts(start!)
+			.issues(direct!, indirect!)
+			.ends(query!.returned());
+		const answers = flowGraph(ODSFlowMap.fromBoundedContext(bc))
+			.edges.filter((e) => e.answer && e.target === run.ref)
+			.map((e) => [e.source, e.label]);
+		expect(answers).toEqual([
+			[direct!.ref, "Fact (ends)"],
+			[indirect!.ref, "Fact (ends)"],
+		]);
 	});
 
 	it("picks the codicon each host already uses for the step", () => {

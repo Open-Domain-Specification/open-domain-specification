@@ -9376,6 +9376,39 @@ describe("reaction-cycle", () => {
 			expect(reactions(ws)).toEqual([]);
 		});
 
+		// The lifecycle through the layer stays quiet, and a second process
+		// that hears the translated fact while alive and feeds the first back
+		// is feedback beside it, whichever ring the walk meets first (issue
+		// #108, local audit before the twenty-first review).
+		it("still reports a second live process fed beside the lifecycle through the layer", () => {
+			const { ws, process } = gateway();
+			const app = ws.getServiceByRefOrThrow(
+				"#/boundedcontexts/bank/services/gateway",
+			);
+			const notified = app.provides("Notified", {
+				description: "",
+				type: "event",
+			});
+			const notify = app
+				.provides("Notify", { description: "", type: "operation" })
+				.raises(notified);
+			process.boundedcontext
+				.addProcess("Echo", { description: "" })
+				.starts(
+					app.provides("Begin Echo", { description: "", type: "operation" }),
+				)
+				.on(app.consumables.get("instruction_authorised")!)
+				.issues(notify)
+				.ends(notified);
+			process.on(notified);
+			expect(reactions(ws).map((d) => [d.message, d.ref])).toEqual([
+				[
+					'Reactions run in a cycle: "Publish Scheme Answer" -> "Publish Authorised" -> "Instruction Authorised" -> "Echo" -> "Notify" -> "Notified" -> "Instruction" -> "Send Authorisation" -> "Authorise" -> "Authorised" -> "Publish Scheme Answer"; the chain triggers itself and nothing in the model says what ends it; it runs through "Bank" and "Scheme", so no one context can see the whole ring',
+					"#/boundedcontexts/bank/policies/publish_scheme_answer",
+				],
+			]);
+		});
+
 		it("still reports a ring where the policy does not translate through an ACL", () => {
 			// Same shape, but the policy hears the scheme's event as an ordinary
 			// conformist rather than through an anti-corruption-layer consumption:

@@ -4,10 +4,10 @@ labels: [docs, model]
 priority: high
 agent: lead
 live: false
-status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
-progress: 92
+status: Integrated local corrections accepted; clean-head full landing gate and same-head final signoff pending
+progress: 90
 clean-code-swept: true
-updatedAt: 2026-10-01T14:42:37Z
+updatedAt: 2026-10-01T18:40:59Z
 ---
 # Final model sign-off: the record says only what holds
 
@@ -22,15 +22,16 @@ Issue #108. The owner wants the model complete before one exact-head review by C
 - [x] Hand-written skill preferences and the tactical page read against it: each says a comment says how a message travels, which stays true; none changed
 - [x] Evidence table below for #35, #36, #37, #38, #39, #40
 - [ ] The exact-head signoff: one Claude Opus 5.5 high and one OpenAI Astra low review of the same commit, each answering whether this is a correct, clean and detailed DDD specification, reproduced defects kept apart from named preferences (the lead)
-- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (fifteen completed rounds found corrections; latest under expanded #131/card 181)
-- [x] Journal: nineteen exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
+- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (twenty completed rounds found corrections; the twentieth, answer-route union, is under #108 on this card)
+- [x] Journal: twenty exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
 
 ## Gates
 
 - [x] Focused: core and skill builds, skill drift test, biome on the touched files; results in the journal
 - [x] `bash scripts/verify-all.sh` passed unmodified on the integrated model tree at `ff8e8436`: core 1043, graphviz 35, doc 47, skill 62, NorthBank 6, pages 1005 and all other package/model suites; generated-schema comparison and ESM imports green; browser 424 passed, 20 skipped
 - [x] `bash scripts/verify-all.sh` passed unmodified on clean `a40226e9` before the fifteenth review exposed #131's wider route class (core 1090, pages 1019 at 100% coverage, browser 430 passed/20 skipped)
-- [ ] `bash scripts/verify-all.sh` passes unmodified on the final clean committed head containing the expanded #131 correction and all reader wording
+- [x] `bash scripts/verify-all.sh` passed unmodified on clean `687b18e9` (core 1402, skill 154, pages 1023, browser 430 passed/20 skipped, all five model pins, schema and ESM); the twentieth review then blocked that head
+- [ ] `bash scripts/verify-all.sh` passes unmodified on the final clean committed head containing the answer-route union correction
 
 ## Evidence: capability issues against the record
 
@@ -420,3 +421,87 @@ The unmodified full gate passed on clean `3f29142c07b9bdbedeff6554633161c46d708a
 The unmodified full gate passed on clean `635bcc7ed1902e7b06a31d0e5f43863d1fbd264b`: core1306, skill154, pages1023, all models/schema/import checks, browser430passed/20skipped. Astra low **APPROVED**; Claude Opus5.5high **BLOCKED** the same unchanged head. Naming `CheckStanding` as a second guard removed its completed answer fetched by `ApproveFront`, despite both guards independently holding the fact. The source-backed reproduction overrides approval. The bounded local audit rejected a caller-only identity exception and specified per-guard reach independent of other names, followed by intersection; decision19tenth records the ruling. Claude owns the full current-guard/front fetch class under131. PR132 is draft, zero GitHub Actions runs, no new issue/closure. Prompt `/tmp/ods-final-model-review-635bcc7e.txt`; Astra report `/tmp/ods-astra-final-review-635bcc7e.md`; Claude report `/tmp/ods-claude-final-review-635bcc7e.md`; gate `/tmp/ods-verify-635bcc7e.log`.
 
 - **Correction checkpoint after nineteenth round:** the uniform per-guard implementation and96newcases pass (20failedbefore, core1402); skill154/allfive model suites, TypeScript/Biome pass. Both local semantic/clean-code and guidance audits are clear. Current/predecessor/cycle future negatives remain rejected through each guard's independent reach and intersection. All implementation lanes complete; fresh clean committed full gate and final exact-head signoff remain.
+
+## Twentieth completed round (head `687b18e9`)
+
+The unmodified full gate passed on clean `687b18e94a78cf0d0757735a9525f323ae7259a3`: core 1402, doc 53, skill 154, pages 1023, all five reference-model suites with pinned diagnostics 0 / 2 / 4 / 3 / 0, schema match, ESM imports, browser 430 passed/20 skipped. OpenAI `gpt-6-astra` low returned **BLOCK** on the same head. Claude final review was not called. No push, PR change or GitHub CI.
+
+- **Reproduced defect, pre-existing:** a process `Run` issues `Direct`, which calls `Query`, and `Indirect`, which calls `Middle`, which calls `Query`; `Run` ends on `Query`'s answer. The model validates with zero diagnostics, yet `routesTo(Run, Query)` returned `Direct` only, so the reaction walk and every flow-map reader lost the `Indirect` answer edge. Issuing `Query` itself beside `Indirect` lost `Indirect` the same way. `routesTo` returned the first kind of route that found anything. This is eventual answer delivery, not decision 19's precondition timing.
+- **Ruling:** the correction stays under #108 on this card; acceptance is expanded in place, with no new issue, card or PR. The bounded audit read decisions 21 and 23 as the nearest reactor on each actual call route, not one owner per operation: every eligible root counts, each once, and each stays the reactor's own conditional root. Decision 21's third note of 2026-10-01 states it.
+- **Correction:** `routesTo` now keeps every eligible root: the operation the reactor issues itself, an issued or starting operation a `by` names, and one whose local chain reaches the call. It lists them in starting-then-issuing order, adding the self-named-caller fallback last. `hearsAnswerOf` is unchanged.
+- **Matrix:** new `packages/core/src/answer-routes.test.ts`, 48 cases. Root shapes: none, direct, indirect, both, the answering operation issued itself, two chain lengths, nested issued roots, several paths to one root, and a local ring. Each runs with `by` written, inferred and mixed. Further cases cover the starting command's call (never its own answer), a policy's `then`, a front shared by two reactors, a root nested in another reactor's chain, and a bystander. The rest are an ambiguous silent caller, the invalid self-named caller, one foreign hop after local fronts with no second, ring termination, and an unchanged event walk. Each case asserts the `routesTo` identity list, `ReactionChain` answer steps, `ODSFlowMap` answer and ending edges, its diagnostics, and the JSON round trip. Readers: a graphviz test of the exact digraph and SVG Markdown writes, and a pages `flowGraph` test on a real map. Failing before, on 687's `reaction-walk.ts`: 23 of 48 core cases and both reader tests.
+- **Local evidence:** core 1450, graphviz 36, doc 53, skill 154, pages 1024 at 100% coverage and svelte-check clean, all five model suites and `_shared` 12. Pins are unchanged, the schema matches, and no generated file moved. RiverMart's `Hold attempt` is the only reference reactor with two routes, `[AuthorisePayment, RetryHold]`, unchanged. TypeScript and Biome are clean. The clean-code audit fixed two introduced findings (a shadowed fixture name and a string-matched skip); nothing above 0.5 remains.
+- **Open question for the lead, pre-existing and unchanged by this correction:** `ReactionChain` keys answer steps by node, not by invocation. When one reactor's root is a hop in another reactor's chain, `reaction-cycle` can report a ring through both: `First` issues `Indirect` and `Front`, `Second` issues `Middle` and `Front`, `Indirect` calls `Middle`, and both `Middle` and `Front` call `Query`. That ring lends `First`'s call through `Middle` to `Second`. 687 reports the same warning with `by` written or inferred; the correction makes the mixed form agree. No product edit is made for it.
+- **Next:** one bounded integrated audit, then the root lead's clean committed full gate and exact-head final signoff. Prompt `/tmp/ods-final-model-review-687b18e9.txt`; Astra report `/tmp/ods-astra-final-review-687b18e9.md`; gate `/tmp/ods-verify-687b18e9.log`; focused correction logs `/tmp/ods-routes-focused.log`, `/tmp/ods-routes-pages.log`. No local result counts as final signoff.
+
+- **Lead's ruling on the open question (2026-10-01):** the lead accepted the route union and its matrix, and the local audit found it clean. The lead then ran `/tmp/ods-phantom-ring.mjs` and reproduced the false two-process warning with `by` written and inferred. An independent adjacency audit agreed that decision 23 forbids borrowing another invocation's answer. The open question above is therefore a **confirmed defect**, not an accepted cost, corrected under #108 on this card with no new issue, card or PR. The earlier bullet stands as written on the day.
+- **Correction checkpoint (2026-10-01, Claude Opus 5.5 high):**
+  - **Change:** `reaction-cycle` now walks the reaction chain unfolded by caller (new internal `packages/core/src/invocation-walk.ts`, not re-exported). A reactor sets the caller when it issues an operation, and each call that operation makes carries it. Events, subscriptions, process starts and deadlines drop it. An answer step is taken only back to that caller, or to a process the operation starts, for the calls its start makes and never the start's own answer.
+  - **Where it sits:** rings are found by `cyclesOf` over the interned states before any classification, then projected to nodes and de-duplicated. The bound is at most nodes × (reactors + 1) states, walked once. The lifecycle, translating-policy, called-process and spawning classifiers are unchanged. The flow map still draws every conditional answer step.
+  - **Decision 23:** second note of 2026-10-01 and a current-position line. The rule's `why` gains one sentence; `validation-rules.md` is regenerated by the skill build and the docs validation row is aligned.
+  - **Tests:** the equivalence-only assertion is replaced by zero-diagnostic cases (a nested root at depths one to three, each reactor's own front, one shared front) with `by` written, inferred and mixed, plus JSON twins and both conditional roots kept on the map. New exact-message positives: two processes waking each other through events; a real ring found beside a phantom back edge; a policy's own retry warns while the process beside it lends nothing; a policy retrying through a front. A start-ownership eligibility test uses the chain's real steps.
+  - **Failing before:** on the union `reaction-walk.ts` with 687's `validate.ts`, 13 of 69 cases fail. In one, the old walk reported the phantom `First → Front → Second → Middle → Moved → First` and hid the real `First → Signal → Signalled → Second → Middle → Moved → First`.
+  - **Evidence:** core 1471, graphviz 36, doc 53, skill 154, pages 1024 at 100% coverage and svelte-check clean, apps/docs 24, all five model suites and `_shared` 12. Pins are unchanged at 0 / 2 / 4 / 3 / 0 and no model carries a `reaction-cycle`. The schema matches. TypeScript and Biome are clean.
+  - **Clean-code:** two introduced findings fixed: the owner expression was duplicated, and the names were inconsistent. Nothing above 0.5 remains; `ReactionChain.after` is now unused in core but is public API and kept.
+  - **Next:** the lead's semantic acceptance and integrated audit, then a clean committed full gate and exact-head final signoff. Logs: `/tmp/ods-rings-before.log`, `/tmp/ods-rings-focused.log`, `/tmp/ods-rings-pages.log`. No local result counts as signoff.
+
+- **Lead's ruling and the local audit (2026-10-01):** the lead accepted `InvocationWalk`'s ownership correction and reproduced the phantom going quiet. My earlier remaining-gaps note said the single back-edge walk could let an exempt ring hide another. An independent local audit, before any twenty-first final review, turned that into a reproduced **warning loss**.
+  - **The model:** one application service provides `O`, `F` and both start commands, plus the events `E` (raised by `O`) and `G` (raised by `F`).
+    - `P` starts on its own command, waits on `E` and `G`, issues `O`, and ends on `O`'s completion.
+    - `R` starts on its own command, waits on `E`, issues `F`, and ends on `F`'s completion.
+  - **What happened:** with `P` declared first, the walk took `P`'s lifecycle `P → O → E → P` as the only back edge, so the feedback `P → O → E → R → F → G → P` was never reported, and `validate()` returned `[]`.
+  - **Ruling:** a confirmed defect corrected under #108, card 160 and PR #132, not an accepted cost, with no new issue.
+- **Correction checkpoint (2026-10-01, Claude Opus 5.5 high):**
+  - **New module:** `packages/core/src/reaction-rings.ts` (internal, not re-exported) owns ring semantics.
+    - Rings met by the existing back-edge walk over invocation states are kept, with their messages unchanged.
+    - The rule then decides, for each strongly connected region of reactor-to-reactor segments, whether a reported ring exists. A segment is labelled by its two reactors, the node before the second, and whether the first left open. The regions are found by Tarjan in `cycles.ts`.
+    - The conditions are, in order: a policy that does not translate; live passes of two different processes; a closed walk of translating or called passes only; or a closed walk that spawns through a lone process's own passes.
+    - Where the walk reported nothing in a region, the shortest witness is reported in the same words. Calls inside one context get the same completion, against crossing call rings.
+  - **One classification for both paths:** every visit is classified once, from its entry node and how the reactor leaves, so the ring classifier and the region search agree.
+  - **Bounds:** at most nodes × (reactors + 1) states; segments come from a breadth-first walk per reactor with two flags and three depths; each search is breadth-first over the passes of one region. Nothing enumerates paths, and validation takes 1–3 ms on the largest models.
+  - **Moves:** `cyclesOf` and `leadWithLowestKey` move unchanged to `cycles.ts`, so the other consumers keep the same behaviour. The seven classifiers move from `validate.ts` into the new module as position-based visits, and `reactionCycle` only formats messages.
+  - **Records:** decision 23 gets a third note of 2026-10-01; the rule's `why` and the docs validation row are aligned; `validation-rules.md` is regenerated by build.
+  - **Matrix:** new `packages/core/src/reaction-rings.test.ts`. Each feedback scenario is built in all 16 orders of operations, events, reactors and listener/command lists, with a JSON twin, asserting exact diagnostics:
+    - the audit's model;
+    - three live processes;
+    - a policy feeding a process beside its lifecycle;
+    - a live process beside a called one, plus the called process and lifecycle quiet alone;
+    - a ring that spawns beside a lifecycle;
+    - feedback beside a deadline;
+    - feedback through a front with `by` inferred.
+
+    Also new: a call ring inside one context beside a crossing ring, in both declaration orders, and in `validate.test.ts` a second live process beside the ACL-translating lifecycle across Bank and Scheme. The 69 route/phantom cases and the reader proofs are kept unchanged.
+  - **Failing before:** on InvocationWalk plus the global walk, 7 new tests failed, each a lost warning: five feedback scenarios, the call ring declared after the crossing ring, and the gateway case.
+  - **Evidence:**
+    - **Packages:** core 1482, graphviz 36, doc 53, skill 154, pages 1024 at 100% coverage with svelte-check clean, apps/docs 24.
+    - **Models:** all five model suites and `_shared` 12 pass. Pins are unchanged at 0 / 2 / 4 / 3 / 0, and no reference model carries a `reaction-cycle`.
+    - **Checks:** the schema matches, and TypeScript and Biome are clean.
+  - **Clean-code:** three introduced findings fixed: a duplicated position loop and segment-key format, the region search returning call rings, and an unnamed exempting-visit predicate. Nothing above 0.5 remains.
+  - **Next:** the lead's acceptance, then a clean commit, the unmodified gate and same-head final reviews. Logs: `/tmp/ods-feedback-before.log`, `/tmp/ods-feedback-focused.log`. No local result counts as signoff.
+
+- **PANIC audit (2026-10-01, accepted at severity 0.8):** an authored model made `ws.validate()` throw `RangeError: Maximum call stack size exceeded`. It has one context with one application service providing the shared internal event `Changed` and 100 internal operations `Update i`, each raising it, plus 100 policies `React i`, each on `Changed` issuing its own operation. Its 201 chain nodes became 10,000 segments, and the recursive `componentsOf` exhausted the stack before covered regions were skipped. Reproduced on the built tree before any change: n=10 and n=30 validate, n=100 throws.
+- **Correction checkpoint (2026-10-01, Claude Opus 5.5 high):**
+  - **Second overflow found:** reproducing it exposed a second one in the same class. `cyclesOf`'s recursive walk over the invocation states overflowed on 100 policies issuing one shared 100-hop front chain whose end raises every policy's event, because one depth-first path runs through each policy's own copy of the chain.
+  - **Fix:** both traversals in `packages/core/src/cycles.ts` now keep explicit stacks of frames (node plus step iterator) instead of the engine's call stack. They visit nodes and steps in the recursive order, keep Tarjan's index, low-link and on-stack membership, and number components in the same completion order. No input limit, dropped diagnostic or pin change.
+  - **Tests:** new `packages/core/src/cycles.test.ts` covers exact component groups and completion order, a node reached only through another, `cyclesOf`'s per-back-edge ring order, and a 20,000-node ring through each walk. `reaction-rings.test.ts` adds the audit's model (exactly 100 `React i -> Update i -> Changed -> React i` warnings, in order, before and after JSON) and 10 relays over a 1,000-hop shared front (every relay's own retry reported, all policy loops, JSON identical).
+  - **Failing before:** with the recursive `cycles.ts` swapped back in, the four deep tests throw `RangeError` while the semantic ordering and membership tests pass.
+  - **Evidence:** core 1489, graphviz 36, doc 53, skill 154, pages 1024 at 100% coverage with svelte-check clean, apps/docs 24, all five model suites and `_shared` 12. Pins are unchanged at 0 / 2 / 4 / 3 / 0, the schema matches, and no generated file moved. The audit's model validates in 91 ms.
+- **Remaining concern for the lead (not changed here):** reading rings one back edge at a time over invocation states reports more distinct rings than 687 did on shapes where many reactors share a long front. On 100 relays over a 100-hop front, 687 reports 100 warnings in 8 ms; this tree reports 5,050 genuine policy-feedback rings in 6.6 s, with messages up to about 10,000 names. The wide audit model takes 91 ms against 687's 3 ms. No reference model is affected. Options are listed in the sprint record; the recommendation is to read rings met over the drawn chain, keep only those an invocation runs, and rely on region completion for existence. That is a change to `reaction-rings.ts` semantics and needs the lead's ruling.
+
+- **Lead's ruling on the volume concern (2026-10-01):** option A. Rings named are the drawn chain's own `cyclesOf` rings, kept only when one invocation runs the whole closed walk. The per-caller region search stays the authority for existence.
+- **Correction checkpoint (2026-10-01, Claude Opus 5.5 high):**
+  - **Change:** `ringsMet` in `reaction-rings.ts` walks `chain.after` with 687's order and canonical rotation. `runsAsOneInvocation` keeps a candidate only when, begun at a reactor (whose state carries no caller), each step fixes the next state's caller and the walk closes on the same reactor. A ring of bare calls has no answer step and runs as drawn.
+  - **Cost:** the check is linear in ring length × out-degree, with no path or stack search. The region search now computes components from segment adjacency alone and classifies passes only in uncovered regions.
+  - **Records:** decision 23 gets a fourth note of 2026-10-01; the `InvocationWalk` and `ReactionChain` docs are aligned.
+  - **Volume pin:** 100 relays over a 100-hop shared front give exactly 100 warnings, each relay's own 103-node retry, source and JSON. 100 processes sharing that front, each waiting on its own answer, give zero, source and JSON.
+  - **Failing before:** the per-state walk gave 5,050 warnings in 7.75 s.
+  - **Load-bearing checks** (temporary mutations, restored byte-identical):
+    - without the invocation filter, 13 tests fail: nine nested-root phantoms, three real-beside-phantom, one policy beside a process;
+    - without regional completion, 9 fail: six exempt-beside-feedback, the ACL gateway, three real-beside-phantom.
+  - **Evidence:** core 1491, graphviz 36, doc 53, skill 154, pages 1024 at 100% coverage with svelte-check clean, apps/docs 24, all five model suites and `_shared` 12. Pins are unchanged at 0 / 2 / 4 / 3 / 0, the schema matches, and TypeScript and Biome are clean.
+  - **Timings:** 100 × 100-hop front 98 ms (was 6.6 s); 10 × 1,000-hop 69 ms; the audit's 100-policy model 56 ms; reference models 0.8–3.3 ms. The four deep stack tests stay green.
+- **Remaining risk:** a ring met on the drawn chain is one candidate per back edge, so where the walk meets an infeasible candidate first, the reported ring is the region's shortest witness rather than 687's ring. The message stays concise and feasible, but which ring is named can depend on the region search. A region the walk covered with one feasible ring gets no second warning for a different genuine ring there, as the lead's existence contract accepts.
+
+## Lead integration checkpoint (2026-10-01T18:40:59Z)
+
+The integrated route union, caller-feasible cycle witnesses, regional feedback completion, stack-safe traversal and concise warning volume are accepted locally. All eight clean-code principles are reconciled; the PANIC auditor rechecked the 10,000-segment SCC and 20,000-node cycle without abort. Source inspection and mutations confirm caller ownership and hidden-feedback completion are independently necessary. Focused core1491, graphviz36, doc53, skill154, pages1024 at100% and all model/shared/docs suites pass; pins0/2/4/3/0 and generated schema unchanged. Card moves to review, not done. Freeze a clean candidate, run the unmodified full gate and request exact-head Astra low then Claude Opus5.5high only after it passes. No final approval, push, CI, merge or issue closure is claimed. The lead updated ROADMAP with bounded later batches and prepared an external25issue acceptance ledger for post-merge reconciliation.

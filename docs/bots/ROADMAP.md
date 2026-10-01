@@ -22,10 +22,18 @@ Goal set by the human on 2026-09-06: the model gives a correct, clean and detail
 
 Rebase and verify PR #106 against the landed model. Review its integration diff, run the full local gate and real VS Code checks before landing. Only then begin another small tooling batch.
 
-## 5. Modular workspaces (later)
+## 5. Finish bounded reader outcomes (after diagram landing)
 
-Decision 08's `WorkspaceSet` was never implemented; extension card 07 covers it. Model corrections and the diagram batch land first so the loader starts from a consistent base.
+Land one package before starting the next, with at most two implementation stories and one bounded audit active. First epic #105 with #87, #88 and #80: readable glossary and attribute columns, intact type tokens and an accessible identity header. Then #78, #79 and #83: readable contrast, recognizable prose links and a keyboard path past navigation and diagrams. Then #91 and #77: keep the current tree location visible and provide a return path inside the extension. Define the input and host matrix before implementation, capture the current baseline, and verify viewer, static export and the real extension where host behavior matters; Markdown must still tell the same model truth.
 
-## 6. Older extension cards
+Keep phone navigation #82 separate because its layout needs an explicit design across page families. Viewer import refinements #92–#93, exact copy #94 and drag-check reliability #103 retain their own acceptance. Fix a reproduced unreliable landing gate under #103 rather than accepting reruns as stability evidence.
+
+Measure merged issue closures, new/reopened issues, first-review acceptance and gate/CI cost at each delivery boundary; perform a five-whys assessment after a blocked final review and a daily retrospective. The observed 54-open baseline includes 25 model issues. Closing all 25 after verified model landing would leave 29; diagram landing would close four more. These counts are conditional, not closure evidence.
+
+## 6. Modular workspaces (later)
+
+Decision 08's `WorkspaceSet` was never implemented; extension card 07 covers it. Model corrections and bounded reader batches land first so the loader starts from a consistent base. In epic #63, resolve multi-file identity, ownership and references under #59 before workspace-aware forms #54. Reopen capability proposals #35–#40 only on their recorded source-backed conditions; do not dispatch the overlapping epics #63–#65 together.
+
+## 7. Older extension cards
 
 Extension cards 01, 02, 04, 06, 09 predate the team way of working and need scoping with the human before dispatch.

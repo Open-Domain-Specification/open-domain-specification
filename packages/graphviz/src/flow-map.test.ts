@@ -97,6 +97,42 @@ describe("flowMapToDigraph", () => {
 		expect(dot).toContain("ScoreOrder");
 	});
 
+	// Markdown's flow map is this digraph of this context's map, so the SVG
+	// it writes carries every route an answer comes home by, not the first
+	// kind found (issue #108, twentieth review).
+	it("draws an answer home along a direct and an indirect call alike", async () => {
+		const ws = new Workspace("Routes", { description: "", version: "0" });
+		const bc = ws.addBoundedContext("Orders", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const app = bc.addService("Orders App", {
+			description: "",
+			type: "application",
+		});
+		const [start, direct, indirect, middle, query] = [
+			"Start",
+			"Direct",
+			"Indirect",
+			"Middle",
+			"Query",
+		].map((name) =>
+			app.provides(name, {
+				description: "",
+				type: "operation",
+				internal: true,
+				...(name === "Query" && { returns: fact }),
+			}),
+		);
+		app.consumes(query!, { by: [direct!, middle!] });
+		app.consumes(middle!, { by: [indirect!] });
+		bc.addProcess("Run", { description: "" })
+			.starts(start!)
+			.issues(direct!, indirect!)
+			.ends(query!.returned());
+		const digraph = flowMapToDigraph(ODSFlowMap.fromBoundedContext(bc));
+		expect(digraph.toDot().match(/label = "Fact \(ends\)"/g)).toHaveLength(2);
+		expect((await digraph.toSVG()).match(/Fact \(ends\)/g)).toHaveLength(2);
+	});
+
 	it("renders an empty map without throwing", async () => {
 		const ws = new Workspace("Empty", {
 			description: "",

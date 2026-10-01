@@ -4,7 +4,7 @@ date: 2026-09-05
 ---
 # Decision 21 — A consumption belongs to the consumer, and may name the operations behind it
 
-## Current position (2026-09-10)
+## Current position (2026-10-01)
 
 `by` exists on `ConsumptionSchema`, absent means the whole consumer, and `consumption-by-resolves` refuses an event; stable. The decision bullet that `by` may name policies of the consumer's context on any consumption no longer holds; see the correction of 2026-09-10 and decision 17's second amendment of 2026-09-08 (card 92): a policy or process is named on an event consumption, an operation consumption names the operation that makes the call (`consumption-by-operation`).
 
@@ -15,6 +15,8 @@ The section "no rule reads `by` as causality" no longer holds; see the amendment
 The consequences' petstore examples changed (cards 77 and 78).
 
 Since then: an answer routes back along the local `by` chain to the nearest reactor that issued an operation on it, one hop across a boundary (card 126); the single-operation inference routes only to a reactor that issues the sole operation (card 128); a consumer that provides no operation and consumes a foreign operation is reported (card 130); a process hears the answers of the calls its start made (decision 23, card 135).
+
+Since the notes of 2026-10-01: precondition reach and the walk share one effective caller, inferring a sole operation and none for an ambiguous consumer (card 180); an unknown caller is a conservative held-fact entry for decision 19 and draws no causal edge (issue #131); and an answer routes down every root by which the reactor made the call, each the reactor's own, rather than the first kind of route found (third note, issue #108).
 
 ## Context
 
@@ -133,3 +135,7 @@ The single-operation inference already governed the reaction walk and answer rou
 ## Note (2026-10-01)
 
 An unknown caller does not erase the consumption. For the invariant timing analysis of decision 19, an omitted `by` that cannot infer a sole operation contributes a conservative empty held-fact entry at the called operation, independently of informed known callers or reactors. The flow and reaction walks still draw no invented causal edge. A caller entry that other rules refuse cannot lend held facts as though it were an accepted caller; the original diagnostics remain, and valid caller entries beside it retain their actual routes (issue #131, eighteenth signoff review).
+
+## Note (2026-10-01, third)
+
+"The nearest reactor that issued an operation on it" is read per actual call route, not as one owner per operation and not as the first kind of route found. A reactor that made one call several ways — it issues the answering operation, a `by` names an operation it issues or starts on, or an operation it issues or starts on reaches the call along the local chain — hears the answer down every one of those roots, each root once, in the order the process starts and then issues them. `routesTo` returned only the first kind that found anything, so a process issuing a direct caller beside an indirect one lost the indirect answer step in the reaction walk and the flow map, and written and inferred `by` could disagree (issue #108, twentieth signoff review). Nothing widens: a front two reactors issue is each one's own conditional root, a bystander, an ambiguous silent caller and the starting operation's own answer still route nowhere, a boundary is still one hop, and `hearsAnswerOf`'s yes-or-no answer is unchanged. Eventual answer delivery remains separate from decision 19's held-fact timing.
