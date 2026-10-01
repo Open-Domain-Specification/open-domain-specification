@@ -4,7 +4,7 @@ labels: [docs, model]
 priority: high
 agent: lead
 live: false
-status: Full gate passed on c7b5a5ad; Astra BLOCK findings assigned for correction before new signoff
+status: Full gate passed on 658fbf41; seventeenth Astra BLOCK prompted bounded must-fact design and implementation
 progress: 92
 clean-code-swept: true
 updatedAt: 2026-10-01T11:48:00Z
@@ -23,7 +23,7 @@ Issue #108. The owner wants the model complete before one exact-head review by C
 - [x] Evidence table below for #35, #36, #37, #38, #39, #40
 - [ ] The exact-head signoff: one Claude Opus 5.5 high and one OpenAI Astra low review of the same commit, each answering whether this is a correct, clean and detailed DDD specification, reproduced defects kept apart from named preferences (the lead)
 - [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (fifteen completed rounds found corrections; latest under expanded #131/card 181)
-- [x] Journal: sixteen exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
+- [x] Journal: seventeen exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
 
 ## Gates
 
@@ -395,3 +395,14 @@ The unmodified full local gate passed on exact clean `c7b5a5ad1bc886849e52dc5a94
 - **Local adjacency blocker:** an external precondition on a guard with no request accepted a fact returned by an internal query the guard consumed. The external contract can state the published request only; decision 28's fifth note records why modelled-context held-fact reach does not apply. The core owner is separating those reach calculations and adding direct/round-trip twins before the next gate. The shared diagnostic wording and a mixed composed-shape twin are included in that bounded correction.
 - **Next checkpoint:** integrate corrections, sweep clean code, run the full gate on a new clean exact head, and only then request another independent review. Prompt `/tmp/ods-final-model-review-c7b5a5ad.txt`; report `/tmp/ods-astra-final-review-c7b5a5ad.md`; gate `/tmp/ods-verify-c7b5a5ad.log`.
 - **Integrated correction:** core 1148, RiverMart 7 and skill 137 tests pass, plus 43 focused reader tests and Svelte check. The external checker now uses published request/answer/refusal shapes without borrowing internal fetched facts; mixed and composed operation/event twins verify intersection. RiverMart's exact diagnostic is pinned without editing its deliberate rule/severity list. Hand-written and generated guidance agree. The clean-code audit caught a duplicate Svelte timing classification, removed so Markdown and Svelte retain the shared core label; no remaining introduced finding exceeds 0.5. The complete gate and a new final review remain.
+
+## Seventeenth completed round (head `658fbf41`)
+
+The unmodified full gate passed on clean `658fbf41c7b6a0ae78f9102fab79c1cab456245e`: core 1148, pages 1023, all reference-model/schema/build/import and package suites, browser 430 passed/20 skipped. Astra low returned **BLOCK** on the same head; Claude final review was not called and no GitHub CI was used.
+
+- A policy's immediate returned/refused answer was excluded when the answering operation also called the guard, although the trigger came from a completed prior invocation.
+- An informed entry calling a self-recursive or mutually recursive internal guard lost its fact because empty initialization selected the least fixed point of a must-fact equation. An independent cycle warning is not disputed.
+- The bounded architect specified ordinary entry reachability followed by greatest must-facts over finite admitted call walks. Decision 19's eighth note settles policy prior-occurrence entries and unentered local caller components. Claude Opus 5.5 high owns the broad core/test correction; OpenAI owns guidance. Final review waits for the integrated semantic matrix, clean-code sweep and full gate.
+- Prompt `/tmp/ods-final-model-review-658fbf41.txt`; report `/tmp/ods-astra-final-review-658fbf41.md`; gate `/tmp/ods-verify-658fbf41.log`. Existing issue #131/card 181 holds the adjacent cases, with no new issue growth.
+
+- **Integrated readiness checkpoint (2026-10-01):** Claude Opus 5.5 high completed the finite-entry/greatest-must-fact solver with 58 new direct/JSON cases; core 1206 tests pass. The architect independently compared 2,500 finite-route results and inspected integration without a blocker. The clean-code audit found no introduced violation. Schema comments, hand-written and generated rule guidance now distinguish a received prior occurrence from a future current invocation; drift coverage includes the corrected catalog claim. All five reference model builds preserve pinned diagnostics. Full clean-head gate and exact-head final signoff remain; no push or GitHub CI.

@@ -282,10 +282,12 @@ An event is never a guard of a modelled aggregate or context invariant, even
 beside an operation (`invariant-guards-are-operations`). A precondition may
 instead constrain the reachable attributes of an event payload its issuing
 reactor already heard. A process holds a starting event's payload, but its
-`on` events or answers may occur later, so it cannot assume them before a
-command it issues; nor does it hold a starting operation's later answer. A
-policy holds its immediate `on` event or answer. `ends` and an event the
-guarded call raises are future facts, so neither supplies a precondition. An external
+`on` or `ends` triggers and a starting operation's later answer are not
+guaranteed before a command it issues. A policy's immediate `on` event or
+returned or rejected answer is a completed occurrence before the command
+that reaction issues, even if the same event or operation is named on a later
+chain. The current guarded invocation's future answer or raised event alone
+supplies no fact. An external
 context's own published-event guarantee is a separate `postcondition` case below.
 
 Both may reach the payload the call carries. A precondition may constrain the
@@ -293,11 +295,13 @@ attributes of the schema its guarded operation takes, and those of what a call
 that guard — or a front on its local call chain in the same context — already
 made comes back with: "approve only if the customer is in good standing" reads a
 standing another context answered with before this call began, and the shape it
-came back in is a fact this context holds. It may not name an answer of a named
-guarded operation: that answer does not exist when the check runs. A distinct
-earlier query may return the same shape. A fact must be held on every
-independent named guard and caller or reactor-trigger path to the guard; sequential local
-fronts retain their held facts, but a sibling path does not supply one. Nor may it name the other context's
+came back in is a fact this context holds. An earlier completed occurrence
+can supply a fact even when its event or operation has the same identity as
+one on the current chain; the current invocation's future answer cannot.
+A fact must be held on every finite admitted entry-to-guard caller or
+reactor walk. Sequential local fronts and recursive callers keep facts from
+informed real entries; an uninformed alternate entry removes them, and a
+closed internal caller cycle with no entry supplies none. Nor may it name the other context's
 entities, which are never in reach. A postcondition constrains what its
 operation returns or rejects with, and the request it relates them to. Either
 follows composition: a rule about the amount of an order line is a rule about

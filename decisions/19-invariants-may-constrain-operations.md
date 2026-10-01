@@ -14,6 +14,8 @@ Context invariants and external contexts use the same flags (decision 27, card 1
 
 Since the note of 2026-10-01 (card 178), every aggregate or modelled-context invariant names operations as guards, never an event target beside one, whether flagged or unflagged. A precondition may still read the attributes of an already-heard event's payload under the conditions above. An external context's published event-payload postcondition is the separate decision 28 case.
 
+Since the fifth and eighth notes of 2026-10-01, a process contributes a starting event's payload, not an unordered `on`/`ends` fact or a starting operation's later answer. A policy contributes its immediate received event or returned/refused answer as a prior occurrence, regardless of whether a new invocation can produce the same identity. Reach requires the fact on every finite admitted caller route to every named guard; recursive calls retain facts supplied at all real entries, and an unentered internal caller component contributes no route. These are timing and route claims, not proof that a reaction bootstraps or avoids a cycle.
+
 ## Context
 
 `InvariantSchema.constrains` names entities, value objects and attributes (decision 05). Many invariants are transition rules: petstore's `SoldNotReopen` ("once sold, a pet does not revert to available") is about what `ChangePetStatus` may do, and today it can only point at the status attribute.
@@ -90,3 +92,9 @@ An invariant that names several operations makes its timed claim at each one; th
 ## Note (2026-10-01, seventh)
 
 The fifth note's future-event exclusion is local to an invocation route. If an operation raises `Observed`, that operation cannot borrow the event before raising it; a policy that later receives `Observed` has the payload as its immediate trigger before it issues a guarded operation, even when the earlier publisher is also an independent caller of that guard. Treating `Observed` as future everywhere because one caller raises it erases a fact the policy demonstrably holds. Each route must be checked at its own call time (issue #131, card 181; sixteenth signoff review).
+
+## Note (2026-10-01, eighth)
+
+Fact reach distinguishes an invocation from the operation's identity. An immediate policy event or returned/refused answer has already arrived from a completed prior occurrence before the policy issues its command. It remains held even if a newly issued call, another local caller or another named guard can produce the same event or answer identity. The fifth note's future-fact exclusion applies to the result of the invocation currently being checked, not to a received policy trigger. This analysis treats the policy's declared trigger as a conditional entry and does not prove that a first trigger can occur. Reaction-cycle detection remains a separate diagnostic.
+
+Local caller facts are the intersection over every finite call walk from an admitted entry to the guard. Recursion does not erase a fact held at every real entry: `Entry → Evaluate → Evaluate` retains the fact that Entry fetched, while an uninformed independent entry still makes that claim fail. Public direct invocations and conservative orphan invocations are empty held-fact entries; policy triggers and process starting events contribute their received payloads. An internal caller component with no admitted entry contributes no finite invocation route. A guard with no reachable entry has no held facts, rather than gaining all facts vacuously. The validator first establishes entry reachability, then computes the greatest fixed point of must-facts on reachable callers; it does not enumerate recursive paths (issue #131, card 181; seventeenth signoff review and bounded architecture assessment).

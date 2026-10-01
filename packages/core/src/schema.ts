@@ -701,14 +701,16 @@ export interface InvariantSchema {
 	 * A precondition may name attributes of the request its guarded operation
 	 * takes, of an answer the guard or a front on its local call chain already
 	 * fetched, of an event or answer payload that triggered its issuing policy,
-	 * or of a process start-event payload. A fetched answer or heard payload must
-	 * be available on every named guard and independent caller or reactor route;
-	 * sequential local fronts retain facts already held on their call chain.
-	 * A process's `on` triggers do not prove when a particular command is issued,
-	 * and a starting operation's later answer has no guaranteed delivery time.
-	 * A process's ending event and an event the guarded call raises are future,
-	 * not already heard. It cannot name an answer of a named guarded operation,
-	 * which does not exist before that call. A postcondition may
+	 * or of a process start-event payload. A policy's immediate `on` event or
+	 * returned or rejected answer is a completed occurrence before the command
+	 * that reaction issues, even when the same event or operation is named on a
+	 * later chain. The current guarded invocation's future answer or raised event
+	 * alone supplies no fact. A process's `on` or `ends` triggers and a starting
+	 * operation's later answer are not guaranteed before its command. A fact must
+	 * be held on every finite admitted entry-to-guard caller or reactor walk;
+	 * sequential local fronts retain it. Recursive callers keep facts from
+	 * informed real entries, but an uninformed alternate entry removes them,
+	 * and a closed internal caller cycle with no entry supplies none. A postcondition may
 	 * relate the guarded operation's request to the shapes it returns or
 	 * rejects with; it guarantees what comes back. When several operations are
 	 * named, the postcondition's shape must be reachable from each of them.

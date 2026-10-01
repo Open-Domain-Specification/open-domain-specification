@@ -65,6 +65,14 @@ const corpus = handWrittenFiles.map((f) => f.text).join("\n");
 const oldClaims: Array<{ claim: string; sentences: string[] }> = [
 	{
 		claim:
+			"a completed immediate trigger stays held even when a new invocation has the same identity",
+		sentences: [
+			"What it may not name is the future answer of any named guarded operation",
+			"the answer of a named guarded operation, an event that guard or its caller raises, and a process's ending event are future facts",
+		],
+	},
+	{
+		claim:
 			"a dangling ref stops the whole file loading (decision 29: it loads and reports unresolved-ref)",
 		sentences: [
 			"A dangling ref is a load failure, not a warning: the whole file stops loading.",
@@ -440,22 +448,22 @@ const currentFacts: Array<{
 		],
 	},
 	{
-		fact: "a precondition reads an earlier fact through local fronts, not an ending event or a named operation's future answer (schema source)",
+		fact: "a precondition distinguishes a completed policy trigger from the current call's future result (schema source)",
 		file: "packages/core/src/schema.ts",
 		sentences: [
 			"a front on its local call chain already",
-			"process's ending event and an event the guarded call raises",
-			"It cannot name an answer of a named guarded operation",
+			"returned or rejected answer is a completed occurrence before the command",
+			"The current guarded invocation's future answer or raised event",
+			"every finite admitted entry-to-guard caller or reactor walk",
+			"a closed internal caller cycle with no entry supplies none",
 			"relate the guarded operation's request to the shapes it returns or",
 		],
 	},
 	{
-		fact: "a precondition reads an earlier fact through local fronts, not an ending event or a named operation's future answer (generated reference)",
+		fact: "generated model reference keeps the stable reach and postcondition claims",
 		file: "packages/skill/skill/references/model-reference.md",
 		sentences: [
 			"a front on its local call chain already fetched",
-			"A process's ending event and an event the guarded call raises are future",
-			"It cannot name an answer of a named guarded operation",
 			"A postcondition may relate the guarded operation's request to the shapes it returns or rejects with",
 		],
 	},
@@ -465,10 +473,10 @@ const currentFacts: Array<{
 		sentences: [
 			"a front on its local call chain in the same context",
 			"A process holds a starting event's payload",
-			"`on` events or answers may occur later",
-			"policy holds its immediate `on` event or answer",
-			"It may not name an answer of a named guarded operation",
-			"A distinct earlier query may return the same shape",
+			"`on` or `ends` triggers and a starting operation's later answer are not guaranteed",
+			"immediate `on` event or returned or rejected answer is a completed occurrence",
+			"The current guarded invocation's future answer or raised event alone supplies no fact",
+			"earlier completed occurrence can supply a fact even when its event or operation has the same identity",
 		],
 	},
 	{
@@ -476,13 +484,11 @@ const currentFacts: Array<{
 		file: "packages/skill/skill/SKILL.md",
 		sentences: [
 			"a starting event's payload is held",
-			"its `on` events or answers may occur later",
-			"A policy's immediate `on` event or answer is held",
-			"A named operation never lends its own future answer, though a",
-			"distinct earlier query may return the same shape",
-			"A fact is reachable only when every",
-			"independent named guard and caller or reactor-trigger path holds it",
-			"sequential local fronts retain their held facts, but a sibling path does not supply one",
+			"its `on` or `ends` triggers and a starting operation's later answer are not guaranteed",
+			"immediate `on` event or returned or rejected answer is a completed occurrence",
+			"The current guarded invocation's future answer or raised event alone supplies no fact",
+			"every finite admitted entry-to-guard caller or reactor walk holds it",
+			"a closed internal caller cycle with no entry supplies none",
 		],
 	},
 	{
@@ -491,19 +497,20 @@ const currentFacts: Array<{
 		sentences: [
 			"a front on its local call chain",
 			"A process holds a starting event's payload",
-			"does not assume its `on` events or answers before a command it issues",
-			"a policy holds its immediate `on` event or answer",
-			"No named operation lends its future answer, though a distinct earlier query may return the same shape",
-			"A fact must be held on every independent named guard and caller or reactor-trigger path",
-			"sequential local fronts retain their held facts, but a sibling path does not supply one",
+			"its `on` or `ends` triggers and a starting operation's later answer are not guaranteed",
+			"immediate `on` event or returned or rejected answer is a completed occurrence",
+			"The current guarded invocation's future answer or raised event alone supplies no fact",
+			"every finite admitted entry-to-guard caller or reactor walk",
+			"a closed internal caller cycle with no entry supplies none",
 		],
 	},
 	{
 		fact: "precondition facts are reliable on every route to the guard (tactical guide)",
 		file: "apps/docs/docs/3-core/3-tactical-design.md",
 		sentences: [
-			"A fact must be held on every independent named guard and caller or reactor-trigger path to the guard",
-			"sequential local fronts retain their held facts, but a sibling path does not supply one",
+			"A fact must be held on every finite admitted entry-to-guard caller or reactor walk",
+			"an uninformed alternate entry removes them",
+			"a closed internal caller cycle with no entry supplies none",
 		],
 	},
 	{
@@ -512,6 +519,15 @@ const currentFacts: Array<{
 		sentences: [
 			"a process start-event payload, or a policy's immediate event or answer trigger",
 			"A process `on` trigger or a starting operation's later answer is not assumed before a process-issued command",
+		],
+	},
+	{
+		fact: "generated validation guidance preserves prior occurrences and finite route reach",
+		file: "packages/skill/skill/references/validation-rules.md",
+		sentences: [
+			"already received from a prior occurrence and remains available even if the new invocation can produce the same identity",
+			"Every finite caller route admitted by an entry must hold the fact",
+			"This reach calculation does not prove a reaction can bootstrap or avoid a cycle",
 		],
 	},
 	{

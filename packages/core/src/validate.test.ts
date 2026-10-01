@@ -2995,7 +2995,7 @@ describe("precondition facts across a local call chain", () => {
 	}, 1_000);
 
 	it.each(["policy", "process"] as const)(
-		"does not borrow an event raised later by the outer front from its %s trigger",
+		"holds the %s trigger's payload before the outer front that raises it again",
 		(kind) => {
 			const ws = new Workspace("Review", { description: "", version: "0" });
 			const bc = ws
@@ -3031,21 +3031,25 @@ describe("precondition facts across a local call chain", () => {
 				bc.addProcess("Retry", { description: "" })
 					.starts(future)
 					.issues(front);
-			const rule = bc
-				.addInvariant("Fact required", {
-					description: "",
-					precondition: true,
-				})
-				.constrains(decide, field);
+			bc.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			}).constrains(decide, field);
 
+			// The trigger is a completed prior occurrence on its route; whether
+			// the ring ever starts is the reaction cycle's question.
 			expect(
 				[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
 					candidate
 						.validate()
-						.filter((d) => d.rule === "invariant-in-context")
-						.map((d) => d.ref),
+						.filter(
+							(d) =>
+								d.rule === "invariant-in-context" ||
+								d.rule === "reaction-cycle",
+						)
+						.map((d) => d.rule),
 				),
-			).toEqual([[rule.ref], [rule.ref]]);
+			).toEqual([["reaction-cycle"], ["reaction-cycle"]]);
 		},
 	);
 });
@@ -3341,7 +3345,7 @@ describe("precondition facts from policy answer triggers", () => {
 		},
 	);
 
-	it("does not treat the issued operation's own answer as already held", () => {
+	it("holds the answer that triggered the policy before the operation it issues again", () => {
 		const ws = new Workspace("Review", { description: "", version: "0" });
 		const bc = ws
 			.addDomain("D", { description: "" })
@@ -3362,22 +3366,360 @@ describe("precondition facts from policy answer triggers", () => {
 		bc.addPolicy("Decide from its answer", { description: "" })
 			.on(decide.returned())
 			.issues(decide);
-		const rule = bc
-			.addInvariant("Fact required", {
-				description: "",
-				precondition: true,
-			})
-			.constrains(decide, field);
+		bc.addInvariant("Fact required", {
+			description: "",
+			precondition: true,
+		}).constrains(decide, field);
 
+		// The trigger is a completed prior occurrence, so its answer is held;
+		// whether the ring ever starts is the reaction cycle's question.
 		expect(
 			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
 				candidate
 					.validate()
-					.filter((d) => d.rule === "invariant-in-context")
-					.map((d) => d.ref),
+					.filter(
+						(d) =>
+							d.rule === "invariant-in-context" || d.rule === "reaction-cycle",
+					)
+					.map((d) => d.rule),
 			),
-		).toEqual([[rule.ref], [rule.ref]]);
+		).toEqual([["reaction-cycle"], ["reaction-cycle"]]);
 	});
+});
+
+describe("precondition facts held on every finite route to a guard", () => {
+	type Scope = "aggregate" | "context";
+	type Shape = ReturnType<BoundedContext["addSchema"]>;
+
+	function base(scope: Scope) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const fact = bc.addSchema("Fact");
+		const value = fact.addAttribute("value", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const op = (
+			name: string,
+			extra: { internal?: boolean; returns?: Shape; rejects?: Shape[] } = {},
+		) =>
+			service.provides(name, { description: "", type: "operation", ...extra });
+		const read = op("Read", { returns: fact });
+		const event = (name: string, schema?: Shape) =>
+			service.provides(name, {
+				description: "",
+				type: "event",
+				...(schema ? { schema } : {}),
+			});
+		const constrain = (guard: Consumable) =>
+			(scope === "aggregate" ? aggregate : bc)
+				.addInvariant("Fact required", { description: "", precondition: true })
+				.constrains(guard, value);
+		return { ws, bc, service, fact, read, op, event, constrain };
+	}
+
+	function rulesIn(ws: Workspace, rule: string) {
+		return [
+			ws,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+		].map((candidate) =>
+			candidate
+				.validate()
+				.filter((d) => d.rule === rule)
+				.map((d) => d.ref),
+		);
+	}
+
+	const scopes = ["aggregate", "context"] as const;
+	const triggers = ["return", "rejection", "event"] as const;
+
+	function publisherIsGuardCaller(
+		scope: Scope,
+		trigger: (typeof triggers)[number],
+		options: {
+			frontFetches: boolean;
+			policyIssuesFront: boolean;
+			alternate: boolean;
+		},
+	) {
+		const { ws, bc, service, fact, read, op, event, constrain } = base(scope);
+		const front = op(
+			"Front",
+			trigger === "return"
+				? { returns: fact }
+				: trigger === "rejection"
+					? { rejects: [fact] }
+					: {},
+		);
+		const guard = op("Guard", { internal: true });
+		if (options.frontFetches) service.consumes(read, { by: [front] });
+		service.consumes(guard, { by: [front] });
+		let heard: Consumable | ReturnType<Consumable["returned"]>;
+		if (trigger === "event") {
+			heard = event("Fact Seen", fact);
+			front.raises(heard);
+		} else
+			heard = trigger === "return" ? front.returned() : front.rejected(fact);
+		const policy = bc
+			.addPolicy("On front", { description: "" })
+			.on(heard)
+			.issues(...(options.policyIssuesFront ? [front, guard] : [guard]));
+		if (options.alternate) {
+			const alternate = event("Alternate");
+			op("Publish Alternate", { internal: true }).raises(alternate);
+			policy.on(alternate);
+		}
+		const rule = constrain(guard);
+		return { ws, rule };
+	}
+
+	it.each(scopes.flatMap((scope) => triggers.map((t) => [scope, t] as const)))(
+		"%s precondition keeps an immediate %s trigger whose publisher calls the guard",
+		(scope, trigger) => {
+			const { ws } = publisherIsGuardCaller(scope, trigger, {
+				frontFetches: true,
+				policyIssuesFront: true,
+				alternate: false,
+			});
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+			expect(rulesIn(ws, "reaction-cycle").map((it) => it.length > 0)).toEqual([
+				true,
+				true,
+			]);
+		},
+	);
+
+	it.each(scopes.flatMap((scope) => triggers.map((t) => [scope, t] as const)))(
+		"%s precondition refuses a %s trigger beside an alternative trigger without the fact",
+		(scope, trigger) => {
+			const { ws, rule } = publisherIsGuardCaller(scope, trigger, {
+				frontFetches: true,
+				policyIssuesFront: true,
+				alternate: true,
+			});
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([
+				[rule.ref],
+				[rule.ref],
+			]);
+		},
+	);
+
+	it.each(scopes.flatMap((scope) => triggers.map((t) => [scope, t] as const)))(
+		"%s precondition refuses a %s trigger whose direct caller route never held the fact",
+		(scope, trigger) => {
+			const { ws, rule } = publisherIsGuardCaller(scope, trigger, {
+				frontFetches: false,
+				policyIssuesFront: false,
+				alternate: false,
+			});
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([
+				[rule.ref],
+				[rule.ref],
+			]);
+		},
+	);
+
+	function recursion(
+		scope: Scope,
+		shape: "none" | "self" | "mutual",
+		entryFetches: boolean,
+	) {
+		const { ws, service, read, op, constrain } = base(scope);
+		const entry = op("Entry");
+		const evaluate = op("Evaluate", { internal: true });
+		if (entryFetches) service.consumes(read, { by: [entry] });
+		if (shape === "none") service.consumes(evaluate, { by: [entry] });
+		if (shape === "self") service.consumes(evaluate, { by: [entry, evaluate] });
+		if (shape === "mutual") {
+			const helper = op("Helper", { internal: true });
+			service.consumes(evaluate, { by: [entry, helper] });
+			service.consumes(helper, { by: [evaluate] });
+		}
+		const rule = constrain(evaluate);
+		return { ws, rule };
+	}
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["none", "self", "mutual"] as const).map((s) => [scope, s] as const),
+		),
+	)(
+		"%s precondition keeps an informed entry's fact through %s recursion",
+		(scope, shape) => {
+			const { ws } = recursion(scope, shape, true);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+			expect(rulesIn(ws, "reaction-cycle").map((it) => it.length > 0)).toEqual(
+				shape === "none" ? [false, false] : [true, true],
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["none", "self", "mutual"] as const).map((s) => [scope, s] as const),
+		),
+	)(
+		"%s precondition does not invent a fact through %s recursion from an uninformed entry",
+		(scope, shape) => {
+			const { ws, rule } = recursion(scope, shape, false);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([
+				[rule.ref],
+				[rule.ref],
+			]);
+		},
+	);
+
+	function twoEntriesIntoCycle(
+		scope: Scope,
+		alternative: "none" | "public" | "local" | "reactor",
+		memberFetches: boolean,
+	) {
+		const { ws, bc, service, read, op, event, constrain } = base(scope);
+		const entryA = op("Entry A");
+		const entryB = op("Entry B");
+		const a = op("A", { internal: true });
+		const b = op("B", { internal: true });
+		const intoB = [entryB, a];
+		if (alternative === "public") intoB.push(op("Other"));
+		if (alternative === "local") intoB.push(op("Other", { internal: true }));
+		if (alternative === "reactor") {
+			const heard = event("Heard");
+			op("Publish", { internal: true }).raises(heard);
+			bc.addPolicy("On heard", { description: "" }).on(heard).issues(b);
+		}
+		service.consumes(read, {
+			by: memberFetches ? [entryA, entryB, b] : [entryA, entryB],
+		});
+		service.consumes(a, { by: [entryA, b] });
+		service.consumes(b, { by: intoB });
+		const rule = constrain(a);
+		return { ws, rule };
+	}
+
+	it.each(scopes)(
+		"%s precondition keeps a fact two informed entries bring into one cycle",
+		(scope) => {
+			const { ws } = twoEntriesIntoCycle(scope, "none", false);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["public", "local", "reactor"] as const).map((a) => [scope, a] as const),
+		),
+	)(
+		"%s precondition refuses a cycle with an uninformed %s entry",
+		(scope, alternative) => {
+			const { ws, rule } = twoEntriesIntoCycle(scope, alternative, false);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([
+				[rule.ref],
+				[rule.ref],
+			]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["public", "local", "reactor"] as const).map((a) => [scope, a] as const),
+		),
+	)(
+		"%s precondition accepts an uninformed %s entry whose cycle member fetches the fact",
+		(scope, alternative) => {
+			const { ws } = twoEntriesIntoCycle(scope, alternative, true);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	function closedCycle(
+		scope: Scope,
+		order: "guard first" | "partner first",
+		fetcher: "guard" | "partner",
+		reachableGuard: boolean,
+	) {
+		const { ws, service, read, op, constrain } = base(scope);
+		const [guard, partner] =
+			order === "guard first"
+				? [op("Guard", { internal: true }), op("Partner", { internal: true })]
+				: [
+						op("Partner", { internal: true }),
+						op("Guard", { internal: true }),
+					].reverse();
+		const callers = [partner];
+		if (reachableGuard) {
+			const entry = op("Entry");
+			service.consumes(read, { by: [entry] });
+			callers.push(entry);
+		} else
+			service.consumes(read, { by: [fetcher === "guard" ? guard : partner] });
+		if (order === "guard first") {
+			service.consumes(guard, { by: callers });
+			service.consumes(partner, { by: [guard] });
+		} else {
+			service.consumes(partner, { by: [guard] });
+			service.consumes(guard, { by: callers });
+		}
+		const rule = constrain(guard);
+		return { ws, rule };
+	}
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["guard first", "partner first"] as const).flatMap((order) =>
+				(["guard", "partner"] as const).map(
+					(fetcher) => [scope, order, fetcher] as const,
+				),
+			),
+		),
+	)(
+		"%s precondition holds nothing in a closed cycle (%s, %s fetches)",
+		(scope, order, fetcher) => {
+			const { ws, rule } = closedCycle(scope, order, fetcher, false);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([
+				[rule.ref],
+				[rule.ref],
+			]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["guard first", "partner first"] as const).map(
+				(order) => [scope, order] as const,
+			),
+		),
+	)(
+		"%s precondition keeps an informed entry beside a cycle it closes (%s)",
+		(scope, order) => {
+			const { ws } = closedCycle(scope, order, "partner", true);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	it.each(scopes)(
+		"%s precondition ignores a predecessor no entry ever reaches",
+		(scope) => {
+			const { ws, service, read, op, constrain } = base(scope);
+			const entry = op("Entry");
+			const guard = op("Guard", { internal: true });
+			const x = op("X", { internal: true });
+			const y = op("Y", { internal: true });
+			service.consumes(read, { by: [entry] });
+			service.consumes(guard, { by: [entry, y] });
+			service.consumes(y, { by: [x] });
+			service.consumes(x, { by: [y] });
+			constrain(guard);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
 });
 
 describe("precondition event timing in a process", () => {
