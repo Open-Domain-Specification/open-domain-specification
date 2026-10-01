@@ -1224,12 +1224,16 @@ function guardChain(guard: Consumable): {
  * Two ways a call belongs to a guard, and both use the effective caller from
  * decision 21. The guard makes the call itself, or a front that calls the
  * guard makes it (the {@link guardChain}). A sole operation with omitted `by`
- * is inferred in both places; an ambiguous consumer gains no caller.
+ * is inferred in both places; an ambiguous consumer gains no caller. The
+ * front's call to the guard is not a fetched fact: the guard's own answer
+ * does not exist until after the precondition runs. Another call may return
+ * the same shape, so exclude that call by identity rather than by schema.
  */
 function fetchedByGuard(guard: Consumable): DataSchema[] {
 	const { consumptions, callers } = guardChain(guard);
 	const answers: DataSchema[] = [];
 	for (const consumption of consumptions) {
+		if (consumption.consumable === guard) continue;
 		const { returns } = consumption.consumable;
 		if (!returns) continue;
 		if (!operationCallers(consumption).some((caller) => callers.has(caller)))

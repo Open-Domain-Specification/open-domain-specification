@@ -2226,6 +2226,102 @@ describe("invariant-in-context", () => {
 });
 
 describe("invariant reach through inferred operation callers", () => {
+	function futureAnswer(
+		scope: "aggregate" | "context",
+		fronted: boolean,
+		explicit: boolean,
+		independentlyFetched = false,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		const root = aggregate.addRootEntity("Order", { description: "" });
+		root.addAttribute("id", { type: "uuid", identity: true });
+		const answer = bc.addSchema("FutureAnswer");
+		const result = answer.addAttribute("result", { type: "string" });
+		const decide = bc
+			.addService("Decision", { description: "", type: "application" })
+			.provides("Decide", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: answer,
+			});
+		if (fronted) {
+			const front = bc.addService("Front", {
+				description: "",
+				type: "application",
+			});
+			const call = front.provides("Call", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			front.consumes(decide, explicit ? { by: [call] } : {});
+			if (independentlyFetched) {
+				const lookup = bc
+					.addService("Lookup", { description: "", type: "application" })
+					.provides("GetEarlierAnswer", {
+						description: "",
+						type: "operation",
+						internal: true,
+						returns: answer,
+					});
+				front.consumes(lookup, explicit ? { by: [call] } : {});
+			}
+		}
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("CheckFutureAnswer", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, result);
+		return { ws, rule };
+	}
+
+	it.each([
+		["aggregate", false, false],
+		["aggregate", true, false],
+		["aggregate", true, true],
+		["context", false, false],
+		["context", true, false],
+		["context", true, true],
+	] as const)(
+		"%s precondition rejects its own future answer, front=%s explicit=%s",
+		(scope, fronted, explicit) => {
+			const { ws, rule } = futureAnswer(scope, fronted, explicit);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`)
+						.map((d) => d.ref),
+				).toEqual([rule.ref]);
+		},
+	);
+
+	it.each([
+		["aggregate", false],
+		["aggregate", true],
+		["context", false],
+		["context", true],
+	] as const)(
+		"%s precondition still accepts a separate fetch of the same shape, explicit=%s",
+		(scope, explicit) => {
+			const { ws } = futureAnswer(scope, true, explicit, true);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`),
+				).toEqual([]);
+		},
+	);
+
 	it.each([false, true])(
 		"accepts the same fetched answer with explicit by=%s",
 		(explicit) => {

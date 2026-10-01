@@ -62,3 +62,7 @@ The second amendment let a precondition reach what the guard or its front fetche
 ## Note (2026-10-01)
 
 `precondition-names-operation` used to stop asking once it found any operation, so a rule could name a local event beside it and all readers called that event an operation checked before execution. The same mixed target was also accepted on a modelled postcondition and an unflagged rule. An event is not another call guard, so `invariant-guards-are-operations` now refuses event targets on every modelled aggregate or context invariant, even when an operation is present (issue #128, card 178). This does not narrow the third amendment's already-heard payload attributes, and decision 28 still allows an external context to guarantee its own published event's payload.
+
+## Note (2026-10-01, second)
+
+The second amendment admits an answer a front fetched before the guard ran; it never admits the guarded operation's own answer. The validator counted the front's consumption of that very guard as a fetched fact, so adding a front made a precondition on a future answer valid. That consumption is now excluded by operation identity from fetched facts. A different earlier call returning the same schema still supplies a fact the precondition may read (issue #131, card 181). The reach follows when the fact exists, rather than excluding a shape globally.
