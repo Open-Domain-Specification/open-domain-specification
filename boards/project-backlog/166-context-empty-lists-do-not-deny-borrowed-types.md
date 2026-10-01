@@ -4,8 +4,8 @@ labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Seventh signoff round found false empty states for borrowed types; correction and focused test pass, integrated gate pending
-progress: 85
+status: Correction passed on a2cef010 and both eighth-round reviewers confirmed it; final integrated signoff pending
+progress: 95
 clean-code-swept: true
 updatedAt: 2026-10-01T04:15:00Z
 ---
@@ -18,12 +18,12 @@ Issue #116. The seventh signoff round's OpenAI Astra low review reproduced a val
 - [x] Empty Value objects and Schemas lists say only that the context declares none locally
 - [x] A zero-diagnostic borrowed Money/CardRequest fixture proves the copy before and after JSON round-trip
 - [x] The lists still enumerate locally declared elements; borrowed uses remain visible on the holder or consumable page
-- [ ] Pinned model diagnostics and generated outputs are unchanged
+- [x] Pinned model diagnostics and generated outputs are unchanged
 
 ## Gates
 
 - [x] Focused ContextPage unit test and Svelte check
-- [ ] `bash scripts/verify-all.sh` on the corrected integrated head
+- [x] `bash scripts/verify-all.sh` passed on `a2cef010`: pages 1014, browser 430 passed/20 skipped, all model and generated checks green
 - [ ] Exact-head final signoff after the gate
 
 ## Journal

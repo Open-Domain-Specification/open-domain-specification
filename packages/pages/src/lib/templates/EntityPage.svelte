@@ -59,7 +59,7 @@ const incomingColumns: Column[] = [
 	{#snippet meta()}
 		{#if e.root}<Keyword
 				text="aggregate root"
-				title="Every change to the aggregate enters through the root, which enforces the invariants."
+				title="Every change to the aggregate enters through the root, which enforces the aggregate's invariants."
 			/>{/if}
 	{/snippet}
 	{#snippet facts()}
@@ -136,8 +136,8 @@ const incomingColumns: Column[] = [
 <InvariantsSection
 	{invariants}
 	ownerRelativeTo={e.boundedcontext}
-	lead="Rules that explicitly name this entity, and the aggregate or context that keeps each one."
-	emptyText="No invariant names this entity."
+	lead="Rules that name this entity or its attributes, and the aggregate or context that keeps each one."
+	emptyText="No invariant names this entity or its attributes."
 />
 
 <LanguageSection target={e} />

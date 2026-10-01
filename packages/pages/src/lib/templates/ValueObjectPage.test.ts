@@ -30,6 +30,11 @@ describe("ValueObjectPage", () => {
 			description: "The held amount is positive.",
 		});
 		rule.constrains(money);
+		card
+			.addInvariant("PositiveAmount", {
+				description: "The amount is positive.",
+			})
+			.constrains(money.attributes.get("amount")!);
 
 		for (const ws of [workspace, Workspace.fromSchema(workspace.toSchema())]) {
 			expect(ws.validate()).toEqual([]);
@@ -45,15 +50,18 @@ describe("ValueObjectPage", () => {
 				args: { valueobject },
 			});
 			const section = container.querySelector("#constrained-by") as HTMLElement;
-			expect(section.querySelectorAll("tbody tr")).toHaveLength(1);
+			expect(section.querySelectorAll("tbody tr")).toHaveLength(2);
 			expect(section).toHaveTextContent("PositiveBalance");
+			expect(section).toHaveTextContent("PositiveAmount");
 			expect(section).not.toHaveTextContent(
-				"No aggregate or context rule names this value object.",
+				"No aggregate or context rule names this value object or its attributes.",
 			);
 			expect(
 				[...section.querySelectorAll("thead th")].map((h) => h.textContent),
 			).toEqual(["Invariant", "Kept by", "Description"]);
-			const row = section.querySelector("tbody tr") as HTMLElement;
+			const row = [...section.querySelectorAll("tbody tr")].find((tr) =>
+				tr.textContent?.includes("PositiveBalance"),
+			) as HTMLElement;
 			expect(row.querySelectorAll("a")).toHaveLength(3);
 			expect(row.querySelectorAll("td")[1]).toHaveTextContent("Cards / Card");
 			expect(row.querySelectorAll("a")[0]).toHaveAttribute("href", rule.ref);

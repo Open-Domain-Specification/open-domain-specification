@@ -4,8 +4,8 @@ labels: [model, bug]
 priority: medium
 agent: lead
 live: false
-status: Lead audit found inherited relation and copy gaps; corrections and focused tests pass, integrated gate pending
-progress: 85
+status: Corrections passed on a2cef010 and both eighth-round reviewers confirmed them; final integrated signoff pending
+progress: 95
 clean-code-swept: true
 updatedAt: 2026-10-01T04:15:00Z
 ---
@@ -22,12 +22,12 @@ Issue #118. While correcting issues #116 and #117, the lead audited the other lo
 - [x] Focused entity-kind and value-kind tests, and updated empty-state assertions
 - [x] Value-object direct attribute list says it reads declared attributes; the broader context list covers inherited uses
 - [x] A borrowed value's detail page includes a context invariant that names it, showing the context once as keeper
-- [ ] Pinned model diagnostics and generated outputs are unchanged
+- [x] Pinned model diagnostics and generated outputs are unchanged
 
 ## Gates
 
 - [x] Focused page tests and Svelte check
-- [ ] `bash scripts/verify-all.sh` on the corrected integrated head
+- [x] `bash scripts/verify-all.sh` passed on `a2cef010`: pages 1014, browser 430 passed/20 skipped, all model and generated checks green
 - [ ] Exact-head final signoff after the gate
 
 ## Journal

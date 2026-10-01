@@ -288,12 +288,107 @@ describe("toDoc", () => {
 		const contextDoc = docs["boundedcontexts/lending/index.md"];
 		expect(contextDoc).toContain("## Invariants");
 		expect(contextDoc).toContain(
-			"| One open application per customer | A customer has at most one open application | Application, Submit Application |",
+			"| One open application per customer | A customer has at most one open application | Checked by | Application, Submit Application |",
 		);
 		// The rule belongs to the context, so the aggregate page does not claim it.
 		expect(
 			docs["boundedcontexts/lending/aggregates/application/index.md"],
 		).toContain("> No invariants.");
+	});
+
+	it("distinguishes a context check before a call from a guarantee of its answer", async () => {
+		const workspace = new Workspace("Quotes", {
+			description: "",
+			version: "test",
+		});
+		const context = workspace
+			.addDomain("Sales", { description: "" })
+			.addSubdomain("Quoting", { description: "", type: "core" })
+			.addBoundedcontext("Quotes", { description: "" });
+		const request = context.addSchema("Request", { description: "" });
+		const requestedAmount = request.addAttribute("amount", { type: "number" });
+		const answer = context.addSchema("Answer", { description: "" });
+		const returnedAmount = answer.addAttribute("amount", { type: "number" });
+		const service = context.addService("Quoter", {
+			type: "application",
+			description: "",
+		});
+		const quote = service.provides("Quote", {
+			type: "operation",
+			description: "",
+			internal: true,
+			schema: request,
+			returns: answer,
+		});
+		context
+			.addInvariant("PositiveRequest", {
+				description: "The requested amount is positive.",
+				precondition: true,
+			})
+			.constrains(requestedAmount, quote);
+		context
+			.addInvariant("NonnegativeAnswer", {
+				description: "The returned amount is nonnegative.",
+				postcondition: true,
+			})
+			.constrains(returnedAmount, quote);
+
+		for (const ws of [
+			workspace,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(workspace.toSchema()))),
+		]) {
+			expect(ws.validate()).toEqual([]);
+			const docs = await toDoc(ws);
+			const page = docs["boundedcontexts/quotes/index.md"];
+			expect(page).toContain("| Name | Description | Check | Constrains |");
+			expect(page).toContain(
+				"| PositiveRequest | The requested amount is positive. | Checked before | Request.amount, Quote |",
+			);
+			expect(page).toContain(
+				"| NonnegativeAnswer | The returned amount is nonnegative. | Checked after | Answer.amount, Quote |",
+			);
+			expect(page).not.toContain(
+				"each names the operation that checks it before acting",
+			);
+		}
+	});
+
+	it("calls an external event postcondition a payload guarantee", async () => {
+		const workspace = new Workspace("Feeds", {
+			description: "",
+			version: "test",
+		});
+		const context = workspace.addBoundedContext("Scheme", {
+			description: "",
+			external: true,
+		});
+		const payload = context.addSchema("Notification", { description: "" });
+		const amount = payload.addAttribute("amount", { type: "number" });
+		const service = context.addService("Feed", {
+			type: "application",
+			description: "",
+		});
+		const captured = service.provides("Captured", {
+			type: "event",
+			description: "",
+			pattern: "published-language",
+			schema: payload,
+		});
+		context
+			.addInvariant("NonnegativeCapture", {
+				description: "The captured amount is nonnegative.",
+				postcondition: true,
+			})
+			.constrains(amount, captured);
+
+		for (const ws of [workspace, Workspace.fromSchema(workspace.toSchema())]) {
+			expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+			const page = (await toDoc(ws))["boundedcontexts/scheme/index.md"];
+			expect(page).toContain(
+				"| NonnegativeCapture | The captured amount is nonnegative. | Guaranteed on event | Notification.amount, Captured |",
+			);
+			expect(page).not.toContain("checks it before acting");
+		}
 	});
 
 	it("says a context has no invariants across aggregates when it has none", async () => {
@@ -304,7 +399,7 @@ describe("toDoc", () => {
 		workspace.addBoundedContext("Quiet", { description: "" });
 		const docs = await toDoc(workspace);
 		expect(docs["boundedcontexts/quiet/index.md"]).toContain(
-			"> No invariants across aggregates.",
+			"> No context invariants declared.",
 		);
 	});
 

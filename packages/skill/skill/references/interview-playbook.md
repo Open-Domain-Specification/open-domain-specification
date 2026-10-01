@@ -166,7 +166,7 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   aggregate's invariant, checked every time that one is saved. All of them together — at most
   one open application per customer, one active offer per seller and SKU, a daily total — is
   the context's invariant: `boundedContext.addInvariant(...)`, constraining what it counts in
-  any of the context's aggregates. Then ask "who checks that before acting?" and name that
+  any of the context's aggregates. Then ask "which operation checks it, and when?" and name that
   operation in `constrains` too; nothing keeps a rule across instances as a side effect of
   being saved, so a context invariant without a guard is a rule nobody keeps.
 - "Does a <root> point at things in another cluster, for example an order pointing at a

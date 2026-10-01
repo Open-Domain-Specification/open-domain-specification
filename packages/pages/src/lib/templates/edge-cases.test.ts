@@ -53,6 +53,13 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(rows[0]).toContain("Cross-Instance Invariant");
 		expect(rows[0]).toContain("Plain Entity");
 		expect(rows[0]).toContain("Silent Operation");
+		expect(section).toHaveTextContent("Checked After Invariant");
+		expect(section).toHaveTextContent(
+			"Each rule's page says how it is checked or guaranteed.",
+		);
+		expect(section).not.toHaveTextContent(
+			"each names the operation that checks it before acting",
+		);
 		// A rule naming nothing binds the whole boundary, and here that is the
 		// context rather than an aggregate.
 		expect(rows[1]).toContain("whole context");
@@ -294,7 +301,7 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(text).toContain("No relations.");
 		expect(text).toContain("This value keeps no rule of its own.");
 		expect(text).toContain(
-			"No aggregate or context rule names this value object.",
+			"No aggregate or context rule names this value object or its attributes.",
 		);
 	});
 
@@ -429,7 +436,7 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(own.textContent).toContain("whole value");
 		const named = container.querySelector("#constrained-by") as HTMLElement;
 		expect(named.textContent).toContain(
-			"No aggregate or context rule names this value object.",
+			"No aggregate or context rule names this value object or its attributes.",
 		);
 	});
 

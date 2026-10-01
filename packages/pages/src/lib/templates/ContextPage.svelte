@@ -83,8 +83,8 @@ const processes = $derived([...bc.processes.values()]);
 const terms = $derived([...bc.glossary.values()]);
 const schemas = $derived([...bc.schemas.values()]);
 const valueobjects = $derived([...bc.valueobjects.values()]);
-// The rules no single instance can keep: they belong to the context and each
-// names the operation that checks it before acting (decision 27).
+// Rules checked or guaranteed at the context boundary, including operation
+// contracts and an external event's published payload (decisions 27–28).
 const invariants = $derived([...bc.invariants.values()]);
 const members = $derived([...aggregates, ...services]);
 const provides = $derived(members.flatMap((m) => [...m.consumables.values()]));
@@ -286,8 +286,8 @@ const termColumns: Column[] = [
 	id="invariants"
 	title="Invariants"
 	constrains
-	lead="Rules that hold across this context's instances and aggregates: uniqueness, quotas, limits. No one instance can see the others, so each names the operation that checks it before acting."
-	emptyText="No invariants across aggregates. Every rule here is one an aggregate keeps on its own."
+	lead="Rules this context checks or guarantees, including cross-instance limits and contracts of its operations or events. Each rule's page says how it is checked or guaranteed."
+	emptyText="No context invariants declared."
 	problems={invariants.flatMap((i) => problemsUnder(model, i.ref))}
 />
 

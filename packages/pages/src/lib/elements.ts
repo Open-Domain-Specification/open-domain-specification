@@ -1,6 +1,5 @@
 import type {
 	Aggregate,
-	Attribute,
 	Consumable,
 	Entity,
 	EntityRelation,
@@ -11,6 +10,7 @@ import type {
 	ValueObject,
 	Workspace,
 } from "@open-domain-specification/core";
+import { Attribute } from "@open-domain-specification/core";
 
 /**
  * The workspace lookups every layer asks for — which terms name an element,
@@ -82,18 +82,23 @@ export function relationsNaming(
 	return incoming;
 }
 
-/** Aggregate and context rules that explicitly name an element, in workspace order. */
+/** Aggregate and context rules naming an element or one of its attributes. */
 export function invariantsNaming(
 	ws: Workspace,
 	target: Entity | ValueObject,
 ): Invariant[] {
 	const named: Invariant[] = [];
+	const attributes = new Set(target.allAttributes);
+	const namesTarget = (invariant: Invariant) =>
+		invariant.targets.some(
+			(it) => it === target || (it instanceof Attribute && attributes.has(it)),
+		);
 	for (const bc of ws.boundedcontexts.values()) {
 		for (const invariant of bc.invariants.values())
-			if (invariant.targets.includes(target)) named.push(invariant);
+			if (namesTarget(invariant)) named.push(invariant);
 		for (const aggregate of bc.aggregates.values()) {
 			for (const invariant of aggregate.invariants.values())
-				if (invariant.targets.includes(target)) named.push(invariant);
+				if (namesTarget(invariant)) named.push(invariant);
 		}
 	}
 	return named;

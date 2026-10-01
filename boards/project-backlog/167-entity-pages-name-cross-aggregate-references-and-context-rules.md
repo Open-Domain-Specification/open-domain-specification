@@ -4,8 +4,8 @@ labels: [model, bug]
 priority: high
 agent: lead
 live: false
-status: Seventh signoff round found incoming reference and context rule omissions; correction and focused tests pass, integrated gate pending
-progress: 85
+status: Correction passed on a2cef010 and both eighth-round reviewers confirmed it; attribute-rule follow-up #120 in progress
+progress: 95
 clean-code-swept: true
 updatedAt: 2026-10-01T04:15:00Z
 ---
@@ -19,15 +19,16 @@ Issue #117. The seventh signoff round's Claude Opus 5.5 high review reproduced t
 - [x] Constrained by scans aggregate and context invariants naming the entity and shows which boundary keeps each rule
 - [x] Petstore Carrier and NorthBank LoanApplication regressions render before and after JSON round-trip with working links and no false empty claims
 - [x] A zero-diagnostic kind fixture checks inherited outgoing and incoming relation readings
-- [ ] Pinned model diagnostics and generated outputs are unchanged
+- [x] Pinned model diagnostics and generated outputs are unchanged
 
 ## Gates
 
 - [x] Focused EntityPage tests and Svelte check
-- [ ] `bash scripts/verify-all.sh` on the corrected integrated head
+- [x] `bash scripts/verify-all.sh` passed on `a2cef010`: pages 1014, browser 430 passed/20 skipped, all model and generated checks green
 - [ ] Exact-head final signoff after the gate
 
 ## Journal
 
 - **lead** (2026-10-01): Issue #117 records the reader story. The old incoming lookup stopped at the entity's aggregate; the rule lookup stopped at aggregate rules. The shared Svelte page now reads direct incoming relations and rules throughout the workspace, and the optional Kept by column distinguishes aggregate and context invariants. Its empty relation state says direct, leaving parent-typed possible references to the broader model. The three focused cases pass. No schema or validator rule changed.
 - **lead** (2026-10-01): Clean-code pass: workspace lookups live once in the pages leaf module, the entity page only formats their result, and the invariant table shares its existing optional owner column. The loops are finite and preserve workspace order; no unchecked product lookup or high-scored clean-code finding remains. Focused tests, Svelte check and format pass.
+- **lead** (2026-10-01): The eighth Opus review confirmed direct entity and context rule fixes but found the adjacent attribute-target omission. Issue #120/card 170 corrects that reach in the shared lookup; this card's direct-target claim remains true.

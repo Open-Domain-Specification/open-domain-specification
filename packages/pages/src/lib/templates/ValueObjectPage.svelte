@@ -143,8 +143,8 @@ const relationColumns: Column[] = [
 	title="Constrained by"
 	invariants={constrainedBy}
 	ownerRelativeTo={bc}
-	lead="Rules of aggregates and contexts that hold this value and explicitly name it. The Kept by column shows whose rule each one is."
-	emptyText="No aggregate or context rule names this value object."
+	lead="Rules of aggregates and contexts that name this value or its attributes. The Kept by column shows whose rule each one is."
+	emptyText="No aggregate or context rule names this value object or its attributes."
 />
 
 <LanguageSection target={v} />

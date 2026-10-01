@@ -301,11 +301,12 @@ holding the value is that aggregate's.
 
 An invariant may instead belong to the bounded context rather than to one
 aggregate: one open application per customer, one active offer per seller
-and SKU, a daily transfer limit are true across instances, or across
-aggregates, of a context — no single instance can see the others, so the
-rule holds only because something checks it before acting. A context
-invariant constrains entities and attributes of any aggregate in the
-context and must name at least one operation of the context that checks it
+and SKU, a daily transfer limit concern several instances or aggregates.
+No single instance can see the others, so the rule names the operation that
+checks it. A context invariant may also state a precondition or postcondition
+on an operation whose contract no aggregate holds. It constrains entities and
+attributes of any aggregate in the context. In a context we own, an unflagged
+rule must name at least one operation of the context that checks it
 (`context-invariant-is-checked`); nothing it constrains may reach outside the
 context (`invariant-in-context`). It is always a check, and the model records
 who checks it, not how strongly the store holds it: whether a unique index or
@@ -322,6 +323,11 @@ wallet's balance and an escrow account's balance in a different context can
 never be compared inside one save, so keeping them equal is a policy of one
 context that reacts to the other's postings and issues its own reconciling
 operation, not an invariant reaching across the boundary.
+
+An external context may also mark a rule on one of its own events as a
+`postcondition`. That is a guarantee about the payload it sends, not a check
+after an operation: a payment provider can state what every notification
+carries even when it publishes no operation that raises one.
 
 ## Schemas
 

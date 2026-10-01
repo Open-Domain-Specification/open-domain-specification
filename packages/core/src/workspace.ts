@@ -2295,15 +2295,17 @@ export class Invariant
 	precondition: boolean;
 	/**
 	 * Whether the rule is a postcondition: a guarantee about what the operation
-	 * it names answers with. Every returned itinerary meets the requested
-	 * deadline; every quoted premium is inside the band the schedule allows.
+	 * it names answers with, or what an external context's event carries.
+	 * Every returned itinerary meets the requested deadline; every quoted
+	 * premium is inside the band the schedule allows.
 	 *
 	 * It is the third thing an invariant can be, and neither of the other two.
 	 * The answer does not exist before the call, so there is nothing to check
-	 * beforehand, and it is saved nowhere afterwards, so no aggregate keeps it
-	 * true: what holds it is the operation, every time it answers (decision 19,
-	 * third amendment). Exclusive with {@link precondition}, which is
-	 * `postcondition-names-operation`'s to report.
+	 * beforehand, and it is saved nowhere afterwards: the operation guarantees
+	 * it every time it answers. For an external event, the published payload is
+	 * guaranteed every time it is sent (decisions 19 and 28). Exclusive with
+	 * {@link precondition}; `postcondition-names-operation` reports that for
+	 * modelled contexts.
 	 */
 	postcondition: boolean;
 
@@ -2348,8 +2350,8 @@ export class Invariant
 	/**
 	 * The consumables this invariant is a rule for: for an aggregate's rule the
 	 * operations that make the transition it describes, for a context's rule the
-	 * operations that check it before acting. Either way, the ones that have to
-	 * uphold it.
+	 * operations or events that check or guarantee it. Either way, the ones
+	 * responsible for it.
 	 */
 	get guarded(): Consumable[] {
 		return this.targets.filter((it) => it instanceof Consumable);

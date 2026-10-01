@@ -157,9 +157,21 @@ const valueObjectSection = (valueObject: ValueObject) => [
 
 // The same three columns the aggregate page uses, because a rule reads the
 // same either way; what changes is which boundary keeps it (decision 27).
+const checkOf = (invariant: Invariant) => {
+	if (invariant.precondition) return "Checked before";
+	if (!invariant.postcondition) return "Checked by";
+	const guards = invariant.guarded;
+	if (guards.length && guards.every((it) => it.type === "event"))
+		return "Guaranteed on event";
+	return guards.some((it) => it.type === "event")
+		? "Guaranteed by"
+		: "Checked after";
+};
+
 const invariantSection = (invariant: Invariant) => [
 	invariant.name,
 	invariant.description,
+	checkOf(invariant),
 	invariant.targets.map(constrainableLabel).join(", ") || "-",
 ];
 
@@ -224,13 +236,13 @@ ${
 ## Invariants
 ${
 	boundedcontext.invariants.size > 0
-		? `Rules that hold across this context's instances and aggregates; each names the operation that checks it before acting.
+		? `Rules checked or guaranteed by this context's consumables. The Check column distinguishes preconditions, postconditions and checks without a timing flag.
 
 ${markdownTable(
-	["Name", "Description", "Constrains"],
+	["Name", "Description", "Check", "Constrains"],
 	Array.from(boundedcontext.invariants.values()).map(invariantSection),
 )}`
-		: "> No invariants across aggregates."
+		: "> No context invariants declared."
 }
 
 ## Value Objects

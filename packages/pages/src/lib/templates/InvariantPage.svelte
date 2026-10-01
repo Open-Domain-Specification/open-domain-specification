@@ -9,14 +9,24 @@ import {
  * section says "Checked" where an aggregate's and a value's say "Guarded by".
  * A check is made on one side of the call or the other, and the heading says
  * which: "Checked before" for a precondition, "Checked after" for a
- * postcondition, and plain "Checked by" where the rule sets neither flag
- * (decision 27, third amendment). The side nav shows the same heading the page
- * does, so both read it from here.
+ * postcondition, plain "Checked by" where the rule sets neither flag, and
+ * "Guaranteed on event" for an external event's payload (decisions 27–28).
+ * The side nav shows the same heading the page does, so both read it here.
  */
+const eventOnlyPostcondition = (i: Rule) =>
+	i.postcondition &&
+	i.guarded.length > 0 &&
+	i.guarded.every((it) => it.type === "event");
+
 export const guardsLabel = (i: Rule) => {
 	if (!(i.owner instanceof InvariantContext)) return "Guarded by";
 	if (i.precondition) return "Checked before";
-	if (i.postcondition) return "Checked after";
+	if (i.postcondition)
+		return eventOnlyPostcondition(i)
+			? "Guaranteed on event"
+			: i.guarded.some((it) => it.type === "event")
+				? "Guaranteed by"
+				: "Checked after";
 	return "Checked by";
 };
 
@@ -49,12 +59,12 @@ import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
 import Section from "../organisms/Section.svelte";
 
-/** One rule that must hold after every change, and the elements it is about. */
+/** One rule and the elements it is about. Its owner and flags say when it holds. */
 const { invariant: i }: { invariant: Invariant } = $props();
 const model = useModel();
 // A rule belongs to a value object, where it holds by construction, to one
 // aggregate, where it holds on every save, or to the whole context, where it
-// holds across instances and something checks it before acting (decision 27).
+// is checked across instances or of an answer (decision 27).
 // The header says which, because the three promise different things.
 const owner = $derived(i.owner);
 const inAggregate = $derived(owner instanceof Aggregate);
@@ -141,27 +151,40 @@ const KIND = {
 		empty:
 			"No operation names this rule, so there is no answer for it to be about: a postcondition is checked of what a call comes back with, and the model has to say which call.",
 	},
+	contextEvent: {
+		label: "context invariant",
+		title: "Guaranteed of the event's payload whenever this external context sends it.",
+		lead: "The fields of the event payload this external context guarantees.",
+		guards: "The event whose payload carries this guarantee.",
+		empty: "No event names this guarantee.",
+	},
+	contextMixed: {
+		label: "context invariant",
+		title: "Guaranteed of the named consumables' answers or payloads.",
+		lead: "The fields this context guarantees of the named consumables.",
+		guards: "The operations and events that carry this guarantee.",
+		empty: "No consumable names this guarantee.",
+	},
 } as const;
-// The elements the rule holds true of, and the operations that have to uphold
-// it, are two different readings of the same list, so the page splits them by
-// what each target is: a consumable is an operation the rule guards, anything
-// else is something the rule is about.
+// The elements the rule holds true of and the consumables responsible for it
+// are two readings of the same list. The page separates them by target kind.
 const guarded = $derived(i.guarded);
 // Which of the three an invariant is, the invariant states: naming an
 // operation says who keeps the rule, and `precondition` and `postcondition`
-// say whether it is checked before one, guaranteed of what it answers with, or
-// still true after it. The two flags are exclusive
-// (`postcondition-names-operation`), so the order here decides nothing a valid
-// model can see. A context's rule is a check whatever it sets, and the flags
-// say which side of the call the check is made on: the page reads it as
-// checked before or checked after, and never as a promise about at rest
-// (decision 27, third amendment).
+// say whether it is checked before one, guaranteed of its answer or an
+// external event's payload, or still true after it. The two flags are
+// exclusive (`postcondition-names-operation` for modelled contexts). A
+// context's rule never promises to hold at rest (decisions 27–28).
 const words = $derived(
 	inContext
 		? i.precondition
 			? KIND.contextBefore
 			: i.postcondition
-				? KIND.contextAfter
+				? eventOnlyPostcondition(i)
+					? KIND.contextEvent
+					: i.guarded.some((it) => it.type === "event")
+						? KIND.contextMixed
+						: KIND.contextAfter
 				: KIND.context
 		: KIND[
 				i.precondition
@@ -236,7 +259,16 @@ const columns: Column[] = [
 	lead={words.guards}
 	count={guarded.length}
 >
-	<RefList items={guarded} kind="command" block empty={words.empty} />
+	<RefList
+		items={guarded}
+		kind={inContext && eventOnlyPostcondition(i)
+			? "event"
+			: inContext && i.postcondition && guarded.some((it) => it.type === "event")
+				? undefined
+				: "command"}
+		block
+		empty={words.empty}
+	/>
 </Section>
 
 <LanguageSection target={i} />

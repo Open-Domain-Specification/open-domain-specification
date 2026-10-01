@@ -299,8 +299,9 @@ export interface BoundedContextSchema {
 	 * a different matter: its value objects may carry invariants — an IBAN's
 	 * checksum, an ISO 20022 field rule — and it may state a context invariant
 	 * marked `precondition` or `postcondition` on one of its own operations,
-	 * which is that operation's published contract. An invariant with neither
-	 * flag, or one guarding another context's operation, is still refused
+	 * which is that operation's published contract, or a `postcondition` on one
+	 * of its own events, guaranteeing the payload it sends. An invariant with
+	 * neither flag, or one guarding another context's consumable, is refused
 	 * (decision 28). Never `bigBallOfMud` or `boundaryOnly` as well: both of
 	 * those are the enterprise's own system, and the three flags name three
 	 * different unknowns.
@@ -316,11 +317,11 @@ export interface BoundedContextSchema {
 	 */
 	aggregates?: { [aggregate: string]: AggregateSchema };
 	/**
-	 * The rules that hold across the instances or the aggregates of this
-	 * context: uniqueness, quotas, limits, conservation. Each one names at
-	 * least one operation of the context that guards it, because a rule no
-	 * single instance can see is kept true only by whoever checks it before
-	 * acting (decision 27).
+	 * The rules this context checks or guarantees: cross-instance uniqueness,
+	 * quotas and limits, or contracts about a consumable's payload or answer.
+	 * Each names a consumable responsible for the rule; precondition and
+	 * postcondition distinguish an input check from an answer or payload
+	 * guarantee (decisions 27 and 28).
 	 */
 	invariants?: { [invariant: string]: InvariantSchema };
 	services?: { [service: string]: ServiceSchema };
@@ -714,9 +715,10 @@ export interface InvariantSchema {
 	 * was checked against may move on the moment the call returns, so nothing
 	 * re-establishes it.
 	 *
-	 * Absent or false means the operations it names keep it and it is still
-	 * true after them: `PostEntry` must produce balanced postings and the
-	 * postings stay balanced. A precondition names the operation it guards
+	 * With neither flag, an aggregate rule naming an operation stays true after
+	 * it: `PostEntry` must produce balanced postings and they stay balanced.
+	 * An unflagged context rule names its checker without claiming a time.
+	 * A precondition names the operation it guards
 	 * (`precondition-names-operation`), because a check before nothing in
 	 * particular is a check nowhere (decision 27, second amendment).
 	 */
@@ -733,11 +735,12 @@ export interface InvariantSchema {
 	 * postcondition names the operation it is about
 	 * (`postcondition-names-operation`) and may constrain the attributes of
 	 * what that operation returns or rejects with (decision 19, third
-	 * amendment).
+	 * amendment). An external context may instead guarantee the payload of
+	 * one of its own events (decision 28, fifth amendment).
 	 *
 	 * Exclusive with `precondition`: a rule is checked before a call or
-	 * guaranteed of what comes back, and one marked both says two different
-	 * things about when it holds.
+	 * guaranteed of what comes back or of an external event's payload, and one
+	 * marked both says two different things about when it holds.
 	 */
 	postcondition?: boolean;
 }

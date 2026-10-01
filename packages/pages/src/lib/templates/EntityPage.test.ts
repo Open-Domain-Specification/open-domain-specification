@@ -69,6 +69,65 @@ describe("EntityPage", () => {
 		}
 	});
 
+	it("names NorthBank Account rules aimed at its attributes", () => {
+		const workspace = Workspace.fromSchema(
+			northbank as Parameters<typeof Workspace.fromSchema>[0],
+		);
+		const account = workspace.boundedcontexts
+			.get("accounts")!
+			.aggregates.get("account")!;
+		const ref = account.entities.get("account")!.ref;
+		for (const ws of [workspace, Workspace.fromSchema(workspace.toSchema())]) {
+			const section = page(ws, ref).querySelector("#invariants") as HTMLElement;
+			for (const name of [
+				"BalanceWithinOverdraft",
+				"AvailableIsPostedLessHolds",
+				"ClosedHasZeroBalance",
+			]) {
+				const row = [...section.querySelectorAll("tbody tr")].find((tr) =>
+					tr.textContent?.includes(name),
+				) as HTMLElement;
+				expect(row).toHaveTextContent("Account");
+				expect(row.querySelectorAll("td")[1]).toHaveTextContent("Account");
+			}
+			expect(section).not.toHaveTextContent(
+				"No invariant names this entity or its attributes.",
+			);
+		}
+	});
+
+	it("names NorthBank PaymentInstruction rules on an attribute, including a context rule", () => {
+		const workspace = Workspace.fromSchema(
+			northbank as Parameters<typeof Workspace.fromSchema>[0],
+		);
+		const payments = workspace.boundedcontexts.get("payments_hub")!;
+		const ref = payments.aggregates
+			.get("payment_instruction")!
+			.entities.get("payment_instruction")!.ref;
+		for (const ws of [workspace, Workspace.fromSchema(workspace.toSchema())]) {
+			const section = page(ws, ref).querySelector("#invariants") as HTMLElement;
+			for (const name of ["AmountPositive", "FundsAvailableAtInitiation"]) {
+				const row = [...section.querySelectorAll("tbody tr")].find((tr) =>
+					tr.textContent?.includes(name),
+				) as HTMLElement;
+				expect(row.querySelectorAll("td")[1]).toHaveTextContent(
+					"PaymentInstruction",
+				);
+			}
+			const dailyLimit = [...section.querySelectorAll("tbody tr")].find((tr) =>
+				tr.textContent?.includes("DailyLimit"),
+			) as HTMLElement;
+			expect(dailyLimit.querySelectorAll("td")[1]).toHaveTextContent(
+				"Payments Hub",
+			);
+			expect(dailyLimit.querySelector("a")).toHaveAttribute(
+				"href",
+				ws.boundedcontexts.get("payments_hub")!.invariants.get("daily_limit")!
+					.ref,
+			);
+		}
+	});
+
 	it("shows a kind's inherited reference on its page and as an incoming use", () => {
 		const workspace = new Workspace("Kinds", {
 			description: "",
@@ -86,6 +145,9 @@ describe("EntityPage", () => {
 			description: "",
 		});
 		shipmentRoot.addAttribute("id", { type: "string", identity: true });
+		shipment
+			.addInvariant("ShipmentHasId", { description: "" })
+			.constrains(shipmentRoot.attributes.get("id")!);
 		shipmentRoot.references(carrierRoot, "shipped-by");
 		const express = shipment.addEntity("ExpressShipment", {
 			description: "",
@@ -98,6 +160,9 @@ describe("EntityPage", () => {
 		) as HTMLElement;
 		expect(outgoing).toHaveTextContent("Carrier");
 		expect(outgoing).toHaveTextContent("from Shipment");
+		expect(
+			page(workspace, express.ref).querySelector("#invariants"),
+		).toHaveTextContent("ShipmentHasId");
 		const incoming = page(workspace, carrierRoot.ref).querySelector(
 			"#relations",
 		) as HTMLElement;

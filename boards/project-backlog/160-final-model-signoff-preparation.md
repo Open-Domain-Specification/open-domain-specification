@@ -2,12 +2,12 @@
 column: doing
 labels: [docs, model]
 priority: high
-agent: claude
+agent: lead
 live: false
-status: Fourth round on cb3ebb0a: Astra APPROVE, Opus BLOCK on value-object kinds; card 162 correction in progress
+status: Eighth round on a2cef010: both BLOCK on separate cross-surface lies; cards 169-170 corrections in progress
 progress: 90
 clean-code-swept: true
-updatedAt: 2026-10-01T01:00:00Z
+updatedAt: 2026-10-01T05:05:00Z
 ---
 # Final model sign-off: the record says only what holds
 
@@ -238,4 +238,37 @@ Read AGENTS.md, STATUS.md's current state, the current-position paragraphs and r
 For each blocking finding, give a concrete source-backed or runnable counterexample, the actual behavior, expected behavior, exact file/line evidence, and the smallest regression test that would prove the correction. Separate reproduced semantic defects and cross-surface lies from deliberate named costs, optional improvements, and uncertain source questions. If you cannot substantiate an objection, state the uncertainty rather than treating it as a blocker. Note any meaningful limit of your inspection.
 
 End with: VERDICT: APPROVE or VERDICT: BLOCK; the exact HEAD; and a concise answer to the owner's question. Do not approve an older head.
+```
+
+## Eighth round (head `a2cef010`)
+
+The unmodified local gate passed on exact clean head `a2cef01016902ffbe33b1e85ddb9c04d9f4cd410`: core 1061, doc 49, pages 1014, browser 430 passed/20 skipped, all other package/model suites, schema comparison and ESM imports. Both read-only reviews used the same prompt and no GitHub CI minutes.
+
+| Reviewer | Model | Verdict |
+| --- | --- | --- |
+| OpenAI | `gpt-6-astra`, low | **BLOCK** |
+| Claude | `claude-opus-5-5`, high | **BLOCK** |
+
+- **Astra's reproduced defect:** a valid context postcondition naming Quote and its returned amount has zero diagnostics before and after JSON round-trip. Markdown says every context rule is checked before acting and drops the timing flag; Svelte correctly says Checked after. Issue #119/card 169 adds the timing column and checks the adjacent external event payload guarantee allowed by decision 28.
+- **Opus's reproduced defect:** entity pages find rules naming the entity only. NorthBank Account's balance rules, PaymentInstruction's amount rules and context DailyLimit all name entity attributes and were omitted. Issue #120/card 170 extends the shared lookup to declared and inherited attributes for entities and value objects. The entity root tooltip is scoped to aggregate invariants.
+- **Both reviewers confirmed:** #116-#118 corrections hold; no substantiated new reason to reopen #35-#40 and no changed pinned diagnostics. Their findings are semantic, so no signoff is claimed. The next review is only after a new committed head passes the unmodified local gate.
+
+Prompt given to both verbatim:
+
+```text
+You are an independent final reviewer of the Open Domain Specification metamodel and reference models. Review exact committed HEAD a2cef01016902ffbe33b1e85ddb9c04d9f4cd410 in this checkout, based on origin/develop a0e88e97. This is read-only: make no edits, commits, issue or PR comments, pushes, or agent delegations. Do not run the full verify-all.sh gate: it passed locally on this exact clean head. First check HEAD and worktree cleanliness.
+
+The owner's question: Is this a correct, clean, detailed specification for modelling software systems the Domain-Driven Design way, with the metamodel, validator, reference models and all four permanent reading surfaces telling the same truth? Give an explicit APPROVE or BLOCK on this exact head. Approval requires no unresolved semantic defect; it does not require every possible DDD construct. Deliberate model preferences are allowed when their costs and source-backed reopening conditions are honest.
+
+Read AGENTS.md, STATUS.md, current positions and relevant amendments in decisions 15, 16, 17, 18, 20, 21, 22, 23 and 27, the card 160 evidence table and journals, cards 161-168, and each reference model's source notes. Inspect core schema, DSL, validator, derived maps, JSON schema, authoring skill, documentation site, shared Svelte renderer for VS Code/viewer/static export, and Markdown writer as needed. Review a0e88e97..HEAD adversarially. The previous seven rounds each exposed real issues before this head; their records are on card 160. Confirm that the current fixes resolve them without changing pinned diagnostics or leaving false cross-surface claims.
+
+Key prior cases: #107 NorthBank kernel ownership; #109 structured Decide to ScoreApplication call; #110 Markdown foreign value users; #108 decision 15 reopening conditions and validator wording; #111 cross-context value specialization over shared-kernel, conformist and customer-supplier routes; #112 context-page foreign, nested, inherited and kind users; #113 generated Markdown orphan pages; #114 nested-only and identity-only schema users including RiverMart Capture.providerPaymentId, plus inherited identity and direct-carrier distinction; #115 borrowed Money page showing a foreign aggregate rule with correct keeper; upstream Money holders must not be shown as downstream Fee users, while allowed conformist downstream holders must be shown.
+
+The seventh review of c1fc4bbd returned two distinct BLOCKs. Astra reproduced a zero-diagnostic shared-kernel Cards context borrowing Ledger Money and CardRequest yet its empty Value objects/Schemas sections denied both uses. Opus found Petstore Shipment points at Carrier across aggregates while Carrier's entity page said nothing points at it, and NorthBank Lending context invariant OneOpenApplicationPerCustomer named LoanApplication while that entity page omitted it and claimed all listed rules were enforced by the root. On this head challenge #116 and #117 fixes, tests before and after JSON round-trip, source links, owner columns, direct-target semantics, and clean copy. The lead's adjacent audit became #118: entity and value-object kinds now show inherited relations with their declaring parent; value pages include context rules; local declaration, aggregate, service, consumable and consumption empty claims were narrowed to what each list proves. Challenge these too, including the borrowed-value/no-consumption case. Find a substantive defect if one remains, not just an optional wording preference.
+
+The full local gate passed on this exact head: core 1061, doc 49, pages 1014, browser 430 passed/20 skipped, all other package/model suites and generated schema/ESM checks green. Check that pinned diagnostics and generated outputs still mean what they claim. Challenge the conditional capability rulings for #35-#40 against source-backed cases and actual code behavior; do not edit them.
+
+For each blocking finding, give a concrete source-backed or runnable counterexample, actual versus expected behavior, exact file/line evidence, and smallest regression test that would prove a correction. Separate reproduced semantic defects and cross-surface lies from deliberate named costs, optional improvements and uncertain source questions. If you cannot substantiate an objection, state uncertainty rather than blocking. Note meaningful inspection limits.
+
+End with VERDICT: APPROVE or VERDICT: BLOCK, exact HEAD, and a concise answer to the owner's question. Do not approve an older head.
 ```
