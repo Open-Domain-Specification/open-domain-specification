@@ -2282,9 +2282,9 @@ export class Invariant
 	targets: Constrainable[] = [];
 	/**
 	 * Whether the rule is a precondition: checked before the operation it names
-	 * runs, and not kept true afterwards. What it was checked against — a
-	 * balance, an entitlement, another context's answer — may move on the
-	 * moment the call returns.
+	 * runs, without claiming it remains true afterward. What it was checked
+	 * against — a balance, an entitlement, another context's answer — may move
+	 * on the moment the call returns.
 	 *
 	 * It is stated rather than inferred from naming an operation, because those
 	 * are two different facts: which operation keeps a rule, and what kind of
@@ -2301,9 +2301,10 @@ export class Invariant
 	 *
 	 * It is the third thing an invariant can be, and neither of the other two.
 	 * The answer does not exist before the call, so there is nothing to check
-	 * beforehand, and it is saved nowhere afterwards: the operation guarantees
-	 * it every time it answers. For an external event, the published payload is
-	 * guaranteed every time it is sent (decisions 19 and 28). Exclusive with
+	 * beforehand. The operation guarantees what it answers with, without
+	 * claiming an aggregate keeps that answer true afterward. For an external
+	 * event, the published payload is guaranteed every time it is sent
+	 * (decisions 19 and 28). Exclusive with
 	 * {@link precondition}; `postcondition-names-operation` reports that for
 	 * modelled contexts.
 	 */

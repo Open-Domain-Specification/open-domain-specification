@@ -20,6 +20,8 @@ Since the note of 2026-10-01 (card 171), the save claim above is explicitly abou
 
 Since the second note of 2026-10-01 (card 174), a value-object invariant also cannot carry either timing flag: construction, not an operation, is the moment at which its rule holds.
 
+Since the third note of 2026-10-01 (card 175), saying a precondition is not kept true afterward means the model makes no later promise. The checked fact may remain true; it is not asserted to become false.
+
 The note of 2026-09-07 stands: five cross-instance rules, not eleven, and a rule checked against another context's data is a precondition on the aggregate's operation (decision 19). The bullet "nothing crosses a context" stands for targets, with a qualification recorded in decision 19: a precondition may constrain the `returns` of a consumed consumable or a consumed event's payload held in the same context (cards 116 and 124), never another context's entities. An external context may state flagged invariants on its own operations, reaching their request and answer schemas and its own value objects (decision 28, cards 107 and 116). An obligation across contexts is a process (amendment of 2026-09-08).
 
 ## Context
@@ -90,3 +92,7 @@ The standing save sentence in this decision is true for an unflagged aggregate i
 ## Note (2026-10-01, second)
 
 A value object's invariant holds by construction and names no operation. The general timing checks had skipped external contexts, allowing a standard's value rule to claim `precondition`, `postcondition`, or both with no diagnostic. `invariant-in-value-object` now refuses either flag for every context, modelled or external (card 174, issue #124). A rule about a call belongs to the aggregate or context that owns it.
+
+## Note (2026-10-01, third)
+
+A check made before a call can remain true afterwards by chance or by some other mechanism. `precondition: true` promises the check at the moment before the call, and does not promise the result persists. The schema, validator guidance and reader pages now use that precise claim (card 175, issue #125). A context precondition may also read an event payload that the policy or process issuing its guard already heard, as decision 19's third amendment permits.

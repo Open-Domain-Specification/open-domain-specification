@@ -91,10 +91,10 @@ const KIND = {
 	precondition: {
 		label: "precondition",
 		title:
-			"Checked before the operations it names run, and not true again after them.",
+			"Checked before the operations it names run; the model does not promise it remains true afterward.",
 		lead: "The elements this rule is about, all inside the boundary that states it.",
 		guards:
-			"The operations this rule is checked before. What it was checked against — a balance, an entitlement, another context's answer — may move on the moment the call returns, so nothing re-establishes it afterwards.",
+			"The operations this rule is checked before. What it was checked against — a balance, an entitlement, another context's answer — may move when the call returns, so the model makes no later guarantee.",
 		empty:
 			"No operation names this rule, so nothing checks it: a precondition is checked before something runs, and the model has to say what.",
 	},
@@ -130,9 +130,9 @@ const KIND = {
 		label: "context invariant",
 		title:
 			"Checked before the operations it names run, across the instances and aggregates of the context. Never a promise about afterwards.",
-		lead: "The elements this rule is about: model elements of the context, the guarded request, and facts already received by the guard or its front.",
+		lead: "The elements this rule is about: model elements of the context, the guarded request, facts already fetched by the guard or its front, and an event payload the issuing reactor heard.",
 		guards:
-			"The operations this rule is checked before. What it was checked against may move on the moment the call returns, and a check across instances can race, so nothing re-establishes it afterwards.",
+			"The operations this rule is checked before. What it was checked against may move when the call returns, and a check across instances can race, so the model makes no later guarantee.",
 		empty:
 			"No operation names this rule, so nothing checks it: a precondition is checked before something runs, and the model has to say what.",
 	},

@@ -41,6 +41,7 @@ const handWrittenFiles = [
 	"apps/docs/docs/3-core/3-tactical-design.md",
 	"apps/docs/docs/3-core/4-validation.md",
 	"packages/core/src/schema.ts",
+	"packages/core/src/workspace.ts",
 	// Not hand-authored prose, but a template that writes prose: the string
 	// literal in generate.mts is the source the generated model reference is
 	// rebuilt from, so a stale sentence there regenerates itself right back.
@@ -48,6 +49,7 @@ const handWrittenFiles = [
 	// The generated file itself, committed at the repo root, so a drift
 	// between the template and what is actually checked in is also caught.
 	"packages/skill/skill/references/model-reference.md",
+	"packages/skill/skill/references/validation-rules.md",
 ].map((path) => ({
 	path,
 	text: normalise(readFileSync(join(repoRoot, path), "utf8")),
@@ -265,6 +267,41 @@ const currentFacts: Array<{
 		sentences: [
 			"It has neither `precondition` nor `postcondition`, which describe a call's timing",
 		],
+	},
+	{
+		fact: "a postcondition promises the answer at response time, not whether its facts are stored (workspace source)",
+		file: "packages/core/src/workspace.ts",
+		sentences: [
+			"The operation guarantees what it answers with, without",
+			"claiming an aggregate keeps that answer true afterward",
+		],
+	},
+	{
+		fact: "a postcondition promises the answer at response time, not whether its facts are stored (interview playbook)",
+		file: "packages/skill/skill/references/interview-playbook.md",
+		sentences: [
+			"The model makes no claim that an aggregate keeps the answer true afterward, even if underlying facts are stored",
+		],
+	},
+	{
+		fact: "a precondition does not promise later truth (schema source)",
+		file: "packages/core/src/schema.ts",
+		sentences: ["without claiming it remains true afterward"],
+	},
+	{
+		fact: "a precondition does not promise later truth (generated reference)",
+		file: "packages/skill/skill/references/model-reference.md",
+		sentences: ["without claiming it remains true afterward"],
+	},
+	{
+		fact: "a precondition does not promise later truth (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: ["without claiming it remains true afterward"],
+	},
+	{
+		fact: "a precondition does not promise later truth (validation rule)",
+		file: "packages/skill/skill/references/validation-rules.md",
+		sentences: ["the model does not promise it remains true afterward"],
 	},
 	{
 		fact: "a postcondition promises the answer at response time, not whether its facts are stored (schema source)",

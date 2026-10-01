@@ -818,7 +818,7 @@
                     "type": "boolean"
                 },
                 "precondition": {
-                    "description": "Whether this rule is a precondition: checked before the operation it\nnames runs, and not kept true afterwards — enough funds at initiation, an\nentitlement at playback start, a pet still available at approval. What it\nwas checked against may move on the moment the call returns, so nothing\nre-establishes it.\n\nWith neither flag, an aggregate rule naming an operation stays true after\nit: `PostEntry` must produce balanced postings and they stay balanced.\nAn unflagged context rule names its checker without claiming a time.\nA precondition names the operation it guards\n(`precondition-names-operation`), because a check before nothing in\nparticular is a check nowhere (decision 27, second amendment).",
+                    "description": "Whether this rule is a precondition: checked before the operation it\nnames runs, without claiming it remains true afterward — enough funds at\ninitiation, an entitlement at playback start, a pet still available at\napproval. What it was checked against may move when the call returns, so\nthe model makes no later guarantee.\n\nWith neither flag, an aggregate rule naming an operation stays true after\nit: `PostEntry` must produce balanced postings and they stay balanced.\nAn unflagged context rule names its checker without claiming a time.\nA precondition names the operation it guards\n(`precondition-names-operation`), because a check before nothing in\nparticular is a check nowhere (decision 27, second amendment).",
                     "type": "boolean"
                 }
             },

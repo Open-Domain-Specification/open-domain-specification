@@ -154,9 +154,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   guarantee about the answer is a postcondition, not a precondition: `postcondition: true`,
   naming the operation and the attributes of what it returns or rejects with. Every returned
   itinerary meets the requested deadline, every quoted premium is inside the band. The answer
-  does not exist before the call, so nothing checks it beforehand, and it is saved nowhere,
-  so no aggregate keeps it true. The two flags are exclusive. Only a precondition or a
-  postcondition may name a schema's attributes; a rule that is still true after the call is
+  does not exist before the call, so nothing checks it beforehand. The model makes no claim
+  that an aggregate keeps the answer true afterward, even if underlying facts are stored.
+  The two flags are exclusive. Only a precondition or a postcondition may name a schema's
+  attributes; a rule that is still true after the call is
   about the model, so it names the model.
 - Per rule: "is this true of the value itself, whatever holds it?" → a rule that is about a
   value alone — a checksum, a currency, a range — is that value object's:

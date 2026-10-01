@@ -152,6 +152,12 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(container.textContent).toContain(
 			"The operations this rule is checked before.",
 		);
+		expect(container.querySelector("#constrains")).toHaveTextContent(
+			"event payload the issuing reactor heard",
+		);
+		expect(container.querySelector("#guards")).toHaveTextContent(
+			"the model makes no later guarantee",
+		);
 	});
 
 	it("InvariantPage: a context postcondition says it is checked after", () => {

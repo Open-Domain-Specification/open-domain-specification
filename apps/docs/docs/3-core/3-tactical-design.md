@@ -267,7 +267,7 @@ which operations change it, and the rest of the diagram a reader might
 expect is prose on those invariants.
 
 Naming an operation says which operation keeps the rule, and nothing more. A
-rule checked before that operation runs and not kept true afterwards — enough
+rule checked before that operation runs without claiming it remains true afterward — enough
 funds at initiation, an entitlement at playback start — says so with
 `precondition: true`, and must name the operation it guards
 (`precondition-names-operation`). A guarantee about what the call answers with

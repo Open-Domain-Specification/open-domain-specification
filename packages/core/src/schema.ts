@@ -712,10 +712,10 @@ export interface InvariantSchema {
 	constrains: { $ref: string }[];
 	/**
 	 * Whether this rule is a precondition: checked before the operation it
-	 * names runs, and not kept true afterwards — enough funds at initiation, an
-	 * entitlement at playback start, a pet still available at approval. What it
-	 * was checked against may move on the moment the call returns, so nothing
-	 * re-establishes it.
+	 * names runs, without claiming it remains true afterward — enough funds at
+	 * initiation, an entitlement at playback start, a pet still available at
+	 * approval. What it was checked against may move when the call returns, so
+	 * the model makes no later guarantee.
 	 *
 	 * With neither flag, an aggregate rule naming an operation stays true after
 	 * it: `PostEntry` must produce balanced postings and they stay balanced.
