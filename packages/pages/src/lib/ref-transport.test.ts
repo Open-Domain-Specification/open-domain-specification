@@ -50,4 +50,20 @@ describe("model ref URL transport", () => {
 			expect(hashToModelRef(hash)).toBe(ref);
 		}
 	});
+
+	it("keeps a valid surrogate pair on the ordinary scalar route", () => {
+		const ref = "#/boundedcontexts/😀";
+		const hash = "#/boundedcontexts/%F0%9F%98%80";
+		expect(modelRefToHash(ref)).toBe(hash);
+		expect(hashToModelRef(hash)).toBe(ref);
+	});
+
+	it.each([
+		["lowercase percent escapes", "#/boundedcontexts/%c3%a9"],
+		["an ordinary scalar forced into an envelope", "#/!utf16/0023002f0061"],
+		["an envelope without a route", "#/!utf16/0023"],
+		["an empty envelope", "#/!utf16/"],
+	])("rejects noncanonical %s", (_case, hash) => {
+		expect(hashToModelRef(hash)).toBeUndefined();
+	});
 });

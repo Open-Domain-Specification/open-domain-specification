@@ -8,15 +8,17 @@ Clear the ODS backlog autonomously, with model finality before tooling. There ar
 
 SOL implementation is complete for the reference contract and iterative flow traversal. Raw string IDs and JSON keys stay exact; one escaped segment identifies each ID, and derived refs retain complete nested identity. Metamodel 3.0.0 records the deliberate wire break; package versions and release stay unchanged.
 
-Local evidence: core 1,545, pages 1,048, Markdown 81, Graphviz 50 and extension 22 tests. The lead reran 19 reference/scale cases and the full Markdown suite. Source and JSON retain 4,001 flow nodes / 4,003 edges. Real filesystem and SVG regressions now cover long filenames and control-character identity twins. Generated models, fixture and skill were rebuilt; reference diagnostics remain 0 / 2 / 4 / 3 / 0.
+Local evidence: core 1,545, Pages 1,055 at 100% in all required coverage measures, Markdown 81, Graphviz 50, skill 154, extension 22, five models 48 and shared 13 tests. Five model diagnostics remain 0 / 2 / 4 / 3 / 0. The lead independently ran 19 reference/scale cases, Markdown 81 and shared 13; source/JSON retains 4,001 nodes / 4,003 edges. Actual file/link and SVG tests cover unsafe identities. Browser preflight passed 87 relevant journeys and 14 transport checks.
 
-The mandatory eight-principle quality audit found a canonical attribute alias, now fixed; narrow physical/DOT addenda are clear by inspection. Browser preflight passed 87 relevant Chromium journeys and 14 navigation checks, including embedded refs, percent text and empty identities. Lead owns acceptance, delivery and records. Actual VS Code passed 15 extension and 23 keyboard tests on d8ab6ac1, with checker exit 0. Its whole gate stopped at NorthBank on stale physical filename expectations. That shared-verifier integration is corrected: all five full model suites (48 tests), shared suite (13), builds and scoped lint pass; root independently reran shared 13. Final approval is not requested.
+Actual VS Code suites on f7ccf908 passed 15 extension and 23 keyboard tests; checker exit 0, only four documented screenshot skips. The final correction changes two test files and delivery records; production source is identical. The earlier whole gate passed all model suites, then identified missing navigation coverage. These meaningful Unicode/envelope/fallback cases are now added; production and thresholds stay unchanged. All eight quality principles and scoped follow-ups are reconciled. Two delegated acceptance maps identify 24 implementation acceptances; #108 still requires the final gate and approval. Nothing is close-ready before merge.
+
+Lead owns the clean commit, unmodified whole gate, final approval and individual merged-story closeout. No final24 review has been requested.
 
 Claude quota is exhausted until 2026-10-03 01:00 Europe/London. The owner's SOL coding and OpenAI-only final approval exception is active; no unavailable Claude approval is claimed.
 
 ## Next
 
-Freeze the corrected candidate, repeat actual-host evidence on that commit, then run the unmodified whole gate. Request Astra low whole-model review when the candidate is complete. After approval, update PR #132, recheck merge requirements, merge into develop, and reconcile each of the 25 stories against the actual merged result before closure. Conserve GitHub CI minutes; no release.
+Commit the test-only coverage correction and run the unmodified whole gate on the clean candidate. Request Astra low whole-model review when the candidate is complete. After approval, update PR #132, recheck merge requirements, merge into develop, and reconcile each of the 25 stories against the actual merged result before closure. Conserve GitHub CI minutes; no release.
 
 ## Later
 
@@ -24,4 +26,4 @@ PR #106 stays parked until model landing and closeout. [ROADMAP.md](docs/bots/RO
 
 ## Working state
 
-Updated: 2026-10-01T21:51:41Z. Branch: codex/model-fidelity-northbank. Develop base: a0e88e97. Committed head: d8ab6ac1; its real-host checks passed but its whole gate failed at outdated Markdown path assertions. No final24 review. Remote PR #132 still points to 635bcc7e. No current-candidate push, CI, merge or closure. [Card 160](boards/project-backlog/160-final-model-signoff-preparation.md) and [sprint 04](docs/bots/sprints/2026-10-01-sprint-04.md) retain the evidence and retrospectives.
+Updated: 2026-10-01T21:58:36Z. Branch: codex/model-fidelity-northbank. Develop base: a0e88e97. Committed head: f7ccf908; its real-host checks and full model suites passed, but its whole gate failed at required navigation coverage. No final24 review. Remote PR #132 still points to 635bcc7e. No current-candidate push, CI, merge or closure. [Card 160](boards/project-backlog/160-final-model-signoff-preparation.md) and [sprint 04](docs/bots/sprints/2026-10-01-sprint-04.md) retain the evidence and retrospectives.

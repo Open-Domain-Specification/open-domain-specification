@@ -72,4 +72,12 @@ describe("canonical page resolution", () => {
 			pageRef: relationship.ref,
 		});
 	});
+
+	it.each(["#/does-not-exist", "not-a-model-ref"])(
+		"falls back to the workspace for unknown reference %s",
+		(ref) => {
+			const ws = new Workspace("Pages", { description: "", version: "0" });
+			expect(resolvePage(ws, ref)).toEqual({ target: ws, pageRef: "#" });
+		},
+	);
 });
