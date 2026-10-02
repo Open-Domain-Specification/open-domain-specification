@@ -250,7 +250,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   `rejects: [{schema, reasons: ["insufficient_funds", "issuer_unavailable"]}]`. Take only what
   the contract enumerates, in its own words. A reason is a named outcome, never a condition on
   data — "the issuer said no money", not "the amount was over the limit" — and if the caller
-  does nothing different for each of them, leave `reasons` off: one shape is one answer.
+  does nothing different for each of them, leave `reasons` off: one shape is one answer. List
+  each rejection schema once and each nonempty reason once; repeating either makes the same
+  answer ref have competing declarations. Empty reasons may repeat as aliases of the shape-level
+  refusal, which is still enumerated once.
 - "When <event> happens, what do you then do automatically?" → a policy with `on` the event
   and `then` the operation. If what it waits for is a reply rather than a fact — "when the
   authorisation comes back declined" — that is an answer, and `on` names it as the call it

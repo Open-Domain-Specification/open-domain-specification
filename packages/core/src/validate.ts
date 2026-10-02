@@ -4332,6 +4332,56 @@ const rejectsOnOperation: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/** A rejection shape and each named reason have one declaration per operation. */
+const duplicateRejections: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const provider of [
+			...bc.aggregates.values(),
+			...bc.services.values(),
+		]) {
+			for (const consumable of provider.consumables.values()) {
+				if (consumable.type !== "operation") continue;
+				const firstRejection = new Map<string, number>();
+				for (const [
+					rejectionIndex,
+					rejection,
+				] of consumable.rejections.entries()) {
+					const firstIndex = firstRejection.get(rejection.schema.ref);
+					if (firstIndex !== undefined) {
+						diagnostics.push({
+							severity: "error",
+							rule: "rejects-duplicate",
+							message: `"${consumable.name}" declares schema "${rejection.schema.name}" more than once in rejects (entries ${firstIndex + 1} and ${rejectionIndex + 1}); keep one declaration for that schema`,
+							ref: consumable.ref,
+						});
+					} else {
+						firstRejection.set(rejection.schema.ref, rejectionIndex);
+					}
+
+					if (!Array.isArray(rejection.reasons)) continue;
+					const firstReason = new Map<string, number>();
+					for (const [reasonIndex, reason] of rejection.reasons.entries()) {
+						if (typeof reason !== "string" || reason.length === 0) continue;
+						const firstReasonIndex = firstReason.get(reason);
+						if (firstReasonIndex !== undefined) {
+							diagnostics.push({
+								severity: "error",
+								rule: "rejects-duplicate",
+								message: `"${consumable.name}" names refusal reason "${reason}" more than once for schema "${rejection.schema.name}" (reasons ${firstReasonIndex + 1} and ${reasonIndex + 1}); keep one occurrence`,
+								ref: consumable.ref,
+							});
+						} else {
+							firstReason.set(reason, reasonIndex);
+						}
+					}
+				}
+			}
+		}
+	}
+	return diagnostics;
+};
+
 /**
  * Policies and processes react to events, and to the answers the operations
  * their context calls come back with; they issue operations, and operations
@@ -5925,6 +5975,15 @@ const RULES: CataloguedRule[] = [
 		why: "A rejection is the shape an operation answers with when it refuses: nothing happened and the caller is told why. An event is a fact that already happened and is announced to whoever is listening, so it has nobody to refuse and nothing left to refuse them.",
 		fix: "Drop rejects from the event, or change the consumable's type to operation if it really is a request that can be refused.",
 		check: rejectsOnOperation,
+	},
+	{
+		rule: "rejects-duplicate",
+		severities: ["error"],
+		summary:
+			"An operation declares each rejection schema once and names each nonempty reason once within that declaration; empty reasons may repeat as aliases of the shape-level answer.",
+		why: "A rejection answer is identified by its operation, schema and reason. Repeating a schema gives the same answer ref competing declarations for multiplicity and reasons; repeating a nonempty reason gives the same answer more than one place in the contract. An empty reason aliases the shape-level answer, so repeating it adds no competing meaning and the derived enumeration includes that answer once. Keeping authored entries visible lets an author correct actual ambiguity without a loader choosing or merging declarations.",
+		fix: "Keep one rejects entry for each schema and list each nonempty named reason once in that entry. Empty reasons may repeat as aliases of the shape-level refusal. Distinct schemas, including schemas with the same local id in different contexts, may remain separate.",
+		check: duplicateRejections,
 	},
 	{
 		rule: "consumable-kind",

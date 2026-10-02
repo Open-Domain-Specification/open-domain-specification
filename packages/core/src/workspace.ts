@@ -1634,11 +1634,15 @@ export class Consumable
 	 * reported by `consumable-kind` for the same reason an undeclared shape is.
 	 */
 	rejected(schema: DataSchema, reason?: string): Answer {
+		// An empty reason is the same answer as omitting it (decision 25).
+		// Canonicalise before both cache lookup and construction so the first
+		// caller cannot choose a different in-memory shape-level answer.
+		const canonicalReason = reason === "" ? undefined : reason;
 		return this.answerFor(
-			`rejects/${schema.ref}${reason ? `/${reason}` : ""}`,
+			`rejects/${schema.ref}${canonicalReason === undefined ? "" : `/${canonicalReason}`}`,
 			schema,
 			true,
-			reason,
+			canonicalReason,
 		);
 	}
 
@@ -1670,20 +1674,27 @@ export class Consumable
 	 * refuses with.
 	 */
 	get answers(): Answer[] {
-		const succeeded = this.returns
-			? [this.returned()]
-			: this.type === "operation"
-				? [this.completed()]
-				: [];
-		return [
-			...succeeded,
-			// A refusal that enumerates its outcomes answers in as many ways as
-			// it names, plus the shape-level answer that hears them all.
-			...this.rejections.flatMap((it) => [
-				this.rejected(it.schema),
-				...it.reasons.map((reason) => this.rejected(it.schema, reason)),
-			]),
-		];
+		const answers: Answer[] = [];
+		const seen = new Set<string>();
+		const include = (answer: Answer) => {
+			if (seen.has(answer.ref)) return;
+			seen.add(answer.ref);
+			answers.push(answer);
+		};
+
+		if (this.returns) include(this.returned());
+		else if (this.type === "operation") include(this.completed());
+
+		// Several declarations or repeated reason strings may name the same
+		// canonical answer. Keep the first in declaration order without changing
+		// the authored rejection or reason lists.
+		for (const rejection of this.rejections) {
+			include(this.rejected(rejection.schema));
+			for (const reason of rejection.reasons)
+				include(this.rejected(rejection.schema, reason));
+		}
+
+		return answers;
 	}
 
 	private answerFor(
@@ -1817,7 +1828,7 @@ export class Answer implements Referenceable {
 		this.operation = operation;
 		this.schema = schema;
 		this.rejection = rejection;
-		this.reason = rejection ? reason : undefined;
+		this.reason = rejection && reason !== "" ? reason : undefined;
 	}
 
 	/**
@@ -3043,7 +3054,13 @@ export class DataSchema
 		name: string,
 		attributes: DataSchemaAttributes,
 	) {
-		this.id = idOf(name, attributes.id);
+		const id = idOf(name, attributes.id);
+		if (boundedcontext.schemas.has(id)) {
+			throw new Error(
+				`Schema id ${JSON.stringify(id)} already exists in bounded context ${JSON.stringify(boundedcontext.id)}`,
+			);
+		}
+		this.id = id;
 		this.name = name;
 		this.description = attributes.description;
 		this.boundedcontext = boundedcontext;

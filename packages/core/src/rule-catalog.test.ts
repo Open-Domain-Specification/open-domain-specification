@@ -79,6 +79,15 @@ function everythingWrong(): Workspace {
 		description: "",
 		rejects: [b.addSchema("Refusal")],
 	});
+	const refusal = b.addSchema("Duplicated Refusal");
+	other.provides("Duplicate Refusal", {
+		type: "operation",
+		description: "",
+		rejects: [
+			{ schema: refusal, reasons: ["duplicate", "duplicate"] },
+			{ schema: refusal },
+		],
+	});
 	// consumable-kind: event raises, policy on operation / then event
 	plain.raises(carries);
 	a.addPolicy("Backwards", { description: "" }).on(carries).issues(plain);

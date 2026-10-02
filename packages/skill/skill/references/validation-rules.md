@@ -468,6 +468,14 @@
 
 **Usual fix:** Drop rejects from the event, or change the consumable's type to operation if it really is a request that can be refused.
 
+## `rejects-duplicate` (error)
+
+**Requires:** An operation declares each rejection schema once and names each nonempty reason once within that declaration; empty reasons may repeat as aliases of the shape-level answer.
+
+**Why it matters:** A rejection answer is identified by its operation, schema and reason. Repeating a schema gives the same answer ref competing declarations for multiplicity and reasons; repeating a nonempty reason gives the same answer more than one place in the contract. An empty reason aliases the shape-level answer, so repeating it adds no competing meaning and the derived enumeration includes that answer once. Keeping authored entries visible lets an author correct actual ambiguity without a loader choosing or merging declarations.
+
+**Usual fix:** Keep one rejects entry for each schema and list each nonempty named reason once in that entry. Empty reasons may repeat as aliases of the shape-level refusal. Distinct schemas, including schemas with the same local id in different contexts, may remain separate.
+
 ## `consumable-kind` (error)
 
 **Requires:** Policies and processes react to events and issue operations; only operations raise events, and they raise only events.

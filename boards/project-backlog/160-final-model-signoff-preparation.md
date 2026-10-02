@@ -1,13 +1,13 @@
 ---
-column: review
+column: doing
 labels: [docs, model]
 priority: high
-status: Controls installed - fresh gate and available Astra final review pending
+status: Construction class integrated; frozen real-host and landing gates next; no Astra queued
 progress: 90
 agent: lead
-live: false
+live: true
 clean-code-swept: true
-updatedAt: 2026-10-02T21:44:53Z
+updatedAt: 2026-10-02T23:08:31.734135+00:00
 ---
 # Final model sign-off: the record says only what holds
 
@@ -22,8 +22,8 @@ Issue #108. The owner wants the model complete before one exact-head review by C
 - [x] Hand-written skill preferences and the tactical page read against it: each says a comment says how a message travels, which stays true; none changed
 - [x] Evidence table below for #35, #36, #37, #38, #39, #40
 - [ ] The exact-head signoff: OpenAI Astra low exact-head review; Claude weekly limit activates the owner's OpenAI-only exception, with the reviewer answering whether this is a correct, clean and detailed DDD specification, reproduced defects kept apart from named preferences (the lead)
-- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (twenty-four completed rounds found corrections; the complete reference/traversal correction stays under #108 on this card)
-- [x] Journal: twenty-four exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
+- [ ] Every reproduced defect a focused test and a fix, reviews rerun on the new head (twenty-five completed rounds found corrections; the complete reference/traversal correction stays under #108 on this card)
+- [x] Journal: twenty-five exact-head rounds, prompts, models, verdicts, rulings and follow-ups (below); final corrected round pending
 
 ## Gates
 
@@ -680,3 +680,11 @@ The lead's exact source and JSON reproduction validates with no diagnostics, the
 - **lead** (2026-10-01T22:36:01Z): Both final24 correction classes are integrated. Root full-core suite passes 1,568/1,568; independent reviewer artifacts now report one exact separate-ways diagnostic each, and the 78,029-character malformed external ref loads with one unresolved-ref and survives serialization unchanged. New 21-case borrowing matrix proves source/JSON exact negatives, fully clean permitted twins and permission contradictions; two resolver regressions prove short/deep invalid structures without recursion. All eight scoped quality reports /tmp/ods-final24-quality-*.md are clear by static inspection, read and reconciled by lead; no introduced finding above0.5. Core/graphviz/doc/skill and all five reference outputs/fixture regenerated; skill154, allfive48/shared13 and Biome/diff pass. Reference pins unchanged0/2/4/3/0; no pin or DISCOVERY edits. Card exits doing to review with clean-code-swept true. Fresh actualhosts, unmodified clean committed-head whole gate and final25 remain pending; old ad6 evidence is historical. Zero closures/newtickets/CI.
 
 - **lead** (2026-10-02T21:44:53Z): Owner authorized the guarded full delivery plan. Candidate d7d9d319 passed full gate and actual hosts; final25 CLI was interrupted by quota with NO verdict, not another BLOCK. Product source unchanged. Installed ledger docs/bots/delivery/manifest.json:1, controls docs/bots/delivery/CONTROLS.md:1, STATUS.md:1 and docs/bots/ROADMAP.md:1. Exact-head gate/host evidence and acceptance reports are archived under /Users/jonathanturnock/.codex/ods-delivery/milestone-01/d7d9d319. New documentation-only freeze/gate before one available in-app Astra low reviewer route; no repeated quota-limited CLI attempt. Card stays review and clean-code-swept true from the reconciled production audit. No fabricated human approval or closure.
+
+- **lead** (2026-10-02T22:05:33.223995+00:00): Accepted final model B1 on exact clean bdadd93d: rejected(schema, "") creates an Answer with empty reason under the same cache/ref as omitted reason; first creation controls declared status and source/JSON diagnostics. Reviewer's12-case probe has4divergences; no currentapproval. Luna6 owns workspace.ts/answer tests; separate Luna6 bounded audit checks cold/warm factory/getter/enumeration semantics and public constructor. Five whys: cache key/ref normalized empty reason while object state did not; shared first answer retained that state; fixtures requested omitted reason first; input matrices varied identities but not first-construction order; readiness lacked equivalence of cache key, canonical ref and semantic fields. Owned control: construction-order/sourceJSON matrix before lead readiness. Installed owner's binding Astra-only-final policy in docs/bots/delivery/CONTROLS.md:1, manifest.json:1, ROADMAP.md:1 and STATUS.md:1. No Astra default/intermediate audit or automatic followup after this fix. Card doing/clean-code-swept false. No newissue/CI/merge/closure.
+
+- **lead** (2026-10-02T22:40:38.209047+00:00): Accepted the current-source 48-case answer matrix with zero mismatches after independently rerunning it; no whole-model clearance. Five whys for the remaining class: repeated declarations share one canonical identity; first-match selection lets that identity have competing semantics; validation did not diagnose the conflict; reader loops assumed unique keys and could crash; the local matrix omitted repeated authored array entries. Corrective action: two bounded Luna lanes preserve input and diagnose duplicate refusals, render invalid data safely, and guard duplicate schema registration before it replaces a live source identity (`packages/core/src/workspace.ts:1634`, `packages/core/src/validate.ts:4316`). These stay under #108. No new issue, Astra request, push, CI run or closure; live census remains 54.
+
+- **lead** (2026-10-02T23:01:04.690176+00:00): Active goal verified after owner resume. Current eight-lens Luna quality pass found one introduced PANIC abort on malformed external reasons (`packages/core/src/validate.ts:4363`), and full core preflight found missing new-rule family registration. The owner must guard only the new semantic inspection and provide the actual positive/negative family pair; no broad JSON validator redesign or gate weakening. Other seven lenses remain recorded with true diff hashes. Prepared Markdown and real-host diagnostics/overview/detail assertions; hosts still unrun. Live 54 open / zero closures, no new issue, CI or Astra request.
+
+- **lead** (2026-10-02T23:08:31.734135+00:00): Accepted the bounded construction class in `packages/core/src/workspace.ts:1634` and `packages/core/src/validate.ts:4336`, safe duplicate rendering in `packages/pages/src/lib/templates/ConsumablePage.svelte:190` and `packages/pages/src/lib/molecules/RejectionList.svelte:22`, and actual source-derived diagnostic/reader regressions. All eight Luna quality lenses are reconciled; the .82 PANIC abort is resolved by runtime guards and independently verified in four built-package cases. Core 1,596 and all five rebuilt model pins pass; generated model tree unchanged. Direct/factory answer reaction probe found no mismatch, so no constructor redesign. Core preflight report contained an older copied hash; lead recomputed d1405bac and required provenance correction using actual log/timestamps, without claiming an unrecorded at-run hash. Next: freeze, fresh serialized real hosts/checker and unmodified full gate. Astra remains exclusively final whole-model signoff after lead readiness; no request queued. No new issue/CI/merge/closure, live 54.

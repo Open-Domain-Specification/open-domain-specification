@@ -425,7 +425,14 @@ several shapes when it has one. Each reason is an answer a policy or a process
 may wait on by itself — `operation.rejected(schema, reason)` — beside the
 shape-level `operation.rejected(schema)`, which hears them all. A reason is a
 named outcome, never a condition on data: how the caller decides what to do
-about it stays in the code.
+about it stays in the code. An operation names each rejection schema once and
+each nonempty reason once within that entry; repeating either gives one answer
+ref competing declarations. `rejects-duplicate` reports the repeated entry
+or nonempty reason while preserving the authored arrays for correction. Empty
+reasons may repeat as aliases of the shape-level refusal, which is enumerated
+once. Schemas from distinct
+contexts remain distinct even when their local ids match (decision 25,
+amended). This representation rule is not a law of Domain-Driven Design.
 
 A consumable is published by default and carries the upstream `pattern` it
 is offered under. Mark it `internal: true` when it is raised or handled

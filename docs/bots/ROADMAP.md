@@ -4,7 +4,9 @@
 
 The owner accepted the guarded ten-milestone plan. The operative ledger is [delivery/manifest.json](delivery/manifest.json); entry/exit criteria, scope boundaries, investigation limits and restart/journal protocol are [delivery/CONTROLS.md](delivery/CONTROLS.md). Lead owns enforcement.
 
-Current: 54 open, zero closures, milestone 1 / PR #132 active. The archived d7 candidate passed gate and actual hosts, but the CLI review was interrupted without a verdict. The documentation-only controls addition needs a fresh clean-head gate before review. Later milestones wait for model landing; actual closure counts replace forecasts.
+Current: 54 open, zero closures, milestone 1 / PR #132 active. Astra's final gate BLOCKED bdadd93d for construction-order-dependent empty refusal reasons; no approval or merge. Luna completed the bounded construction class and lead accepted local quality/core/reference evidence. Fresh frozen real-host and mandatory gates are next; no final review is queued. Later milestones wait for model landing.
+
+**Binding reviewer policy:** Astra low is only the final complete-model quality gate after lead review and explicit readiness. It is not a default reviewer and never runs after each small change. Luna 6 owns intermediate checks and heavy work; a BLOCK requires full-class correction/local proof and a new lead readiness decision, not an automatic Astra rerun. Read delivery controls and this policy after context compaction.
 
 | Milestone | Issues | Expected remaining | State |
 | --- | --- | ---: | --- |

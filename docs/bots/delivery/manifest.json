@@ -9,11 +9,11 @@
   "active_milestone": 1,
   "integration_batch": "PR132",
   "owner": "lead",
-  "candidate": "d7d9d319c68e385904d903b538ccf36fcc7c9b7f",
-  "candidate_state": "documentation controls being integrated; new clean head must pass gate before final review",
+  "candidate": null,
+  "candidate_state": "Construction class integrated and locally verified; frozen candidate SHA/host/full-gate results are recorded via durable CURRENT.json. No final review queued.",
   "approval": null,
   "merged": null,
-  "durable_checkpoint": "/Users/jonathanturnock/.codex/ods-delivery/milestone-01/d7d9d319/checkpoint.json",
+  "durable_checkpoint": "/Users/jonathanturnock/.codex/ods-delivery/milestone-01/bdadd93d/checkpoint.json",
   "milestones": [
     {
       "id": 1,
@@ -46,12 +46,28 @@
         131
       ],
       "owner": "lead",
-      "state": "active",
+      "state": "active: integrated correction ready for frozen host and mandatory gate",
       "expected_remaining": 29,
       "entry_scope": "Existing PR #132 only; model semantics and faithful four readers. No tooling or speculative expansion.",
       "exit_acceptance": "Explicit Astra low APPROVE, exact-head required gates, verified merged tree and individual25 story/card reconciliation.",
       "investigation_limit": "Each blocker needs a defect-class matrix and local proof before another final review.",
-      "evidence": [],
+      "evidence": [
+        {
+          "scope": "current construction correction preflight",
+          "core_tests": 1596,
+          "model_pins": {
+            "petstore": 0,
+            "rivermart": 2,
+            "streamline": 4,
+            "northbank": 3,
+            "clinic": 0
+          },
+          "quality": "eight lenses plus PANIC recheck accepted by lead",
+          "host": "prepared; not run",
+          "full_gate": "not run",
+          "source_diff_sha256": "d1405bacb415de1ae131cd4f3c6a489523be6397672c84b5a2f2d22ef32ae24e"
+        }
+      ],
       "closed_issues": []
     },
     {
@@ -209,5 +225,14 @@
       "evidence": [],
       "closed_issues": []
     }
-  ]
+  ],
+  "review_policy": {
+    "astra": "Final complete-model signoff only after lead review and explicit readiness; never default or per-change",
+    "heavy_work": "gpt-6-luna",
+    "lead": "Overarching plan, scope, evidence acceptance and delivery",
+    "after_block": "Full defect-class correction and Luna/local checks before lead re-declares wholemodel complete",
+    "after_small_changes": "No Astra rerun; retain true reviewedSHA and productequivalence",
+    "authority": "Owner latest instruction 2026-10-02; survives context compaction"
+  },
+  "previous_candidate": "bdadd93d390d6a01384d8fcf677492f68a78028c"
 }

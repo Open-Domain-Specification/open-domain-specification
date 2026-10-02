@@ -159,6 +159,25 @@ const valueCases: Case[] = [
 			return answers(hostile ? "rejects" : undefined).ws;
 		},
 	},
+	{
+		rules: ["rejects-duplicate"],
+		name: "an operation declares each rejection schema once",
+		fires: ["rejects-duplicate"],
+		build: (hostile) => {
+			const { ws, context } = world();
+			const bc = context("Payments");
+			const app = application(bc);
+			const refusal = bc.addSchema("Refusal");
+			app.provides("Charge", {
+				description: "",
+				type: "operation",
+				rejects: hostile
+					? [{ schema: refusal }, { schema: refusal }]
+					: [{ schema: refusal }],
+			});
+			return ws;
+		},
+	},
 ];
 
 runCases(

@@ -190,9 +190,9 @@ const processColumns: Column[] = [
 		lead="What the operation answers with when it refuses. Nothing happened, so none of these is an event; a caller reads them to know why it was told no."
 		count={c.rejects.length}
 	>
-		{#each c.rejections as { schema, many, reasons } (schema.ref)}
+		{#each c.rejections as { schema, many, reasons }, rejectionIndex (`${schema.ref}:${rejectionIndex}`)}
 			<div class="subsection">
-				<Heading level={3} id={schema.ref}>
+				<Heading level={3} id={`${schema.ref}-${rejectionIndex}`}>
 					<Lockup kind="schema" name={schema.name} ref={schema.ref} />
 					<!-- A refusal answered as a root array of that shape rather
 					     than one of it, said beside the shape because only some
@@ -203,7 +203,7 @@ const processColumns: Column[] = [
 				{#if reasons.length}
 					<!-- The outcomes the contract enumerates for this shape: what a
 					     reactor may wait on one of, rather than on any refusal. -->
-					<p class="reasons">Refuses for {#each reasons as reason (reason)}<Keyword text={reason} mono />{" "}{/each}</p>
+					<p class="reasons">Refuses for {#each reasons as reason, reasonIndex (`${reason}:${reasonIndex}`)}<Keyword text={reason} mono />{" "}{/each}</p>
 				{/if}
 				<AttributeTable attributes={schema.attributes.values()} empty="The rejection schema has no attributes." />
 			</div>

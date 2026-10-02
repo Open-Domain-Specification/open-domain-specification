@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { flowEdgeLabel, ODSFlowMap } from "./flow-map";
+import { encodeRefSegment } from "./reference";
 import { distinguish } from "./trigger-readings";
-import { type DataSchema, Workspace } from "./workspace";
+import { Answer, type DataSchema, Workspace } from "./workspace";
 
 /**
  * An answer's ref names exactly one answer, and reads back as that answer
@@ -77,6 +78,67 @@ function kernel({ reasons = [] as string[], sameName = false } = {}) {
 		.on(...answers)
 		.ends(done);
 	return { ws, charge, mine, theirs, run, answers };
+}
+
+function emptyReasonCase(
+	reasons: string[],
+	firstCall: "empty" | "omitted",
+	placement: "on" | "ends",
+) {
+	const ws = new Workspace("Empty reason", { description: "", version: "0" });
+	const subdomain = ws
+		.addDomain("Domain", { description: "" })
+		.addSubdomain("Subdomain", { description: "", type: "core" });
+	const contextId = "context/~\u{1f4a9}";
+	const context = ws
+		.addBoundedContext("Context", { description: "", id: contextId })
+		.serves(subdomain);
+	const service = context.addService("Handler", {
+		description: "",
+		type: "application",
+		id: "handler/~\u{1f4a9}",
+	});
+	const schemaId = "refusal/~\u{1f4a9}";
+	const schema = context.addSchema("Refusal", { id: schemaId });
+	schema.addAttribute("why", { type: "string" });
+	const begin = service.provides("Begin", {
+		description: "",
+		type: "operation",
+		id: "begin/~\u{1f4a9}",
+	});
+	const charge = service.provides("Charge", {
+		description: "",
+		type: "operation",
+		internal: true,
+		id: "charge/~\u{1f4a9}",
+		rejects: [{ schema, reasons }],
+	});
+	const answer =
+		firstCall === "empty"
+			? charge.rejected(schema, "")
+			: charge.rejected(schema);
+	const shapeAnswer = charge.rejected(schema);
+	const emptyReasonAnswer = charge.rejected(schema, "");
+	const process = context
+		.addProcess("Run", { description: "" })
+		.starts(begin)
+		.issues(charge);
+	if (placement === "on") process.on(answer).ends(charge.completed());
+	else process.ends(answer);
+
+	return {
+		ws,
+		context,
+		contextId,
+		schemaId,
+		charge,
+		schema,
+		begin,
+		answer,
+		shapeAnswer,
+		emptyReasonAnswer,
+		process,
+	};
 }
 
 const roundTripped = (ws: Workspace) =>
@@ -286,6 +348,212 @@ describe("an answer's ref names one answer", () => {
 		const { ws, charge, mine } = kernel({ reasons: [""] });
 		expect(charge.rejected(mine, "")).toBe(charge.rejected(mine));
 		expect(waits(roundTripped(ws))).toEqual(waits(ws));
+	});
+});
+
+describe("empty refusal reasons construct the shape-level answer", () => {
+	for (const reasons of [[], ["late"], [""]]) {
+		for (const firstCall of ["empty", "omitted"] as const) {
+			for (const placement of ["on", "ends"] as const) {
+				it(`normalises ${JSON.stringify(reasons)} after ${firstCall} first for process ${placement}`, () => {
+					const built = emptyReasonCase(reasons, firstCall, placement);
+					const { ws, charge, schema, answer, shapeAnswer, emptyReasonAnswer } =
+						built;
+					const shapeRef = `${charge.ref}/rejects/${encodeRefSegment(built.contextId)}/${encodeRefSegment(built.schemaId)}`;
+					expect(answer).toBe(shapeAnswer);
+					expect(emptyReasonAnswer).toBe(shapeAnswer);
+					expect(
+						charge.answers.filter((candidate) => candidate === shapeAnswer),
+					).toHaveLength(1);
+					expect(answer.reason).toBeUndefined();
+					expect(answer.ref).toBe(shapeRef);
+					expect(answer.declared).toBe(true);
+					const direct = new Answer(charge, schema, true, "");
+					expect(direct.reason).toBeUndefined();
+					expect(direct.ref).toBe(shapeRef);
+					expect(direct.declared).toBe(true);
+					expect(ws.getAnswerByRef(answer.ref)).toBe(answer);
+					expect(ws.validate()).toEqual([]);
+
+					const json = ws.toSchema();
+					expect(
+						json.boundedcontexts?.[built.contextId]?.services?.[
+							"handler/~\u{1f4a9}"
+						]?.provides?.["charge/~\u{1f4a9}"]?.rejects?.[0]?.reasons ?? [],
+					).toEqual(reasons);
+					const back = Workspace.fromSchema(JSON.parse(JSON.stringify(json)));
+					const backContext = back.boundedcontexts.get(built.contextId)!;
+					const backCharge = backContext.services
+						.get("handler/~\u{1f4a9}")!
+						.consumables.get("charge/~\u{1f4a9}")!;
+					const backAnswer = back.getAnswerByRef(answer.ref)!;
+					expect(backContext.schemas.get(built.schemaId)?.id).toBe(
+						built.schemaId,
+					);
+					expect(
+						backCharge.rejected(backContext.schemas.get(built.schemaId)!, ""),
+					).toBe(backAnswer);
+					expect(backAnswer.reason).toBeUndefined();
+					expect(backAnswer.declared).toBe(true);
+					expect(backAnswer.ref).toBe(answer.ref);
+					expect(back.validate()).toEqual(ws.validate());
+					expect(back.toSchema()).toEqual(json);
+
+					if (reasons.includes("late")) {
+						const named = charge.rejected(schema, "late");
+						expect(named.reason).toBe("late");
+						expect(named.declared).toBe(true);
+						expect(named.ref).not.toBe(answer.ref);
+					}
+					const invalid = charge.rejected(schema, "undeclared");
+					expect(invalid.reason).toBe("undeclared");
+					expect(invalid.declared).toBe(false);
+					const invalidProcess = built.context
+						.addProcess("Invalid reason", { description: "" })
+						.starts(built.begin)
+						.issues(charge)
+						.on(invalid)
+						.ends(charge.completed());
+					const sourceInvalidRules = ws
+						.validate()
+						.filter((diagnostic) => diagnostic.ref === invalidProcess.ref)
+						.map((diagnostic) => diagnostic.rule);
+					expect(sourceInvalidRules).toContain("consumable-kind");
+					const invalidBack = Workspace.fromSchema(
+						JSON.parse(JSON.stringify(ws.toSchema())),
+					);
+					const jsonInvalidRules = invalidBack
+						.validate()
+						.filter((diagnostic) => diagnostic.ref === invalidProcess.ref)
+						.map((diagnostic) => diagnostic.rule);
+					expect(jsonInvalidRules).toContain("unresolved-ref");
+				});
+			}
+		}
+	}
+});
+
+describe("schema IDs are unique within their owning context", () => {
+	for (const id of ["", "schema/~id", "猫/🐈~%"])
+		it(`preserves the first schema with raw id ${JSON.stringify(id)}`, () => {
+			const ws = new Workspace("Schema IDs", {
+				description: "",
+				version: "0",
+			});
+			const subdomain = ws
+				.addDomain("Domain", { description: "" })
+				.addSubdomain("Subdomain", { description: "", type: "core" });
+			const contextId = "left/~\u{1f4a9}";
+			const context = ws
+				.addBoundedContext("Left", { id: contextId, description: "" })
+				.serves(subdomain);
+			const service = context.addService("Handler", {
+				description: "",
+				type: "application",
+				id: "handler/~\u{1f4a9}",
+			});
+			const first = context.addSchema("First", { id });
+			const keptAttribute = first.addAttribute("Kept", { type: "string" });
+			const charge = service.provides("Charge", {
+				description: "",
+				type: "operation",
+				id: "charge/~\u{1f4a9}",
+				rejects: [{ schema: first, reasons: ["late"] }],
+			});
+			const answer = charge.rejected(first, "late");
+			const schemaRef = first.ref;
+			const answerRef = answer.ref;
+
+			expect(() => context.addSchema("Second", { id })).toThrow(
+				`Schema id ${JSON.stringify(id)} already exists in bounded context ${JSON.stringify(contextId)}`,
+			);
+			expect(context.schemas.get(id)).toBe(first);
+			expect(first.attributes.get("kept")).toBe(keptAttribute);
+			expect(first.ref).toBe(schemaRef);
+			expect(charge.rejected(first, "late")).toBe(answer);
+			expect(answer.schema).toBe(first);
+			expect(answer.ref).toBe(answerRef);
+			expect(answer.declared).toBe(true);
+
+			const otherContext = ws.addBoundedContext("Right", {
+				id: "right/~\u{1f4a9}",
+				description: "",
+			});
+			const other = otherContext.addSchema("Same id elsewhere", { id });
+			expect(other.id).toBe(id);
+			expect(other.ref).not.toBe(schemaRef);
+
+			const json = ws.toSchema();
+			const back = roundTripped(ws);
+			const backContext = back.boundedcontexts.get(contextId)!;
+			const backSchema = backContext.schemas.get(id)!;
+			const backCharge = backContext.services
+				.get("handler/~\u{1f4a9}")!
+				.consumables.get("charge/~\u{1f4a9}")!;
+			const backAnswer = back.getAnswerByRef(answerRef)!;
+			expect(backContext.id).toBe(contextId);
+			expect(backSchema.id).toBe(id);
+			expect(backSchema.attributes.get("kept")?.name).toBe("Kept");
+			expect(backCharge.rejected(backSchema, "late")).toBe(backAnswer);
+			expect(backAnswer.ref).toBe(answerRef);
+			expect(backAnswer.declared).toBe(true);
+			expect(json.boundedcontexts?.[contextId]?.schemas?.[id]?.name).toBe(
+				"First",
+			);
+			expect(back.toSchema()).toEqual(json);
+		});
+});
+
+describe("answer enumeration keeps each canonical answer once", () => {
+	it("deduplicates repeated rejection shapes and outcomes without rewriting them", () => {
+		const ws = new Workspace("Answer enumeration", {
+			description: "",
+			version: "0",
+		});
+		const context = ws.addBoundedContext("Local", { description: "" });
+		const schema = context.addSchema("Decline", { id: "decline/~" });
+		const handler = context.addService("Handler", {
+			description: "",
+			type: "application",
+		});
+		const charge = handler.provides("Charge", {
+			description: "",
+			type: "operation",
+			rejects: [
+				{ schema, reasons: ["late", "late", ""] },
+				{ schema, many: true, reasons: ["late", "early"] },
+				{ schema, reasons: ["early"] },
+			],
+		});
+		const json = ws.toSchema();
+		const authoredRejections =
+			json.boundedcontexts?.local?.services?.handler?.provides?.charge?.rejects;
+		const answers = charge.answers;
+		const refs = answers.map((answer) => answer.ref);
+
+		expect(authoredRejections).toEqual([
+			{ $ref: schema.ref, reasons: ["late", "late", ""] },
+			{ $ref: schema.ref, many: true, reasons: ["late", "early"] },
+			{ $ref: schema.ref, reasons: ["early"] },
+		]);
+		expect(refs).toEqual([
+			`${charge.ref}/completed`,
+			`${charge.ref}/rejects/${encodeRefSegment(context.id)}/${encodeRefSegment(schema.id)}`,
+			`${charge.ref}/rejects/${encodeRefSegment(context.id)}/${encodeRefSegment(schema.id)}/late`,
+			`${charge.ref}/rejects/${encodeRefSegment(context.id)}/${encodeRefSegment(schema.id)}/early`,
+		]);
+		expect(new Set(refs).size).toBe(refs.length);
+		expect(
+			answers.filter((answer) => answer.reason === undefined),
+		).toHaveLength(2);
+
+		const back = roundTripped(ws);
+		const backCharge = back.boundedcontexts
+			.get("local")!
+			.services.get("handler")!
+			.consumables.get("charge")!;
+		expect(backCharge.answers.map((answer) => answer.ref)).toEqual(refs);
+		expect(back.toSchema()).toEqual(json);
 	});
 });
 

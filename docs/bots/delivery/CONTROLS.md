@@ -28,9 +28,17 @@ Two unsuccessful corrections of the same defect class require a bounded subsyste
 
 Before final review: finite positive/negative source+JSON matrix complete, affected four-reader assertions, introduced quality findings resolved, generated outputs rebuilt, exact reference pins preserved, required tests/gate passed on clean committed candidate. Apply pre-commit/clean-code-review proportionally; never lower thresholds/skip failures. Actual VS Code tests and port 4173 browser/full gate are serialized.
 
-Use Astra low / Claude Opus 5.5 high final reviewers only when lead is happy complete. Owner permits SOL coding and OpenAI-only final approval when Claude quota is exhausted; no false Claude signoff. Quota failures record availability/resume condition; no repeated retries on the same unavailable route. Use a different authorized available route once, then record actual outcome.
+### Binding final model review policy
 
-Evidence always names SHA. Old green gates and BLOCKs are history. An interrupted review has no verdict. Rerun checks only for a concrete changed risk or mandatory gate; once sufficiently verified, land. GitHub CI only where explicit acceptance or branch rules require it, on final candidates; no release.
+Astra low is only for final independent signoff of the complete model, after the lead has reviewed it and is happy that all model work is finished. It is never the default reviewer. Luna 6 owns heavy implementation, intermediate checks, bounded audits and correction work. Lead owns the overarching plan, evidence acceptance, integration and delivery decisions.
+
+Do not request Astra after individual commits, documentation/control edits, test-only corrections, stories, routine quality audits or UI/tooling milestones. A BLOCK does not trigger an automatic rerun: correct the whole defect class, broaden the missing acceptance axis, finish Luna/local checks, then lead must explicitly declare the whole model complete before any renewed final gate.
+
+After approval, metadata/documentation/test-only changes do not trigger Astra again. Record the actual reviewed SHA and verified product equivalence, never claim approval of a SHA the reviewer did not review. Mandatory landing gates still apply. If metamodel semantics genuinely change later, finish that coherent model milestone and obtain lead readiness before proposing final signoff.
+
+Owner permits OpenAI-only approval when Claude quota is exhausted; never claim Claude approval without it. Quota failures record a resume condition; do not repeatedly retry the unavailable route. This policy supersedes every historical per-change or automatic Astra review practice and must be read after every restart/context compaction.
+
+Evidence always names SHA. Compute source identities from the actual inspected state; never copy hashes from prior reports. Capture real process exit codes without a status-masking log pipeline. Compile shared source only after all writers report it settled; reserving the build process alone is insufficient. Old green gates and BLOCKs are history. An interrupted review has no verdict. Rerun checks only for a concrete changed risk or mandatory gate; once sufficiently verified, land. GitHub CI only where explicit acceptance or branch rules require it, on final candidates; no release.
 
 Verify actual merged tree against approved candidate. Reconcile each story/card separately, then parent epics; no blind checkbox sweep or forged human approval fields. Current board doing-exit requires clean-code-swept=true; honor configured gates and owner-authorized closure. Required closeout-record commits pass the mandatory gate before push.
 
