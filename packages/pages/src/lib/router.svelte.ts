@@ -1,6 +1,8 @@
+import { hashToModelRef, modelRefToHash } from "./ref-transport";
+
 /**
- * Hash router. A ref is already a hash (`#/domains/sales`), so the location
- * hash is the current ref and plain anchors navigate. `#` or empty is the workspace.
+ * Hash router. Canonical model refs are encoded once when carried in the URL
+ * fragment and decoded once on arrival. `#` or empty is the workspace.
  *
  * Route anchors are also handled on click rather than left to the browser: the
  * VS Code webview host intercepts every same-page hash link, prevents its
@@ -16,13 +18,7 @@ export function createRouter() {
 	let arrivals = $state(0);
 	function read(): string {
 		if (typeof location === "undefined") return "#";
-		let raw = location.hash;
-		try {
-			raw = decodeURIComponent(raw);
-		} catch {
-			// A malformed escape (`#/search?q=100%`) is kept verbatim rather than crashing the app.
-		}
-		return raw.length > 2 ? raw.replace(/\/$/, "") : "#";
+		return hashToModelRef(location.hash) ?? "#";
 	}
 	if (typeof window !== "undefined") {
 		// `go` sets `ref` itself, so a hashchange that finds a new
@@ -42,9 +38,10 @@ export function createRouter() {
 		if (!anchor || anchor.getAttribute("target")) return;
 		// The selector guarantees the attribute.
 		const href = anchor.getAttribute("href") as string;
-		if (!isRoute(href)) return;
+		const next = hashToModelRef(href);
+		if (!next || !isRoute(next)) return;
 		e.preventDefault();
-		go(href);
+		go(next);
 		arrivals += 1;
 	}
 	/** Route hashes are `#` or `#/…`; section anchors like `#overview` are left to the page. */
@@ -52,11 +49,12 @@ export function createRouter() {
 		return href === "#" || href.startsWith("#/");
 	}
 	function go(next: string) {
-		if (location.hash === next || (next === "#" && location.hash === "")) {
+		const hash = modelRefToHash(next);
+		if (location.hash === hash || (next === "#" && location.hash === "")) {
 			ref = read();
 			return;
 		}
-		location.hash = next;
+		location.hash = hash;
 		ref = read();
 	}
 	return {

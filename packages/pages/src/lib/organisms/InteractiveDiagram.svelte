@@ -33,6 +33,7 @@ import { edgeTypes, nodeTypes } from "../flow/registry";
 import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 import { hostColorMode } from "../flow/theme.svelte";
 import { createReducedMotion } from "../motion.svelte";
+import { modelRefToHash } from "../ref-transport";
 import DisclosureCard from "./DisclosureCard.svelte";
 
 /** Svelte Flow's own ceiling, which the diagram never overrides. */
@@ -104,7 +105,7 @@ onDestroy(motion.stop);
 const open = (id: string) => {
 	if (!opensPage(id)) return;
 	fullscreen.exit();
-	location.hash = id;
+	location.hash = modelRefToHash(id);
 };
 /**
  * Svelte Flow selects a node on Enter and Space, and this diagram has nothing

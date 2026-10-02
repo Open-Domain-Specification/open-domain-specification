@@ -13,6 +13,7 @@ import {
 	toDot,
 } from "ts-graphviz";
 import { getDebug } from "./debug";
+import { graphIdentifier } from "./identifier";
 
 const debug = getDebug("flow-map");
 
@@ -50,7 +51,7 @@ export function flowMapToDigraph(flowMap: ODSFlowMap): {
 
 	for (const [id, node] of flowMap.nodes) {
 		const owner = node.namespace[node.namespace.length - 1]?.name ?? "";
-		const graphvizNode = new Node(id, {
+		const graphvizNode = new Node(graphIdentifier(id), {
 			...NODE_STYLES[node.type],
 			label: isReaction(node) ? node.name : `${node.name}\n(${owner})`,
 			tooltip: node.description,

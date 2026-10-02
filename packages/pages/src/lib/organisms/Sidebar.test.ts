@@ -4,7 +4,7 @@ import { petstoreModel } from "../fixtures";
 import Harness from "./Sidebar.harness.svelte";
 
 const rowFor = (container: HTMLElement, ref: string) =>
-	container.querySelector(`a[href="${ref}"]`)?.closest(".item");
+	container.querySelector(`a[data-ref="${ref}"]`)?.closest(".item");
 
 describe("Sidebar", () => {
 	it("lists domains with their subdomains, contexts with their aggregates and services, and teams", () => {
@@ -70,7 +70,8 @@ describe("Sidebar", () => {
 
 	it("marks exactly one link aria-current=page, the page being read, and no ancestor or other row", () => {
 		const { container } = render(Harness);
-		const link = (ref: string) => container.querySelector(`a[href="${ref}"]`);
+		const link = (ref: string) =>
+			container.querySelector(`a[data-ref="${ref}"]`);
 		expect(link("#/boundedcontexts/catalog_bc/aggregates/pet")).toHaveAttribute(
 			"aria-current",
 			"page",
@@ -88,7 +89,7 @@ describe("Sidebar", () => {
 		const { container } = render(Harness);
 		expect(
 			[...container.querySelectorAll(".item.active a")].map((a) =>
-				a.getAttribute("href"),
+				a.getAttribute("data-ref"),
 			),
 		).toEqual([
 			"#/boundedcontexts/catalog_bc",
@@ -103,7 +104,7 @@ describe("Sidebar", () => {
 		expect(container.querySelector("[aria-current]")).toBeNull();
 		expect(
 			[...container.querySelectorAll(".item.active a")].map((a) =>
-				a.getAttribute("href"),
+				a.getAttribute("data-ref"),
 			),
 		).toEqual([
 			"#/boundedcontexts/catalog_bc",
@@ -117,7 +118,7 @@ describe("Sidebar", () => {
 			current: `${service}/consumes/boundedcontexts~catalog_bc~aggregates~pet~provides~reserve_pet`,
 		});
 		expect(container.querySelectorAll("[aria-current]")).toHaveLength(1);
-		expect(container.querySelector(`a[href="${service}"]`)).toHaveAttribute(
+		expect(container.querySelector(`a[data-ref="${service}"]`)).toHaveAttribute(
 			"aria-current",
 			"page",
 		);

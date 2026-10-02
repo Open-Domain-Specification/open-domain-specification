@@ -55,7 +55,7 @@ describe("every template, through the shipped route", () => {
 		const headers = [...(invariants?.querySelectorAll("thead th") ?? [])].map(
 			(h) => h.textContent?.trim(),
 		);
-		expect(headers).toEqual(["Invariant", "Constrains", "Description"]);
+		expect(headers).toEqual(["Invariant", "When", "Constrains", "Description"]);
 	});
 
 	it("AggregatePage: an internal operation says so, and a published one lists its consumers", () => {
@@ -81,7 +81,9 @@ describe("every template, through the shipped route", () => {
 		).toEqual(["Relation", "Target", "Cardinality", "Label"]);
 		// Nothing in the Pet aggregate points back at Pet, so the incoming table
 		// says what would fill it instead of drawing an empty header row.
-		expect(relations?.textContent).toContain("Nothing points at this entity.");
+		expect(relations?.textContent).toContain(
+			"No relation names this entity directly.",
+		);
 		const identity = [...container.querySelectorAll("dt")].find(
 			(t) => t.textContent === "Identity",
 		);
@@ -313,7 +315,7 @@ describe("every template, through the shipped route", () => {
 		]);
 		expect([...directions.values()]).toEqual(["returns many", "returns"]);
 		expect(container.textContent).not.toContain(
-			"Nothing carries this schema yet",
+			"No consumable names this schema directly.",
 		);
 	});
 

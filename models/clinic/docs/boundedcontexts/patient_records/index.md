@@ -32,11 +32,11 @@ Fronts Records for the rest of the clinic.
 
 
 ## Invariants
-Rules that hold across this context's instances and aggregates; each names the operation that checks it before acting.
+Rules checked or guaranteed by this context's consumables. The Check column distinguishes preconditions, postconditions and checks without a timing flag.
 
-| Name | Description | Constrains |
-| --- | --- | --- |
-| One External Reference Per System | A patient never holds two references from the same outside system -- if a second one turns up, it is a mistake to catch, not a second identity to keep. | GP Practice Reference, Lab Reference, Link GP Practice Reference, Link Lab Reference |
+| Name | Description | Check | Constrains |
+| --- | --- | --- | --- |
+| One External Reference Per System | A patient never holds two references from the same outside system -- if a second one turns up, it is a mistake to catch, not a second identity to keep. | Checked before | GP Practice Reference, Lab Reference, Link GP Practice Reference, Link Lab Reference |
 
 
 ## Value Objects
@@ -45,11 +45,11 @@ Rules that hold across this context's instances and aggregates; each names the o
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| Patient Summary | What Records answers with when another part of the clinic looks a patient up. | **patientId**: `string`, fullName: `string`, dateOfBirth: `string` | Register Patient, Get Patient Summary |
-| Patient Lookup Request | Which patient is being asked for. | patientId: `string` | Get Patient Summary |
-| Patient Details | What is known about a new patient when they are first registered. | fullName: `string`, dateOfBirth: `string` | Register Patient, Patient Registered |
-| GP Reference Details | A patient's GP practice number, to be linked to our own record. | patientId: `string`, gpPatientNumber: `string` (identifies [GP Practice System](../gp_practice_system/index.md)) | Link GP Practice Reference |
-| Lab Reference Details | A patient's lab reference, to be linked to our own record. | patientId: `string`, labPatientReference: `string` (identifies [Laboratory](../laboratory/index.md)) | Link Lab Reference |
+| Patient Summary | What Records answers with when another part of the clinic looks a patient up. | **patientId**: `string`, fullName: `string`, dateOfBirth: `string` | [Register Patient](aggregates/patient_record/index.md) (operation), [Get Patient Summary](services/patient_directory/index.md) (operation) |
+| Patient Lookup Request | Which patient is being asked for. | patientId: `string` | [Get Patient Summary](services/patient_directory/index.md) (operation) |
+| Patient Details | What is known about a new patient when they are first registered. | fullName: `string`, dateOfBirth: `string` | [Register Patient](aggregates/patient_record/index.md) (operation), [Patient Registered](aggregates/patient_record/index.md) (event) |
+| GP Reference Details | A patient's GP practice number, to be linked to our own record. | patientId: `string`, gpPatientNumber: `string` (identifies [GP Practice System](../gp_practice_system/index.md)) | [Link GP Practice Reference](aggregates/patient_record/index.md) (operation) |
+| Lab Reference Details | A patient's lab reference, to be linked to our own record. | patientId: `string`, labPatientReference: `string` (identifies [Laboratory](../laboratory/index.md)) | [Link Lab Reference](aggregates/patient_record/index.md) (operation) |
 
 
 ## Policies

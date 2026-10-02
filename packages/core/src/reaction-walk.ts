@@ -92,6 +92,11 @@ export type ReactionStep = {
  *
  * The flow map draws these steps and `reaction-cycle` looks for rings in
  * them, so a chain a reader can see drawn is the same chain the rule walks.
+ * An answer step is drawn once on the call that asked, and is conditional on
+ * the reactor that made that call; the rule keeps a ring met here only when
+ * the same steps, with the condition kept, run it whole (see
+ * `InvocationWalk`), so a ring is always made of steps a reader can see, but
+ * not every path through the drawing is a ring.
  */
 export class ReactionChain {
 	/**
@@ -236,7 +241,8 @@ function callsTo(bc: BoundedContext, operation: Consumable): Consumption[] {
  * woke each other, and `reaction-cycle` reported a ring between contexts that
  * never trigger one another at all.
  *
- * Three ways a reactor is the caller, in the order they are asked:
+ * Four ways a reactor is the caller, and one that called in more than one of
+ * them hears the answer down every call it made (see {@link routesTo}):
  *
  * - It issues the operation itself. A process that calls a local validator and
  *   branches on the verdict made the call and declares no consumption of its
@@ -337,17 +343,21 @@ function callersFor(reactor: Policy | Process, call: Consumption): Reactor[] {
  * process is what the call created rather than what asked for it. So this list
  * is read for the `by` a consumption names and for the chain that leads to it,
  * and never as "the reactor issues this operation" (see {@link routesTo}).
+ *
+ * The start comes first because it is the instance's first step, then what
+ * the reactor issues in the order it declares them; an answer's routes are
+ * listed in this order.
  */
 function firstSteps(reactor: Policy | Process): Consumable[] {
 	if (!(reactor instanceof Process)) return reactor.commands;
 	return [
-		...reactor.commands,
 		...reactor.startEvents.filter(
 			(it) =>
 				it.type === "operation" &&
 				it.boundedcontext === reactor.boundedcontext &&
 				!reactor.commands.includes(it),
 		),
+		...reactor.commands,
 	];
 }
 
@@ -398,18 +408,48 @@ function firstSteps(reactor: Policy | Process): Consumable[] {
  * `by: [thatOperation]` would (decisions 21 and 23), and read that way it says
  * nothing the call chain above does not, so the clause is gone rather than
  * repaired (card 128).
+ *
+ * A reactor that made the call more than one way gets every route, each root
+ * once. Until the twentieth signoff review this returned the first kind of
+ * route that found anything — the reactor issuing the operation, then a `by`
+ * naming one of its operations, then a chain — so a process issuing a direct
+ * caller and an indirect one heard the answer down the direct call only, and
+ * adding a valid route erased another from the walk and the flow map (issue
+ * #108). Every root is still the reactor's own and conditional on its own
+ * invocation: a front two reactors issue is a root of each, and a reactor
+ * never gains a root it does not issue or start on.
+ *
+ * Which roots may carry an answer is decided for each root before routes are
+ * combined. A starting operation the process does not issue keeps its own
+ * answer for whoever invoked it, under every kind of route: until the
+ * twenty-first review a written `by` on the start's self-consumption let it
+ * through while the inferred `by` and the invocation walk refused it (issue
+ * #108). Its calls out are still the instance's, and an operation the process
+ * issues that calls the start makes a call of its own.
  */
 export function routesTo(
 	reactor: Policy | Process,
 	operation: Consumable,
 ): Reactor[] {
-	if (reactor.commands.includes(operation)) return [operation];
-	const calls = callsTo(reactor.boundedcontext, operation);
-	const named = calls.flatMap((call) => callersFor(reactor, call));
-	if (named.length > 0) return named;
-	return firstSteps(reactor).filter((issued) =>
-		callChainReaches(issued, operation, reactor.boundedcontext),
+	const named = new Set(
+		callsTo(reactor.boundedcontext, operation).flatMap((call) =>
+			callersFor(reactor, call),
+		),
 	);
+	// The process is what its start created, not what called it: a starting
+	// operation it does not issue keeps its own answer for whoever invoked
+	// it, however a consumption names it, and that is asked of every root
+	// before any route counts. Its calls out are still the instance's own.
+	const ownStart =
+		!reactor.commands.includes(operation) &&
+		firstSteps(reactor).includes(operation);
+	const routes: Reactor[] = firstSteps(reactor).filter((root) =>
+		root === operation
+			? !ownStart
+			: named.has(root) ||
+				callChainReaches(root, operation, reactor.boundedcontext),
+	);
+	return named.has(reactor) && !ownStart ? [...routes, reactor] : routes;
 }
 
 /**
@@ -452,6 +492,19 @@ function callChainReaches(
 	return false;
 }
 
+/** The effective callers of an operation consumption, shared by walks and rules. */
+export function operationCallers(consumption: Consumption): Consumable[] {
+	if (consumption.consumable.type !== "operation") return [];
+	if (consumption.by.length > 0)
+		return consumption.by.filter(
+			(caller): caller is Consumable => caller instanceof Consumable,
+		);
+	const operations = [...consumption.consumer.consumables.values()].filter(
+		(it) => it.type === "operation",
+	);
+	return operations.length === 1 ? operations : [];
+}
+
 /**
  * The operations one operation calls out to: the consumptions its own
  * provider declares that name it in `by`. A consumption's `by` names
@@ -476,17 +529,9 @@ function callChainReaches(
  */
 export function callsOut(operation: Consumable): Consumable[] {
 	if (operation.type !== "operation") return [];
-	const { provider } = operation;
-	const soleCaller =
-		[...provider.consumables.values()].filter((it) => it.type === "operation")
-			.length === 1;
-	return provider.consumptions
-		.filter(
-			(c) =>
-				c.consumable.type === "operation" &&
-				(c.by.includes(operation) || (soleCaller && c.by.length === 0)),
-		)
-		.map((c) => c.consumable);
+	return operation.provider.consumptions
+		.filter((consumption) => operationCallers(consumption).includes(operation))
+		.map((consumption) => consumption.consumable);
 }
 
 /**

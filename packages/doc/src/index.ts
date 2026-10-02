@@ -30,6 +30,8 @@ import { serviceMd } from "./service.md";
 import { subdomainMd } from "./subdomain.md";
 import { workspaceMd } from "./workspace.md";
 
+export { pathToGlossaryMd, pathToIndexMd } from "./lib/paths";
+
 export async function toDoc(
 	workspace: Workspace,
 	options?: Options,

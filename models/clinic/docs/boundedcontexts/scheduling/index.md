@@ -38,11 +38,11 @@ Offers the patient a slot once triage accepts their case.
 
 
 ## Invariants
-Rules that hold across this context's instances and aggregates; each names the operation that checks it before acting.
+Rules checked or guaranteed by this context's consumables. The Check column distinguishes preconditions, postconditions and checks without a timing flag.
 
-| Name | Description | Constrains |
-| --- | --- | --- |
-| Slot Offered Once | A slot is never offered to a second patient while it is already held. | Slot.status, Offer Slot |
+| Name | Description | Check | Constrains |
+| --- | --- | --- | --- |
+| Slot Offered Once | A slot is never offered to a second patient while it is already held. | Checked before | Slot.status, Offer Slot |
 
 
 ## Value Objects
@@ -51,12 +51,12 @@ Rules that hold across this context's instances and aggregates; each names the o
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| Slot Offer Request | Which accepted case, and which patient, is being offered a slot. | referralId: `string` (identifies [Referral](../triage/aggregates/referral_case/index.md)), patientId: `string` (identifies [Patient](../patient_records/aggregates/patient_record/index.md)) | Offer Slot |
-| Booking Confirmed | The patient took the offered slot. | **bookingId**: `string`, slotId: `string`, startTime: `string` | Booking Confirmed |
-| Patient Waitlisted | The offered slot did not suit the patient, so they were put on the waiting list for a better one instead -- a second fact, not a refusal, carried under raises alongside the booking (see DISCOVERY.md). | **bookingId**: `string`, note: `string` (optional) | Patient Waitlisted |
-| Booking Cancelled Details | Which booking was cancelled, and why. | reason: `string` (optional) | Booking Cancelled |
-| Cancellation Request | Which booking is being cancelled. | reason: `string` (optional) | Cancel Booking |
-| Appointment Day Reached Details | Which confirmed booking's clinic session date has arrived. | **bookingId**: `string` | Mark Appointment Day Reached, Appointment Day Reached |
+| Slot Offer Request | Which accepted case, and which patient, is being offered a slot. | referralId: `string` (identifies [Referral](../triage/aggregates/referral_case/index.md)), patientId: `string` (identifies [Patient](../patient_records/aggregates/patient_record/index.md)) | [Offer Slot](services/scheduling_desk/index.md) (operation) |
+| Booking Confirmed | The patient took the offered slot. | **bookingId**: `string`, slotId: `string`, startTime: `string` | [Booking Confirmed](aggregates/booking/index.md) (event) |
+| Patient Waitlisted | The offered slot did not suit the patient, so they were put on the waiting list for a better one instead -- a second fact, not a refusal, carried under raises alongside the booking (see DISCOVERY.md). | **bookingId**: `string`, note: `string` (optional) | [Patient Waitlisted](aggregates/booking/index.md) (event) |
+| Booking Cancelled Details | Which booking was cancelled, and why. | reason: `string` (optional) | [Booking Cancelled](aggregates/booking/index.md) (event) |
+| Cancellation Request | Which booking is being cancelled. | reason: `string` (optional) | [Cancel Booking](aggregates/booking/index.md) (operation) |
+| Appointment Day Reached Details | Which confirmed booking's clinic session date has arrived. | **bookingId**: `string` | [Mark Appointment Day Reached](aggregates/booking/index.md) (operation), [Appointment Day Reached](aggregates/booking/index.md) (event) |
 
 
 ## Policies

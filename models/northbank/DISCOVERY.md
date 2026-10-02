@@ -71,6 +71,8 @@ pending authorisations and available balance; six invariants including
 open hosts; `PlaceHold` internal; the "Freeze on fraud case", "Update balance on posting"
 and "Hold on card authorisation" policies; a shared kernel with the Shared Kernel context
 (card 56, section 6); the glossary entry for Balance with the three meanings.
+Card 157: the kernel is shared with Ledger, the other owner this lead names, and there is no
+Shared Kernel context (see the revision for card 157).
 
 ### Core Banking lead (ledger and Sovereign)
 
@@ -93,7 +95,9 @@ section 12), PostingDirection and ValueDate; invariants `EntryBalances`,
 `ReverseEntry` as open hosts; `EntryPosted` published; the "Import nightly batch" policy
 translating the legacy event; Sovereign Core (legacy) flagged as a big ball of mud with
 `NightlyBatchCompleted` as its one published event; glossary entries for Account (the
-ledger's meaning) and Posted balance.
+ledger's meaning) and Posted balance. Card 157: Money and AccountNumber are declared in
+Ledger, co-owned with Accounts through their shared kernel; this lead's own words do not
+mention the library (see the revision for card 157).
 
 ### Payments Hub lead
 
@@ -307,6 +311,10 @@ of the bank has such a capability and no customer journey runs through it. What 
 serves is whatever its sharers serve, and the rule now says so. The team that owns Money and
 AccountNumber stays, because somebody does own them.
 
+Note (card 157): somebody does own them, and the interview says who: the Accounts Team and
+the Core Banking Team. The Shared Kernel Team and its context are gone. See the revision for
+card 157.
+
 ## 6. The context map
 
 - **Shared kernel**, card 56: Money and AccountNumber are declared once, in a Shared Kernel
@@ -316,6 +324,10 @@ AccountNumber stays, because somebody does own them.
   relationships to one kernel, not fifteen pairwise agreements among themselves (decision
   16's amendment). Accounts and Ledger also borrow AccountNumber; the rest borrow Money
   only.
+  Note (card 157): this made four users co-owners. The kernel is now pairwise between
+  Accounts and Ledger. Payments and Lending borrow Money as Ledger's customers, Reporting as
+  its conformist, and Cards as a conformist over one new relationship. See the revision for
+  card 157.
 - **Partnership** between Lending and Credit Decisioning: one board, joint releases, no
   translation between them.
 - **Separate ways** between Branch & Contact Centre and Credit Decisioning: conduct policy;
@@ -892,3 +904,82 @@ stay untouched -- what the decision keeps once pulled is still the decision's ow
 freshness invariant is still the decision's to check, not the bureau's.
 
 The deliberate diagnostics of section 7 are untouched: the same three, for the same reasons.
+
+## Revision (card 157): Accounts and Ledger own the kernel, and the others use it
+
+The Accounts Team lead said "Money and account numbers are one shared library between us and
+the ledger; we change it together and release it together." That names two owners. Card 56
+read decision 16's amendment of 2026-09-07, which said every context that *uses* a shared
+library declares a shared-kernel relationship with it. So the model invented a Shared Kernel
+Team, which no interview names, and a Shared Kernel context. It gave the context six
+shared-kernel relationships, one each for Accounts, Ledger, Payments, Cards, Lending and
+Reporting. Generated Markdown describes a shared kernel as co-owned by both teams, so the
+model told a reader that Payments, Cards, Lending and Reporting co-own Money. Nobody said so
+(issue #107).
+
+The kernel is now what the interview describes: a pairwise shared kernel between Accounts
+and Ledger, `Money and AccountNumber, from @northbank/money, changed and released together by
+the two teams`. A value object has one home, so the two are declared in one of the owners.
+The model picks Ledger, and each description says the value is co-owned by Accounts and
+Ledger and declared in Ledger only because it needs one home. Ledger is the home because
+every other context that carries an amount already stands downstream of it, except Cards.
+Accounts would not work: Payments and Cards take Accounts' operations through an
+anti-corruption layer, which carries no borrowing, and Lending has no relationship with
+Accounts. Accounts borrows both values across the kernel. The kernel sits beside Accounts'
+existing conformist relationship to the ledger's events.
+
+The four users borrow Money over directed relationships and co-own none of it:
+
+- **Payments and Lending**, as customers of Ledger, over the customer-supplier relationships
+  the Core Banking lead's "payments, lending and the accounts platform post through our API,
+  and they're consulted before we change it" already gave them.
+- **Reporting**, as a conformist of Ledger, over its existing relationship: "we take the
+  events as published".
+- **Cards**, as a conformist of Ledger, over one new relationship. Cards had no relationship
+  with Ledger, and this one carries nothing but the borrowing.
+
+What is still uncertain, and is the next session's to ask:
+
+- **Ledger's side of the co-ownership.** Only the Accounts lead's words, and the peer review's
+  "one library, two teams" (section 9), say the ledger co-owns the library. The Core Banking
+  lead's own words do not mention it. The model takes the Accounts lead at their word.
+- **Whether the four users use the library at all.** No interview says Payments, Cards,
+  Lending or Reporting compile against `@northbank/money`. That claim came from the modeller's
+  reading in card 56 (section 10) and from the illustrative ADR-006 link on the kernel. It is
+  kept as the model's assumption rather than dropped, because the alternative, each context
+  declaring its own Money, would also be a claim the interviews do not make. The Cards
+  relationship's description says the use is assumed.
+- **Whether "consulted before we change it" covers Money.** The Core Banking lead may have
+  meant only the posting API. If Payments and Lending have no say over Money, they take it as
+  released, and conformist is the more exact word for that part of the relationship. The
+  borrowing is allowed either way.
+
+Relationships go from 38 to 34: six shared-kernel relationships out, one pairwise kernel and
+the Cards conformist relationship in. Contexts go from 20 to 19 and teams from 13 to 12. No
+aggregate, invariant, event, operation or policy changed. The deliberate diagnostics of
+section 7 are untouched: the same three, for the same reasons, with the same refs and
+messages.
+
+
+## Revision (card 158): `Decide` runs the scorecard through a recorded call
+
+The Head of Credit Risk said: "pull a bureau report no older than thirty days, run the
+scorecard, and check affordability". `Decide`'s description says it hands the report to the
+scorecard and runs it, and `Scorecard` provides the internal `ScoreApplication`. The model
+recorded `Decide` pulling the bureau report and fetching the customer, and recorded no call
+to `ScoreApplication`. The flow map, the reaction walk and Markdown's consumption tables
+therefore left out a step the prose says happens (issue #109).
+
+`DecisioningApp` now consumes `ScoreApplication`, with `by: [Decide]`: a local consumption,
+inside one context, which decision 17 allows and which is how a domain service is reached (its
+front makes the call; the service holds no outbound port). It carries no pattern, because
+nothing crosses a boundary, no schema and no `returns`, because the interview says the
+scorecard is run and never says what it hands back. `CreditScore`, the scorecard's output
+with reason codes, already exists as a value object of the decision, but no source says
+`ScoreApplication` answers with it, so the model does not wire them. The call reads as
+"completed" for an answer's purposes, and nothing listens for it.
+
+Still uncertain, for the next session to ask: what the scorecard hands back, and whether the
+decision's reasons come from it. If the answer is a score with reason codes, `returns:
+CreditScore` is the one-line addition. No rule was weakened and no construct added; the
+deliberate diagnostics of section 7 are untouched: the same three, for the same reasons.

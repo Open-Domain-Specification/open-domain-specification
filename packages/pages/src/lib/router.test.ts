@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { modelRefToHash } from "./ref-transport";
 import { createRouter } from "./router.svelte";
 
 // Every router listens on the document for the life of the page. Each test
@@ -38,20 +39,20 @@ describe("createRouter", () => {
 		expect(router.ref).toBe("#");
 	});
 
-	it("strips a trailing slash from the current hash", () => {
-		location.hash = "#/domains/sales/";
+	it("preserves a terminal empty segment in the current hash", () => {
+		location.hash = modelRefToHash("#/domains/sales/");
 		const router = createRouter();
-		expect(router.ref).toBe("#/domains/sales");
+		expect(router.ref).toBe("#/domains/sales/");
 	});
 
-	it("keeps a hash with a malformed escape instead of throwing", () => {
+	it("rejects a malformed transport escape without throwing", () => {
 		location.hash = "#/search?q=100%";
 		const router = createRouter();
-		expect(router.ref).toBe("#/search?q=100%");
+		expect(router.ref).toBe("#");
 	});
 
 	it("keeps a hash with no trailing slash as-is", () => {
-		location.hash = "#/domains/sales";
+		location.hash = modelRefToHash("#/domains/sales");
 		const router = createRouter();
 		expect(router.ref).toBe("#/domains/sales");
 	});
@@ -60,16 +61,39 @@ describe("createRouter", () => {
 		location.hash = "";
 		const router = createRouter();
 		expect(router.ref).toBe("#");
-		location.hash = "#/teams/pet_shop_team";
+		location.hash = modelRefToHash("#/teams/pet_shop_team");
 		window.dispatchEvent(new HashChangeEvent("hashchange"));
 		expect(router.ref).toBe("#/teams/pet_shop_team");
+	});
+
+	it("preserves identity through direct load and simulated back navigation", () => {
+		const percent = "#/boundedcontexts/%2F";
+		const unicode = "#/boundedcontexts/é";
+		location.hash = modelRefToHash(percent);
+		const router = createRouter();
+		expect(router.ref).toBe(percent);
+		location.hash = modelRefToHash(unicode);
+		window.dispatchEvent(new HashChangeEvent("hashchange"));
+		expect(router.ref).toBe(unicode);
+		location.hash = modelRefToHash(percent);
+		window.dispatchEvent(new HashChangeEvent("hashchange"));
+		expect(router.ref).toBe(percent);
 	});
 
 	it("go() navigates by setting the location hash", () => {
 		location.hash = "";
 		const router = createRouter();
 		router.go("#/domains/sales");
-		expect(location.hash).toBe("#/domains/sales");
+		expect(location.hash).toBe(modelRefToHash("#/domains/sales"));
+	});
+
+	it("go() carries an unpaired UTF-16 identity through the reserved transport", () => {
+		const ref = "#/boundedcontexts/\ud800";
+		location.hash = "";
+		const router = createRouter();
+		router.go(ref);
+		expect(location.hash).toBe(modelRefToHash(ref));
+		expect(router.ref).toBe(ref);
 	});
 
 	it("starts at the workspace when there is no location, as in SSR", () => {
@@ -108,9 +132,9 @@ describe("createRouter link delegation", () => {
 	it("navigates route anchors itself so the webview host cannot swallow them", () => {
 		location.hash = "";
 		const router = createRouter();
-		const e = click(anchor("#/domains/sales"));
+		const e = click(anchor(modelRefToHash("#/domains/sales")));
 		expect(e.defaultPrevented).toBe(true);
-		expect(location.hash).toBe("#/domains/sales");
+		expect(location.hash).toBe(modelRefToHash("#/domains/sales"));
 		window.dispatchEvent(new HashChangeEvent("hashchange"));
 		expect(router.ref).toBe("#/domains/sales");
 	});
@@ -120,13 +144,14 @@ describe("createRouter link delegation", () => {
 		createRouter();
 		expect(click(anchor("#overview")).defaultPrevented).toBe(false);
 		expect(
-			click(anchor("#/domains/sales"), { metaKey: true }).defaultPrevented,
+			click(anchor(modelRefToHash("#/domains/sales")), { metaKey: true })
+				.defaultPrevented,
 		).toBe(false);
 		expect(location.hash).toBe("");
 	});
 
 	it("treats a bare '#' anchor as the workspace", () => {
-		location.hash = "#/domains/sales";
+		location.hash = modelRefToHash("#/domains/sales");
 		const router = createRouter();
 		click(anchor("#"));
 		window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -149,7 +174,7 @@ describe("createRouter arrivals", () => {
 		location.hash = "";
 		const router = createRouter();
 		expect(router.arrivals).toBe(0);
-		anchor("#/domains/sales").click();
+		anchor(modelRefToHash("#/domains/sales")).click();
 		expect(router.arrivals).toBe(1);
 		expect(router.ref).toBe("#/domains/sales");
 		window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -157,16 +182,16 @@ describe("createRouter arrivals", () => {
 	});
 
 	it("counts following a link to the page the reader is already on", () => {
-		location.hash = "#/domains/sales";
+		location.hash = modelRefToHash("#/domains/sales");
 		const router = createRouter();
-		anchor("#/domains/sales").click();
+		anchor(modelRefToHash("#/domains/sales")).click();
 		expect(router.arrivals).toBe(1);
 	});
 
 	it("counts history navigation, which changes the hash without the router", () => {
 		location.hash = "";
 		const router = createRouter();
-		location.hash = "#/teams/pet_shop_team";
+		location.hash = modelRefToHash("#/teams/pet_shop_team");
 		window.dispatchEvent(new HashChangeEvent("hashchange"));
 		expect(router.ref).toBe("#/teams/pet_shop_team");
 		expect(router.arrivals).toBe(1);

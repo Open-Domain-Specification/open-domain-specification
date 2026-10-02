@@ -16,6 +16,7 @@ import {
 	toDot,
 } from "ts-graphviz";
 import { getDebug } from "./debug";
+import { graphIdentifier } from "./identifier";
 import {
 	BOUNDARY_ONLY_STEREOTYPE,
 	DOWNSTREAM_ROLE_LABELS,
@@ -161,7 +162,7 @@ export function contextMapToDigraph(contextMap: ODSContextMap): {
 		for (const ns of node.namespace) {
 			subgraphs[ns.id] =
 				subgraphs[ns.id] ||
-				new Subgraph(ns.id, {
+				new Subgraph(graphIdentifier(ns.id), {
 					// @ts-expect-error
 					cluster: true,
 					class: "namespace",
@@ -182,7 +183,8 @@ export function contextMapToDigraph(contextMap: ODSContextMap): {
 		}
 
 		debug(`Creating node ${id} in subgraph ${nid}`);
-		nodes[id] = nodes[id] || new Node(id, nodeAttributes(node));
+		nodes[id] =
+			nodes[id] || new Node(graphIdentifier(id), nodeAttributes(node));
 
 		debug(`Adding node ${id} to subgraph ${nid}`);
 		_subgraphs[_subgraphs.length - 1].addNode(nodes[id]);

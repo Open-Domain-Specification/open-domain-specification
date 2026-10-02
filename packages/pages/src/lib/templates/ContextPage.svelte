@@ -19,11 +19,16 @@ import {
 	Deadline,
 	ODSConsumableMap,
 	ODSContextMap,
+	distinguish,
 	ODSFlowMap,
 	type ProcessTrigger,
+	type SchemaUser,
+	usersOfSchema,
+	usersOfValueObject,
 	type ValueObject,
+	type ValueObjectUser,
+	valueObjectsUsedBy,
 } from "@open-domain-specification/core";
-import { valueObjectsOf } from "../elements";
 import { consumableGraph, contextGraph, flowGraph } from "../flow/graph";
 import { FLOW_MAP_EMPTY, flowMapCaption } from "../flow/flow-graph";
 import {
@@ -79,8 +84,8 @@ const processes = $derived([...bc.processes.values()]);
 const terms = $derived([...bc.glossary.values()]);
 const schemas = $derived([...bc.schemas.values()]);
 const valueobjects = $derived([...bc.valueobjects.values()]);
-// The rules no single instance can keep: they belong to the context and each
-// names the operation that checks it before acting (decision 27).
+// Rules checked or guaranteed at the context boundary, including operation
+// contracts and an external event's published payload (decisions 27–28).
 const invariants = $derived([...bc.invariants.values()]);
 const members = $derived([...aggregates, ...services]);
 const provides = $derived(members.flatMap((m) => [...m.consumables.values()]));
@@ -98,9 +103,27 @@ const flowCaption = $derived(flowMapCaption(bc.name));
 const countOf = (kind: "operation" | "event", a: Aggregate) =>
 	[...a.consumables.values()].filter((c) => c.type === kind).length;
 
-/** The aggregates of this context that hold a value object. */
-const holdersOf = (v: ValueObject) =>
-	aggregates.filter((a) => valueObjectsOf(a).includes(v));
+/**
+ * A user of a value object or schema, as its Used by cell names it: a user
+ * from another context says which, and a nested value object or schema says
+ * what it is.
+ */
+const userLabel = (
+	declaring: BoundedContext,
+	user: ValueObjectUser | SchemaUser,
+) =>
+	user.boundedcontext === declaring
+		? user.owner.name
+		: `${user.boundedcontext.name} / ${user.owner.name}`;
+
+const throughLabel = (declaring: BoundedContext, values: ValueObject[]) =>
+	`through ${values
+		.map((value) =>
+			value.boundedcontext === declaring
+				? value.name
+				: `${value.boundedcontext.name} / ${value.name}`,
+		)
+		.join(", ")}`;
 
 const aggregateColumns: Column[] = [
 	{ key: "name", label: "Aggregate" },
@@ -115,7 +138,7 @@ const aggregateColumns: Column[] = [
 const valueObjectColumns: Column[] = [
 	{ key: "name", label: "Value object" },
 	{ key: "attributes", label: "Attributes", numeric: true },
-	{ key: "heldby", label: "Held by" },
+	{ key: "usedby", label: "Used by" },
 	{ key: "description", label: "Description" },
 ];
 const serviceColumns: Column[] = [
@@ -130,6 +153,14 @@ const serviceColumns: Column[] = [
  * the row has to say which one this reaction waits on (decision 23). A
  * completion came back as nothing, so it links to the call itself.
  */
+/**
+ * What each trigger in one list is called: its own name, told apart where two
+ * in the list would read the same, the way every surface tells them apart (see
+ * `distinguish`; issue #108).
+ */
+const labelsOf = (triggers: ProcessTrigger[]) =>
+	distinguish(triggers, (it) => it.name, (it) => it);
+
 const triggerLink = (trigger: ProcessTrigger) => {
 	if (trigger instanceof Answer)
 		return { ref: answerRef(trigger), title: trigger.origin };
@@ -227,7 +258,7 @@ const termColumns: Column[] = [
 			{:else if col.key === "entities"}
 				{a.entities.size}
 			{:else if col.key === "valueobjects"}
-				{valueObjectsOf(a).length}
+				{valueObjectsUsedBy(a).length}
 			{:else if col.key === "invariants"}
 				{a.invariants.size}
 			{:else if col.key === "operations"}
@@ -264,15 +295,16 @@ const termColumns: Column[] = [
 	id="invariants"
 	title="Invariants"
 	constrains
-	lead="Rules that hold across this context's instances and aggregates: uniqueness, quotas, limits. No one instance can see the others, so each names the operation that checks it before acting."
-	emptyText="No invariants across aggregates. Every rule here is one an aggregate keeps on its own."
+	timing
+	lead="Rules this context checks or guarantees, including cross-instance limits and contracts of its operations or events. The When column says how each is checked or guaranteed."
+	emptyText="No context invariants declared."
 	problems={invariants.flatMap((i) => problemsUnder(model, i.ref))}
 />
 
 <Section
 	id="values"
 	title="Value objects"
-	lead="The values this context defines once. Any of its aggregates may hold one, so a change to a value object is a change everywhere it is held."
+	lead="The values this context defines once. Any of its aggregates may hold one, so a change to a value object is a change everywhere it is used, in this context or any other."
 	count={valueobjects.length}
 	problems={valueobjects.flatMap((v) => problemsUnder(model, v.ref))}
 >
@@ -280,15 +312,15 @@ const termColumns: Column[] = [
 		columns={valueObjectColumns}
 		rows={valueobjects}
 		rowId={(v) => v.ref}
-		empty="No value objects. Every attribute here is a bare type."
+		empty="No value objects declared in this context."
 	>
 		{#snippet cell(v, col)}
 			{#if col.key === "name"}
 				<Lockup kind="valueobject" name={v.name} ref={v.ref} />
 			{:else if col.key === "attributes"}
 				{v.attributes.size}
-			{:else if col.key === "heldby"}
-				<Joined>{#each holdersOf(v) as a (a.ref)}<Lockup kind="aggregate" name={a.name} ref={a.ref} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+			{:else if col.key === "usedby"}
+				<Joined>{#each usersOfValueObject(v) as user (`${user.kind}:${user.owner.ref}`)}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner.ref} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{#if user.kind === "value object" && user.asKind} <Keyword text="kind" />{/if}{#if user.through.length} <Keyword text={throughLabel(bc, user.through)} />{/if}{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else}
 				{v.description}
 			{/if}
@@ -326,7 +358,7 @@ const termColumns: Column[] = [
 			{#if col.key === "name"}
 				<Lockup kind="policy" name={p.name} ref={p.ref} />
 			{:else if col.key === "when"}
-				<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
+				{@const labels = labelsOf(p.events)}<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "then"}
 				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else}
@@ -341,13 +373,13 @@ const termColumns: Column[] = [
 			{#if col.key === "name"}
 				<Lockup kind="process" name={p.name} ref={p.ref} />
 			{:else if col.key === "starts"}
-				<Joined>{#each p.startEvents as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+				{@const labels = labelsOf(p.startEvents)}<Joined>{#each p.startEvents as e (e.ref)}<Ref ref={e.ref} label={labels(e)} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else if col.key === "when"}
-				<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
+				{@const labels = labelsOf(p.events)}<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "then"}
 				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "ends"}
-				<Joined>{#each p.endEvents as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+				{@const labels = labelsOf(p.endEvents)}<Joined>{#each p.endEvents as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else}
 				{p.description}
 			{/if}
@@ -366,21 +398,22 @@ const termColumns: Column[] = [
 <Section
 	id="schemas"
 	title="Schemas"
-	lead="Payload shapes this context publishes or accepts. They are part of its published language, so a change here is a change for every consumer."
+	lead="Named shapes this context publishes or accepts. An external schema may also name the kind an identity points to. The users below show who depends on each one."
 	count={schemas.length}
 	problems={schemas.flatMap((s) => problemsUnder(model, s.ref))}
 >
 	{#each schemas as s (s.ref)}
 		<Heading level={3} id={s.ref}>
 			<Lockup kind="schema" name={s.name} ref={s.ref} />
-			{#if s.consumables.length}
-				<span class="carried">carried by</span>
-				<Joined>{#each s.consumables as c (c.ref)}<Ref
-							ref={c.ref}
-							label={c.name}
-							icon={consumableIcon(c)}
-							kind={c.type === "event" ? "event" : "command"}
-						/>{/each}</Joined>
+			{@const users = usersOfSchema(s)}
+			{#if users.length}
+				<span class="carried">used by</span>
+				<Joined>{#each users as user (`${user.kind}:${user.owner.ref}`)}{#if user.kind === "consumable"}<Ref
+							ref={user.owner.ref}
+							label={userLabel(bc, user)}
+							icon={consumableIcon(user.owner)}
+							kind={user.owner.type === "event" ? "event" : "command"}
+						/>{:else}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner.ref} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{#if user.use !== "shape"} <Keyword text={user.use} />{/if}{/if}{/each}</Joined>
 			{:else}
 				<Keyword text="unused" />
 			{/if}
@@ -388,7 +421,7 @@ const termColumns: Column[] = [
 		<p class="description">{s.description}</p>
 		<AttributeTable attributes={s.attributes.values()} empty="The schema has no attributes." />
 	{:else}
-		<EmptyState text="No schemas. Consumables carry no declared payload." />
+		<EmptyState text="No schemas declared in this context." />
 	{/each}
 </Section>
 

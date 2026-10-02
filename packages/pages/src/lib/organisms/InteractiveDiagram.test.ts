@@ -8,6 +8,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
 import { consumableGraph, contextGraph, relationGraph } from "../flow/graph";
 import { diagramOptions } from "../flow/options.svelte";
+import { modelRefToHash } from "../ref-transport";
 import { installXyflowTestEnv, stubReducedMotion } from "../xyflow-test-env";
 import InteractiveDiagram from "./InteractiveDiagram.svelte";
 
@@ -54,10 +55,10 @@ describe("InteractiveDiagram", () => {
 			Number(region.style.zIndex),
 		);
 		await fireEvent.click(node);
-		expect(location.hash).toBe(sales.ref);
+		expect(location.hash).toBe(modelRefToHash(sales.ref));
 		// Regions are grouping, not pages: clicking one must not navigate.
 		await fireEvent.click(region);
-		expect(location.hash).toBe(sales.ref);
+		expect(location.hash).toBe(modelRefToHash(sales.ref));
 		// Read-only diagram: nodes stay clickable (just proven above), but no handle may start
 		// a drag connection.
 		const handles = container.querySelectorAll(".svelte-flow__handle");
@@ -200,7 +201,7 @@ describe("InteractiveDiagram from the keyboard", () => {
 			cancelable: true,
 		});
 		salesNode(container).dispatchEvent(enter);
-		expect(location.hash).toBe(sales.ref);
+		expect(location.hash).toBe(modelRefToHash(sales.ref));
 		expect(enter.defaultPrevented).toBe(true);
 
 		location.hash = "";
@@ -210,7 +211,7 @@ describe("InteractiveDiagram from the keyboard", () => {
 			cancelable: true,
 		});
 		salesNode(container).dispatchEvent(space);
-		expect(location.hash).toBe(sales.ref);
+		expect(location.hash).toBe(modelRefToHash(sales.ref));
 		expect(space.defaultPrevented).toBe(true);
 	});
 
@@ -488,7 +489,7 @@ describe("fullscreen", () => {
 		await fireEvent.click(
 			container.querySelector(`[data-id="${sales.ref}"]`) as HTMLElement,
 		);
-		expect(location.hash).toBe(sales.ref);
+		expect(location.hash).toBe(modelRefToHash(sales.ref));
 		await waitFor(() =>
 			expect(box().classList.contains("fullscreen")).toBe(false),
 		);

@@ -8,8 +8,8 @@ import { ICONS } from "../model";
 import ContextLockup from "./ContextLockup.svelte";
 
 /**
- * What a context or a service depends on, what of it makes the call, and how
- * it protects itself from each. A consumption that names nothing is the whole
+ * The consumables a context or service depends on, what of it makes the call,
+ * and how it protects itself from each. A consumption that names nothing is the whole
  * consumer, which is the common case (decision 21).
  *
  * The same rows read the other way round on a consumable's page, which lists
@@ -25,7 +25,7 @@ import ContextLockup from "./ContextLockup.svelte";
  */
 const {
 	consumptions,
-	empty = "Depends on nothing outside itself.",
+	empty = "Consumes no consumables.",
 }: { consumptions: Consumption[]; empty?: string } = $props();
 
 const AGREEMENT_TITLE = "The relationship this exchange runs under.";

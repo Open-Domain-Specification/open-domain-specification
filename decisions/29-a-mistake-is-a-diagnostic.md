@@ -6,13 +6,15 @@ Date: 2026-09-09
 
 Accepted
 
-## Current position (2026-09-10)
+## Current position (2026-10-01)
 
 Loading never throws on a model mistake and `unresolved-ref` reports the reference at the referencing element; the DSL still throws for a programming error; stable (card 100). The consequence that a bad reference does not survive a round trip no longer holds; see the note of 2026-09-09 (card 102): it survives on every element that can hold one, and the four that cannot, a consumption's `consumable`, a relationship's two ends, a relation's `target`, and `by` recorded at the consumer, are a named cost.
 
-Of the rule gaps the decision lists, two are superseded. `context-invariant-is-checked` allows `precondition` and `postcondition` on a context invariant and refuses only one that names no guard (correction of 2026-09-10; decision 27, card 103). `mud-needs-acl` no longer counts an identity into a big ball of mud; it reads consumptions, and a held key is not one (decision 28's second amendment of 2026-09-10, cards 107 and 108; verified in `packages/core/src/validate.ts`, `mudNeedsAcl`). This record has no correction for it. The others stand: an external context states no internal operations (decision 28), `aggregate-tree` refuses `references` onto a value object, an aggregate does not consume another aggregate's operation in its own context (decision 17), and `separate-ways` covers identity and borrowed-value crossings.
+Of the rule gaps the decision lists, two are superseded. `context-invariant-is-checked` allows `precondition` and `postcondition` on a context invariant and refuses only one that names no guard (correction of 2026-09-10; decision 27, card 103). `mud-needs-acl` no longer counts an identity into a big ball of mud; it reads consumptions, and a held key is not one (decision 28's second amendment of 2026-09-10, cards 107 and 108; verified in `packages/core/src/validate.ts`, `mudNeedsAcl`). The others stand: an external context states no internal operations (decision 28), `aggregate-tree` refuses `references` onto a value object, an aggregate does not consume another aggregate's operation in its own context (decision 17), and `separate-ways` covers identity and borrowed-value crossings.
 
-`odsVersion` is a constant core writes, `2.0.0`, with an `ods-version` diagnostic on a differing or missing major, bumped from here on by the decision that breaks it (note of 2026-09-10, card 114); the bumps decisions 01, 02, 03, 08 and 09 promised were never made.
+For `separate-ways`, a borrowed-value crossing is every declaration already used to prove that a shared kernel is backed: a foreign value object used by an attribute or as a specialisation parent, and a foreign schema used by an attribute, request, return or rejection. A relationship that permits the borrowing does not cancel the contradictory declaration that the contexts go separate ways (note of 2026-10-01, second).
+
+`odsVersion` is a constant core writes, now `3.0.0`, with an `ods-version` diagnostic on a differing or missing major. Version 3 deliberately replaces the accepted wire grammar for refs: every raw id is encoded as one segment, and answers, relationships and consumptions use the complete segmented grammars recorded in decisions 07, 23, 25 and 26, with no aliases for the former ambiguous forms (note of 2026-10-01). The number is bumped by the decision that breaks the metamodel; the earlier note of 2026-09-10 records why version 2 was introduced and the bumps decisions 01, 02, 03, 08 and 09 promised were never made.
 
 Since then (card 132): `unknown-field` reports unknown keys inside nested objects too, with the path; the `mud-needs-acl` item of the decision list is superseded by decision 28 (correction).
 
@@ -50,3 +52,13 @@ The decision list's `mud-needs-acl` item, counting an identity into a big ball o
 ## Note (2026-09-10, second)
 
 `unknown-field` (card 121) read element-level keys only, so an unknown key inside a `$ref` object, `returns: { $ref, reasons }`, loaded with no diagnostic and was dropped on the round trip in silence, which this record says a mistake never is. Every nested object the loader reads is checked (card 132, architect's fifteenth round).
+
+## Note (2026-10-01)
+
+The canonical ref grammar is part of the workspace wire format. Raw ids had been interpolated into path strings and derived relationship and consumption refs had been flattened with delimiters those identities could also contain. Two admitted identities could therefore write the same ref. Version 3.0.0 replaces those spellings with one JSON-Pointer-escaped segment per raw id and explicit segmented grammars for answers, relationships and consumptions (decisions 07, 23, 25 and 26). The old forms are not aliases: an ambiguous string cannot carry which identity its author intended.
+
+This is the breaking metamodel change the 2026-09-10 note says increments the major. Core writes `odsVersion: "3.0.0"`; a file with version 2 gets the existing `ods-version` diagnostic and still loads what version 3 can read, preserving this decision's diagnostic-not-crash rule. Authors regenerate DSL output or bring hand-written JSON to the version 3 grammar before changing its declared version. Package versions remain independent of the metamodel number.
+
+## Note (2026-10-01, second)
+
+The `separate-ways` rule originally checked a foreign value object only when an attribute named it. That left the same language dependency unreported when it came through value-object specialisation or through a foreign schema in an attribute, request, return or rejection, even though those declarations already backed a shared kernel. The rule now reads that complete declaration inventory and reports the declaration introducing the crossing. It does not infer another crossing from members reached through a specialisation or composition. A shared kernel, conformist role or customer-supplier relationship may permit a borrowing, but it does not erase a simultaneous `separate-ways` declaration; the declarations contradict each other until the borrowing or the separate-ways relationship is removed.

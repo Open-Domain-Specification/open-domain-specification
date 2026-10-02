@@ -22,7 +22,7 @@ import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
 import Section from "../organisms/Section.svelte";
 
-/** One payload shape, and every consumable that carries it. */
+/** One named schema, and every consumable that carries it directly. */
 const { schema: s }: { schema: DataSchema } = $props();
 const model = useModel();
 const bc = $derived(s.boundedcontext);
@@ -64,17 +64,17 @@ const directionOf = (c: (typeof carriers)[number]) =>
 
 <AttributesSection
 	attributes={s.attributes.values()}
-	lead="The shape a consumable carries. Consumers depend on every attribute here, so removing one is a breaking change."
+	lead="Fields of this named shape. A consumable carrying it depends on these fields. An identity can point to the kind without carrying them."
 />
 
 <Section
 	id="carriers"
 	title="Carried by"
-	lead="Consumables that depend on this shape, whether they send it, answer with it or refuse with it. A command and the event it raises often share one."
+	lead="Consumables that name this schema directly as a payload, answer or refusal. A command and the event it raises often share one. Attributes can hold this shape, and an identity can name its kind; those uses appear on its context page."
 	count={carriers.length}
 	problems={problemsUnder(model, s.ref)}
 >
-	<DataTable {columns} rows={carriers} empty="Nothing carries this schema yet." rowId={(c) => c.ref}>
+	<DataTable {columns} rows={carriers} empty="No consumable names this schema directly." rowId={(c) => c.ref}>
 		{#snippet cell(c, col)}
 			{#if col.key === "name"}
 				<Lockup kind={kindOf(c)} name={c.name} ref={c.ref} />

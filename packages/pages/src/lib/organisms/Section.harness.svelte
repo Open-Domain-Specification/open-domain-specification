@@ -19,7 +19,7 @@ const diagnostics: Diagnostic[] = [
 		severity: "warning",
 		rule: "relationship-has-no-comments",
 		message: "Sales BC → Inventory BC has no comments.",
-		ref: "#/relationships/sales_bc~upstream-downstream~inventory_bc",
+		ref: "#/relationships/sales_bc/upstream-downstream/inventory_bc",
 	},
 	{
 		severity: "error",

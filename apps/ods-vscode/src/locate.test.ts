@@ -1,3 +1,8 @@
+import {
+	consumptionRef,
+	encodeRefSegment,
+	relationshipRef,
+} from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { locateRef, refToPath } from "./locate";
 
@@ -36,6 +41,15 @@ describe("refToPath", () => {
 		]);
 		expect(refToPath("#")).toEqual([]);
 	});
+
+	it("preserves empty segments and rejects malformed escapes", () => {
+		expect(refToPath("#/boundedcontexts/")).toEqual(["boundedcontexts", ""]);
+		expect(refToPath("#/boundedcontexts/a~01b")).toEqual([
+			"boundedcontexts",
+			"a~1b",
+		]);
+		expect(refToPath("#/boundedcontexts/a~2b")).toBeUndefined();
+	});
 });
 
 describe("locateRef", () => {
@@ -57,6 +71,31 @@ describe("locateRef", () => {
 		).toBe('"name"');
 		expect(locateRef("not json", "#/x")).toEqual({ start: 0, end: 0 });
 	});
+
+	it("locates adversarial raw JSON keys from their canonical segments", () => {
+		const ids = [
+			"a/b",
+			"a~1b",
+			"%2F",
+			"returns",
+			"",
+			"é",
+			".",
+			"a\\b",
+			"Case",
+			"\ud800",
+		];
+		const file = JSON.stringify({
+			name: "Shop",
+			boundedcontexts: Object.fromEntries(
+				ids.map((id) => [id, { name: `Context ${id}` }]),
+			),
+		});
+		for (const id of ids) {
+			const span = locateRef(file, `#/boundedcontexts/${encodeRefSegment(id)}`);
+			expect(JSON.parse(file.slice(span.start, span.end))).toBe(id);
+		}
+	});
 });
 
 describe("locateRef on a relationship", () => {
@@ -66,14 +105,14 @@ describe("locateRef on a relationship", () => {
 	};
 
 	it("finds the directed relationship by its source, type and target", () => {
-		const found = at("#/relationships/catalog~customer-supplier~orders");
+		const found = at(relationshipRef("catalog", "customer-supplier", "orders"));
 		expect(found).toContain('"customer-supplier"');
 		expect(found.startsWith("{")).toBe(true);
 		expect(found).not.toContain("partnership");
 	});
 
 	it("finds the symmetric one by its participants, in the order the ref uses", () => {
-		expect(at("#/relationships/orders~partnership~shipping")).toContain(
+		expect(at(relationshipRef("orders", "partnership", "shipping"))).toContain(
 			'"partnership"',
 		);
 	});
@@ -81,9 +120,9 @@ describe("locateRef on a relationship", () => {
 	it("falls back to the array when the triple matches nothing in it", () => {
 		// Right pair, wrong type; wrong pair; reversed participants.
 		for (const ref of [
-			"#/relationships/catalog~partnership~orders",
-			"#/relationships/catalog~customer-supplier~shipping",
-			"#/relationships/shipping~partnership~orders",
+			relationshipRef("catalog", "partnership", "orders"),
+			relationshipRef("catalog", "customer-supplier", "shipping"),
+			relationshipRef("shipping", "partnership", "orders"),
 		])
 			expect(at(ref)).toBe('"relationships"');
 	});
@@ -94,14 +133,39 @@ describe("locateRef on a relationship", () => {
 			null,
 			2,
 		);
-		const span = locateRef(broken, "#/relationships/a~partnership~b");
+		const span = locateRef(broken, relationshipRef("a", "partnership", "b"));
 		expect(broken.slice(span.start, span.end)).toBe('"relationships"');
 	});
 
 	it("falls back to the workspace name when the file has no relationships at all", () => {
 		const none = JSON.stringify({ name: "Shop" }, null, 2);
-		const span = locateRef(none, "#/relationships/a~partnership~b");
+		const span = locateRef(none, relationshipRef("a", "partnership", "b"));
 		expect(none.slice(span.start, span.end)).toBe('"name"');
+	});
+
+	it("matches encoded ends and the normalized name of a named relationship", () => {
+		const named = JSON.stringify(
+			{
+				name: "Shop",
+				relationships: [
+					{
+						type: "partnership",
+						name: "Legacy Feed",
+						participants: [
+							{ $ref: "#/boundedcontexts/a~1b" },
+							{ $ref: "#/boundedcontexts/a~01b" },
+						],
+					},
+				],
+			},
+			null,
+			2,
+		);
+		const span = locateRef(
+			named,
+			relationshipRef("a/b", "partnership", "a~1b", "legacy_feed"),
+		);
+		expect(named.slice(span.start, span.end)).toContain('"Legacy Feed"');
 	});
 });
 
@@ -138,7 +202,10 @@ describe("locateRef on a consumption", () => {
 
 	it("finds the element of consumes[] whose consumable the ref names", () => {
 		const found = at(
-			`${CONSUMER}/consumes/boundedcontexts~catalog~services~pet_app~provides~get_pet`,
+			consumptionRef(
+				CONSUMER,
+				"#/boundedcontexts/catalog/services/pet_app/provides/get_pet",
+			),
 		);
 		expect(found.startsWith("{")).toBe(true);
 		expect(found).toContain("get_pet");
@@ -148,14 +215,52 @@ describe("locateRef on a consumption", () => {
 	it("tells two consumptions of the same consumer apart", () => {
 		expect(
 			at(
-				`${CONSUMER}/consumes/boundedcontexts~catalog~aggregates~pet~provides~pet_sold`,
+				consumptionRef(
+					CONSUMER,
+					"#/boundedcontexts/catalog/aggregates/pet/provides/pet_sold",
+				),
 			),
 		).toContain("pet_sold");
 	});
 
+	it("matches exact encoded full target and caller refs", () => {
+		const target = "#/boundedcontexts/a~1b/services/%2F/provides/a~01b";
+		const caller =
+			"#/boundedcontexts/orders/services/order_app/provides/returns";
+		const exact = JSON.stringify(
+			{
+				name: "Shop",
+				boundedcontexts: {
+					orders: {
+						services: {
+							order_app: {
+								name: "Order App",
+								consumes: [
+									{
+										consumable: { $ref: target },
+										by: [{ $ref: caller }],
+									},
+								],
+							},
+						},
+					},
+				},
+			},
+			null,
+			2,
+		);
+		const span = locateRef(exact, consumptionRef(CONSUMER, target, caller));
+		expect(exact.slice(span.start, span.end)).toContain("a~01b");
+	});
+
 	it("falls back to the array when nothing in it matches", () => {
 		expect(
-			at(`${CONSUMER}/consumes/boundedcontexts~catalog~services~x~provides~y`),
+			at(
+				consumptionRef(
+					CONSUMER,
+					"#/boundedcontexts/catalog/services/x/provides/y",
+				),
+			),
 		).toBe('"consumes"');
 	});
 
@@ -170,7 +275,10 @@ describe("locateRef on a consumption", () => {
 		);
 		const span = locateRef(
 			none,
-			`${CONSUMER}/consumes/boundedcontexts~catalog~services~pet_app~provides~get_pet`,
+			consumptionRef(
+				CONSUMER,
+				"#/boundedcontexts/catalog/services/pet_app/provides/get_pet",
+			),
 		);
 		expect(none.slice(span.start, span.end)).toBe('"order_app"');
 	});
@@ -217,19 +325,44 @@ describe("locateRef on a consumption", () => {
 			null,
 			2,
 		);
-		const pair = `${CONSUMER}/consumes/boundedcontexts~catalog~services~pet_app~provides~get_pet`;
+		const target =
+			"#/boundedcontexts/catalog/services/pet_app/provides/get_pet";
 		const atTwice = (ref: string) => {
 			const span = locateRef(twice, ref);
 			return twice.slice(span.start, span.end);
 		};
 
 		it("picks the element whose first caller the ref names", () => {
-			expect(atTwice(`${pair}/archive`)).toContain("conformist");
-			expect(atTwice(`${pair}/decide`)).toContain("anti-corruption-layer");
+			expect(
+				atTwice(
+					consumptionRef(
+						CONSUMER,
+						target,
+						"#/boundedcontexts/orders/services/order_app/provides/archive",
+					),
+				),
+			).toContain("conformist");
+			expect(
+				atTwice(
+					consumptionRef(
+						CONSUMER,
+						target,
+						"#/boundedcontexts/orders/policies/decide",
+					),
+				),
+			).toContain("anti-corruption-layer");
 		});
 
 		it("falls back to the array when no element names that caller", () => {
-			expect(atTwice(`${pair}/nobody`)).toBe('"consumes"');
+			expect(
+				atTwice(
+					consumptionRef(
+						CONSUMER,
+						target,
+						"#/boundedcontexts/orders/policies/nobody",
+					),
+				),
+			).toBe('"consumes"');
 		});
 	});
 });

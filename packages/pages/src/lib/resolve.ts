@@ -48,96 +48,19 @@ export function pageRefs(ws: Workspace): string[] {
 	return refs;
 }
 
-const AGG = /^#\/boundedcontexts\/([^/]+)\/aggregates\/([^/]+)/;
-const aggregateOf = (ws: Workspace, m: RegExpMatchArray) =>
-	ws.boundedcontexts.get(m[1])?.aggregates.get(m[2]);
-const memberOf = (kind: "entities" | "invariants") => [
-	new RegExp(`${AGG.source}\\/${kind}\\/([^/]+)`),
-	(ws: Workspace, m: RegExpMatchArray) => aggregateOf(ws, m)?.[kind].get(m[3]),
-];
-
-/** Deepest pattern first: every element with a ref gets its own page. */
-const PAGE_PATTERNS: [
-	RegExp,
-	(ws: Workspace, m: RegExpMatchArray) => unknown,
-][] = [
-	// Not an element: a read of the whole workspace that owns a route of its own.
-	[/^#\/health$/, () => HEALTH_PAGE],
-	[/^#\/teams\/([^/]+)/, (ws, m) => ws.teams.get(m[1])],
-	// A relationship's ref is its whole identity, so match it entire.
-	[/^#\/relationships\/[^/]+$/, (ws, m) => ws.findRelationship(m[0])],
-	[
-		/^#\/domains\/([^/]+)\/subdomains\/([^/]+)/,
-		(ws, m) => ws.domains.get(m[1])?.subdomains.get(m[2]),
-	],
-	[/^#\/domains\/([^/]+)/, (ws, m) => ws.domains.get(m[1])],
-	// A value object hangs off the context, not the aggregate (decision 16), and
-	// its own rules hang off it, so they are matched first.
-	[
-		/^#\/boundedcontexts\/([^/]+)\/valueobjects\/([^/]+)\/invariants\/([^/]+)/,
-		(ws, m) =>
-			ws.boundedcontexts
-				.get(m[1])
-				?.valueobjects.get(m[2])
-				?.invariants.get(m[3]),
-	],
-	[
-		/^#\/boundedcontexts\/([^/]+)\/valueobjects\/([^/]+)/,
-		(ws, m) => ws.boundedcontexts.get(m[1])?.valueobjects.get(m[2]),
-	],
-	...(["entities", "invariants"] as const).map(
-		(k) =>
-			memberOf(k) as [RegExp, (ws: Workspace, m: RegExpMatchArray) => unknown],
-	),
-	[
-		new RegExp(`${AGG.source}\\/provides\\/([^/]+)`),
-		(ws, m) => aggregateOf(ws, m)?.consumables.get(m[3]),
-	],
-	[
-		/^#\/boundedcontexts\/([^/]+)\/services\/([^/]+)\/provides\/([^/]+)/,
-		(ws, m) =>
-			ws.boundedcontexts.get(m[1])?.services.get(m[2])?.consumables.get(m[3]),
-	],
-	[AGG, aggregateOf],
-	[
-		/^#\/boundedcontexts\/([^/]+)\/services\/([^/]+)/,
-		(ws, m) => ws.boundedcontexts.get(m[1])?.services.get(m[2]),
-	],
-	[
-		/^#\/boundedcontexts\/([^/]+)\/policies\/([^/]+)/,
-		(ws, m) => ws.boundedcontexts.get(m[1])?.policies.get(m[2]),
-	],
-	[
-		/^#\/boundedcontexts\/([^/]+)\/processes\/([^/]+)/,
-		(ws, m) => ws.boundedcontexts.get(m[1])?.processes.get(m[2]),
-	],
-	[
-		/^#\/boundedcontexts\/([^/]+)\/schemas\/([^/]+)/,
-		(ws, m) => ws.boundedcontexts.get(m[1])?.schemas.get(m[2]),
-	],
-	[
-		/^#\/boundedcontexts\/([^/]+)\/glossary\/([^/]+)/,
-		(ws, m) => ws.boundedcontexts.get(m[1])?.glossary.get(m[2]),
-	],
-	// An invariant the context owns; the aggregate's is matched further up.
-	[
-		/^#\/boundedcontexts\/([^/]+)\/invariants\/([^/]+)/,
-		(ws, m) => ws.boundedcontexts.get(m[1])?.invariants.get(m[2]),
-	],
-	[/^#\/boundedcontexts\/([^/]+)/, (ws, m) => ws.boundedcontexts.get(m[1])],
-];
-
-/** Picks the page that owns a ref: the deepest page pattern that matches, else the workspace. */
+/** Picks the nearest page-owning canonical ref, else the workspace. */
 export function resolvePage(
 	ws: Workspace,
 	ref: string,
 ): { target: unknown; pageRef: string } {
-	for (const [pattern, get] of PAGE_PATTERNS) {
-		const m = ref.match(pattern);
-		if (m) {
-			const target = get(ws, m);
-			if (target) return { target, pageRef: m[0] };
-		}
+	if (ref === HEALTH_REF) return { target: HEALTH_PAGE, pageRef: HEALTH_REF };
+	for (const pageRef of pageRefs(ws).sort((a, b) => b.length - a.length)) {
+		if (ref !== pageRef && !ref.startsWith(`${pageRef}/`)) continue;
+		const target =
+			pageRef === "#"
+				? ws
+				: (ws.findRelationship(pageRef) ?? ws.getByRef(pageRef));
+		if (target) return { target, pageRef };
 	}
 	return { target: ws, pageRef: "#" };
 }

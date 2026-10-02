@@ -8,7 +8,7 @@ The user endpoints and the record they answer with, modelled at the boundary onl
 **Owned by:** [Platform Team](https://petstore.swagger.io/#/user)
 
 ## Serves
-- [Identity & Accounts / Users](../../domains/identity_&_accounts/subdomains/users/index.md) (generic)
+- [Identity & Accounts / Users](../../domains/_ods_006900640065006e0074006900740079005f0026005f006100630063006f0075006e00740073/subdomains/users/index.md) (generic)
 
 ![contextmap](./contextmap.svg)
 
@@ -29,18 +29,18 @@ Open-host service for /user endpoints
 
 
 ## Invariants
-> No invariants across aggregates.
+> No context invariants declared.
 
 ## Value Objects
 | Name | Description | Attributes | Invariants | Used by |
 | --- | --- | --- | --- | --- |
-| UserStatus | Untyped int per the Petstore v3 model; nobody remembers the meaning of each value | value: `int` | - | - |
+| UserStatus | Untyped int per the Petstore v3 model; nobody remembers the meaning of each value | value: `int` | - | [User](./index.md#schemas) (schema) |
 
 
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| User | The legacy user record, as GET /user/{username} answers with it | **username**: `string`, email: `string`, userStatus: `UserStatus` | GetUserByUsername, CreateUsersWithList |
+| User | The legacy user record, as GET /user/{username} answers with it | **username**: `string`, email: `string`, userStatus: `UserStatus` | [GetUserByUsername](services/user_app/index.md) (operation), [CreateUsersWithList](services/user_app/index.md) (operation) |
 
 
 ## Policies

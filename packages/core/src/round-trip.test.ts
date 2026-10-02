@@ -354,8 +354,8 @@ describe("one pair, two agreements", () => {
 		const rebuilt = Workspace.fromSchema(schema);
 		expect(rebuilt.toSchema()).toEqual(schema);
 		expect(rebuilt.relationships.map((r) => r.ref)).toEqual([
-			"#/relationships/warehouse~upstream-downstream~sales~fulfilment_api",
-			"#/relationships/warehouse~upstream-downstream~sales~legacy_feed",
+			"#/relationships/warehouse/upstream-downstream/sales/fulfilment_api",
+			"#/relationships/warehouse/upstream-downstream/sales/legacy_feed",
 		]);
 		expect(
 			rebuilt.validate().filter((d) => d.rule === "relationship-duplicate"),
@@ -407,7 +407,7 @@ describe("one pair, two exchanges", () => {
 	}
 
 	const pairRef =
-		"#/boundedcontexts/down/services/reader/consumes/boundedcontexts~up~services~feed~provides~happened";
+		"#/boundedcontexts/down/services/reader/consumes/#~1boundedcontexts~1up~1services~1feed~1provides~1happened";
 
 	it("carries both consumptions, and their refs, through toSchema and back", () => {
 		const schema = twice().toSchema();
@@ -417,12 +417,14 @@ describe("one pair, two exchanges", () => {
 			"#/boundedcontexts/down/services/reader",
 		);
 		expect(reader.consumptions.map((it) => it.ref)).toEqual([
-			`${pairRef}/provides/archive`,
-			`${pairRef}/policies/decide`,
+			`${pairRef}/by/#~1boundedcontexts~1down~1services~1reader~1provides~1archive`,
+			`${pairRef}/by/#~1boundedcontexts~1down~1policies~1decide`,
 		]);
-		expect(rebuilt.findConsumption(`${pairRef}/policies/decide`)?.pattern).toBe(
-			"anti-corruption-layer",
-		);
+		expect(
+			rebuilt.findConsumption(
+				`${pairRef}/by/#~1boundedcontexts~1down~1policies~1decide`,
+			)?.pattern,
+		).toBe("anti-corruption-layer");
 		expect(
 			rebuilt.validate().filter((d) => d.rule === "consumption-once"),
 		).toEqual([]);
@@ -473,7 +475,7 @@ describe("a consumption that names its agreement", () => {
 		expect(
 			schema.boundedcontexts.down.services!.reader.consumes![0].relationship,
 		).toEqual({
-			$ref: "#/relationships/up~upstream-downstream~down~legacy_feed",
+			$ref: "#/relationships/up/upstream-downstream/down/legacy_feed",
 		});
 		const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
 		expect(rebuilt.toSchema()).toEqual(schema);
@@ -482,7 +484,7 @@ describe("a consumption that names its agreement", () => {
 		).consumptions[0];
 		expect(consumption.relationship).toBe(
 			rebuilt.findRelationship(
-				"#/relationships/up~upstream-downstream~down~legacy_feed",
+				"#/relationships/up/upstream-downstream/down/legacy_feed",
 			),
 		);
 		expect(
@@ -493,7 +495,7 @@ describe("a consumption that names its agreement", () => {
 	it("reports a relationship ref that names nothing, and loads the rest", () => {
 		const schema = twoAgreements().toSchema();
 		schema.boundedcontexts.down.services!.reader.consumes![0].relationship = {
-			$ref: "#/relationships/up~upstream-downstream~down~gone",
+			$ref: "#/relationships/up/upstream-downstream/down/gone",
 		};
 		const loaded = Workspace.fromSchema(schema);
 		const unresolved = loaded

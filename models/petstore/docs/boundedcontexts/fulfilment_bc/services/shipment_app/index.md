@@ -15,7 +15,7 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 
 ## Consumes
 
-### ConfirmDelivery 
+### ConfirmDelivery
 POST /store/order/{orderId}/delivered; Fulfilment reports the shipment arrived and the order moves to delivered
 - **Provider**: [OrderApp](../../../sales_bc/services/order_app/index.md)
 - **Made by**: ReportDelivery

@@ -25,7 +25,7 @@ What the practice system publishes to us.
 
 
 ## Invariants
-> No invariants across aggregates.
+> No context invariants declared.
 
 ## Value Objects
 > No value objects.
@@ -33,7 +33,7 @@ What the practice system publishes to us.
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| GP Referral Message | The referral exactly as the practice system sends it. | **referralReference**: `string`, gpPatientNumber: `string`, requestedSpecialty: `string`, urgency: `string`, clinicalSummary: `string` | Referral Submitted |
+| GP Referral Message | The referral exactly as the practice system sends it. | **referralReference**: `string`, gpPatientNumber: `string`, requestedSpecialty: `string`, urgency: `string`, clinicalSummary: `string` | [Referral Submitted](services/practice_system_interface/index.md) (event) |
 
 
 ## Policies

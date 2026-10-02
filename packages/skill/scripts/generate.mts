@@ -119,40 +119,47 @@ function renderObject(
 
 const REF_GRAMMAR = `## Ref grammar
 
-Every cross-link is an object \`{ "$ref": "<path>" }\`. Paths are JSON pointers into the workspace, built from the ids that key each collection:
+Every cross-link is an object \`{ "$ref": "<path>" }\`. Refs are canonical model paths; derived answers, relationships and consumptions below are computed identities rather than literal JSON property paths. An id and the segment that carries it in a ref are two representations of the same identity. JSON object keys and explicit DSL \`id\` values are the raw authored ids; keep them verbatim. In a ref, encode each complete raw id as one JSON Pointer segment: write \`~\` as \`~0\`, then \`/\` as \`~1\`. The grammar below writes that operation as \`E(id)\`. For example, raw id \`charges/a~b\` is the single segment \`charges~1a~0b\`; raw id \`charges~1a~0b\` is the distinct segment \`charges~01a~00b\`.
+
+Do not pre-encode JSON keys or DSL ids. Every string id, including an explicit empty id and every Unicode spelling, is preserved exactly; ids are not trimmed, case-folded, normalised or silently replaced by a name-derived id. When one complete ref is embedded inside another ref, as consumptions do, encode the complete nested ref once more as one segment. Percent encoding in a URL fragment and filename encoding in generated Markdown are transport concerns, not part of this model grammar.
 
 | Element | Path |
 |---|---|
-| Team | \`#/teams/<team>\` |
-| Domain | \`#/domains/<domain>\` |
-| Subdomain | \`#/domains/<domain>/subdomains/<subdomain>\` |
-| Bounded context | \`#/boundedcontexts/<bc>\` |
-| Aggregate | \`#/boundedcontexts/<bc>/aggregates/<aggregate>\` |
-| Entity | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/entities/<entity>\` |
-| Value object | \`#/boundedcontexts/<bc>/valueobjects/<vo>\` |
-| Invariant of an aggregate | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/invariants/<invariant>\` |
-| Invariant of a context | \`#/boundedcontexts/<bc>/invariants/<invariant>\` |
-| Attribute | \`<owner path>/attributes/<attribute>\` (owner is an entity, value object or schema) |
-| Consumable of an aggregate | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/provides/<consumable>\` |
-| Service | \`#/boundedcontexts/<bc>/services/<service>\` |
-| Consumable of a service | \`#/boundedcontexts/<bc>/services/<service>/provides/<consumable>\` |
-| Policy | \`#/boundedcontexts/<bc>/policies/<policy>\` |
-| Process | \`#/boundedcontexts/<bc>/processes/<process>\` |
-| Glossary term | \`#/boundedcontexts/<bc>/glossary/<term>\` |
-| Schema | \`#/boundedcontexts/<bc>/schemas/<schema>\` |
+| Team | \`#/teams/E(team)\` |
+| Domain | \`#/domains/E(domain)\` |
+| Subdomain | \`#/domains/E(domain)/subdomains/E(subdomain)\` |
+| Bounded context | \`#/boundedcontexts/E(bc)\` |
+| Aggregate | \`#/boundedcontexts/E(bc)/aggregates/E(aggregate)\` |
+| Entity | \`#/boundedcontexts/E(bc)/aggregates/E(aggregate)/entities/E(entity)\` |
+| Value object | \`#/boundedcontexts/E(bc)/valueobjects/E(valueobject)\` |
+| Invariant of an aggregate | \`#/boundedcontexts/E(bc)/aggregates/E(aggregate)/invariants/E(invariant)\` |
+| Invariant of a value object | \`#/boundedcontexts/E(bc)/valueobjects/E(valueobject)/invariants/E(invariant)\` |
+| Invariant of a context | \`#/boundedcontexts/E(bc)/invariants/E(invariant)\` |
+| Attribute | \`<owner path>/attributes/E(attribute)\` (owner is an entity, value object or schema) |
+| Consumable of an aggregate | \`#/boundedcontexts/E(bc)/aggregates/E(aggregate)/provides/E(consumable)\` |
+| Service | \`#/boundedcontexts/E(bc)/services/E(service)\` |
+| Consumable of a service | \`#/boundedcontexts/E(bc)/services/E(service)/provides/E(consumable)\` |
+| Policy | \`#/boundedcontexts/E(bc)/policies/E(policy)\` |
+| Process | \`#/boundedcontexts/E(bc)/processes/E(process)\` |
+| Process deadline | \`#/boundedcontexts/E(bc)/processes/E(process)/deadlines/E(deadline)\` |
+| Glossary term | \`#/boundedcontexts/E(bc)/glossary/E(term)\` |
+| Schema | \`#/boundedcontexts/E(bc)/schemas/E(schema)\` |
 | Answer an operation returns | \`<operation path>/returns\` |
-| Answer an operation rejects with | \`<operation path>/rejects/<schema>\` |
-| Answer for one enumerated reason of that refusal | \`<operation path>/rejects/<schema>/<reason>\` |
-| Consumption | \`<consumer path>/consumes/<consumable path, with ~ for />\`, plus \`/<id of the first caller in by>\` where the consumer takes that consumable more than once |
-| Relationship | \`#/relationships/<source>~<type>~<target>\`, plus \`~<name in snake case>\` where the agreement carries a name |
+| Answer an operation completes with, where it returns nothing | \`<operation path>/completed\` |
+| Answer an operation rejects with | \`<operation path>/rejects/E(schema bc)/E(schema)\` |
+| Answer for one enumerated reason of that refusal | \`<operation path>/rejects/E(schema bc)/E(schema)/E(reason)\` |
+| Consumption | \`<consumer path>/consumes/E(<full consumable path>)\`, plus \`/by/E(<full first caller path>)\` where the consumer takes that consumable more than once |
+| Relationship | \`#/relationships/E(source)/<type>/E(target)\`, plus \`/E(name in snake case)\` where the agreement carries a name |
 
-A consumption has no id of its own, so its path is derived from the pair it joins: \`#/boundedcontexts/sales/services/order_app/consumes/boundedcontexts~catalog~services~pet_app~provides~get_pet\` is Order App's consumption of Pet App's Get Pet. It is never the position in \`consumes[]\`, so reordering the array changes no ref, and it is computed rather than stored, so nothing writes it in a file: it is what a diagnostic about a consumption points at. One consumer may take one consumable more than once when the exchanges differ — an archive keeping the response as it stands, a decision translating it through an anti-corruption layer — and the pair alone then no longer identifies a consumption: each of them names the callers that make it, no two of them name the same caller (\`consumption-once\`), and the id of the first caller in \`by\` is appended as a further segment. A pair declared once keeps the plain ref.
+A consumption has no id of its own, so its path is derived from the pair it joins: \`#/boundedcontexts/sales/services/order_app/consumes/#~1boundedcontexts~1catalog~1services~1pet_app~1provides~1get_pet\` is Order App's consumption of Pet App's Get Pet. The consumable's complete canonical ref, including its leading \`#/\`, is embedded as one segment, so its slashes and any tildes already escaped inside it are escaped once more. It is never the position in \`consumes[]\`, so reordering the array changes no ref, and it is computed rather than stored, so nothing writes it in a file: it is what a diagnostic about a consumption points at. One consumer may take one consumable more than once when the exchanges differ — an archive keeping the response as it stands, a decision translating it through an anti-corruption layer — and the pair alone then no longer identifies a consumption: each of them names the callers that make it, no two of them name the same caller (\`consumption-once\`), and \`/by/E(<full first caller ref>)\` is appended. The full caller ref includes its context and owner, so callers with the same local id remain distinct. A pair declared once keeps the plain ref.
 
-A relationship has no id of its own either: its path is the two contexts it joins and the type that joins them, so \`#/relationships/catalog_bc~customer-supplier~sales_bc\` is the customer-supplier relationship from Catalog to Sales. It too is computed rather than stored, and it is what a diagnostic about a relationship points at. One pair may hold two agreements in one direction — a negotiated fulfilment API and a tolerated legacy feed from the same warehouse — and each of those carries a \`name\`, which is appended in snake case: \`#/relationships/warehouse_bc~upstream-downstream~sales_bc~legacy_feed\`. Two agreements between one pair in one direction that are both unnamed, or that share a name, are one declaration made twice, and \`relationship-duplicate\` refuses them.
+A relationship has no id of its own either: its path is the two contexts it joins and the type that joins them, so \`#/relationships/catalog_bc/customer-supplier/sales_bc\` is the customer-supplier relationship from Catalog to Sales. It too is computed rather than stored, and it is what a diagnostic about a relationship points at. One pair may hold two agreements in one direction — a negotiated fulfilment API and a tolerated legacy feed from the same warehouse — and each of those carries a \`name\`, whose snake-case identity is appended as one encoded segment: \`#/relationships/warehouse_bc/upstream-downstream/sales_bc/legacy_feed\`. Two agreements between one pair in one direction that are both unnamed, or that share a name, are one declaration made twice, and \`relationship-duplicate\` refuses them. Source order and the existing symmetric-relationship duplicate semantics do not change.
 
-An answer has no id of its own either: it is one operation coming back, so its path is that operation's plus what it came back as. \`#/boundedcontexts/payments/services/payments_api/provides/authorise_payment/rejects/payment_declined\` is what AuthorisePayment refuses with, and the same path ending \`/returns\` is what it answers with when it succeeds. A reaction waiting on an answer names it this way and never by the schema alone: schemas are shared, so two operations may refuse with one shape, and the shape alone cannot say which call came back. The schema id in a \`/rejects/\` path is one the operation declares in \`rejects\`; anything else resolves to nothing. Where that refusal enumerates \`reasons\`, one of them may be named in a further segment — \`.../rejects/provider_decline/issuer_unavailable\` — which waits on that outcome alone, while the path without it waits on every refusal of that shape; a reason the contract does not enumerate resolves to nothing.
+An answer has no id of its own either: it is one operation coming back, so its path is that operation's complete canonical ref plus what it came back as. \`#/boundedcontexts/payments/services/payments_api/provides/authorise_payment/rejects/payments/payment_declined\` is what AuthorisePayment refuses with, and the same operation path ending \`/returns\` is what it answers with when it succeeds. A reaction waiting on an answer names it this way and never by the schema alone: schemas are shared, so two operations may refuse with one shape, and the shape alone cannot say which call came back. A \`/rejects/\` path names the shape by its bounded context and its id, because an id is unique only inside its own context. The shape is one the operation declares in \`rejects\`; anything else resolves to nothing. Where that refusal enumerates \`reasons\`, one of them may be named in a further segment — \`.../rejects/payment_provider/provider_decline/issuer_unavailable\` — which waits on that outcome alone, while the path without it waits on every refusal of that shape. An empty reason is no reason and names the shape-level refusal; an empty id is still an id segment.
 
-A bounded context path never embeds the domain or subdomain, so moving a context between subdomains breaks no refs. A ref that points at nothing is an \`unresolved-ref\` diagnostic at the referencing element; the rest of the file still loads.
+Encoding every authored id in the operation prefix makes the answer grammar injective. In context \`b\`, service \`h\`, operation A with id \`a\` may reject schema \`decline\` for reason \`completed\`; its answer is \`#/boundedcontexts/b/services/h/provides/a/rejects/b/decline/completed\`. A distinct operation B whose raw id is \`a/rejects/b/decline\` has ref \`#/boundedcontexts/b/services/h/provides/a~1rejects~1b~1decline\`, so B's completion is \`.../a~1rejects~1b~1decline/completed\` and cannot equal A's refusal. Unknown shapes or reasons, malformed escapes, noncanonical unescaped forms and surplus segments resolve to nothing. There are no legacy aliases.
+
+A bounded context path never embeds the domain or subdomain, so moving a context between subdomains breaks no refs. A ref that points at nothing is an \`unresolved-ref\` diagnostic at the referencing element; the rest of the file still loads. Canonical refs are model identity strings. When a surface puts one in a URL fragment, a Markdown filename or another transport, that surface encodes and decodes the transport layer separately without changing the canonical ref.
 `;
 
 export function renderModelReference(): string {

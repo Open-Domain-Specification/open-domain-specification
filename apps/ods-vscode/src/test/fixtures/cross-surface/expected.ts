@@ -55,13 +55,13 @@ export const EXPECTED = {
 				consumable: "PurchaseFilePublished",
 				agreement: "purchase feed",
 				relationship:
-					"#/relationships/vendor~upstream-downstream~warehouse~purchase_feed",
+					"#/relationships/vendor/upstream-downstream/warehouse/purchase_feed",
 			},
 			{
 				consumable: "AskPrice",
 				agreement: "price lookup",
 				relationship:
-					"#/relationships/vendor~upstream-downstream~warehouse~price_lookup",
+					"#/relationships/vendor/upstream-downstream/warehouse/price_lookup",
 			},
 			{ consumable: "StockChecked", agreement: null, relationship: null },
 		],
@@ -80,12 +80,12 @@ export const EXPECTED = {
 		{
 			name: "purchase feed",
 			relationship:
-				"#/relationships/vendor~upstream-downstream~warehouse~purchase_feed",
+				"#/relationships/vendor/upstream-downstream/warehouse/purchase_feed",
 		},
 		{
 			name: "price lookup",
 			relationship:
-				"#/relationships/vendor~upstream-downstream~warehouse~price_lookup",
+				"#/relationships/vendor/upstream-downstream/warehouse/price_lookup",
 		},
 	],
 
@@ -111,7 +111,7 @@ export const EXPECTED = {
 		{
 			severity: "warning",
 			rule: "consumption-agreement",
-			ref: "#/boundedcontexts/warehouse/services/warehouse_api/consumes/boundedcontexts~vendor~services~vendor_api~provides~stock_checked",
+			ref: "#/boundedcontexts/warehouse/services/warehouse_api/consumes/#~1boundedcontexts~1vendor~1services~1vendor_api~1provides~1stock_checked",
 		},
 	],
 } as const;

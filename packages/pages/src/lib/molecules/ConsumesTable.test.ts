@@ -2,6 +2,7 @@ import type { Consumption } from "@open-domain-specification/core";
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import { petstoreModel, rivermartModel } from "../fixtures";
+import { modelRefToHash } from "../ref-transport";
 import ConsumesTable from "./ConsumesTable.svelte";
 
 const consumptions = (): Consumption[] =>
@@ -44,7 +45,7 @@ describe("ConsumesTable", () => {
 		]);
 		expect(madeBy).toContainEqual(["ReservePetForOrder", "ReservePet"]);
 		expect(madeBy).toContainEqual(["MarkPetSoldForOrder", "MarkPetSold"]);
-		expect(madeBy).toContainEqual(["GetPetSummary", "CheckPetAvailable"]);
+		expect(madeBy).toContainEqual(["GetPetSummary", "CheckAndApproveOrder"]);
 		expect(madeBy).toContainEqual(["PetRegistered", "whole consumer"]);
 		expect(screen.getAllByText("whole consumer")[0]).toHaveClass("keyword");
 	});
@@ -62,9 +63,7 @@ describe("ConsumesTable", () => {
 
 	it("says what would fill it when the context depends on nothing", () => {
 		render(ConsumesTable, { consumptions: [] });
-		expect(screen.getByText("Depends on nothing outside itself.")).toHaveClass(
-			"empty",
-		);
+		expect(screen.getByText("Consumes no consumables.")).toHaveClass("empty");
 	});
 });
 
@@ -110,7 +109,9 @@ describe("ConsumesTable agreements", () => {
 		const link = (name: string) =>
 			rows.find((r) => r.consumable === name)?.cell?.querySelector("a");
 		expect(link("GetPurchaseOrder")?.textContent).toBe("purchase order lookup");
-		expect(link("GetPurchaseOrder")?.getAttribute("href")).toBe(lookup?.ref);
+		expect(link("GetPurchaseOrder")?.getAttribute("href")).toBe(
+			modelRefToHash(lookup?.ref ?? "#"),
+		);
 		expect(link("GetPurchaseOrder")?.title).toBe(
 			"The relationship this exchange runs under.",
 		);
@@ -120,7 +121,9 @@ describe("ConsumesTable agreements", () => {
 		expect(link("PurchaseOrderReceived")?.textContent).toBe(
 			"legacy stock feed",
 		);
-		expect(link("PurchaseOrderReceived")?.getAttribute("href")).toBe(feed?.ref);
+		expect(link("PurchaseOrderReceived")?.getAttribute("href")).toBe(
+			modelRefToHash(feed?.ref ?? "#"),
+		);
 	});
 
 	it("leaves the cell empty for an exchange that names no agreement, beside rows that do", () => {

@@ -6,7 +6,7 @@ describe("Workspace Schema Validation", () => {
 		const schema = {
 			id: "test_workspace",
 			name: "Test Workspace",
-			odsVersion: "2.0.0" as const,
+			odsVersion: "3.0.0" as const,
 			description: "A test workspace",
 			version: "0.1.0",
 			domains: {
@@ -25,7 +25,7 @@ describe("Workspace Schema Validation", () => {
 		const workspace = Workspace.fromSchema(schema);
 
 		expect(workspace.name).toBe("Test Workspace");
-		expect(workspace.odsVersion).toBe("2.0.0");
+		expect(workspace.odsVersion).toBe("3.0.0");
 		expect(workspace.domains.size).toBe(1);
 		expect(workspace.domains.get("commerce")?.name).toBe("Commerce");
 	});
@@ -34,7 +34,7 @@ describe("Workspace Schema Validation", () => {
 		const schema = {
 			id: "edge_case_workspace",
 			name: "Edge Case Workspace",
-			odsVersion: "2.1.0" as const,
+			odsVersion: "3.1.0" as const,
 			description: "Testing edge cases",
 			version: "1.0.0",
 			homepage: "https://example.com",
@@ -59,7 +59,7 @@ describe("Workspace Schema Validation", () => {
 		const schema = {
 			id: "empty_workspace",
 			name: "Empty Workspace",
-			odsVersion: "2.0.0" as const,
+			odsVersion: "3.0.0" as const,
 			description: "Empty workspace for testing",
 			version: "0.1.0",
 			domains: {},

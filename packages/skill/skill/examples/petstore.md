@@ -155,7 +155,8 @@ down what is actually there.
 kernel: a relationship with no comments, so nobody has said what backs it.
 
 **2. Search for what the pattern means.** A shared kernel is a shared package, library or schema
-both sides depend on, small and jointly owned. So: which package do both services declare as a
+both sides depend on and both change, small and jointly owned; a package only one side changes
+is a published language, not a kernel. So: which package do both services declare as a
 dependency, and what is in it? The search finds `@petstore/kernel`, declared by both services,
 holding `PetStatus` and its values — and, further down the same package, pricing rules that only
 Catalog should own.

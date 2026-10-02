@@ -84,6 +84,7 @@ export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	"attribute-one-shape": covered("value-objects-and-specialisation"),
 	"returns-on-operation": covered("value-objects-and-specialisation"),
 	"rejects-on-operation": covered("value-objects-and-specialisation"),
+	"rejects-duplicate": covered("value-objects-and-specialisation"),
 
 	// Invariants and the contracts an operation is held to.
 	"invariant-in-value-object": covered("invariants"),
@@ -92,6 +93,7 @@ export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	"context-invariant-is-checked": covered("invariants"),
 	"precondition-names-operation": covered("invariants"),
 	"postcondition-names-operation": covered("invariants"),
+	"invariant-guards-are-operations": covered("invariants"),
 
 	// Context relationships, their roles and what backs them.
 	"relationship-roles-backed": covered("relationships-and-roles"),

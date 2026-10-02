@@ -1,7 +1,8 @@
-import type {
+import {
 	ODSFlowMap,
-	ODSFlowMapEdge,
-	ODSFlowMapNode,
+	type ODSFlowMapEdge,
+	type ODSFlowMapNode,
+	Workspace,
 } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { ICONS } from "../icons";
@@ -156,6 +157,104 @@ describe("flowGraph", () => {
 		expect(g.groups).toEqual([]);
 	});
 
+	// The extension, the viewer and the static export draw core's map edge for
+	// edge, so a process answered along a direct and an indirect call shows
+	// both answers arriving (issue #108, twentieth review).
+	it("draws every answer route core's map carries", () => {
+		const ws = new Workspace("Routes", { description: "", version: "0" });
+		const bc = ws.addBoundedContext("Orders", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const app = bc.addService("Orders App", {
+			description: "",
+			type: "application",
+		});
+		const [start, direct, indirect, middle, query] = [
+			"Start",
+			"Direct",
+			"Indirect",
+			"Middle",
+			"Query",
+		].map((name) =>
+			app.provides(name, {
+				description: "",
+				type: "operation",
+				internal: true,
+				...(name === "Query" && { returns: fact }),
+			}),
+		);
+		app.consumes(query!, { by: [direct!, middle!] });
+		app.consumes(middle!, { by: [indirect!] });
+		const run = bc
+			.addProcess("Run", { description: "" })
+			.starts(start!)
+			.issues(direct!, indirect!)
+			.ends(query!.returned());
+		const answers = flowGraph(ODSFlowMap.fromBoundedContext(bc))
+			.edges.filter((e) => e.answer && e.target === run.ref)
+			.map((e) => [e.source, e.label]);
+		expect(answers).toEqual([
+			[direct!.ref, "Fact (ends)"],
+			[indirect!.ref, "Fact (ends)"],
+		]);
+	});
+
+	// The extension, the viewer and the static export draw both of Run's
+	// answers through Front: the one it waits on as a step and the one that
+	// ends it dashed, and two that would read alike by the call each answers
+	// (issue #108, twenty-second review).
+	it("keeps each answer through one front, in its role, told apart", () => {
+		const ws = new Workspace("Flow", { description: "", version: "0" });
+		const bc = ws.addBoundedContext("Orders", { description: "" });
+		const receipt = bc.addSchema("Receipt");
+		const op = (name: string, returns = false) =>
+			bc
+				.addService(`${name} Handler`, {
+					description: "",
+					type: "application",
+				})
+				.provides(name, {
+					description: "",
+					type: "operation",
+					internal: true,
+					...(returns && { returns: receipt }),
+				});
+		const first = op("First", true);
+		const second = op("Second", true);
+		const last = op("Last");
+		const front = op("Front");
+		for (const called of [first, second, last]) front.provider.consumes(called);
+		const run = bc
+			.addProcess("Run", { description: "" })
+			.starts(op("Begin"))
+			.on(first.returned(), second.returned(), last.completed())
+			.issues(front)
+			.ends(last.completed());
+		const answers = flowGraph(ODSFlowMap.fromBoundedContext(bc))
+			.edges.filter((e) => e.answer && e.target === run.ref)
+			.map((e) => [e.source, e.label, e.dashed ?? false]);
+		expect(answers).toEqual([
+			[front.ref, "First returns Receipt", false],
+			[front.ref, "Second returns Receipt", false],
+			[front.ref, "completes", false],
+			[front.ref, "completes (ends)", true],
+		]);
+	});
+
+	// The same, read back from JSON, where two refusals share an id and a
+	// name: both are drawn, each named by its shape's context.
+	it("draws both same-named refusals of one call, told apart by context", () => {
+		const ws = kernelPair(true);
+		const run = ws.getByRef("#/boundedcontexts/local/processes/run")!;
+		const answers = flowGraph(ODSFlowMap.fromWorkspace(ws))
+			.edges.filter((e) => e.answer && e.target === run.ref)
+			.map((e) => e.label)
+			.sort();
+		expect(answers).toEqual([
+			"Local / Handler / Charge rejects with Foreign / Decline",
+			"Local / Handler / Charge rejects with Local / Decline",
+		]);
+	});
+
 	it("picks the codicon each host already uses for the step", () => {
 		expect(stepIcon("event")).toBe(ICONS.event);
 		expect(stepIcon("command")).toBe(ICONS.command);
@@ -163,3 +262,55 @@ describe("flowGraph", () => {
 		expect(stepIcon("process")).toBe(ICONS.process);
 	});
 });
+
+function kernelPair(sameName: boolean) {
+	const ws = new Workspace("Refs", { description: "", version: "0" });
+	const served = ws
+		.addDomain("Payments", { description: "" })
+		.addSubdomain("Charging", { description: "", type: "core" });
+	const local = ws
+		.addBoundedContext("Local", { description: "" })
+		.serves(served);
+	const foreign = ws
+		.addBoundedContext("Foreign", { description: "" })
+		.serves(served);
+	local.sharesKernelWith(foreign);
+	const shape = (owner: typeof local, name: string) => {
+		const schema = owner.addSchema(sameName ? "Decline" : name, {
+			id: "decline",
+		});
+		schema.addAttribute("why", { type: "string" });
+		return schema;
+	};
+	const refusals = [
+		shape(local, "LocalRefusal"),
+		shape(foreign, "ForeignRefusal"),
+	];
+	const handler = local.addService("Handler", {
+		description: "",
+		type: "application",
+	});
+	const event = (name: string) =>
+		handler.provides(name, { description: "", type: "event", internal: true });
+	const start = event("Start");
+	const done = event("Done");
+	handler
+		.provides("Seed", { description: "", type: "operation", internal: true })
+		.raises(start);
+	const charge = handler
+		.provides("Charge", {
+			description: "",
+			type: "operation",
+			internal: true,
+			rejects: refusals,
+		})
+		.raises(done);
+	local
+		.addProcess("Run", { description: "" })
+		.starts(start)
+		.issues(charge)
+		.on(...refusals.map((it) => charge.rejected(it)))
+		.ends(done);
+	// Read back from JSON, so the readers draw what the file says.
+	return Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema())));
+}

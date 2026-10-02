@@ -39,19 +39,19 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 
 
 ## Invariants
-> No invariants across aggregates.
+> No context invariants declared.
 
 ## Value Objects
 | Name | Description | Attributes | Invariants | Used by |
 | --- | --- | --- | --- | --- |
-| TrackingNumber | Carrier reference; a value because two shipments never share one | value: `string` | - | Shipment |
-| ShipmentStatus | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` | - | Shipment |
+| TrackingNumber | Carrier reference; a value because two shipments never share one | value: `string` | - | [Shipment](aggregates/shipment/index.md) |
+| ShipmentStatus | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` | - | [Shipment](aggregates/shipment/index.md) |
 
 
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| ShipmentDelivered | - | **shipmentId**: `int64`, orderId: `int64` (identifies [Order](../sales_bc/aggregates/order/index.md)), deliveredAt: `date-time` | ShipmentDelivered, ReportDelivery |
+| ShipmentDelivered | - | **shipmentId**: `int64`, orderId: `int64` (identifies [Order](../sales_bc/aggregates/order/index.md)), deliveredAt: `date-time` | [ShipmentDelivered](aggregates/shipment/index.md) (event), [ReportDelivery](services/shipment_app/index.md) (operation) |
 
 
 ## Policies
@@ -87,7 +87,8 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 | [PetApp](../catalog_bc/services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | MarkPetSoldForOrder | - | Pet | MarkPetSold | - |
 | [OrderApp](../sales_bc/services/order_app/index.md) | MarkPetSold | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
-| [OrderApp](../sales_bc/services/order_app/index.md) | CheckPetAvailable | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | CheckAndApproveOrder | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | CheckAndApproveOrder | - | Order | ApproveOrder | - |
 | [OrderApp](../sales_bc/services/order_app/index.md) | Order fulfilment | anti-corruption-layer | Pet | PetStatusChanged | published-language |
 | [ShipmentApp](services/shipment_app/index.md) | Plan dispatch on approval | conformist | Order | OrderApproved | published-language |
 

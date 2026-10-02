@@ -9,7 +9,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { Workspace } from "@open-domain-specification/core";
 import { expect, type Page, test } from "@playwright/test";
 import { exportSite } from "../dist/site.js";
-import { watchForProblems } from "./helpers";
+import { modelHash, watchForProblems } from "./helpers";
 
 /**
  * The baseline capture harness for issue #53 (docs/design/baseline/inventory.md).
@@ -77,7 +77,7 @@ const PAGES: PageCase[] = [
 		id: "relationship",
 		family: "ContextRelationship",
 		model: NB,
-		ref: "#/relationships/customer_&_kyc~upstream-downstream~accounts",
+		ref: "#/relationships/customer_&_kyc/upstream-downstream/accounts",
 	},
 	{
 		id: "aggregate",
@@ -338,12 +338,12 @@ async function serveModels(page: Page): Promise<void> {
 }
 
 function urlFor(host: Host, model: ModelName, ref: string): string {
+	const hash = ref === "#" ? "" : modelHash(ref);
 	if (host === "viewer")
-		return `${origin}/viewer/?url=${encodeURIComponent(fakeUrl(model))}${ref === "#" ? "" : ref}`;
-	if (host === "export-http")
-		return `${origin}/export/${model}/${ref === "#" ? "" : ref}`;
+		return `${origin}/viewer/?url=${encodeURIComponent(fakeUrl(model))}${hash}`;
+	if (host === "export-http") return `${origin}/export/${model}/${hash}`;
 	const file = pathToFileURL(join(exportDir, model, "index.html")).href;
-	return `${file}${ref === "#" ? "" : ref}`;
+	return `${file}${hash}`;
 }
 
 /** The page is settled when its title is up and any diagram has laid out its nodes. */

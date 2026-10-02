@@ -218,12 +218,14 @@ the note above defended it: "no operation of `OrderApp` does that". That was the
 describing itself rather than the shop. Sales does read the pet's summary before approving —
 the ACL that translates it has a name and a file, `PetSummaryClient` — and a read through an
 anti-corruption layer is a step of Sales' own boundary, exactly as `ReservePet` and
-`MarkPetSold` are. So `OrderApp` gains `CheckPetAvailable`, the process issues it, and the
-consumption names it in `by`. The process still decides when to ask; what asks is an
-operation, which is where decision 17 puts a call out and where the flow map and the
-reaction walk read the crossing (`consumption-by-operation`). Consuming `PetStatusChanged`
-still names the process, and rightly: nothing stands between a published fact arriving and
-the reaction to it.
+`MarkPetSold` are. So `OrderApp` gains `CheckAndApproveOrder`, which the process issues.
+That front reads the summary and then calls the aggregate's `ApproveOrder`, so the fact it
+checks is causally available to the transition it guards. Both consumptions name the front
+in `by`. The process still decides when to ask; what asks and approves is an operation,
+which is where decision 17 puts a call out and where the flow map and reaction walk read
+the chain (`consumption-by-operation`). Consuming `PetStatusChanged` still names the
+process, and rightly: nothing stands between a published fact arriving and the reaction to
+it.
 
 `FindPetsByStatus` said it returned one `Pet`. The Swagger source returns an array, and
 decision 13's note says how the model spells that: `returns` names one shape, and the shape

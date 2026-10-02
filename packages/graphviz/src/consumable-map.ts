@@ -5,6 +5,7 @@ import type {
 } from "@open-domain-specification/core";
 import { Digraph, Edge, Node, Subgraph, toDot } from "ts-graphviz";
 import { getDebug } from "./debug";
+import { graphIdentifier } from "./identifier";
 import { DOWNSTREAM_ROLE_LABELS, UPSTREAM_ROLE_LABELS } from "./role-labels";
 
 const stylesheet = `\
@@ -55,7 +56,7 @@ export function consumableMapToDigraph(contextMap: ODSConsumableMap): {
 		for (const ns of node.namespace) {
 			subgraphs[ns.id] =
 				subgraphs[ns.id] ||
-				new Subgraph(ns.id, {
+				new Subgraph(graphIdentifier(ns.id), {
 					// @ts-expect-error
 					cluster: true,
 					class: "namespace",
@@ -79,7 +80,7 @@ export function consumableMapToDigraph(contextMap: ODSConsumableMap): {
 		debug(`Creating node ${id} in subgraph ${nid}`);
 		nodes[id] =
 			nodes[id] ||
-			new Node(id, {
+			new Node(graphIdentifier(id), {
 				label: node.name,
 				shape: "egg",
 				width: 1.5,

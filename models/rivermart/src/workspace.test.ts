@@ -34,10 +34,33 @@ describe("RiverMart reference workspace", () => {
 		assertStressTestWorkspace(workspace, deliberate);
 	});
 
+	it("pins the retained cross-aggregate finding to Cart's saved items", () => {
+		expect(
+			workspace
+				.validate()
+				.filter(({ rule }) => rule === "cross-aggregate-reference"),
+		).toEqual([
+			{
+				severity: "error",
+				rule: "cross-aggregate-reference",
+				message:
+					'"Cart" includes "WishlistItem" in another aggregate; across aggregates only "references" is allowed',
+				ref: "#/boundedcontexts/cart_&_checkout/aggregates/cart/entities/cart",
+			},
+		]);
+	});
+
 	// Rendering every diagram through graphviz-wasm takes tens of seconds on
 	// the larger models, so this one test gets a generous timeout.
-	it("generates a complete docsify site with no broken links", async () => {
-		await assertDocSite(workspace);
+	it("generates a complete docsify site and names the provider payment's identity user", async () => {
+		const docs = await assertDocSite(workspace);
+		const page = docs["boundedcontexts/payment_provider/index.md"];
+		const row = page
+			.split("\n")
+			.find((line) => line.startsWith("| ProviderPayment |"));
+		expect(row).toContain(
+			"[Payments / Payment](../payments/aggregates/payment/index.md) (identity)",
+		);
 	}, 60_000);
 });
 
@@ -70,7 +93,7 @@ describe("RiverMart's acquirer and the outcomes it enumerates", () => {
 			(it): it is Answer => it instanceof Answer,
 		);
 		expect(waited.map((it) => it.ref)).toEqual([
-			`${holdFunds.ref}/rejects/provider_decline/issuer_unavailable`,
+			`${holdFunds.ref}/rejects/payment_provider/provider_decline/issuer_unavailable`,
 		]);
 		expect(waited[0].declared).toBe(true);
 		expect(waited[0].operation).toBe(holdFunds);

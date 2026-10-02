@@ -227,6 +227,8 @@ for (const host of ["viewer", "export"] as const) {
 					fullscreen.length,
 					`fullscreen, ${reducedMotion}`,
 				).toBeLessThanOrEqual(3);
+				await flow.getByRole("button", { name: "Exit fullscreen" }).click();
+				await expect(page.locator(".interactive.fullscreen")).toHaveCount(0);
 			}
 		});
 

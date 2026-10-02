@@ -41,3 +41,11 @@ The architect's twelfth round found the reopening condition hard to meet as judg
 ## Note (2026-09-10, third)
 
 A refusal enumerates its outcomes as `reasons` and each is an edge a process may wait on; a success has one edge and its outcomes are prose until the condition above is met. The asymmetry is what makes an author reach for `returns.reasons`, which the loader now reports as an unknown field (card 132); named here and on the docs (card 133).
+
+## Correction (2026-09-30, issue #111)
+
+The current position above says `schemaContext` "admits a shared kernel or a conformist". That is incomplete and has been since card 130: `schemaContext` also admits the customer of a `customer-supplier` relationship, which borrows the supplier's schemas and value objects as a conformist does and with no downstream role written (decision 03, amendment of 2026-09-10; `mayBorrowFrom` in `packages/core/src/validate.ts`). The three routes are a shared kernel, a conformist and a customer-supplier customer. The documentation site and the generated rule reference already said so; this record is what lagged. The sentence above stands as written on the day.
+
+## Note (2026-10-01, issue #115)
+
+The 2026-09-30 correction's file pointer was true then. `mayBorrowFrom` now lives in `packages/core/src/borrowing.ts`, shared by the validator and the value-object usage lookup. Its three routes are unchanged.

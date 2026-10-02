@@ -3,8 +3,10 @@ import {
 	constrainableLabel,
 	Entity,
 	type Invariant,
+	invariantTimingLabel,
 	ODSRelationGraph,
 	type ValueObject,
+	valueObjectsUsedBy,
 } from "@open-domain-specification/core";
 import { attributeListMd } from "./attributes.md";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
@@ -16,7 +18,6 @@ import {
 	pathToIndexMd,
 	pathToRelationMapSvg,
 } from "./lib/paths";
-import { valueObjectsUsedBy } from "./lib/value-objects";
 import type { Options } from "./options";
 
 /**
@@ -58,6 +59,7 @@ const entitySection = (aggregate: Aggregate) => (entity: Entity) => [
 const invariantSection = (invariant: Invariant) => [
 	invariant.name,
 	invariant.description,
+	invariantTimingLabel(invariant),
 	invariant.targets.map(constrainableLabel).join(", ") || "-",
 ];
 
@@ -110,7 +112,7 @@ ${markdownTable(
 ${
 	aggregate.invariants.size > 0
 		? markdownTable(
-				["Name", "Description", "Constrains"],
+				["Name", "Description", "When", "Constrains"],
 				Array.from(aggregate.invariants.values()).map(invariantSection),
 			)
 		: "> No invariants."

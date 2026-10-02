@@ -32,12 +32,16 @@ const normalise = (text: string) => text.replace(/\s+/g, " ");
 const handWrittenFiles = [
 	"packages/skill/skill/SKILL.md",
 	"packages/skill/skill/references/interview-playbook.md",
+	"packages/skill/skill/references/ddd-glossary.md",
+	"packages/skill/skill/references/translation-table.md",
 	"packages/skill/skill/references/preferences.md",
 	"packages/skill/skill/references/json-mode.md",
 	"packages/skill/skill/references/dsl-api.md",
 	"apps/docs/docs/3-core/2-strategic-design.md",
 	"apps/docs/docs/3-core/3-tactical-design.md",
+	"apps/docs/docs/3-core/4-validation.md",
 	"packages/core/src/schema.ts",
+	"packages/core/src/workspace.ts",
 	// Not hand-authored prose, but a template that writes prose: the string
 	// literal in generate.mts is the source the generated model reference is
 	// rebuilt from, so a stale sentence there regenerates itself right back.
@@ -45,6 +49,7 @@ const handWrittenFiles = [
 	// The generated file itself, committed at the repo root, so a drift
 	// between the template and what is actually checked in is also caught.
 	"packages/skill/skill/references/model-reference.md",
+	"packages/skill/skill/references/validation-rules.md",
 ].map((path) => ({
 	path,
 	text: normalise(readFileSync(join(repoRoot, path), "utf8")),
@@ -58,6 +63,14 @@ const corpus = handWrittenFiles.map((f) => f.text).join("\n");
  * listed so the drift cannot silently return through any of them.
  */
 const oldClaims: Array<{ claim: string; sentences: string[] }> = [
+	{
+		claim:
+			"a completed immediate trigger stays held even when a new invocation has the same identity",
+		sentences: [
+			"What it may not name is the future answer of any named guarded operation",
+			"the answer of a named guarded operation, an event that guard or its caller raises, and a process's ending event are future facts",
+		],
+	},
 	{
 		claim:
 			"a dangling ref stops the whole file loading (decision 29: it loads and reports unresolved-ref)",
@@ -151,6 +164,11 @@ const oldClaims: Array<{ claim: string; sentences: string[] }> = [
 	},
 	{
 		claim:
+			"shared-kernel borrowing is symmetric, unlike conformist and customer-supplier borrowing (decision 16)",
+		sentences: ["All three run downstream only"],
+	},
+	{
+		claim:
 			"every required collection is present even when empty (card 104: an absent collection is an empty one)",
 		sentences: ["Every required collection is present even when empty."],
 	},
@@ -166,6 +184,58 @@ const currentFacts: Array<{
 	file: string;
 	sentences: string[];
 }> = [
+	{
+		fact: "modelled invariants name operation guards, not event targets (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"In a modelled aggregate or context, an event is never another guard beside the operation",
+		],
+	},
+	{
+		fact: "modelled invariants name operation guards, not event targets (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"An event is never a guard of a modelled aggregate or context invariant, even beside an operation",
+		],
+	},
+	{
+		fact: "modelled invariants name operation guards, not event targets (validation guide)",
+		file: "apps/docs/docs/3-core/4-validation.md",
+		sentences: [
+			"an invariant of a modelled aggregate or context names operations, never events, as guards",
+		],
+	},
+	{
+		fact: "modelled invariants name operation guards, not event targets (generated rule reference)",
+		file: "packages/skill/skill/references/validation-rules.md",
+		sentences: [
+			"An invariant of a modelled aggregate or context names operations, not events, as its guards.",
+		],
+	},
+	{
+		fact: "modelled invariants name operation guards, not event targets (schema source)",
+		file: "packages/core/src/schema.ts",
+		sentences: ["No modelled invariant may name an event as a guard"],
+	},
+	{
+		fact: "modelled invariants name operation guards, not event targets (generated model reference)",
+		file: "packages/skill/skill/references/model-reference.md",
+		sentences: ["No modelled invariant may name an event as a guard"],
+	},
+	{
+		fact: "a shared kernel borrows in both directions (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"A shared kernel works in both directions; conformist and customer-supplier borrowing run downstream only.",
+		],
+	},
+	{
+		fact: "a shared kernel borrows in both directions (generated rule reference)",
+		file: "packages/skill/skill/references/validation-rules.md",
+		sentences: [
+			"The shared-kernel route works both ways; the conformist and customer-supplier routes run downstream only",
+		],
+	},
 	{
 		fact: "borrowing runs on three routes — a shared kernel, a conformist downstream, or the customer of a customer-supplier pair (decision 16, second amendment of 2026-09-10)",
 		file: "packages/skill/skill/SKILL.md",
@@ -232,6 +302,307 @@ const currentFacts: Array<{
 		sentences: [
 			"This entity's own attributes, by id. Optional, and an absent map is an\n\t * empty one",
 			"The fields of this payload, by id. Optional, and an absent map is an\n\t * empty one",
+		],
+	},
+	{
+		fact: "an operation named by a rule does not determine its timing (translation table)",
+		file: "packages/skill/skill/references/translation-table.md",
+		sentences: [
+			"Persistent aggregate invariant naming the transition that keeps it true",
+			"Precondition checked before the operation",
+		],
+	},
+	{
+		fact: "a value invariant has construction timing, never call timing (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"it needs no guard and cannot carry `precondition` or `postcondition`",
+		],
+	},
+	{
+		fact: "a value invariant has construction timing, never call timing (interview playbook)",
+		file: "packages/skill/skill/references/interview-playbook.md",
+		sentences: [
+			"Do not mark it `precondition` or `postcondition`: those flags describe call timing",
+		],
+	},
+	{
+		fact: "a value invariant has construction timing, never call timing (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"It has neither `precondition` nor `postcondition`, which describe a call's timing",
+		],
+	},
+	{
+		fact: "a postcondition promises the answer at response time, not whether its facts are stored (workspace source)",
+		file: "packages/core/src/workspace.ts",
+		sentences: [
+			"The operation guarantees what it answers with, without",
+			"claiming an aggregate keeps that answer true afterward",
+		],
+	},
+	{
+		fact: "a postcondition promises the answer at response time, not whether its facts are stored (interview playbook)",
+		file: "packages/skill/skill/references/interview-playbook.md",
+		sentences: [
+			"The model makes no claim that an aggregate keeps the answer true afterward, even if underlying facts are stored",
+		],
+	},
+	{
+		fact: "a precondition does not promise later truth (schema source)",
+		file: "packages/core/src/schema.ts",
+		sentences: ["without claiming it remains true afterward"],
+	},
+	{
+		fact: "a precondition does not promise later truth (generated reference)",
+		file: "packages/skill/skill/references/model-reference.md",
+		sentences: ["without claiming it remains true afterward"],
+	},
+	{
+		fact: "a precondition does not promise later truth (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: ["without claiming it remains true afterward"],
+	},
+	{
+		fact: "a precondition does not promise later truth (validation rule)",
+		file: "packages/skill/skill/references/validation-rules.md",
+		sentences: ["the model does not promise it remains true afterward"],
+	},
+	{
+		fact: "a postcondition promises the answer at response time, not whether its facts are stored (schema source)",
+		file: "packages/core/src/schema.ts",
+		sentences: [
+			"The operation guarantees its answer when it responds; the rule does not",
+			"same facts are stored",
+		],
+	},
+	{
+		fact: "a postcondition promises the answer at response time, not whether its facts are stored (generated reference)",
+		file: "packages/skill/skill/references/model-reference.md",
+		sentences: [
+			"The operation guarantees its answer when it responds; the rule does not claim an aggregate keeps that answer true afterward, whether or not the same facts are stored",
+		],
+	},
+	{
+		fact: "a value invariant follows composition (value schema comment)",
+		file: "packages/core/src/schema.ts",
+		sentences: [
+			"its own and inherited attributes and the attributes of values it composes,",
+			"precondition or postcondition timing flag",
+		],
+	},
+	{
+		fact: "a value invariant follows composition (translation table)",
+		file: "packages/skill/skill/references/translation-table.md",
+		sentences: [
+			"with no timing flag and `constrains` naming its own or inherited attributes, or attributes of values it composes",
+		],
+	},
+	{
+		fact: "a value invariant has construction timing (validation guide)",
+		file: "apps/docs/docs/3-core/4-validation.md",
+		sentences: [
+			"a value object's invariant holds by construction without a precondition or postcondition flag",
+		],
+	},
+	{
+		fact: "aggregate rules distinguish save, precondition and answer timing (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"whether as a rule held on every save, a check before an operation, or a guarantee about its answer",
+		],
+	},
+	{
+		fact: "aggregate rules distinguish save, precondition and answer timing (interview playbook)",
+		file: "packages/skill/skill/references/interview-playbook.md",
+		sentences: [
+			"Ask whether it holds on every save, is checked before a named operation, or guarantees its answer",
+		],
+	},
+	{
+		fact: "aggregate rules distinguish save, precondition and answer timing (glossary)",
+		file: "packages/skill/skill/references/ddd-glossary.md",
+		sentences: [
+			"its precondition is checked before a named operation, and its postcondition guarantees what the call answers with",
+		],
+	},
+	{
+		fact: "a value invariant follows composition (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"that value's own and inherited attributes and the attributes of values it composes, transitively, but nothing outside that path",
+		],
+	},
+	{
+		fact: "a value invariant follows composition (interview playbook)",
+		file: "packages/skill/skill/references/interview-playbook.md",
+		sentences: [
+			"its own and inherited attributes and the attributes of values it composes, transitively, but nothing outside that path",
+		],
+	},
+	{
+		fact: "a value invariant follows composition (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"that value object's own and inherited attributes and the attributes of values it composes, transitively, but nothing outside that path",
+		],
+	},
+	{
+		fact: "a precondition distinguishes a completed policy trigger from the current call's future result (schema source)",
+		file: "packages/core/src/schema.ts",
+		sentences: [
+			"a front on its local call chain already",
+			"returned or rejected answer is a completed occurrence before the command",
+			"The current guarded invocation's future answer or raised event",
+			"every finite admitted entry-to-guard caller or reactor walk",
+			"a closed internal caller cycle with no entry supplies none",
+			"relate the guarded operation's request to the shapes it returns or",
+		],
+	},
+	{
+		fact: "generated model reference keeps the stable reach and postcondition claims",
+		file: "packages/skill/skill/references/model-reference.md",
+		sentences: [
+			"a front on its local call chain already fetched",
+			"A postcondition may relate the guarded operation's request to the shapes it returns or rejects with",
+		],
+	},
+	{
+		fact: "precondition fact timing is stated by the tactical guide",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"a front on its local call chain in the same context",
+			"A process holds a starting event's payload",
+			"`on` or `ends` triggers and a starting operation's later answer are not guaranteed",
+			"immediate `on` event or returned or rejected answer is a completed occurrence",
+			"The current guarded invocation's future answer or raised event alone supplies no fact",
+			"earlier completed occurrence can supply a fact even when its event or operation has the same identity",
+		],
+	},
+	{
+		fact: "precondition fact timing is stated by the authoring skill",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"a starting event's payload is held",
+			"its `on` or `ends` triggers and a starting operation's later answer are not guaranteed",
+			"immediate `on` event or returned or rejected answer is a completed occurrence",
+			"The current guarded invocation's future answer or raised event alone supplies no fact",
+			"every finite admitted entry-to-guard caller or reactor walk holds it",
+			"a closed internal caller cycle with no entry supplies none",
+		],
+	},
+	{
+		fact: "precondition fact timing is stated by the DSL reference",
+		file: "packages/skill/skill/references/dsl-api.md",
+		sentences: [
+			"a front on its local call chain",
+			"A process holds a starting event's payload",
+			"its `on` or `ends` triggers and a starting operation's later answer are not guaranteed",
+			"immediate `on` event or returned or rejected answer is a completed occurrence",
+			"The current guarded invocation's future answer or raised event alone supplies no fact",
+			"every finite admitted entry-to-guard caller or reactor walk",
+			"a closed internal caller cycle with no entry supplies none",
+		],
+	},
+	{
+		fact: "precondition facts are reliable on every route to the guard (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"A fact must be held on every finite admitted entry-to-guard caller or reactor walk",
+			"an uninformed alternate entry removes them",
+			"a closed internal caller cycle with no entry supplies none",
+		],
+	},
+	{
+		fact: "an unattributed local consumption is an empty independent entry (schema source)",
+		file: "packages/core/src/schema.ts",
+		sentences: [
+			"consumption whose caller cannot be identified adds an independent entry",
+			"still infers a sole operation",
+			"do not invent a causal edge",
+		],
+	},
+	{
+		fact: "an unattributed local consumption is an empty independent entry (authoring skill)",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"consumption with no identifiable caller adds an independent entry with no held facts",
+			"omitting `by` still infers a sole operation",
+			"This reach check does not establish reaction bootstrap or resolve cycles",
+		],
+	},
+	{
+		fact: "an unattributed local consumption is an empty independent entry (DSL reference)",
+		file: "packages/skill/skill/references/dsl-api.md",
+		sentences: [
+			"consumption whose caller cannot be identified adds an independent entry with no held facts",
+			"omitted `by` still infers a sole operation",
+			"Fact reach does not decide reaction bootstrap or cycles",
+		],
+	},
+	{
+		fact: "an unattributed local consumption is an empty independent entry (tactical guide)",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"consumption whose caller cannot be identified adds an independent entry with no held facts",
+			"Omitting `by` infers a sole operation",
+			"no causal edge is invented",
+		],
+	},
+	{
+		fact: "generated validation guidance names the empty entry explicitly",
+		file: "packages/skill/skill/references/validation-rules.md",
+		sentences: [
+			"A local consumption whose caller cannot be identified contributes an independent empty held-fact entry, even beside informed known callers or reactors.",
+		],
+	},
+	{
+		fact: "validation guidance states process and policy precondition timing",
+		file: "apps/docs/docs/3-core/4-validation.md",
+		sentences: [
+			"a process start-event payload, or a policy's immediate event or answer trigger",
+			"A process `on` trigger or a starting operation's later answer is not assumed before a process-issued command",
+		],
+	},
+	{
+		fact: "generated validation guidance preserves prior occurrences and finite route reach",
+		file: "packages/skill/skill/references/validation-rules.md",
+		sentences: [
+			"already received from a prior occurrence and remains available even if the new invocation can produce the same identity",
+			"Every finite caller route admitted by an entry must hold the fact",
+			"This reach calculation does not prove a reaction can bootstrap or avoid a cycle",
+		],
+	},
+	{
+		fact: "a multi-operation postcondition guarantees its target at each operation",
+		file: "packages/skill/skill/SKILL.md",
+		sentences: [
+			"Where a postcondition names several operations, it guarantees its target shape at each operation",
+			"their shapes are not combined into a union",
+		],
+	},
+	{
+		fact: "a multi-operation postcondition is universal in the DSL reference",
+		file: "packages/skill/skill/references/dsl-api.md",
+		sentences: [
+			"A postcondition naming several operations guarantees its target shape at each operation",
+			"rather than their union",
+		],
+	},
+	{
+		fact: "a multi-operation postcondition is universal in the tactical and validation guides",
+		file: "apps/docs/docs/3-core/3-tactical-design.md",
+		sentences: [
+			"Where a postcondition names several operations",
+			"their shapes are not combined into a union",
+		],
+	},
+	{
+		fact: "validation guidance keeps multi-operation postconditions universal",
+		file: "apps/docs/docs/3-core/4-validation.md",
+		sentences: [
+			"When it names several operations, each guarantees the target shape through composition",
+			"their shapes are not combined into a union",
 		],
 	},
 ];

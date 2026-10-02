@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
 import { petstoreModel } from "../lib/fixtures";
+import { modelRefToHash } from "../lib/ref-transport";
 import WorkspacePicker from "./WorkspacePicker.svelte";
 
 describe("WorkspacePicker", () => {
@@ -35,14 +36,14 @@ describe("WorkspacePicker", () => {
 
 describe("WorkspacePicker deep links", () => {
 	it("keeps the hash the visitor arrived with, so a deep link survives picking", () => {
-		location.hash = "#/boundedcontexts/sales_bc";
+		location.hash = modelRefToHash("#/boundedcontexts/sales_bc");
 		const { container } = render(WorkspacePicker, {
 			models: [petstoreModel()],
 			onpick: () => {},
 		});
 		expect(container.querySelector("a.ref")).toHaveAttribute(
 			"href",
-			"#/boundedcontexts/sales_bc",
+			modelRefToHash("#/boundedcontexts/sales_bc"),
 		);
 		location.hash = "";
 	});

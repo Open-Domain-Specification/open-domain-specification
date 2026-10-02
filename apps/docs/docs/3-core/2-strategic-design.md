@@ -103,14 +103,18 @@ upstream. That is how an external system's formats enter a model without
 anybody pretending they are ours, and `conformist-backed` asks in return that
 the two contexts really exchange something.
 
-Two contexts sharing a library declare `shared-kernel` directly between
-them and borrow one another's value objects and schemas across it — that
-pairwise kernel is Evans's shared subset, modelled as such. When several
-contexts share one library, model the library as a bounded context of its
-own and give each sharer a `shared-kernel` relationship with that context,
-rather than one relationship per pair: six contexts sharing a
-financial-primitives library are six relationships to one kernel context,
-not fifteen among themselves. A kernel context is also the one place for
+Two contexts whose teams change a library together declare `shared-kernel`
+directly between them and borrow one another's value objects and schemas
+across it — that pairwise kernel is Evans's shared subset, modelled as such.
+A shared kernel joins co-owners only. A context that uses the library
+without changing it borrows over a directed relationship with the context
+that declares it, as a conformist or as the customer of a
+`customer-supplier` relationship, and is not a co-owner: NorthBank's Accounts
+and Ledger co-own Money, and Payments, Cards, Lending and Reporting borrow it
+from Ledger. When three or more teams change one library together, model the
+library as a bounded context of its own and give each co-owner a
+`shared-kernel` relationship with that context, rather than one relationship
+per pair. A kernel context is also the one place for
 something a pairwise kernel cannot hold: an entity two contexts jointly own.
 A relation and a kind never cross a bounded context, and an entity has one
 home, so a Product a manufacturing context and a sales context both change is

@@ -53,6 +53,13 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(rows[0]).toContain("Cross-Instance Invariant");
 		expect(rows[0]).toContain("Plain Entity");
 		expect(rows[0]).toContain("Silent Operation");
+		expect(section).toHaveTextContent("Checked After Invariant");
+		expect(section).toHaveTextContent(
+			"The When column says how each is checked or guaranteed.",
+		);
+		expect(section).not.toHaveTextContent(
+			"each names the operation that checks it before acting",
+		);
 		// A rule naming nothing binds the whole boundary, and here that is the
 		// context rather than an aggregate.
 		expect(rows[1]).toContain("whole context");
@@ -87,7 +94,7 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(when).toHaveTextContent("completion");
 		// No shape to link to, so the name links to the call that came back.
 		expect(
-			[...when.querySelectorAll("a")].map((a) => a.getAttribute("href")),
+			[...when.querySelectorAll("a")].map((a) => a.getAttribute("data-ref")),
 		).toContain(
 			"#/boundedcontexts/main_context/aggregates/rootless_aggregate/provides/silent_operation",
 		);
@@ -104,7 +111,7 @@ describe("the tactical templates on the alternate branches", () => {
 		const facts = container.querySelector(".page-header dd") as HTMLElement;
 		expect(facts).toHaveTextContent("Main Context");
 		expect(facts.querySelector("a")).toHaveAttribute(
-			"href",
+			"data-ref",
 			"#/boundedcontexts/main_context",
 		);
 		expect(container.textContent).toContain(
@@ -145,6 +152,15 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(container.textContent).toContain(
 			"The operations this rule is checked before.",
 		);
+		expect(container.querySelector("#constrains")).toHaveTextContent(
+			"facts every named guard and caller route holds",
+		);
+		expect(container.querySelector("#constrains")).toHaveTextContent(
+			"a process start-event payload, or a policy's immediate event or answer trigger",
+		);
+		expect(container.querySelector("#guards")).toHaveTextContent(
+			"the model makes no later guarantee",
+		);
 	});
 
 	it("InvariantPage: a context postcondition says it is checked after", () => {
@@ -157,6 +173,56 @@ describe("the tactical templates on the alternate branches", () => {
 		);
 		expect(container.textContent).toContain(
 			"The operations this rule is checked of.",
+		);
+	});
+
+	it("InvariantPage: an external postcondition describes each published answer and event payload", () => {
+		const externalModel = edgeCaseModel();
+		const outside = [...externalModel.workspace.boundedcontexts.values()].find(
+			(context) => context.external,
+		);
+		if (!outside) throw new Error("Missing external context fixture");
+		const receipt = outside.addSchema("Receipt", {
+			description: "Published shape.",
+		});
+		const amount = receipt.addAttribute("Amount", { type: "number" });
+		const provider = outside.addService("Provider", {
+			description: "Published boundary.",
+			type: "application",
+		});
+		const capture = provider.addConsumable("Capture", {
+			type: "operation",
+			description: "Returns a receipt.",
+			returns: receipt,
+		});
+		const captured = provider.addConsumable("Captured", {
+			type: "event",
+			description: "Publishes a receipt.",
+			schema: receipt,
+		});
+		outside
+			.addInvariant("Amount guarantee", {
+				description: "Each receipt has an amount.",
+				postcondition: true,
+			})
+			.constrains(capture, captured, amount);
+		const { container } = render(Harness, {
+			model: externalModel,
+			ref: contextInvariantRef("outside_system", "amount_guarantee").$ref,
+		});
+		expect(container.querySelector(".page-header .keyword")).toHaveTextContent(
+			"published postcondition",
+		);
+		expect(container.querySelector("#guards h2")).toHaveTextContent(
+			"Guaranteed by",
+		);
+		expect(container.querySelector("#guards")).toHaveTextContent("Capture");
+		expect(container.querySelector("#guards")).toHaveTextContent("Captured");
+		expect(container.textContent).toContain(
+			"Each named operation or event publishes this guarantee",
+		);
+		expect(container.textContent).toContain(
+			"Fields from different contracts cannot be pooled",
 		);
 	});
 
@@ -257,11 +323,9 @@ describe("the tactical templates on the alternate branches", () => {
 	it("AggregatePage: an aggregate with nothing in it says what would fill each section", () => {
 		const text = textOf(aggregateRef("main_context", "empty_aggregate").$ref);
 		expect(text).toContain("No entities. An aggregate needs a root entity.");
-		expect(text).toContain("No value objects.");
+		expect(text).toContain("No value objects held by this aggregate.");
 		expect(text).toContain("No operations. How does state change?");
-		expect(text).toContain(
-			"No events. Nothing outside will ever know what happened here.",
-		);
+		expect(text).toContain("No events provided by this aggregate.");
 		expect(text).toContain(
 			"No invariants stated. If nothing can go wrong, is this really an aggregate?",
 		);
@@ -290,10 +354,14 @@ describe("the tactical templates on the alternate branches", () => {
 		const text = textOf(
 			valueObjectRef("main_context", "unused_value_object").$ref,
 		);
-		expect(text).toContain("Nothing uses this value object as a type yet.");
+		expect(text).toContain(
+			"No declared attribute names this value object directly as its type.",
+		);
 		expect(text).toContain("No relations.");
 		expect(text).toContain("This value keeps no rule of its own.");
-		expect(text).toContain("No aggregate's rule names this value object.");
+		expect(text).toContain(
+			"No aggregate or context rule names this value object or its attributes.",
+		);
 	});
 
 	it("ValueObjectPage: a relation carries its cardinality as a code keyword", () => {
@@ -323,7 +391,7 @@ describe("the tactical templates on the alternate branches", () => {
 	it("ServicePage: a service that provides nothing and consumes nothing says so", () => {
 		const text = textOf(serviceRef("second_context", "odd_service").$ref);
 		expect(text).toContain("Provides nothing.");
-		expect(text).toContain("Depends on nothing outside itself.");
+		expect(text).toContain("Consumes no consumables.");
 	});
 
 	it("ConsumablePage: a schema with no attributes, and an operation no policy issues", () => {
@@ -336,9 +404,7 @@ describe("the tactical templates on the alternate branches", () => {
 			).$ref,
 		);
 		expect(text).toContain("The schema has no attributes.");
-		expect(text).toContain(
-			"No policy issues this operation; it comes from users or application services.",
-		);
+		expect(text).toContain("No policy issues this operation.");
 		expect(text).toContain(
 			"Raises nothing. Its effect is invisible to the rest of the system.",
 		);
@@ -429,7 +495,7 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(own.textContent).toContain("whole value");
 		const named = container.querySelector("#constrained-by") as HTMLElement;
 		expect(named.textContent).toContain(
-			"No aggregate's rule names this value object.",
+			"No aggregate or context rule names this value object or its attributes.",
 		);
 	});
 
@@ -476,7 +542,7 @@ describe("the tactical templates on the alternate branches", () => {
 
 	it("SchemaPage: nothing carries it", () => {
 		expect(textOf(schemaRef("main_context", "unused_schema").$ref)).toContain(
-			"Nothing carries this schema yet.",
+			"No consumable names this schema directly.",
 		);
 	});
 
@@ -509,7 +575,7 @@ describe("the tactical templates on the alternate branches", () => {
 		// A list of the shape, said in the direction cell the way "returns many"
 		// is (decision 13, second amendment).
 		expect(text).toContain("rejects with many");
-		expect(text).not.toContain("Nothing carries this schema yet");
+		expect(text).not.toContain("No consumable names this schema directly.");
 	});
 
 	it("SchemaPage: a shape refused with one of, not a list of, still reads plainly", () => {

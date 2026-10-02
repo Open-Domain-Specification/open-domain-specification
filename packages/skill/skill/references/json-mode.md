@@ -12,7 +12,7 @@ the VS Code extension, the docs generator and anyone else load it with `Workspac
 - `.ods/<workspace-id>.json`: one workspace per file. The first key is
   `"$schema": "./schema.json"`; the loader ignores it, editors use it for completion.
 - Keep the file's `id` equal to its basename, and `odsVersion` equal to the ODS version core
-  writes: `"2.0.0"`, which is what the `minimal.ods.json` example carries. A file whose major
+  writes: `"3.0.0"`, which is what the `minimal.ods.json` example carries. A file whose major
   differs from the core reading it, or that states none, gets an `ods-version` error saying so;
   the number is bumped by the decision that breaks the metamodel, never by hand to silence it.
 
@@ -27,8 +27,11 @@ grow it.
   schemas, an aggregate's entities, either one's `provides`, an entity's or a value object's
   `relations` — is left out when it is empty; writing it empty says the same thing and is
   longer.
-- Ids are the object keys. Create them as `snake_case` of the name, then never change them.
-  Renaming is changing `name`.
+- Ids are the raw object keys. Create them as `snake_case` of the name, then never change them.
+  Renaming is changing `name`. Keep an authored key verbatim, including an explicit empty key;
+  do not put JSON Pointer escaping into the key. When that id appears in a `$ref`, encode the
+  complete key as one segment: `~` becomes `~0`, then `/` becomes `~1`. Thus raw key `a/b~c`
+  appears as `a~1b~0c`, while raw key `a~1b~0c` is the distinct segment `a~01b~00c`.
 - Every `$ref` follows the grammar at the end of `model-reference.md` and points at something
   that exists. A dangling ref does not fail the whole file: it loads, the field it was in is left
   unset, and validation reports it as an `unresolved-ref` diagnostic at the element that wrote it,

@@ -65,10 +65,13 @@ and the generated docs read, so your words match what the user is looking at.
 
 Follow the mode reference for mechanics. Rules that hold in both modes:
 
-- Ids are the JSON keys and the segments of every `$ref`. They are derived from the name at
-  creation (`snake_case`) and then frozen. To rename something, change its `name` and keep the
-  id (in the DSL, pass `id` explicitly at the moment of renaming). Rewriting a key means
-  updating every ref that uses it, and confirming with the user first.
+- Ids are the raw JSON keys and the identities carried by `$ref` segments. They are derived from
+  the name at creation (`snake_case`) and then frozen. Keep a JSON key or explicit DSL `id`
+  verbatim; when writing a ref, encode that complete id as one JSON Pointer segment (`~` as
+  `~0`, then `/` as `~1`). To rename something, change its `name` and keep the id (in the DSL,
+  pass `id` explicitly at the moment of renaming). Rewriting a key means updating every ref that
+  uses it, and confirming with the user first. The complete grammar and the extra encoding layer
+  for refs embedded in consumption refs are in `references/model-reference.md`.
 - Every collection is optional and leaving one out is the same as writing it empty: a context's
   `aggregates`, `services`, `policies`, `processes`, `glossary`, `valueobjects`, `schemas`,
   `invariants` and `subdomains`; an aggregate's `entities`, `invariants`, `provides`, `consumes`;
@@ -87,13 +90,32 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   its own context declares, or one it borrows over a `shared-kernel`, as a conformist, or as a
   customer-supplier downstream of the context that owns it.
 - An invariant belongs to a value object when it holds by construction of the value — an IBAN's
-  checksum, a Money's single currency — and then it constrains that value's own attributes and
-  nothing else, and needs no guard. It belongs to an aggregate when it holds inside that
-  boundary on every save, and to the context when it holds across instances or aggregates —
+  checksum, a Money's single currency — and then it constrains that value's own and inherited
+  attributes and the attributes of values it composes, transitively, but nothing outside that
+  path; it needs no guard and cannot carry `precondition` or `postcondition`. It belongs to an
+  aggregate when it describes that boundary, whether as a rule held on every save, a check before
+  an operation, or a guarantee about its answer. It belongs to the context when it reaches across
+  instances or aggregates —
   uniqueness, a quota, a limit — or where the context has no aggregate at all and the rule is
   the contract of its operation. A context's invariant names at least one operation of the
   context that checks it, says with `precondition` or `postcondition` which side of that call
-  the check is made on, and reaches no further than that context.
+  the check is made on, and reaches no further than that context. In a modelled aggregate or
+  context, an event is never another guard beside the operation; a precondition may instead
+  constrain the reachable attributes of an event payload its issuing reactor already heard. For a
+  process, a starting event's payload is held; its `on` or `ends` triggers and a starting
+  operation's later answer are not guaranteed before a command it issues. A policy's immediate
+  `on` event or returned or rejected answer is a completed occurrence before the command that
+  reaction issues, even if the same event or operation is named on a later chain. The current
+  guarded invocation's future answer or raised event alone supplies no fact. A fact is reachable
+  only if every finite admitted entry-to-guard caller or reactor walk holds it. Sequential local
+  fronts and recursive callers keep facts from informed real entries; an uninformed alternate
+  entry removes them, and a closed internal caller cycle with no entry supplies none. A local
+  consumption with no identifiable caller adds an independent entry with no held facts, even
+  beside known callers or reactors; omitting `by` still infers a sole operation, while zero or
+  several possible callers infer none. This reach check does not establish reaction bootstrap or
+  resolve cycles. Where a postcondition names
+  several operations, it guarantees its target shape at each operation, through composition;
+  their shapes are not combined into a union.
 - An external context is somebody else's machine: it states no aggregates, policies or
   processes, and no rule it keeps at rest. What it publishes it may state — the rules on its
   value objects, and a `precondition` or `postcondition` on one of its own operations, which is
@@ -101,13 +123,19 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   the contract of the payload it sends us. Such a rule names one of that context's own
   operations or, flagged `postcondition`, one of its own events, and constrains only the
   attributes of the shapes that operation carries or that event's payload, and the context's own
-  value objects; it says nothing about a context of ours. Its services still carry a `type`, but
-  nothing reads it.
+  value objects. A `postcondition` naming several operations or events is a guarantee about
+  each named operation's published request, answer or refusal and each named event's payload
+  separately, following composed schemas; fields from different contracts cannot be pooled to
+  satisfy it. A `precondition`
+  names operations only, never events, and reaches only the published request, not an answer
+  fetched by an internal call. The rule says nothing about a context of ours. Its
+  services still carry a `type`, but nothing reads it.
 - A payload schema belongs to the context that publishes the consumable. A value object or a
   schema may be named across a boundary on exactly three routes: where the two contexts declare a
   `shared-kernel` relationship, where the naming context is a conformist downstream of the one
-  that owns it, or where it is the customer of a `customer-supplier` relationship with it. All
-  three run downstream only, and the same three routes let a `specialises` reach across.
+  that owns it, or where it is the customer of a `customer-supplier` relationship with it. A
+  shared kernel works in both directions; conformist and customer-supplier borrowing run
+  downstream only. The same three routes let a `specialises` reach across.
 - Reference another aggregate only through its root entity, or a kind of that root, with
   `references`.
 - No delivery flag, no modules, no actors, no read-model element, no operations on a value
@@ -139,7 +167,7 @@ The model is a claim about a real system. When the user asks you to check it —
 actually exist", "reconcile the model with the code" — walk the intents that carry no comments
 (the health report's "No comments" list, or `intentsWithoutComments(workspace)`) and go looking.
 An anti-corruption layer means an adapter or translator on the downstream side; an open host
-service means a published contract; a shared kernel means a shared package both sides depend on;
+service means a published contract; a shared kernel means a shared package both sides change;
 a conformist consumption means the upstream's own types used directly. Full search recipes and
 the shape of a comment are in `references/reconciliation.md`.
 

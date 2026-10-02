@@ -4,7 +4,7 @@
   "name": "Swagger Petstore (v3)",
   "description": "DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a status→count map; Orders use placed|approved|delivered.",
   "version": "0.2.0",
-  "odsVersion": "2.0.0",
+  "odsVersion": "3.0.0",
   "options": {
     "rules": {
       "commentsRequired": true
@@ -855,7 +855,7 @@
             },
             "approve_only_when_available": {
               "name": "ApproveOnlyWhenAvailable",
-              "description": "Move to approved only while PetSummary.status, fetched through the ACL by CheckPetAvailable, says the pet is available; the catalogue's own Pet is outside this aggregate, so what the rule reads is the answer we were given, not the catalogue's model",
+              "description": "Move to approved only while PetSummary.status, fetched through the ACL by CheckAndApproveOrder, says the pet is available; the catalogue's own Pet is outside this aggregate, so what the rule reads is the answer we were given, not the catalogue's model",
               "precondition": true,
               "constrains": [
                 {
@@ -865,7 +865,7 @@
                   "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
                 },
                 {
-                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_pet_available"
+                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_and_approve_order"
                 },
                 {
                   "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_summary/attributes/status"
@@ -949,9 +949,9 @@
                 "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
               }
             },
-            "check_pet_available": {
-              "name": "CheckPetAvailable",
-              "description": "Read the ordered pet's summary from Catalog, through the ACL, and decide whether Sales may approve the order",
+            "check_and_approve_order": {
+              "name": "CheckAndApproveOrder",
+              "description": "Read the ordered pet's summary from Catalog, through the ACL, then approve the order when it is available",
               "type": "operation",
               "internal": true,
               "schema": {
@@ -999,7 +999,7 @@
               "pattern": "anti-corruption-layer",
               "by": [
                 {
-                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_pet_available"
+                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_and_approve_order"
                 }
               ],
               "comments": [
@@ -1010,6 +1010,16 @@
                     "url": "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
                     "label": "sales/acl/PetSummaryClient.ts"
                   }
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_and_approve_order"
                 }
               ]
             },
@@ -1054,10 +1064,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_pet_available"
-            },
-            {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
+              "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_and_approve_order"
             },
             {
               "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/reserve_pet"

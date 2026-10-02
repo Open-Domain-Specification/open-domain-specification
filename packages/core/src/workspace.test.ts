@@ -20,7 +20,7 @@ describe("Workspace", () => {
 
 		expect(workspace.name).toBe("Test Workspace");
 		expect(workspace.id).toBe("test_workspace");
-		expect(workspace.odsVersion).toBe("2.0.0");
+		expect(workspace.odsVersion).toBe("3.0.0");
 		expect(workspace.description).toBe("A test workspace");
 		expect(workspace.version).toBe("0.1.0");
 		expect(workspace.path).toBe("test_workspace");
@@ -137,7 +137,7 @@ describe("Workspace", () => {
 		const schema = workspace.toSchema();
 
 		expect(schema.name).toBe("Test Workspace");
-		expect(schema.odsVersion).toBe("2.0.0");
+		expect(schema.odsVersion).toBe("3.0.0");
 		expect(schema.description).toBe("A test workspace");
 		expect(schema.version).toBe("0.1.0");
 		expect(schema.homepage).toBe("https://example.com");
@@ -818,8 +818,9 @@ describe("a refusal that enumerates the outcomes it carries", () => {
 		const { declined, hold } = acquirer();
 		const one = hold.rejected(declined, "issuer_down");
 		const any = hold.rejected(declined);
-		expect(one.ref).toBe(`${hold.ref}/rejects/provider_decline/issuer_down`);
-		expect(any.ref).toBe(`${hold.ref}/rejects/provider_decline`);
+		const shape = `${declined.boundedcontext.id}/provider_decline`;
+		expect(one.ref).toBe(`${hold.ref}/rejects/${shape}/issuer_down`);
+		expect(any.ref).toBe(`${hold.ref}/rejects/${shape}`);
 		expect(one.name).toBe("Provider Decline (issuer_down)");
 		expect(one.origin).toBe(
 			"Hold Funds rejects with Provider Decline (issuer_down)",
@@ -831,12 +832,13 @@ describe("a refusal that enumerates the outcomes it carries", () => {
 	});
 
 	it("answers in as many ways as it enumerates, plus the shape and the completion", () => {
-		const { hold } = acquirer();
+		const { hold, declined } = acquirer();
+		const shape = `${declined.boundedcontext.id}/provider_decline`;
 		expect(hold.answers.map((it) => it.ref)).toEqual([
 			`${hold.ref}/completed`,
-			`${hold.ref}/rejects/provider_decline`,
-			`${hold.ref}/rejects/provider_decline/insufficient_funds`,
-			`${hold.ref}/rejects/provider_decline/issuer_down`,
+			`${hold.ref}/rejects/${shape}`,
+			`${hold.ref}/rejects/${shape}/insufficient_funds`,
+			`${hold.ref}/rejects/${shape}/issuer_down`,
 		]);
 	});
 
@@ -848,16 +850,23 @@ describe("a refusal that enumerates the outcomes it carries", () => {
 	});
 
 	it("resolves a reason ref, and nothing for one the contract does not state", () => {
-		const { ws, hold } = acquirer();
-		const reasonRef = `${hold.ref}/rejects/provider_decline/issuer_down`;
+		const { ws, hold, declined } = acquirer();
+		const shape = `${declined.boundedcontext.id}/provider_decline`;
+		const reasonRef = `${hold.ref}/rejects/${shape}/issuer_down`;
 		expect(ws.getAnswerByRef(reasonRef)?.ref).toBe(reasonRef);
 		// Reached the same way through the one place ref shapes are read.
 		expect(ws.getByRef(reasonRef)?.ref).toBe(reasonRef);
 		expect(
-			ws.getAnswerByRef(`${hold.ref}/rejects/provider_decline/nope`),
+			ws.getAnswerByRef(`${hold.ref}/rejects/${shape}/nope`),
 		).toBeUndefined();
 		expect(
-			ws.getAnswerByRef(`${hold.ref}/rejects/no_such_shape/issuer_down`),
+			ws.getAnswerByRef(
+				`${hold.ref}/rejects/${declined.boundedcontext.id}/no_such_shape/issuer_down`,
+			),
+		).toBeUndefined();
+		// The form that named the shape by its id alone names nothing now.
+		expect(
+			ws.getAnswerByRef(`${hold.ref}/rejects/provider_decline/issuer_down`),
 		).toBeUndefined();
 	});
 

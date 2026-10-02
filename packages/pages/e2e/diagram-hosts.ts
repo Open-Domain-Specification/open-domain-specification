@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 import {
 	EXPORT_ORIGIN,
+	modelHash,
 	openInteractiveDiagram,
 	servePetstore,
 	viewerAt,
@@ -27,7 +28,7 @@ export async function openPage(
 		await page.goto(viewerAt(ref));
 		return;
 	}
-	await page.goto(`${EXPORT_ORIGIN}/${ref}`);
+	await page.goto(`${EXPORT_ORIGIN}/${modelHash(ref)}`);
 	await page.getByRole("link", { name: WORKSPACE_NAME }).click();
 }
 
@@ -39,7 +40,7 @@ export async function openDiagram(
 	ref: string,
 ): Promise<Locator> {
 	if (host === "viewer") return openInteractiveDiagram(page, title, ref);
-	await page.goto(`${EXPORT_ORIGIN}/${ref}`);
+	await page.goto(`${EXPORT_ORIGIN}/${modelHash(ref)}`);
 	await page.getByRole("link", { name: WORKSPACE_NAME }).click();
 	const figure = page.locator("figure.diagram", { hasText: title });
 	await figure.scrollIntoViewIfNeeded();

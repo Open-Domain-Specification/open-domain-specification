@@ -1,3 +1,5 @@
+import { encodeRefSegment } from "./reference";
+
 /**
  * @title Attribute
  * @description A named, typed property of an entity, value object or schema.
@@ -138,12 +140,15 @@ export interface PolicySchema {
 	 * What triggers this policy: an event consumable, or an answer of an
 	 * operation this context consumes, which means "when that answer comes
 	 * back". An answer is named by its origin — `<operation ref>/returns`,
-	 * `<operation ref>/rejects/<schema id>`, `<operation
-	 * ref>/rejects/<schema id>/<reason>` for one enumerated outcome of that
-	 * refusal, or `<operation ref>/completed` for an operation that returns
-	 * nothing and whose completion is all there is to wait on — and never by
-	 * the shape alone, so two operations refusing with one schema wake only
-	 * whoever named the call that was made (decision 23).
+	 * `<operation ref>/rejects/<schema context id>/<schema id>`, that with a
+	 * further `/<reason>` for one enumerated outcome of the refusal, or
+	 * `<operation ref>/completed` for an operation that returns nothing and
+	 * whose completion is all there is to wait on — and never by the shape
+	 * alone, so two operations refusing with one schema wake only whoever
+	 * named the call that was made (decision 23). The shape is named by its
+	 * context as well as its id, because an id is unique only inside its
+	 * context; each of those segments and the reason is escaped as a JSON
+	 * Pointer segment is, `~` as `~0` and `/` as `~1`.
 	 */
 	on?: { $ref: string }[];
 	/** The operation consumables this policy issues. Optional, like every list in this schema: an absent list is an empty one. */
@@ -299,8 +304,9 @@ export interface BoundedContextSchema {
 	 * a different matter: its value objects may carry invariants — an IBAN's
 	 * checksum, an ISO 20022 field rule — and it may state a context invariant
 	 * marked `precondition` or `postcondition` on one of its own operations,
-	 * which is that operation's published contract. An invariant with neither
-	 * flag, or one guarding another context's operation, is still refused
+	 * which is that operation's published contract, or a `postcondition` on one
+	 * of its own events, guaranteeing the payload it sends. An invariant with
+	 * neither flag, or one guarding another context's consumable, is refused
 	 * (decision 28). Never `bigBallOfMud` or `boundaryOnly` as well: both of
 	 * those are the enterprise's own system, and the three flags name three
 	 * different unknowns.
@@ -316,11 +322,11 @@ export interface BoundedContextSchema {
 	 */
 	aggregates?: { [aggregate: string]: AggregateSchema };
 	/**
-	 * The rules that hold across the instances or the aggregates of this
-	 * context: uniqueness, quotas, limits, conservation. Each one names at
-	 * least one operation of the context that guards it, because a rule no
-	 * single instance can see is kept true only by whoever checks it before
-	 * acting (decision 27).
+	 * The rules this context checks or guarantees: cross-instance uniqueness,
+	 * quotas and limits, or contracts about a consumable's payload or answer.
+	 * Each names a consumable responsible for the rule; precondition and
+	 * postcondition distinguish an input check from an answer or payload
+	 * guarantee (decisions 27 and 28).
 	 */
 	invariants?: { [invariant: string]: InvariantSchema };
 	services?: { [service: string]: ServiceSchema };
@@ -429,7 +435,9 @@ export interface ConsumableSchema {
 	returns?: { $ref: string; many?: boolean };
 	/**
 	 * For operations: the shapes the operation answers with when it refuses,
-	 * each one of the context's schemas. A rejection is not an event, because
+	 * each one its context may carry under `schema-context`, as `schema` and
+	 * `returns` are: its own, or one borrowed over a shared kernel, as a
+	 * conformist or as a customer. A rejection is not an event, because
 	 * nothing happened, and not a transport error, which stays outside the
 	 * model. Absent means the operation either always succeeds or refuses
 	 * without a domain-meaningful shape. Never valid on an event.
@@ -444,7 +452,8 @@ export interface ConsumableSchema {
 	 * `reasons` are the enumerated outcomes of that shape as the contract
 	 * states them — an acquirer's decline codes, ISO 8583 response codes —
 	 * each one an answer a reactor may wait on, `<operation ref>/rejects/<schema
-	 * id>/<reason>`, alongside the shape-level answer that hears them all. A
+	 * context id>/<schema id>/<reason>`, alongside the shape-level answer that
+	 * hears them all. A
 	 * reason is a named outcome the contract states and not a condition on
 	 * data, which stays out of the model (decisions 25, amended, and 15).
 	 */
@@ -679,9 +688,13 @@ export interface InvariantSchema {
 	 * What this invariant is a rule about: the entities, value objects and
 	 * attributes it holds over, and the operations it constrains, for a rule
 	 * about what an operation may do. A value object's invariant reaches its
-	 * own attributes and nothing else; an aggregate's reaches inside its own
-	 * aggregate and the value objects of its context; a context's reaches
-	 * anywhere in the context and names at least one operation that guards it.
+	 * own and inherited attributes and the attributes of values it composes,
+	 * transitively, but nothing outside that composition path. An aggregate's
+	 * reaches inside its own aggregate, values it holds including borrowed ones,
+	 * and operations of services in its context. A modelled context's reaches
+	 * its own held model and the contracts of its operations. Only an external
+	 * context may state a published event-payload postcondition.
+	 * No modelled invariant may name an event as a guard (`invariant-guards-are-operations`).
 	 *
 	 * An aggregate's invariant naming a value object means that aggregate's
 	 * instances of it — the amounts this payment holds, not every Money in the
@@ -693,13 +706,29 @@ export interface InvariantSchema {
 	 * Naming an operation says which operation keeps the rule, not what kind of
 	 * rule it is: `precondition` says that.
 	 *
-	 * A precondition may also name attributes of a schema its guarded operation
-	 * takes, returns or rejects with: pickup before delivery, a positive
-	 * weight, on a quotation no aggregate yet holds. The check reads the
-	 * request, so the request is what the rule is about. A postcondition
-	 * reaches the answer only — the shapes its guarded operation returns or
-	 * rejects with — because that is what it is a guarantee about. Either may
-	 * follow composition: an attribute of any schema reachable from those
+	 * A precondition may name attributes of the request its guarded operation
+	 * takes, of an answer the guard or a front on its local call chain already
+	 * fetched, of an event or answer payload that triggered its issuing policy,
+	 * or of a process start-event payload. A policy's immediate `on` event or
+	 * returned or rejected answer is a completed occurrence before the command
+	 * that reaction issues, even when the same event or operation is named on a
+	 * later chain. The current guarded invocation's future answer or raised event
+	 * alone supplies no fact. A process's `on` or `ends` triggers and a starting
+	 * operation's later answer are not guaranteed before its command. A fact must
+	 * be held on every finite admitted entry-to-guard caller or reactor walk;
+	 * sequential local fronts retain it. Recursive callers keep facts from
+	 * informed real entries, but an uninformed alternate entry removes them,
+	 * and a closed internal caller cycle with no entry supplies none. A local
+	 * consumption whose caller cannot be identified adds an independent entry
+	 * with no held facts, even beside known callers or reactors. Omitted `by`
+	 * still infers a sole operation; zero or several possible callers identify
+	 * none and do not invent a causal edge. Fact reach does not decide whether
+	 * a reaction can bootstrap or cycles. A postcondition may
+	 * relate the guarded operation's request to the shapes it returns or
+	 * rejects with; it guarantees what comes back. When several operations are
+	 * named, the postcondition's shape must be reachable from each of them.
+	 * Either timing may follow
+	 * composition: an attribute of any schema reachable from those
 	 * through `attribute.schema` is one of the fields the call carries, so a
 	 * rule about the amount of an order line is a rule about the request that
 	 * holds the lines. An invariant that is neither may name no schema
@@ -709,14 +738,15 @@ export interface InvariantSchema {
 	constrains: { $ref: string }[];
 	/**
 	 * Whether this rule is a precondition: checked before the operation it
-	 * names runs, and not kept true afterwards — enough funds at initiation, an
-	 * entitlement at playback start, a pet still available at approval. What it
-	 * was checked against may move on the moment the call returns, so nothing
-	 * re-establishes it.
+	 * names runs, without claiming it remains true afterward — enough funds at
+	 * initiation, an entitlement at playback start, a pet still available at
+	 * approval. What it was checked against may move when the call returns, so
+	 * the model makes no later guarantee.
 	 *
-	 * Absent or false means the operations it names keep it and it is still
-	 * true after them: `PostEntry` must produce balanced postings and the
-	 * postings stay balanced. A precondition names the operation it guards
+	 * With neither flag, an aggregate rule naming an operation stays true after
+	 * it: `PostEntry` must produce balanced postings and they stay balanced.
+	 * An unflagged context rule names its checker without claiming a time.
+	 * A precondition names the operation it guards
 	 * (`precondition-names-operation`), because a check before nothing in
 	 * particular is a check nowhere (decision 27, second amendment).
 	 */
@@ -727,17 +757,19 @@ export interface InvariantSchema {
 	 * every quoted premium is within the band the schedule allows.
 	 *
 	 * It is neither a persistent invariant nor a precondition. The answer does
-	 * not exist before the call runs, so nothing can be checked beforehand, and
-	 * it is not saved anywhere afterwards, so no aggregate keeps it true. What
-	 * holds it is the operation, every time it answers, which is why a
+	 * not exist before the call runs, so nothing can be checked beforehand.
+	 * The operation guarantees its answer when it responds; the rule does not
+	 * claim an aggregate keeps that answer true afterward, whether or not the
+	 * same facts are stored. This is why a
 	 * postcondition names the operation it is about
 	 * (`postcondition-names-operation`) and may constrain the attributes of
 	 * what that operation returns or rejects with (decision 19, third
-	 * amendment).
+	 * amendment). An external context may instead guarantee the payload of
+	 * one of its own events (decision 28, fifth amendment).
 	 *
 	 * Exclusive with `precondition`: a rule is checked before a call or
-	 * guaranteed of what comes back, and one marked both says two different
-	 * things about when it holds.
+	 * guaranteed of what comes back or of an external event's payload, and one
+	 * marked both says two different things about when it holds.
 	 */
 	postcondition?: boolean;
 }
@@ -810,8 +842,10 @@ export interface ValueObjectSchema {
 	 * The rules that hold of every instance of this value: a Money's two
 	 * amounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by
 	 * construction — a value that breaks it is never made — so it constrains
-	 * this value's own attributes and needs no operation to guard it
-	 * (decision 27). Optional, and an absent map is an empty one, like every
+	 * its own and inherited attributes and the attributes of values it composes,
+	 * transitively. It needs no operation to guard it and cannot carry a
+	 * precondition or postcondition timing flag (decision 27). Optional, and
+	 * an absent map is an empty one, like every
 	 * map of elements in this schema.
 	 */
 	invariants?: { [invariant: string]: InvariantSchema };
@@ -840,12 +874,11 @@ export interface WorkspaceOptionsSchema {
  * It is a constant of the library rather than something an author sets: every
  * file core writes carries it, and a file that carries a different major was
  * written against a metamodel this core does not read the same way. The major
- * is bumped by the decision that breaks the metamodel — this is `2.0.0` for
- * everything since the version started being compared at all, because the
- * five decisions that promised the bump never got one (decision 29, noted
- * 2026-09-10). The `ods-version` rule is where a mismatch is reported.
+ * is bumped by the decision that breaks the metamodel. Version `3.0.0`
+ * introduces the injective canonical reference grammar. The `ods-version`
+ * rule is where a mismatch is reported (decision 29).
  */
-export const ODS_VERSION = "2.0.0" as const;
+export const ODS_VERSION = "3.0.0" as const;
 
 /**
  * @title Workspace
@@ -887,13 +920,13 @@ export interface WorkspaceSchema {
 
 export function teamRef(team: string) {
 	return {
-		$ref: `#/teams/${team}`,
+		$ref: `#/teams/${encodeRefSegment(team)}`,
 	};
 }
 
 export function domainRef(domain: string) {
 	return {
-		$ref: `#/domains/${domain}`,
+		$ref: `#/domains/${encodeRefSegment(domain)}`,
 	};
 }
 
@@ -901,13 +934,13 @@ export function subdomainRef(domain: string, subdomain: string) {
 	const { $ref } = domainRef(domain);
 
 	return {
-		$ref: `${$ref}/subdomains/${subdomain}`,
+		$ref: `${$ref}/subdomains/${encodeRefSegment(subdomain)}`,
 	};
 }
 
 export function boundedcontextRef(boundedcontext: string) {
 	return {
-		$ref: `#/boundedcontexts/${boundedcontext}`,
+		$ref: `#/boundedcontexts/${encodeRefSegment(boundedcontext)}`,
 	};
 }
 
@@ -915,7 +948,7 @@ export function serviceRef(boundedcontext: string, service: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/services/${service}`,
+		$ref: `${$ref}/services/${encodeRefSegment(service)}`,
 	};
 }
 
@@ -923,7 +956,7 @@ export function termRef(boundedcontext: string, term: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/glossary/${term}`,
+		$ref: `${$ref}/glossary/${encodeRefSegment(term)}`,
 	};
 }
 
@@ -931,7 +964,7 @@ export function policyRef(boundedcontext: string, policy: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/policies/${policy}`,
+		$ref: `${$ref}/policies/${encodeRefSegment(policy)}`,
 	};
 }
 
@@ -939,7 +972,7 @@ export function processRef(boundedcontext: string, process: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/processes/${process}`,
+		$ref: `${$ref}/processes/${encodeRefSegment(process)}`,
 	};
 }
 
@@ -947,7 +980,7 @@ export function aggregateRef(boundedcontext: string, aggregate: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/aggregates/${aggregate}`,
+		$ref: `${$ref}/aggregates/${encodeRefSegment(aggregate)}`,
 	};
 }
 
@@ -959,7 +992,7 @@ export function entityRef(
 	const { $ref } = aggregateRef(boundedcontext, aggregate);
 
 	return {
-		$ref: `${$ref}/entities/${entity}`,
+		$ref: `${$ref}/entities/${encodeRefSegment(entity)}`,
 	};
 }
 
@@ -967,7 +1000,7 @@ export function valueObjectRef(boundedcontext: string, valueobject: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/valueobjects/${valueobject}`,
+		$ref: `${$ref}/valueobjects/${encodeRefSegment(valueobject)}`,
 	};
 }
 
@@ -979,11 +1012,11 @@ export function invariantRef(
 	const { $ref } = aggregateRef(boundedcontext, aggregate);
 
 	return {
-		$ref: `${$ref}/invariants/${invariant}`,
+		$ref: `${$ref}/invariants/${encodeRefSegment(invariant)}`,
 	};
 }
 
-/** The ref of an invariant a value object owns: a rule about its own attributes. */
+/** The ref of an invariant a value object owns: a construction rule following its composition path. */
 export function valueObjectInvariantRef(
 	boundedcontext: string,
 	valueobject: string,
@@ -992,7 +1025,7 @@ export function valueObjectInvariantRef(
 	const { $ref } = valueObjectRef(boundedcontext, valueobject);
 
 	return {
-		$ref: `${$ref}/invariants/${invariant}`,
+		$ref: `${$ref}/invariants/${encodeRefSegment(invariant)}`,
 	};
 }
 
@@ -1001,7 +1034,7 @@ export function contextInvariantRef(boundedcontext: string, invariant: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/invariants/${invariant}`,
+		$ref: `${$ref}/invariants/${encodeRefSegment(invariant)}`,
 	};
 }
 
@@ -1009,7 +1042,7 @@ export function schemaRef(boundedcontext: string, schema: string) {
 	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/schemas/${schema}`,
+		$ref: `${$ref}/schemas/${encodeRefSegment(schema)}`,
 	};
 }
 
@@ -1025,6 +1058,6 @@ export function consumableRef(
 			: serviceRef(boundedcontext, provider);
 
 	return {
-		$ref: `${$ref}/provides/${consumable}`,
+		$ref: `${$ref}/provides/${encodeRefSegment(consumable)}`,
 	};
 }

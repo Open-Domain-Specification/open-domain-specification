@@ -15,7 +15,7 @@ Core pet catalog, sales, and inventory capabilities: everything that turns a lis
 
 
 
-### [Identity & Accounts](../domains/identity_&_accounts/index.md)
+### [Identity & Accounts](../domains/_ods_006900640065006e0074006900740079005f0026005f006100630063006f0075006e00740073/index.md)
 Users and sessions per Petstore API; kept as its own domain because it would be bought rather than built
 
 
@@ -73,6 +73,7 @@ Users and sessions per Petstore API; kept as its own domain because it would be 
 | [ShipmentApp](../boundedcontexts/fulfilment_bc/services/shipment_app/index.md) | conformist | Order | OrderApproved | published-language |
 | [InventoryQuery](../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Order | OrderDelivered | published-language |
 | [InventoryQuery](../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Order | OrderDeleted | published-language |
+| [OrderApp](../boundedcontexts/sales_bc/services/order_app/index.md) | - | Order | ApproveOrder | - |
 | [OrderApp](../boundedcontexts/sales_bc/services/order_app/index.md) | - | Order | DeliverOrder | - |
 | [ShipmentApp](../boundedcontexts/fulfilment_bc/services/shipment_app/index.md) | - | OrderApp | ConfirmDelivery | open-host-service |
 	

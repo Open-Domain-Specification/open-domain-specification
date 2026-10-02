@@ -7,9 +7,11 @@ decision 12 in the repository for the reasoning.
 
 ## The app
 
-The app takes a workspace, its diagnostics and a file label, and renders one page per element
-with hash routing. A ref is already a hash, so a link to an element is just its ref, and a
-leaf ref such as an entity opens its aggregate's page and scrolls to the entity.
+The app takes a workspace, its diagnostics and a file label, and renders one page per
+page-owning element with hash routing. A link carries a URL-safe transport of the canonical
+model ref in its hash; the router recovers the same ref before resolving it. A leaf ref such as
+an attribute opens its entity, value object or schema owner's page and scrolls to the attribute
+row.
 
 Three hosts feed it:
 

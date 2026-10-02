@@ -2,6 +2,11 @@ import { contextMemberNamespace, type ODSNamespace } from "./namespace";
 import { ReactionChain, type Reactor, routesTo } from "./reaction-walk";
 import { ScopeManager } from "./scope-manager";
 import {
+	TRIGGER_DISTINCTIONS,
+	type TriggerDistinction,
+	triggerReading,
+} from "./trigger-readings";
+import {
 	Answer,
 	BoundedContext,
 	Deadline,
@@ -54,6 +59,8 @@ import {
 export class ODSFlowMap {
 	readonly nodes = new Map<string, ODSFlowMapNode>();
 	readonly edges = new Map<string, ODSFlowMapEdge>();
+	/** The edges between two steps that read the same, by that reading. */
+	private readonly readings = new Map<string, ODSFlowMapEdge[]>();
 
 	addNode(node: ODSFlowMapNode) {
 		const existing = this.nodes.get(node.id);
@@ -63,20 +70,42 @@ export class ODSFlowMap {
 	}
 
 	/**
-	 * Adds an edge, keeping the first drawn between one pair. An answer is
-	 * keyed by its shape as well as by its ends: a call answering the same
-	 * reactor it already reached some other way is a second edge, and the
-	 * reader is told which is which by the name on it. A deadline is keyed by
-	 * how long it waits and what it waits from, for the same reason: a process
-	 * with two limits on one instance draws two loops, not one, even where both
-	 * run for the same length of time from different moments.
+	 * Adds an edge unless the same step is already drawn. What an edge is, is
+	 * its two ends, whether it completes the instance, and the answer or timer
+	 * it carries ({@link flowEdgeId}); how it reads is a label and never
+	 * decides that. Until the twenty-second review the label did, and a
+	 * process waiting on one call's completion and ending on another's, both
+	 * through one front, lost its ending edge: both read "completes" from the
+	 * front (issue #108).
+	 *
+	 * Two different steps between the same two nodes can still read alike —
+	 * two calls answering with one shape through one front, two limits of the
+	 * same length from triggers of the same name — and a reader shown two
+	 * identical arrows could not tell them apart. Those edges are told apart
+	 * as far as it takes and no further (see {@link TriggerDistinction}).
 	 */
 	addEdge(edge: ODSFlowMapEdge) {
-		const label = edge.answer ?? waitOf(edge);
-		const id = `${edge.source.id}|${edge.target.id}${label ? `|${label}` : ""}`;
+		const id = flowEdgeId(edge);
 		const existing = this.edges.get(id);
 		if (existing) return existing;
 		this.edges.set(id, edge);
+		const reading = keyOf([
+			edge.source.id,
+			edge.target.id,
+			edge.kind ?? "step",
+			flowEdgeLabel(edge) ?? "",
+		]);
+		const alike = [...(this.readings.get(reading) ?? []), edge];
+		this.readings.set(reading, alike);
+		if (alike.length > 1) {
+			const distinguish = TRIGGER_DISTINCTIONS.find(
+				(level) =>
+					new Set(
+						alike.map((it) => flowEdgeLabel({ ...it, distinguish: level })),
+					).size === alike.length,
+			);
+			for (const it of alike) it.distinguish = distinguish;
+		}
 		return edge;
 	}
 
@@ -110,8 +139,7 @@ export class ODSFlowMap {
 						source: node,
 						target: node,
 						kind: "ends",
-						after: ending.after,
-						...(ending.from && { from: ending.from.name }),
+						deadline: deadlineOf(ending),
 					});
 					continue;
 				}
@@ -125,7 +153,7 @@ export class ODSFlowMap {
 							source: this.addNode(nodeFor(from)),
 							target: node,
 							kind: "ends",
-							answer: ending.name,
+							answer: answerOf(ending),
 						});
 						this.walk(from, chain, walked);
 					}
@@ -167,18 +195,31 @@ export class ODSFlowMap {
 	private walk(node: Reactor, chain: ReactionChain, walked: Set<Reactor>) {
 		if (walked.has(node)) return;
 		walked.add(node);
-		const from = this.addNode(nodeFor(node));
-		for (const { to, answer, deadline } of chain.stepsFrom(node)) {
+		// Keep one frame per active node so a long finite chain uses heap space
+		// rather than the JavaScript call stack. Advancing only the top frame
+		// preserves the recursive walk's depth-first edge and node order.
+		const frameFor = (reactor: Reactor) => ({
+			from: this.addNode(nodeFor(reactor)),
+			steps: chain.stepsFrom(reactor)[Symbol.iterator](),
+		});
+		const frames = [frameFor(node)];
+		while (frames.length > 0) {
+			const frame = frames[frames.length - 1]!;
+			const next = frame.steps.next();
+			if (next.done) {
+				frames.pop();
+				continue;
+			}
+			const { to, answer, deadline } = next.value;
 			this.addEdge({
-				source: from,
+				source: frame.from,
 				target: this.addNode(nodeFor(to)),
-				...(answer && { answer: answer.name }),
-				...(deadline && {
-					after: deadline.after,
-					...(deadline.from && { from: deadline.from.name }),
-				}),
+				...(answer && { answer: answerOf(answer) }),
+				...(deadline && { deadline: deadlineOf(deadline) }),
 			});
-			this.walk(to, chain, walked);
+			if (walked.has(to)) continue;
+			walked.add(to);
+			frames.push(frameFor(to));
 		}
 	}
 
@@ -248,48 +289,162 @@ export type ODSFlowMapEdge = {
 	 * that is the way the answer travels. Absent on every causal edge.
 	 */
 	kind?: "ends";
+	/** The answer the edge carries, where an answer is what it is. */
+	answer?: ODSFlowMapAnswer;
+	/** The process's own timer, on the loop it draws from the process back to itself. */
+	deadline?: ODSFlowMapDeadline;
 	/**
-	 * What an answer came back as, on an edge an answer carries: the name of
-	 * the shape the operation returned or rejected with, or "completes" where
-	 * it returns nothing and its completion is what was waited on. Either way
-	 * the call came back and whoever was waiting woke. Absent on every other
-	 * edge.
+	 * Set where another edge between the same two nodes would read the same:
+	 * how far the label goes to tell them apart. Absent otherwise.
 	 */
-	answer?: string;
-	/**
-	 * How long a deadline waits, on the loop a process's own timer draws from
-	 * the process back to itself. Absent on every other edge.
-	 */
-	after?: string;
-	/**
-	 * What that timer counts from: the name of the trigger the process anchors
-	 * it to. Absent where the clock runs from the start of the instance, which
-	 * is the common case, and on every edge that is not a deadline.
-	 */
-	from?: string;
+	distinguish?: TriggerDistinction;
 };
 
 /**
- * How long a deadline made an instance wait, and from what, on the one edge
- * that carries one: the phrase the label reads and what tells two of a
- * process's limits apart.
+ * An answer on an edge: which answer it is, and how it reads.
+ *
+ * Which answer is the operation it comes back from, whether it returned,
+ * refused or completed, the full ref of the shape and the refusal's reason.
  */
-function waitOf(edge: ODSFlowMapEdge): string | undefined {
-	return edge.after && `${edge.after}${edge.from ? ` from ${edge.from}` : ""}`;
+export type ODSFlowMapAnswer = {
+	/** The operation the answer comes back from, by ref. */
+	operation: string;
+	outcome: "returns" | "rejects" | "completes";
+	/** The shape it came back as, by ref; absent on a completion. */
+	schema?: string;
+	/** The enumerated outcome of a refusal, when it is one of them. */
+	reason?: string;
+	/** The answer's own ref. */
+	ref: string;
+	/** The shape it came back as, or "completes" (decision 23). */
+	name: string;
+	/** The answer by its origin: "Pay rejects with Payment Declined". */
+	origin: string;
+	/** The origin with the operation's context and provider and the shape's context. */
+	context: string;
+};
+
+/** A process's own timer on its loop: which timer, and how it reads. */
+export type ODSFlowMapDeadline = {
+	/** The timer, by ref; its length and anchor are part of it. */
+	ref: string;
+	id: string;
+	name: string;
+	/** How long the instance waits. */
+	after: string;
+	/**
+	 * What the clock counts from, where it is not the start of the instance:
+	 * the trigger's name, its origin, and that with its context.
+	 */
+	from?: { name: string; origin: string; context: string };
+};
+
+function answerOf(answer: Answer): ODSFlowMapAnswer {
+	return {
+		operation: answer.operation.ref,
+		outcome: answer.completion
+			? "completes"
+			: answer.rejection
+				? "rejects"
+				: "returns",
+		...(answer.schema && { schema: answer.schema.ref }),
+		...(answer.reason && { reason: answer.reason }),
+		ref: answer.ref,
+		name: answer.name,
+		origin: triggerReading(answer, "origin"),
+		context: triggerReading(answer, "context"),
+	};
+}
+
+/** What a clock counts from, read the way every reader reads a trigger. */
+function anchorOf(
+	trigger: ProcessTrigger,
+): NonNullable<ODSFlowMapDeadline["from"]> {
+	return {
+		name: trigger.name,
+		origin: triggerReading(trigger, "origin"),
+		context: triggerReading(trigger, "context"),
+	};
+}
+
+function deadlineOf(deadline: Deadline): ODSFlowMapDeadline {
+	return {
+		ref: deadline.ref,
+		id: deadline.id,
+		name: deadline.name,
+		after: deadline.after,
+		...(deadline.from && { from: anchorOf(deadline.from) }),
+	};
 }
 
 /**
- * What an edge is labelled with, so the three renderers say the same thing: an
+ * What an edge is, as a key no two different steps share: its two ends,
+ * `ends` where it completes the instance, and the answer or timer it carries,
+ * each part escaped so none can pass for a separator. A plain step is its two
+ * ends alone and a plain ending adds `ends`, so their keys read as they did;
+ * a carried answer or timer always names its role and kind, so the number of
+ * parts says what the key is.
+ */
+function flowEdgeId(edge: ODSFlowMapEdge): string {
+	const { answer, deadline } = edge;
+	const role = edge.kind ?? "step";
+	const parts = [edge.source.id, edge.target.id];
+	if (answer)
+		parts.push(
+			role,
+			"answer",
+			answer.operation,
+			answer.outcome,
+			answer.schema ?? "",
+			answer.reason ?? "",
+		);
+	else if (deadline) parts.push(role, "deadline", deadline.ref);
+	else if (edge.kind) parts.push(edge.kind);
+	return keyOf(parts);
+}
+
+/** Parts joined by `|`, each with `%` and `|` escaped so none reads as a separator. */
+function keyOf(parts: string[]): string {
+	return parts
+		.map((part) => part.replace(/%/g, "%25").replace(/\|/g, "%7C"))
+		.join("|");
+}
+
+/**
+ * What an edge is labelled with, so every renderer says the same thing: an
  * answer by the shape it came back as, a deadline by how long the instance had
  * and, where the process anchors the clock, what it counts from, what
  * completes a process as `ends`, and a plain step not at all. A dash
  * alone cannot say which of the things a dashed line means across these
  * diagrams a reader is looking at, and an unlabelled arrow into a process
- * could not say the call had come back.
+ * could not say the call had come back. Where another edge between the same
+ * nodes would read the same, the label goes as far as `distinguish` says.
  */
 export function flowEdgeLabel(edge: ODSFlowMapEdge): string | undefined {
-	const waited = waitOf(edge);
-	const named = edge.answer ?? (waited && `after ${waited}`);
+	const named = edge.answer
+		? answerLabel(edge.answer, edge.distinguish)
+		: edge.deadline && deadlineLabel(edge.deadline, edge.distinguish);
 	if (named) return edge.kind === "ends" ? `${named} (ends)` : named;
 	return edge.kind === "ends" ? "ends" : undefined;
+}
+
+function answerLabel(answer: ODSFlowMapAnswer, level?: TriggerDistinction) {
+	if (level === "ref") return answer.ref;
+	if (level === "context") return answer.context;
+	return level === "origin" ? answer.origin : answer.name;
+}
+
+function deadlineLabel(
+	deadline: ODSFlowMapDeadline,
+	level?: TriggerDistinction,
+) {
+	if (level === "ref") return deadline.ref;
+	const from = deadline.from;
+	const anchor = !from
+		? ""
+		: ` from ${level === "context" ? from.context : level === "origin" ? from.origin : from.name}`;
+	const waited = `after ${deadline.after}${anchor}`;
+	if (level === "context")
+		return `${deadline.name} (${deadline.id}): ${waited}`;
+	return level === "origin" ? `${deadline.name}: ${waited}` : waited;
 }

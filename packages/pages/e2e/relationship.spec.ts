@@ -7,6 +7,7 @@ import {
 	expectProseRow,
 	expectScrollOnlyAtTheFloor,
 	growColumn,
+	modelHash,
 	serveModel,
 	servePetstore,
 	viewerAt,
@@ -26,7 +27,7 @@ const EXPORT = process.env.ODS_E2E_EXPORT_ORIGIN ?? EXPORT_ORIGIN;
 /** The hover text a role code carries, read from core rather than restated. */
 const ACL_SUMMARY = PATTERNS["anti-corruption-layer"].summary;
 const CATALOG_SALES_REF =
-	"#/relationships/catalog_bc~customer-supplier~sales_bc";
+	"#/relationships/catalog_bc/customer-supplier/sales_bc";
 
 test.beforeEach(async ({ page }) => {
 	await servePetstore(page);
@@ -498,7 +499,7 @@ for (const [origin, name] of [
 				await page.getByRole("link", { name: WORKSPACE_NAME }).click();
 				await page.evaluate((r) => {
 					location.hash = r;
-				}, ref);
+				}, modelHash(ref));
 			} else {
 				await servePetstore(page);
 				await page.goto(viewerAt(ref));
@@ -563,7 +564,7 @@ for (const [origin, name] of [
  */
 const NB_BRANCH = "#/boundedcontexts/branch_&_contact_centre";
 const NB_KYC_BRANCH =
-	"#/relationships/customer_&_kyc~upstream-downstream~branch_&_contact_centre";
+	"#/relationships/customer_&_kyc/upstream-downstream/branch_&_contact_centre";
 const UPSTREAM_ROLES = ["open-host-service", "published-language"] as const;
 
 /** The upstream side's roles as a reader meets them: one list, one item a role. */
@@ -593,13 +594,15 @@ test("each of a side's two roles reads as its own item on the page and in the mo
 }) => {
 	await page.setViewportSize(BESIDE_THE_TREE);
 	const url = await serveModel(page, "northbank");
-	await page.goto(`/?url=${encodeURIComponent(url)}${NB_KYC_BRANCH}`);
+	await page.goto(
+		`/?url=${encodeURIComponent(url)}${modelHash(NB_KYC_BRANCH)}`,
+	);
 	await expect(page.locator("main h1")).toContainText(
 		"Branch & Contact Centre",
 	);
 	await expectRolesApart(page.locator("main #roles"));
 
-	await page.goto(`/?url=${encodeURIComponent(url)}${NB_BRANCH}`);
+	await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(NB_BRANCH)}`);
 	await expect(page.locator("main h1")).toContainText(
 		"Branch & Contact Centre",
 	);

@@ -25,7 +25,7 @@ Looks a patient up by their internal id.
 - **Provider**: [Patient Directory](../../../patient_records/services/patient_directory/index.md)
 - **Made by**: Accept Referral
 
-### Accept Referral 
+### Accept Referral
 The aggregate's own transition to accepted, run by Referral Intake's front once it has confirmed a patient record already exists for the referral (decision 17).
 - **Provider**: [Referral Case](../../aggregates/referral_case/index.md)
 - **Made by**: Accept Referral

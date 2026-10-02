@@ -3,6 +3,7 @@ import { makeRichTestWs } from "./makeTestWs";
 import { hearsAnswerOf, ReactionChain, routesTo } from "./reaction-walk";
 import {
 	type BoundedContext,
+	type Consumable,
 	type DirectedRelationshipOptions,
 	Workspace,
 } from "./workspace";
@@ -856,7 +857,7 @@ describe("Workspace.validate", () => {
 		).toEqual([
 			[
 				"warning",
-				'"Cards" declares itself a conformist of "Scheme", but it names none of "Scheme"\'s schemas or value objects and consumes nothing "Scheme" provides, so there is nothing here to conform to',
+				'"Cards" declares itself a conformist of "Scheme", but it names none of "Scheme"\'s schemas or value objects, specialises none of its value objects, and consumes nothing "Scheme" provides, so there is nothing here to conform to',
 				relationship.ref,
 			],
 		]);
@@ -1322,7 +1323,7 @@ describe("invariant-in-aggregate", () => {
 				severity: "error",
 				rule: "invariant-in-aggregate",
 				message:
-					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				ref: stretched.ref,
 			},
 		]);
@@ -1404,7 +1405,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(theirs);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Order" constrains "Check", which is an application service\'s, on "TheirApp" in bounded context "Next"; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Reaches Out" of aggregate "Order" constrains "Check", which is an application service\'s, on "TheirApp" in bounded context "Next"; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				abroad.ref,
 			],
 		]);
@@ -1453,7 +1454,7 @@ describe("invariant-in-aggregate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				reaching.ref,
 			],
 		]);
@@ -1476,7 +1477,7 @@ describe("invariant-in-aggregate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Reaches Sideways" of aggregate "Invoice" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Reaches Sideways" of aggregate "Invoice" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Invoice" holds; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				reaching.ref,
 			],
 		]);
@@ -1494,6 +1495,55 @@ describe("invariant-in-aggregate", () => {
 		expect(
 			ws.validate().filter((d) => d.rule === "invariant-in-aggregate"),
 		).toEqual([]);
+	});
+
+	it("treats inherited attributes of a held value kind as held, but not an unheld sibling kind", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Billing", { description: "" });
+		const money = bc.addValueObject("Money", { description: "" });
+		const amount = money.addAttribute("amount", { type: "decimal" });
+		const fee = bc.addValueObject("Fee", {
+			description: "",
+			specialises: money,
+		});
+		const rate = bc.addValueObject("Rate", {
+			description: "",
+			specialises: money,
+		});
+		const invoice = bc.addAggregate("Invoice", { description: "" });
+		const root = invoice.addRootEntity("Invoice", { description: "" });
+		root.addAttribute("id", { type: "uuid", identity: true });
+		root.addAttribute("fee", { type: "Fee", valueobject: fee });
+		const issue = invoice.provides("Issue", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		invoice.addInvariant("Fee cap", { description: "" }).constrains(amount);
+		bc.addInvariant("Total fee cap", {
+			description: "",
+			precondition: true,
+		}).constrains(issue, amount);
+		const aggregateOutsider = invoice
+			.addInvariant("Unheld aggregate rate", { description: "" })
+			.constrains(rate);
+		const contextOutsider = bc
+			.addInvariant("Unheld context rate", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(issue, rate);
+		for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+			const boundaryErrors = model
+				.validate()
+				.filter((d) =>
+					["invariant-in-aggregate", "invariant-in-context"].includes(d.rule),
+				);
+			expect(boundaryErrors.map((d) => [d.rule, d.ref])).toEqual([
+				["invariant-in-aggregate", aggregateOutsider.ref],
+				["invariant-in-context", contextOutsider.ref],
+			]);
+		}
 	});
 
 	/**
@@ -1571,7 +1621,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, price);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Quoted Price Is Positive" of aggregate "Shipment" constrains "Quote.price", which is an attribute of schema "Quote", which is neither in the request of an operation this precondition guards, nor in what a call that guard makes answers with, nor in the payload of an event the reactor issuing that guard heard, directly or through a shape one of those composes; a precondition reads what it has by the time it runs — the request, what the guard or the front that calls it already fetched, and what the fact it is reacting to arrived carrying — and not what this call comes back with; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Quoted Price Is Positive" of aggregate "Shipment" constrains "Quote.price", which is an attribute of schema "Quote", which is neither in the request of an operation this precondition guards, nor in what a call that guard makes answers with, nor in the payload of an event the reactor issuing that guard heard, directly or through a shape one of those composes; a precondition reads what it has by the time it runs — the request, what the guard or the front that calls it already fetched, and what the fact it is reacting to arrived carrying — and not what this call comes back with; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				early.ref,
 			],
 		]);
@@ -1587,7 +1637,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, reference);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which is neither in the request of an operation this precondition guards, nor in what a call that guard makes answers with, nor in the payload of an event the reactor issuing that guard heard, directly or through a shape one of those composes; a precondition reads what it has by the time it runs — the request, what the guard or the front that calls it already fetched, and what the fact it is reacting to arrived carrying — and not what this call comes back with; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which is neither in the request of an operation this precondition guards, nor in what a call that guard makes answers with, nor in the payload of an event the reactor issuing that guard heard, directly or through a shape one of those composes; a precondition reads what it has by the time it runs — the request, what the guard or the front that calls it already fetched, and what the fact it is reacting to arrived carrying — and not what this call comes back with; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				stray.ref,
 			],
 		]);
@@ -1651,7 +1701,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, reference);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Booked Under A Reference" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this postcondition guards takes, returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Booked Under A Reference" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this postcondition guards takes, returns or rejects with, directly or through a shape one of those composes; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				wrongShape.ref,
 			],
 		]);
@@ -1666,7 +1716,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, pickup);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
+				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; an aggregate\'s rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard',
 				persistent.ref,
 			],
 		]);
@@ -1679,7 +1729,7 @@ describe("invariant-in-aggregate", () => {
 	 * name that answer's shape and still not the other context's entity
 	 * (decision 19, amendment of 2026-09-10, second; card 116).
 	 */
-	function goodStanding({ front = false } = {}) {
+	function goodStanding({ front = false, inferred = false } = {}) {
 		const ws = emptyWorkspace();
 		const customers = ws.addBoundedContext("Customers", { description: "" });
 		const sales = ws.addBoundedContext("Sales", { description: "" });
@@ -1723,23 +1773,26 @@ describe("invariant-in-aggregate", () => {
 		});
 		salesApp.consumes(getStanding, {
 			pattern: "anti-corruption-layer",
-			by: [check],
+			...(inferred ? {} : { by: [check] }),
 		});
 		// The front reaches the aggregate's transition, so the guard is
 		// `Approve` alone and the call belongs to what calls it.
-		if (front) salesApp.consumes(approve, { by: [check] });
+		if (front) salesApp.consumes(approve, inferred ? {} : { by: [check] });
 		return { ws, orders, approve, check, standing, theirStanding };
 	}
 
 	it("lets a precondition read what its own guard fetched", () => {
-		const { ws, orders, approve, check, standing } = goodStanding();
+		const { ws, orders, check, standing } = goodStanding();
 		orders
-			.addInvariant("Approve Only In Good Standing", {
+			.addInvariant("Check Only After Fetching Standing", {
 				description: "",
 				precondition: true,
 			})
-			.constrains(approve, check, standing);
-		expect(inAggregate(ws)).toEqual([]);
+			.constrains(check, standing);
+		for (const model of [ws, Workspace.fromSchema(ws.toSchema())])
+			expect(
+				model.validate().filter((d) => d.rule === "invariant-in-aggregate"),
+			).toEqual([]);
 	});
 
 	it("lets it read what the front calling the guard fetched", () => {
@@ -1752,6 +1805,27 @@ describe("invariant-in-aggregate", () => {
 			.constrains(approve, standing);
 		expect(inAggregate(ws)).toEqual([]);
 	});
+
+	it.each([false, true])(
+		"reads the answer through an inferred sole caller, front=%s",
+		(front) => {
+			const { ws, orders, approve, check, standing } = goodStanding({
+				front,
+				inferred: true,
+			});
+			orders
+				.addInvariant("Good Standing Without Redundant By", {
+					description: "",
+					precondition: true,
+				})
+				.constrains(front ? approve : check, standing);
+			for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+				expect(
+					model.validate().filter((d) => d.rule === "invariant-in-aggregate"),
+				).toEqual([]);
+			}
+		},
+	);
 
 	it("still refuses the other context's own attribute", () => {
 		const { ws, orders, approve, check, theirStanding } = goodStanding();
@@ -1778,9 +1852,11 @@ describe("invariant-in-aggregate", () => {
 	 */
 	function fulfilmentGate({
 		front = false,
+		inferred = false,
 		reactor = "process",
 	}: {
 		front?: boolean;
+		inferred?: boolean;
 		reactor?: "process" | "policy";
 	} = {}) {
 		const ws = emptyWorkspace();
@@ -1824,7 +1900,7 @@ describe("invariant-in-aggregate", () => {
 					internal: true,
 				})
 			: ship;
-		if (front) app.consumes(ship, { by: [doShip] });
+		if (front) app.consumes(ship, inferred ? {} : { by: [doShip] });
 		const heard =
 			reactor === "process"
 				? fulfilment
@@ -1861,6 +1937,24 @@ describe("invariant-in-aggregate", () => {
 			})
 			.constrains(ship, total, amount);
 		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("reads a heard payload through an inferred sole front", () => {
+		const { ws, shipments, ship, total, amount } = fulfilmentGate({
+			front: true,
+			inferred: true,
+		});
+		shipments
+			.addInvariant("Ship Only When Fully Paid", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(ship, total, amount);
+		for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+			expect(
+				model.validate().filter((d) => d.rule === "invariant-in-aggregate"),
+			).toEqual([]);
+		}
 	});
 
 	it("reads it when a stateless policy is what reacts", () => {
@@ -2135,6 +2229,2597 @@ describe("invariant-in-context", () => {
 	});
 });
 
+describe("invariant reach through inferred operation callers", () => {
+	function futureAnswer(
+		scope: "aggregate" | "context",
+		fronted: boolean,
+		explicit: boolean,
+		independentlyFetched = false,
+		bothGuards = false,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		const root = aggregate.addRootEntity("Order", { description: "" });
+		root.addAttribute("id", { type: "uuid", identity: true });
+		const answer = bc.addSchema("FutureAnswer");
+		const result = answer.addAttribute("result", { type: "string" });
+		const decide = bc
+			.addService("Decision", { description: "", type: "application" })
+			.provides("Decide", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: answer,
+			});
+		const guards = [decide];
+		if (fronted) {
+			const front = bc.addService("Front", {
+				description: "",
+				type: "application",
+			});
+			const call = front.provides("Call", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			if (bothGuards) guards.push(call);
+			front.consumes(decide, explicit ? { by: [call] } : {});
+			if (independentlyFetched) {
+				const lookup = bc
+					.addService("Lookup", { description: "", type: "application" })
+					.provides("GetEarlierAnswer", {
+						description: "",
+						type: "operation",
+						internal: true,
+						returns: answer,
+					});
+				front.consumes(lookup, explicit ? { by: [call] } : {});
+			}
+		}
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("CheckFutureAnswer", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(...guards, result);
+		return { ws, rule };
+	}
+
+	it.each([
+		["aggregate", false, false],
+		["aggregate", true, false],
+		["aggregate", true, true],
+		["context", false, false],
+		["context", true, false],
+		["context", true, true],
+	] as const)(
+		"%s precondition rejects its own future answer, front=%s explicit=%s",
+		(scope, fronted, explicit) => {
+			const { ws, rule } = futureAnswer(scope, fronted, explicit);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`)
+						.map((d) => d.ref),
+				).toEqual([rule.ref]);
+		},
+	);
+
+	it.each([
+		["aggregate", false],
+		["aggregate", true],
+		["context", false],
+		["context", true],
+	] as const)(
+		"%s precondition cannot borrow one guard's future answer from another, explicit=%s",
+		(scope, explicit) => {
+			const { ws, rule } = futureAnswer(scope, true, explicit, false, true);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`)
+						.map((d) => d.ref),
+				).toEqual([rule.ref]);
+		},
+	);
+
+	it.each(["aggregate", "context"] as const)(
+		"%s precondition may name two operations when a separate call supplies the shared shape",
+		(scope) => {
+			const { ws } = futureAnswer(scope, true, true, true, true);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`),
+				).toEqual([]);
+		},
+	);
+
+	it.each([
+		["aggregate", false],
+		["aggregate", true],
+		["context", false],
+		["context", true],
+	] as const)(
+		"%s precondition still accepts a separate fetch of the same shape, explicit=%s",
+		(scope, explicit) => {
+			const { ws } = futureAnswer(scope, true, explicit, true);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`),
+				).toEqual([]);
+		},
+	);
+
+	it.each([false, true])(
+		"accepts the same fetched answer with explicit by=%s",
+		(explicit) => {
+			const ws = new Workspace("Review", { description: "", version: "0" });
+			const bc = ws
+				.addDomain("D", { description: "" })
+				.addSubdomain("S", { description: "", type: "core" })
+				.addBoundedcontext("Sales", { description: "" });
+			const answer = bc.addSchema("Standing");
+			const standing = answer.addAttribute("standing", { type: "string" });
+			const query = bc
+				.addService("Lookup", { description: "", type: "application" })
+				.provides("GetStanding", {
+					description: "",
+					type: "operation",
+					internal: true,
+					returns: answer,
+				});
+			const front = bc.addService("Front", {
+				description: "",
+				type: "application",
+			});
+			const approve = front.provides("Approve", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			front.consumes(query, explicit ? { by: [approve] } : {});
+			bc.addInvariant("GoodStanding", {
+				description: "",
+				precondition: true,
+			}).constrains(approve, standing);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(candidate.validate()).toEqual([]);
+		},
+	);
+
+	function parallelFronts(everyRouteFetches: boolean) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const fact = bc.addSchema("Standing");
+		const standing = fact.addAttribute("standing", { type: "string" });
+		const decide = bc
+			.addService("Decision", { description: "", type: "application" })
+			.provides("Decide", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+		const query = bc
+			.addService("Lookup", { description: "", type: "application" })
+			.provides("GetStanding", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: fact,
+			});
+		const informed = bc.addService("Informed Front", {
+			description: "",
+			type: "application",
+		});
+		const informedCall = informed.provides("Call", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		informed.consumes(query, { by: [informedCall] });
+		informed.consumes(decide, { by: [informedCall] });
+		const uninformed = bc.addService("Uninformed Front", {
+			description: "",
+			type: "application",
+		});
+		const uninformedCall = uninformed.provides("Call", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		uninformed.consumes(decide, { by: [uninformedCall] });
+		if (everyRouteFetches) uninformed.consumes(query, { by: [uninformedCall] });
+		const rule = bc
+			.addInvariant("Standing required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, standing);
+		return { ws, rule };
+	}
+
+	it("does not lend one front's fetched answer to an independent front", () => {
+		const { ws, rule } = parallelFronts(false);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("accepts a fetched answer supplied independently on every front", () => {
+		const { ws } = parallelFronts(true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
+
+	function independentGuards(everyGuardFetches: boolean) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const service = bc.addService("Decisions", {
+			description: "",
+			type: "application",
+		});
+		const first = service.provides("First", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const second = service.provides("Second", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const query = bc
+			.addService("Lookup", { description: "", type: "application" })
+			.provides("GetFact", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: fact,
+			});
+		service.consumes(query, { by: [first] });
+		if (everyGuardFetches) service.consumes(query, { by: [second] });
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(first, second, field);
+		return { ws, rule };
+	}
+
+	it("does not lend one named guard's fetched answer to an independent guard", () => {
+		const { ws, rule } = independentGuards(false);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("accepts a fetched answer supplied independently by every named guard", () => {
+		const { ws } = independentGuards(true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
+
+	function publicGuard(internal: boolean) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const decide = bc
+			.addService("Decision", { description: "", type: "application" })
+			.provides("Decide", {
+				description: "",
+				type: "operation",
+				internal,
+			});
+		const query = bc
+			.addService("Lookup", { description: "", type: "application" })
+			.provides("GetFact", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: fact,
+			});
+		const front = bc.addService("Front", {
+			description: "",
+			type: "application",
+		});
+		const call = front.provides("Call", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		front.consumes(query, { by: [call] });
+		front.consumes(decide, { by: [call] });
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it("keeps a public guard's uninformed direct route beside its informed front", () => {
+		const { ws, rule } = publicGuard(false);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("accepts an internal guard reached only through its informed front", () => {
+		const { ws } = publicGuard(true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
+
+	function model(
+		scope: "aggregate" | "context",
+		fact: "answer" | "event",
+		ambiguous = false,
+	) {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate.addRootEntity("Order", { description: "" });
+		const guard = aggregate.provides("Approve", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const shape = bc.addSchema("Standing");
+		const field = shape.addAttribute("standing", { type: "string" });
+		const front = bc.addService("Front", {
+			description: "",
+			type: "application",
+		});
+		const approve = front.provides("Approve", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		if (ambiguous)
+			front.provides("Other", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+		front.consumes(guard);
+		if (fact === "answer") {
+			const getStanding = bc
+				.addService("Lookup", { description: "", type: "application" })
+				.provides("Get Standing", {
+					description: "",
+					type: "operation",
+					internal: true,
+					returns: shape,
+				});
+			front.consumes(getStanding);
+		} else {
+			const captured = bc
+				.addService("Payments", { description: "", type: "application" })
+				.provides("Captured", {
+					description: "",
+					type: "event",
+					schema: shape,
+				});
+			const reactor = bc
+				.addPolicy("Approve on capture", { description: "" })
+				.on(captured)
+				.issues(approve);
+			front.consumes(captured, { by: [reactor] });
+		}
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("Standing required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(guard, field);
+		return { ws, rule };
+	}
+
+	it.each([
+		["aggregate", "answer"],
+		["context", "answer"],
+		["aggregate", "event"],
+		["context", "event"],
+	] as const)("%s precondition reads an inferred front's %s", (scope, fact) => {
+		const { ws } = model(scope, fact);
+		for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())]) {
+			expect(
+				candidate.validate().filter((d) => d.rule === `invariant-in-${scope}`),
+			).toEqual([]);
+		}
+	});
+
+	it.each(["aggregate", "context"] as const)(
+		"%s precondition does not infer an ambiguous front",
+		(scope) => {
+			const { ws, rule } = model(scope, "answer", true);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())]) {
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`)
+						.map((d) => d.ref),
+				).toEqual([rule.ref]);
+			}
+		},
+	);
+});
+
+describe("transport shape intersection across named guards", () => {
+	function workspace() {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const envelope = bc.addSchema("Envelope");
+		envelope.addAttribute("fact", { type: "Fact", schema: fact });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		return { ws, bc, fact, field, envelope, service };
+	}
+
+	it("intersects fetched facts after expanding composition", () => {
+		const { ws, bc, fact, field, envelope, service } = workspace();
+		const first = service.provides("First", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const second = service.provides("Second", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const fetchEnvelope = service.provides("Fetch Envelope", {
+			description: "",
+			type: "operation",
+			internal: true,
+			returns: envelope,
+		});
+		const fetchFact = service.provides("Fetch Fact", {
+			description: "",
+			type: "operation",
+			internal: true,
+			returns: fact,
+		});
+		service.consumes(fetchEnvelope, { by: [first] });
+		service.consumes(fetchFact, { by: [second] });
+		bc.addInvariant("Fact required", {
+			description: "",
+			precondition: true,
+		}).constrains(first, second, field);
+
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
+
+	it.each([false, true])(
+		"requires every named guard request to carry the fact, every=%s",
+		(everyGuardCarries) => {
+			const { ws, bc, fact, field, envelope, service } = workspace();
+			const first = service.provides("First", {
+				description: "",
+				type: "operation",
+				internal: true,
+				schema: fact,
+			});
+			const second = service.provides("Second", {
+				description: "",
+				type: "operation",
+				internal: true,
+				...(everyGuardCarries ? { schema: envelope } : {}),
+			});
+			const rule = bc
+				.addInvariant("Fact required", {
+					description: "",
+					precondition: true,
+				})
+				.constrains(first, second, field);
+
+			expect(
+				[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+					candidate
+						.validate()
+						.filter((d) => d.rule === "invariant-in-context")
+						.map((d) => d.ref),
+				),
+			).toEqual(everyGuardCarries ? [[], []] : [[rule.ref], [rule.ref]]);
+		},
+	);
+
+	it.each([false, true])(
+		"requires every named guard answer to carry the guaranteed fact, every=%s",
+		(everyGuardCarries) => {
+			const { ws, bc, fact, field, envelope, service } = workspace();
+			const first = service.provides("First", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: fact,
+			});
+			const second = service.provides("Second", {
+				description: "",
+				type: "operation",
+				internal: true,
+				...(everyGuardCarries ? { returns: envelope } : {}),
+			});
+			const rule = bc
+				.addInvariant("Fact guaranteed", {
+					description: "",
+					postcondition: true,
+				})
+				.constrains(first, second, field);
+
+			expect(
+				[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+					candidate
+						.validate()
+						.filter((d) => d.rule === "invariant-in-context")
+						.map((d) => d.ref),
+				),
+			).toEqual(everyGuardCarries ? [[], []] : [[rule.ref], [rule.ref]]);
+		},
+	);
+});
+
+/**
+ * Naming an earlier query as a guard of its own adds a check at it; it does
+ * not take away the fact its completed call hands the later guard. What a
+ * guard holds depends on its own routes, never on which other operations the
+ * invariant names: only an answer on the guard's own reverse call route, its
+ * own included, is still to come (decision 19, fifth, sixth and eighth notes).
+ */
+describe("a named query's completed answer at another named guard", () => {
+	type Scope = "aggregate" | "context";
+	type Fetcher = "self" | "front" | "two fronts";
+
+	const refused = (ws: Workspace, scope: Scope) =>
+		[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+			candidate
+				.validate()
+				.filter((d) => d.rule === `invariant-in-${scope}`)
+				.map((d) => d.ref),
+		);
+
+	/**
+	 * LookupStanding → CheckStanding, which returns Standing too, fetched before
+	 * Approve by Approve itself, by its one front, or by the outer of two
+	 * fronts. Every provider offers one operation, so an omitted `by` infers it.
+	 */
+	function standing(
+		scope: Scope,
+		fetcher: Fetcher,
+		options: {
+			explicit?: boolean;
+			bothNamed?: boolean;
+			queryInformed?: boolean;
+			approveReturnsStanding?: boolean;
+			unknownCaller?: boolean;
+		} = {},
+	) {
+		const {
+			explicit = true,
+			bothNamed = true,
+			queryInformed = true,
+			approveReturnsStanding = false,
+			unknownCaller = false,
+		} = options;
+		const by = (caller: Consumable) => (explicit ? { by: [caller] } : {});
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const shape = bc.addSchema("Standing");
+		const status = shape.addAttribute("status", { type: "string" });
+		const lookup = bc
+			.addService("Lookup", { description: "", type: "application" })
+			.provides("LookupStanding", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: shape,
+			});
+		const checks = bc.addService("Checks", {
+			description: "",
+			type: "application",
+		});
+		const check = checks.provides("CheckStanding", {
+			description: "",
+			type: "operation",
+			internal: true,
+			returns: shape,
+		});
+		if (queryInformed) checks.consumes(lookup, by(check));
+		const approve = aggregate.provides("Approve", {
+			description: "",
+			type: "operation",
+			internal: true,
+			...(approveReturnsStanding ? { returns: shape } : {}),
+		});
+		if (fetcher === "self") aggregate.consumes(check, by(approve));
+		else {
+			const front = bc.addService("Front", {
+				description: "",
+				type: "application",
+			});
+			const approveFront = front.provides("ApproveFront", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			front.consumes(approve, by(approveFront));
+			if (fetcher === "front") front.consumes(check, by(approveFront));
+			else {
+				const outer = bc.addService("Outer", {
+					description: "",
+					type: "application",
+				});
+				const outerFront = outer.provides("OuterFront", {
+					description: "",
+					type: "operation",
+					internal: true,
+				});
+				outer.consumes(check, by(outerFront));
+				outer.consumes(approveFront, by(outerFront));
+			}
+		}
+		if (unknownCaller) {
+			const stranger = bc.addService("Stranger", {
+				description: "",
+				type: "application",
+			});
+			for (const name of ["One", "Two"])
+				stranger.provides(name, {
+					description: "",
+					type: "operation",
+					internal: true,
+				});
+			stranger.consumes(approve);
+		}
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("Good standing", { description: "", precondition: true })
+			.constrains(...(bothNamed ? [check, approve] : [approve]), status);
+		return { ws, rule };
+	}
+
+	const scopes = ["aggregate", "context"] as const;
+	const fetchers = ["self", "front", "two fronts"] as const;
+	const matrix = scopes.flatMap((scope) =>
+		fetchers.flatMap((fetcher) =>
+			[true, false].flatMap((explicit) =>
+				[true, false].flatMap((bothNamed) =>
+					[true, false].map(
+						(queryInformed) =>
+							[scope, fetcher, explicit, bothNamed, queryInformed] as const,
+					),
+				),
+			),
+		),
+	);
+
+	it.each(matrix)(
+		"%s, fetched by %s, explicit=%s, both named=%s, query informed=%s",
+		(scope, fetcher, explicit, bothNamed, queryInformed) => {
+			const { ws, rule } = standing(scope, fetcher, {
+				explicit,
+				bothNamed,
+				queryInformed,
+			});
+			// Approve always holds CheckStanding's completed answer; a named
+			// CheckStanding must hold the fact by its own route as well.
+			const held = !bothNamed || queryInformed;
+			expect(refused(ws, scope)).toEqual(
+				held ? [[], []] : [[rule.ref], [rule.ref]],
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			fetchers.flatMap((fetcher) =>
+				[true, false].map((bothNamed) => [scope, fetcher, bothNamed] as const),
+			),
+		),
+	)(
+		"%s keeps a distinct prior query when Approve returns the same shape, fetched by %s, both named=%s",
+		(scope, fetcher, bothNamed) => {
+			const { ws } = standing(scope, fetcher, {
+				bothNamed,
+				approveReturnsStanding: true,
+			});
+			expect(refused(ws, scope)).toEqual([[], []]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			fetchers.flatMap((fetcher) =>
+				[true, false].map((bothNamed) => [scope, fetcher, bothNamed] as const),
+			),
+		),
+	)(
+		"%s lets an unknown caller of Approve remove the fact unless Approve fetched it, fetched by %s, both named=%s",
+		(scope, fetcher, bothNamed) => {
+			const { ws, rule } = standing(scope, fetcher, {
+				bothNamed,
+				unknownCaller: true,
+			});
+			expect(refused(ws, scope)).toEqual(
+				fetcher === "self" ? [[], []] : [[rule.ref], [rule.ref]],
+			);
+		},
+	);
+
+	/**
+	 * Answers that are still to come at Approve: its own, its front's when an
+	 * outer front fetched that, and CheckStanding's where CheckStanding calls
+	 * Approve back. Each sits on Approve's own reverse route, so naming it or
+	 * not changes nothing.
+	 */
+	function future(
+		scope: Scope,
+		kind: "current" | "predecessor" | "cycle",
+		explicit: boolean,
+		bothNamed: boolean,
+	) {
+		const by = (caller: Consumable) => (explicit ? { by: [caller] } : {});
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const shape = bc.addSchema("Standing");
+		const status = shape.addAttribute("status", { type: "string" });
+		const approve = aggregate.provides("Approve", {
+			description: "",
+			type: "operation",
+			internal: true,
+			...(kind === "current" ? { returns: shape } : {}),
+		});
+		const front = bc.addService("Front", {
+			description: "",
+			type: "application",
+		});
+		const approveFront = front.provides("ApproveFront", {
+			description: "",
+			type: "operation",
+			internal: true,
+			...(kind === "predecessor" ? { returns: shape } : {}),
+		});
+		front.consumes(approve, by(approveFront));
+		let other: Consumable = approveFront;
+		if (kind === "predecessor") {
+			const outer = bc.addService("Outer", {
+				description: "",
+				type: "application",
+			});
+			const outerFront = outer.provides("OuterFront", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			outer.consumes(approveFront, by(outerFront));
+		}
+		if (kind === "cycle") {
+			const lookup = bc
+				.addService("Lookup", { description: "", type: "application" })
+				.provides("LookupStanding", {
+					description: "",
+					type: "operation",
+					internal: true,
+					returns: shape,
+				});
+			const checks = bc.addService("Checks", {
+				description: "",
+				type: "application",
+			});
+			const check = checks.provides("CheckStanding", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: shape,
+			});
+			checks.consumes(lookup, by(check));
+			checks.consumes(approve, by(check));
+			aggregate.consumes(check, by(approve));
+			other = check;
+		}
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("Good standing", { description: "", precondition: true })
+			.constrains(...(bothNamed ? [other, approve] : [approve]), status);
+		return { ws, rule };
+	}
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["current", "predecessor", "cycle"] as const).flatMap((kind) =>
+				[true, false].flatMap((explicit) =>
+					[true, false].map(
+						(bothNamed) => [scope, kind, explicit, bothNamed] as const,
+					),
+				),
+			),
+		),
+	)(
+		"%s still refuses a %s future answer, explicit=%s, both named=%s",
+		(scope, kind, explicit, bothNamed) => {
+			const { ws, rule } = future(scope, kind, explicit, bothNamed);
+			expect(refused(ws, scope)).toEqual([[rule.ref], [rule.ref]]);
+		},
+	);
+
+	// A front that calls itself fetches nothing but its own answer, which is
+	// still to come when it calls Approve; written or inferred, that self-call
+	// lends Approve no fact (issue #108, twenty-first review).
+	it.each(
+		scopes.flatMap((scope) =>
+			[true, false].map((explicit) => [scope, explicit] as const),
+		),
+	)(
+		"%s refuses the answer a self-calling front fetches from itself, explicit=%s",
+		(scope, explicit) => {
+			const ws = emptyWorkspace();
+			const bc = ws.addBoundedContext("Sales", { description: "" });
+			const aggregate = bc.addAggregate("Order", { description: "" });
+			aggregate
+				.addRootEntity("Order", { description: "" })
+				.addAttribute("id", { type: "uuid", identity: true });
+			const shape = bc.addSchema("Standing");
+			const status = shape.addAttribute("status", { type: "string" });
+			const approve = aggregate.provides("Approve", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			const front = bc.addService("Front", {
+				description: "",
+				type: "application",
+			});
+			const approveFront = front.provides("ApproveFront", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: shape,
+			});
+			const by = explicit ? { by: [approveFront] } : {};
+			front.consumes(approveFront, by);
+			front.consumes(approve, by);
+			const owner = scope === "aggregate" ? aggregate : bc;
+			const rule = owner
+				.addInvariant("Good standing", { description: "", precondition: true })
+				.constrains(approve, status);
+			expect(refused(ws, scope)).toEqual([[rule.ref], [rule.ref]]);
+		},
+	);
+});
+
+describe("precondition facts across a local call chain", () => {
+	function chain(
+		scope: "aggregate" | "context",
+		fact: "answer" | "event",
+		explicit: boolean,
+		ambiguous = false,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const shape = bc.addSchema("Fact");
+		const field = shape.addAttribute("result", { type: "string" });
+		const decide = bc
+			.addService("Decision", { description: "", type: "application" })
+			.provides("Decide", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+		const inner = bc.addService("Inner", {
+			description: "",
+			type: "application",
+		});
+		const innerCall = inner.provides("InnerCall", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		if (ambiguous)
+			inner.provides("Other", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+		inner.consumes(decide, explicit ? { by: [innerCall] } : {});
+		const outer = bc.addService("Outer", {
+			description: "",
+			type: "application",
+		});
+		const outerCall = outer.provides("OuterCall", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		outer.consumes(innerCall, explicit ? { by: [outerCall] } : {});
+		if (fact === "answer") {
+			const query = bc
+				.addService("Lookup", { description: "", type: "application" })
+				.provides("GetFact", {
+					description: "",
+					type: "operation",
+					internal: true,
+					returns: shape,
+				});
+			outer.consumes(query, explicit ? { by: [outerCall] } : {});
+		} else {
+			const source = bc.addService("Source", {
+				description: "",
+				type: "application",
+			});
+			const heard = source.provides("Heard", {
+				description: "",
+				type: "event",
+				schema: shape,
+			});
+			source
+				.provides("Start", {
+					description: "",
+					type: "operation",
+					internal: true,
+				})
+				.raises(heard);
+			const reactor = bc
+				.addProcess("Lifecycle", { description: "" })
+				.starts(heard)
+				.issues(outerCall);
+			outer.consumes(heard, { by: [reactor] });
+		}
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("Check held fact", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it.each([
+		["aggregate", "answer", false],
+		["aggregate", "answer", true],
+		["context", "answer", false],
+		["context", "answer", true],
+		["aggregate", "event", false],
+		["aggregate", "event", true],
+		["context", "event", false],
+		["context", "event", true],
+	] as const)(
+		"%s precondition reads held %s through two fronts, explicit=%s",
+		(scope, fact, explicit) => {
+			const { ws } = chain(scope, fact, explicit);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`),
+				).toEqual([]);
+		},
+	);
+
+	it.each(["answer", "event"] as const)(
+		"an ambiguous inner operation cannot lend its %s through the chain",
+		(fact) => {
+			const { ws, rule } = chain("context", fact, false, true);
+			for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())])
+				expect(
+					candidate
+						.validate()
+						.filter((d) => d.rule === "invariant-in-context")
+						.map((d) => d.ref),
+				).toEqual([rule.ref]);
+		},
+	);
+
+	it("terminates on a bounded dense graph of local callers", () => {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const service = bc.addService("Dense Fronts", {
+			description: "",
+			type: "application",
+		});
+		const operations = Array.from({ length: 9 }, (_, index) =>
+			service.provides(`Call ${index}`, {
+				description: "",
+				type: "operation",
+				internal: true,
+			}),
+		);
+		for (let called = 0; called < operations.length - 1; called++)
+			service.consumes(operations[called], {
+				by: operations.slice(called + 1),
+			});
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(operations[0], field);
+
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	}, 1_000);
+
+	it.each(["policy", "process"] as const)(
+		"holds the %s trigger's payload before the outer front that raises it again",
+		(kind) => {
+			const ws = new Workspace("Review", { description: "", version: "0" });
+			const bc = ws
+				.addDomain("D", { description: "" })
+				.addSubdomain("S", { description: "", type: "core" })
+				.addBoundedcontext("Sales", { description: "" });
+			const fact = bc.addSchema("Fact");
+			const field = fact.addAttribute("result", { type: "string" });
+			const service = bc.addService("Application", {
+				description: "",
+				type: "application",
+			});
+			const decide = service.provides("Decide", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			const front = service.provides("Front", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			service.consumes(decide, { by: [front] });
+			const future = service.provides("Future", {
+				description: "",
+				type: "event",
+				schema: fact,
+			});
+			front.raises(future);
+			if (kind === "policy")
+				bc.addPolicy("Retry", { description: "" }).on(future).issues(front);
+			else
+				bc.addProcess("Retry", { description: "" })
+					.starts(future)
+					.issues(front);
+			bc.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			}).constrains(decide, field);
+
+			// The trigger is a completed prior occurrence on its route; whether
+			// the ring ever starts is the reaction cycle's question.
+			expect(
+				[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+					candidate
+						.validate()
+						.filter(
+							(d) =>
+								d.rule === "invariant-in-context" ||
+								d.rule === "reaction-cycle",
+						)
+						.map((d) => d.rule),
+				),
+			).toEqual([["reaction-cycle"], ["reaction-cycle"]]);
+		},
+	);
+});
+
+describe("precondition facts across independent reactor triggers", () => {
+	function eventRaisedAfterAnotherGuardRoute(
+		separatePublisher: boolean,
+		fetchFact: boolean,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const value = fact.addAttribute("value", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const read = service.provides("Read", {
+			description: "",
+			type: "operation",
+			returns: fact,
+		});
+		const guard = service.provides("Guard", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const initial = service.provides("Initial", {
+			description: "",
+			type: "operation",
+		});
+		if (fetchFact) service.consumes(read, { by: [initial] });
+		service.consumes(guard, { by: [initial] });
+		const observed = service.provides("Observed", {
+			description: "",
+			type: "event",
+			schema: fact,
+		});
+		if (separatePublisher)
+			service
+				.provides("Publish Observed", {
+					description: "",
+					type: "operation",
+				})
+				.raises(observed);
+		else initial.raises(observed);
+		bc.addPolicy("On Observed", { description: "" }).on(observed).issues(guard);
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(guard, value);
+		return { ws, rule };
+	}
+
+	it.each([
+		[false, "is also a guard caller"],
+		[true, "is separate from guard callers"],
+	] as const)(
+		"keeps an immediate policy payload when its publisher %s",
+		(separatePublisher, _description) => {
+			const { ws } = eventRaisedAfterAnotherGuardRoute(separatePublisher, true);
+			for (const candidate of [
+				ws,
+				Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+			])
+				expect(
+					candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+				).toEqual([]);
+		},
+	);
+
+	it("still requires the other entry to fetch the fact", () => {
+		const { ws, rule } = eventRaisedAfterAnotherGuardRoute(false, false);
+		for (const candidate of [
+			ws,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+		])
+			expect(
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			).toEqual([rule.ref]);
+	});
+
+	function independentTriggers(
+		kind: "policy" | "process",
+		everyTriggerCarriesFact: boolean,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const first = service.provides("First", {
+			description: "",
+			type: "event",
+			schema: fact,
+		});
+		const second = service.provides("Second", {
+			description: "",
+			type: "event",
+			...(everyTriggerCarriesFact ? { schema: fact } : {}),
+		});
+		service
+			.provides("Publish First", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(first);
+		service
+			.provides("Publish Second", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(second);
+		const decide = service.provides("Decide", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		if (kind === "policy") {
+			bc.addPolicy("Decide on either", { description: "" })
+				.on(first, second)
+				.issues(decide);
+		} else {
+			const continued = service.provides("Continued", {
+				description: "",
+				type: "event",
+			});
+			const done = service.provides("Done", {
+				description: "",
+				type: "event",
+			});
+			service
+				.provides("Continue", {
+					description: "",
+					type: "operation",
+					internal: true,
+				})
+				.raises(continued);
+			decide.raises(done);
+			bc.addProcess("Decide from either start", { description: "" })
+				.starts(first, second)
+				.on(continued)
+				.issues(decide)
+				.ends(done);
+		}
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it("a policy cannot lend one trigger's payload to an independent trigger", () => {
+		const { ws, rule } = independentTriggers("policy", false);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("a policy accepts the shared payload when every trigger carries it", () => {
+		const { ws } = independentTriggers("policy", true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
+
+	it("a process cannot lend one start's payload to an independent start", () => {
+		const { ws, rule } = independentTriggers("process", false);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("a process retains a payload supplied by every start across later triggers", () => {
+		const { ws } = independentTriggers("process", true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+			),
+		).toEqual([[], []]);
+	});
+});
+
+describe("precondition facts from policy answer triggers", () => {
+	function answerTrigger(
+		kind: "return" | "rejection",
+		withAlternateTrigger: boolean,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const query = service.provides("Get Fact", {
+			description: "",
+			type: "operation",
+			internal: true,
+			...(kind === "return" ? { returns: fact } : { rejects: [fact] }),
+		});
+		const decide = service.provides("Decide", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const answer = kind === "return" ? query.returned() : query.rejected(fact);
+		const policy = bc
+			.addPolicy("Decide from answer", { description: "" })
+			.on(answer)
+			.issues(query, decide);
+		if (withAlternateTrigger) {
+			const alternate = service.provides("Alternate", {
+				description: "",
+				type: "event",
+			});
+			service
+				.provides("Publish Alternate", {
+					description: "",
+					type: "operation",
+					internal: true,
+				})
+				.raises(alternate);
+			policy.on(alternate);
+		}
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it.each(["return", "rejection"] as const)(
+		"accepts a %s answer as the immediate policy trigger",
+		(kind) => {
+			const { ws } = answerTrigger(kind, false);
+			expect(
+				[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+					candidate.validate().filter((d) => d.rule === "invariant-in-context"),
+				),
+			).toEqual([[], []]);
+		},
+	);
+
+	it.each(["return", "rejection"] as const)(
+		"does not lend a %s answer to an independent policy trigger",
+		(kind) => {
+			const { ws, rule } = answerTrigger(kind, true);
+			expect(
+				[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+					candidate
+						.validate()
+						.filter((d) => d.rule === "invariant-in-context")
+						.map((d) => d.ref),
+				),
+			).toEqual([[rule.ref], [rule.ref]]);
+		},
+	);
+
+	it("holds the answer that triggered the policy before the operation it issues again", () => {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const fact = bc.addSchema("Fact");
+		const field = fact.addAttribute("result", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const decide = service.provides("Decide", {
+			description: "",
+			type: "operation",
+			internal: true,
+			returns: fact,
+		});
+		bc.addPolicy("Decide from its answer", { description: "" })
+			.on(decide.returned())
+			.issues(decide);
+		bc.addInvariant("Fact required", {
+			description: "",
+			precondition: true,
+		}).constrains(decide, field);
+
+		// The trigger is a completed prior occurrence, so its answer is held;
+		// whether the ring ever starts is the reaction cycle's question.
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter(
+						(d) =>
+							d.rule === "invariant-in-context" || d.rule === "reaction-cycle",
+					)
+					.map((d) => d.rule),
+			),
+		).toEqual([["reaction-cycle"], ["reaction-cycle"]]);
+	});
+});
+
+describe("precondition facts held on every finite route to a guard", () => {
+	type Scope = "aggregate" | "context";
+	type Shape = ReturnType<BoundedContext["addSchema"]>;
+
+	function base(scope: Scope) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const fact = bc.addSchema("Fact");
+		const value = fact.addAttribute("value", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const op = (
+			name: string,
+			extra: { internal?: boolean; returns?: Shape; rejects?: Shape[] } = {},
+		) =>
+			service.provides(name, { description: "", type: "operation", ...extra });
+		const read = op("Read", { returns: fact });
+		const event = (name: string, schema?: Shape) =>
+			service.provides(name, {
+				description: "",
+				type: "event",
+				...(schema ? { schema } : {}),
+			});
+		const constrain = (guard: Consumable) =>
+			(scope === "aggregate" ? aggregate : bc)
+				.addInvariant("Fact required", { description: "", precondition: true })
+				.constrains(guard, value);
+		return { ws, bc, service, fact, read, op, event, constrain };
+	}
+
+	function rulesIn(ws: Workspace, rule: string) {
+		return [
+			ws,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+		].map((candidate) =>
+			candidate
+				.validate()
+				.filter((d) => d.rule === rule)
+				.map((d) => d.ref),
+		);
+	}
+
+	const scopes = ["aggregate", "context"] as const;
+	const triggers = ["return", "rejection", "event"] as const;
+
+	function publisherIsGuardCaller(
+		scope: Scope,
+		trigger: (typeof triggers)[number],
+		options: {
+			frontFetches: boolean;
+			policyIssuesFront: boolean;
+			alternate: boolean;
+		},
+	) {
+		const { ws, bc, service, fact, read, op, event, constrain } = base(scope);
+		const front = op(
+			"Front",
+			trigger === "return"
+				? { returns: fact }
+				: trigger === "rejection"
+					? { rejects: [fact] }
+					: {},
+		);
+		const guard = op("Guard", { internal: true });
+		if (options.frontFetches) service.consumes(read, { by: [front] });
+		service.consumes(guard, { by: [front] });
+		let heard: Consumable | ReturnType<Consumable["returned"]>;
+		if (trigger === "event") {
+			heard = event("Fact Seen", fact);
+			front.raises(heard);
+		} else
+			heard = trigger === "return" ? front.returned() : front.rejected(fact);
+		const policy = bc
+			.addPolicy("On front", { description: "" })
+			.on(heard)
+			.issues(...(options.policyIssuesFront ? [front, guard] : [guard]));
+		if (options.alternate) {
+			const alternate = event("Alternate");
+			op("Publish Alternate", { internal: true }).raises(alternate);
+			policy.on(alternate);
+		}
+		const rule = constrain(guard);
+		return { ws, rule };
+	}
+
+	it.each(scopes.flatMap((scope) => triggers.map((t) => [scope, t] as const)))(
+		"%s precondition keeps an immediate %s trigger whose publisher calls the guard",
+		(scope, trigger) => {
+			const { ws } = publisherIsGuardCaller(scope, trigger, {
+				frontFetches: true,
+				policyIssuesFront: true,
+				alternate: false,
+			});
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+			expect(rulesIn(ws, "reaction-cycle").map((it) => it.length > 0)).toEqual([
+				true,
+				true,
+			]);
+		},
+	);
+
+	it.each(scopes.flatMap((scope) => triggers.map((t) => [scope, t] as const)))(
+		"%s precondition refuses a %s trigger beside an alternative trigger without the fact",
+		(scope, trigger) => {
+			const { ws, rule } = publisherIsGuardCaller(scope, trigger, {
+				frontFetches: true,
+				policyIssuesFront: true,
+				alternate: true,
+			});
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([
+				[rule.ref],
+				[rule.ref],
+			]);
+		},
+	);
+
+	it.each(scopes.flatMap((scope) => triggers.map((t) => [scope, t] as const)))(
+		"%s precondition refuses a %s trigger whose direct caller route never held the fact",
+		(scope, trigger) => {
+			const { ws, rule } = publisherIsGuardCaller(scope, trigger, {
+				frontFetches: false,
+				policyIssuesFront: false,
+				alternate: false,
+			});
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([
+				[rule.ref],
+				[rule.ref],
+			]);
+		},
+	);
+
+	function recursion(
+		scope: Scope,
+		shape: "none" | "self" | "mutual",
+		entryFetches: boolean,
+	) {
+		const { ws, service, read, op, constrain } = base(scope);
+		const entry = op("Entry");
+		const evaluate = op("Evaluate", { internal: true });
+		if (entryFetches) service.consumes(read, { by: [entry] });
+		if (shape === "none") service.consumes(evaluate, { by: [entry] });
+		if (shape === "self") service.consumes(evaluate, { by: [entry, evaluate] });
+		if (shape === "mutual") {
+			const helper = op("Helper", { internal: true });
+			service.consumes(evaluate, { by: [entry, helper] });
+			service.consumes(helper, { by: [evaluate] });
+		}
+		const rule = constrain(evaluate);
+		return { ws, rule };
+	}
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["none", "self", "mutual"] as const).map((s) => [scope, s] as const),
+		),
+	)(
+		"%s precondition keeps an informed entry's fact through %s recursion",
+		(scope, shape) => {
+			const { ws } = recursion(scope, shape, true);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+			expect(rulesIn(ws, "reaction-cycle").map((it) => it.length > 0)).toEqual(
+				shape === "none" ? [false, false] : [true, true],
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["none", "self", "mutual"] as const).map((s) => [scope, s] as const),
+		),
+	)(
+		"%s precondition does not invent a fact through %s recursion from an uninformed entry",
+		(scope, shape) => {
+			const { ws, rule } = recursion(scope, shape, false);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([
+				[rule.ref],
+				[rule.ref],
+			]);
+		},
+	);
+
+	function twoEntriesIntoCycle(
+		scope: Scope,
+		alternative: "none" | "public" | "local" | "reactor",
+		memberFetches: boolean,
+	) {
+		const { ws, bc, service, read, op, event, constrain } = base(scope);
+		const entryA = op("Entry A");
+		const entryB = op("Entry B");
+		const a = op("A", { internal: true });
+		const b = op("B", { internal: true });
+		const intoB = [entryB, a];
+		if (alternative === "public") intoB.push(op("Other"));
+		if (alternative === "local") intoB.push(op("Other", { internal: true }));
+		if (alternative === "reactor") {
+			const heard = event("Heard");
+			op("Publish", { internal: true }).raises(heard);
+			bc.addPolicy("On heard", { description: "" }).on(heard).issues(b);
+		}
+		service.consumes(read, {
+			by: memberFetches ? [entryA, entryB, b] : [entryA, entryB],
+		});
+		service.consumes(a, { by: [entryA, b] });
+		service.consumes(b, { by: intoB });
+		const rule = constrain(a);
+		return { ws, rule };
+	}
+
+	it.each(scopes)(
+		"%s precondition keeps a fact two informed entries bring into one cycle",
+		(scope) => {
+			const { ws } = twoEntriesIntoCycle(scope, "none", false);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["public", "local", "reactor"] as const).map((a) => [scope, a] as const),
+		),
+	)(
+		"%s precondition refuses a cycle with an uninformed %s entry",
+		(scope, alternative) => {
+			const { ws, rule } = twoEntriesIntoCycle(scope, alternative, false);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([
+				[rule.ref],
+				[rule.ref],
+			]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["public", "local", "reactor"] as const).map((a) => [scope, a] as const),
+		),
+	)(
+		"%s precondition accepts an uninformed %s entry whose cycle member fetches the fact",
+		(scope, alternative) => {
+			const { ws } = twoEntriesIntoCycle(scope, alternative, true);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	function closedCycle(
+		scope: Scope,
+		order: "guard first" | "partner first",
+		fetcher: "guard" | "partner",
+		reachableGuard: boolean,
+	) {
+		const { ws, service, read, op, constrain } = base(scope);
+		const [guard, partner] =
+			order === "guard first"
+				? [op("Guard", { internal: true }), op("Partner", { internal: true })]
+				: [
+						op("Partner", { internal: true }),
+						op("Guard", { internal: true }),
+					].reverse();
+		const callers = [partner];
+		if (reachableGuard) {
+			const entry = op("Entry");
+			service.consumes(read, { by: [entry] });
+			callers.push(entry);
+		} else
+			service.consumes(read, { by: [fetcher === "guard" ? guard : partner] });
+		if (order === "guard first") {
+			service.consumes(guard, { by: callers });
+			service.consumes(partner, { by: [guard] });
+		} else {
+			service.consumes(partner, { by: [guard] });
+			service.consumes(guard, { by: callers });
+		}
+		const rule = constrain(guard);
+		return { ws, rule };
+	}
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["guard first", "partner first"] as const).flatMap((order) =>
+				(["guard", "partner"] as const).map(
+					(fetcher) => [scope, order, fetcher] as const,
+				),
+			),
+		),
+	)(
+		"%s precondition holds nothing in a closed cycle (%s, %s fetches)",
+		(scope, order, fetcher) => {
+			const { ws, rule } = closedCycle(scope, order, fetcher, false);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([
+				[rule.ref],
+				[rule.ref],
+			]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["guard first", "partner first"] as const).map(
+				(order) => [scope, order] as const,
+			),
+		),
+	)(
+		"%s precondition keeps an informed entry beside a cycle it closes (%s)",
+		(scope, order) => {
+			const { ws } = closedCycle(scope, order, "partner", true);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	it.each(scopes)(
+		"%s precondition ignores a predecessor no entry ever reaches",
+		(scope) => {
+			const { ws, service, read, op, constrain } = base(scope);
+			const entry = op("Entry");
+			const guard = op("Guard", { internal: true });
+			const x = op("X", { internal: true });
+			const y = op("Y", { internal: true });
+			service.consumes(read, { by: [entry] });
+			service.consumes(guard, { by: [entry, y] });
+			service.consumes(y, { by: [x] });
+			service.consumes(x, { by: [y] });
+			constrain(guard);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+});
+
+// A consumption whose caller nobody can name is still a call: decision 21
+// reads an omitted `by` as the whole consumer, and the guard's analysis has to
+// count that route even though it cannot say which operation runs it. It
+// holds nothing, beside any informed front or reactor, and in a big ball of
+// mud, where the caller is allowed to stay unnamed, it still holds nothing
+// (#131).
+describe("precondition facts beside a consumption whose caller is unnamed", () => {
+	type Scope = "aggregate" | "context";
+	type Shape = ReturnType<BoundedContext["addSchema"]>;
+	type Provider = ReturnType<BoundedContext["addService"]>;
+	const scopes = ["aggregate", "context"] as const;
+
+	function base(scope: Scope, mud = false) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", {
+				description: "",
+				...(mud ? { bigBallOfMud: true } : {}),
+			});
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const fact = bc.addSchema("Fact");
+		const value = fact.addAttribute("value", { type: "string" });
+		const service = (name: string) =>
+			bc.addService(name, { description: "", type: "application" });
+		const op = (
+			provider: Provider,
+			name: string,
+			extra: { internal?: boolean; returns?: Shape; schema?: Shape } = {},
+		) =>
+			provider.provides(name, { description: "", type: "operation", ...extra });
+		const known = service("Known");
+		const read = op(known, "Read", { returns: fact });
+		const constrain = (...guards: Consumable[]) =>
+			(scope === "aggregate" ? aggregate : bc)
+				.addInvariant("Fact required", { description: "", precondition: true })
+				.constrains(...guards, value);
+		return { ws, bc, fact, known, read, service, op, constrain };
+	}
+
+	/** The informed route: a public front that fetches the fact and calls the guard. */
+	function informedFront(scope: Scope, mud = false) {
+		const it = base(scope, mud);
+		const front = it.op(it.known, "Front");
+		const guard = it.op(it.known, "Guard", { internal: true });
+		it.known.consumes(it.read, { by: [front] });
+		it.known.consumes(guard, { by: [front] });
+		return { ...it, front, guard };
+	}
+
+	/** A local service that calls `called` without saying which operation does. */
+	function unnamed(
+		it: ReturnType<typeof base>,
+		called: Consumable,
+		operations: number,
+	) {
+		const other = it.service("Other");
+		for (let i = 1; i <= operations; i++) it.op(other, `Other ${i}`);
+		other.consumes(called);
+		return other;
+	}
+
+	function rulesIn(ws: Workspace, rule: string) {
+		return [
+			ws,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+		].map((candidate) =>
+			candidate
+				.validate()
+				.filter((d) => d.rule === rule)
+				.map((d) => d.ref),
+		);
+	}
+
+	const refused = (rule: { ref: string }) => [[rule.ref], [rule.ref]];
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["ordinary", "mud"] as const).flatMap((context) =>
+				([0, 2] as const).flatMap((operations) =>
+					(["first", "last"] as const).map(
+						(order) => [scope, context, operations, order] as const,
+					),
+				),
+			),
+		),
+	)(
+		"%s precondition in an %s context refuses an unnamed caller from %s operations declared %s beside an informed front",
+		(scope, context, operations, order) => {
+			const it = base(scope, context === "mud");
+			const front = it.op(it.known, "Front");
+			const guard = it.op(it.known, "Guard", { internal: true });
+			if (order === "first") unnamed(it, guard, operations);
+			it.known.consumes(it.read, { by: [front] });
+			it.known.consumes(guard, { by: [front] });
+			if (order === "last") unnamed(it, guard, operations);
+			const rule = it.constrain(guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(refused(rule));
+			// The warning is for the author; the invariant's truth is not.
+			expect(
+				rulesIn(it.ws, "consumption-by-required").map((refs) => refs.length),
+			).toEqual(context === "mud" ? [0, 0] : [1, 1]);
+		},
+	);
+
+	// The reviewer's reproducer, as written: the whole model was silent.
+	it("refuses the precondition in a big ball of mud with nothing else to say", () => {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "", bigBallOfMud: true });
+		const fact = bc.addSchema("Fact");
+		const value = fact.addAttribute("value", { type: "string" });
+		const app = bc.addService("Known", {
+			description: "",
+			type: "application",
+		});
+		const opts = { description: "", type: "operation" as const };
+		const read = app.provides("Read", { ...opts, returns: fact });
+		const front = app.provides("Front", opts);
+		const guard = app.provides("Guard", { ...opts, internal: true });
+		app.consumes(read, { by: [front] });
+		app.consumes(guard, { by: [front] });
+		const other = bc.addService("Other", {
+			description: "",
+			type: "application",
+		});
+		other.provides("A", opts);
+		other.provides("B", opts);
+		other.consumes(guard);
+		const rule = bc
+			.addInvariant("Fact required", { description: "", precondition: true })
+			.constrains(guard, value);
+		for (const candidate of [
+			ws,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+		])
+			expect(
+				candidate.validate().map((d) => [d.severity, d.rule, d.ref]),
+			).toEqual([["error", "invariant-in-context", rule.ref]]);
+	});
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["ordinary", "mud"] as const).map(
+				(context) => [scope, context] as const,
+			),
+		),
+	)(
+		"%s precondition in an %s context keeps the informed front once the unnamed call is gone",
+		(scope, context) => {
+			const { ws, guard, constrain } = informedFront(scope, context === "mud");
+			constrain(guard);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	function reactorIssues(
+		scope: Scope,
+		kind: "policy" | "process",
+		withUnnamed: boolean,
+	) {
+		const it = base(scope);
+		const guard = it.op(it.known, "Guard", { internal: true });
+		const observed = it.known.provides("Observed", {
+			description: "",
+			type: "event",
+			schema: it.fact,
+		});
+		it.op(it.known, "Publish", { internal: true }).raises(observed);
+		if (kind === "policy")
+			it.bc
+				.addPolicy("On Observed", { description: "" })
+				.on(observed)
+				.issues(guard);
+		else {
+			const done = it.known.provides("Done", {
+				description: "",
+				type: "event",
+			});
+			guard.raises(done);
+			it.bc
+				.addProcess("From Observed", { description: "" })
+				.starts(observed)
+				.issues(guard)
+				.ends(done);
+		}
+		if (withUnnamed) unnamed(it, guard, 2);
+		return { ws: it.ws, rule: it.constrain(guard) };
+	}
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["policy", "process"] as const).map((kind) => [scope, kind] as const),
+		),
+	)(
+		"%s precondition refuses an unnamed caller beside an informed %s",
+		(scope, kind) => {
+			const { ws, rule } = reactorIssues(scope, kind, true);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual(refused(rule));
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["policy", "process"] as const).map((kind) => [scope, kind] as const),
+		),
+	)(
+		"%s precondition keeps an informed %s's payload with no unnamed caller",
+		(scope, kind) => {
+			const { ws } = reactorIssues(scope, kind, false);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			([true, false] as const).map((fetches) => [scope, fetches] as const),
+		),
+	)(
+		"%s precondition reads an omitted by on a sole operation as that operation (fetches: %s)",
+		(scope, fetches) => {
+			const it = informedFront(scope);
+			const other = it.service("Other");
+			it.op(other, "Solo");
+			if (fetches) other.consumes(it.read);
+			other.consumes(it.guard);
+			const rule = it.constrain(it.guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				fetches ? [[], []] : refused(rule),
+			);
+			expect(rulesIn(it.ws, "consumption-by-required")).toEqual([[], []]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			([true, false] as const).map((informed) => [scope, informed] as const),
+		),
+	)(
+		"%s precondition follows an explicitly named caller (informed: %s)",
+		(scope, informed) => {
+			const it = informedFront(scope);
+			const other = it.service("Other");
+			const a = it.op(other, "A");
+			it.op(other, "B");
+			if (informed) other.consumes(it.read, { by: [a] });
+			other.consumes(it.guard, { by: [a] });
+			const rule = it.constrain(it.guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				informed ? [[], []] : refused(rule),
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["absent", "unnamed", "unnamed, middle fetches"] as const).map(
+				(shape) => [scope, shape] as const,
+			),
+		),
+	)(
+		"%s precondition carries an intermediate front's entry to the guard (%s)",
+		(scope, shape) => {
+			const it = base(scope);
+			const front = it.op(it.known, "Front");
+			const middle = it.op(it.known, "Middle", { internal: true });
+			const guard = it.op(it.known, "Guard", { internal: true });
+			it.known.consumes(it.read, {
+				by: shape === "unnamed, middle fetches" ? [front, middle] : [front],
+			});
+			it.known.consumes(middle, { by: [front] });
+			it.known.consumes(guard, { by: [middle] });
+			if (shape !== "absent") unnamed(it, middle, 2);
+			const rule = it.constrain(guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				shape === "unnamed" ? refused(rule) : [[], []],
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			([true, false] as const).map(
+				(withUnnamed) => [scope, withUnnamed] as const,
+			),
+		),
+	)(
+		"%s precondition over two informed fronts (unnamed caller: %s)",
+		(scope, withUnnamed) => {
+			const it = base(scope);
+			const a = it.op(it.known, "Front A");
+			const b = it.op(it.known, "Front B");
+			const guard = it.op(it.known, "Guard", { internal: true });
+			it.known.consumes(it.read, { by: [a, b] });
+			it.known.consumes(guard, { by: [a, b] });
+			if (withUnnamed) unnamed(it, guard, 2);
+			const rule = it.constrain(guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				withUnnamed ? refused(rule) : [[], []],
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["absent", "unnamed", "unnamed, guard fetches"] as const).map(
+				(shape) => [scope, shape] as const,
+			),
+		),
+	)("%s precondition over an informed recursive cycle (%s)", (scope, shape) => {
+		const it = base(scope);
+		const entry = it.op(it.known, "Entry");
+		const guard = it.op(it.known, "Guard", { internal: true });
+		const helper = it.op(it.known, "Helper", { internal: true });
+		it.known.consumes(it.read, {
+			by: shape === "unnamed, guard fetches" ? [entry, guard] : [entry],
+		});
+		it.known.consumes(guard, { by: [entry, helper] });
+		it.known.consumes(helper, { by: [guard] });
+		if (shape !== "absent") unnamed(it, helper, 2);
+		const rule = it.constrain(guard);
+		expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+			shape === "unnamed" ? refused(rule) : [[], []],
+		);
+	});
+
+	it.each(scopes)(
+		"%s precondition lets the guard's own fetch hold the fact on every entry",
+		(scope) => {
+			const it = informedFront(scope);
+			it.known.consumes(it.read, { by: [it.front, it.guard] });
+			unnamed(it, it.guard, 2);
+			it.constrain(it.guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	it.each(scopes)(
+		"%s precondition reads the request whoever calls",
+		(scope) => {
+			const it = base(scope);
+			const guard = it.op(it.known, "Guard", {
+				internal: true,
+				schema: it.fact,
+			});
+			unnamed(it, guard, 2);
+			it.constrain(guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual([[], []]);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(["front", "guard"] as const).map((fetcher) => [scope, fetcher] as const),
+		),
+	)(
+		"%s precondition reads a composed answer the %s fetched beside an unnamed caller",
+		(scope, fetcher) => {
+			const it = informedFront(scope);
+			const envelope = it.bc.addSchema("Envelope");
+			envelope.addAttribute("fact", { type: "Fact", schema: it.fact });
+			const readEnvelope = it.op(it.known, "Read Envelope", {
+				returns: envelope,
+			});
+			it.known.consumes(readEnvelope, {
+				by: [fetcher === "front" ? it.front : it.guard],
+			});
+			unnamed(it, it.guard, 2);
+			const rule = it.constrain(it.guard);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				fetcher === "front" ? refused(rule) : [[], []],
+			);
+		},
+	);
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(
+				[
+					"none",
+					"unnamed off the route, guard fetches",
+					"unnamed",
+					"unnamed, guard fetches",
+					"unnamed, partner fetches",
+				] as const
+			).flatMap((shape) =>
+				(["guard first", "partner first"] as const).map(
+					(order) => [scope, shape, order] as const,
+				),
+			),
+		),
+	)("%s precondition over a closed cycle (%s, %s)", (scope, shape, order) => {
+		const it = base(scope);
+		const [guard, partner] =
+			order === "guard first"
+				? [
+						it.op(it.known, "Guard", { internal: true }),
+						it.op(it.known, "Partner", { internal: true }),
+					]
+				: [
+						it.op(it.known, "Partner", { internal: true }),
+						it.op(it.known, "Guard", { internal: true }),
+					].reverse();
+		if (shape.endsWith("guard fetches"))
+			it.known.consumes(it.read, { by: [guard] });
+		if (shape === "unnamed, partner fetches" || shape === "none")
+			it.known.consumes(it.read, { by: [partner] });
+		it.known.consumes(guard, { by: [partner] });
+		it.known.consumes(partner, { by: [guard] });
+		if (shape === "unnamed off the route, guard fetches")
+			unnamed(it, it.read, 2);
+		else if (shape !== "none") unnamed(it, partner, 2);
+		const rule = it.constrain(guard);
+		// A ring nobody enters holds nothing, even what it fetched; once an
+		// unnamed call genuinely enters it, a fetch on every route counts.
+		expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+			shape.startsWith("unnamed,") ? [[], []] : refused(rule),
+		);
+	});
+
+	it.each(
+		scopes.flatMap((scope) =>
+			([true, false] as const).map(
+				(withUnnamed) => [scope, withUnnamed] as const,
+			),
+		),
+	)(
+		"%s precondition naming two guards needs the fact on both (unnamed caller of the second: %s)",
+		(scope, withUnnamed) => {
+			const it = informedFront(scope);
+			const second = it.op(it.known, "Second Guard", { internal: true });
+			it.known.consumes(second, { by: [it.front] });
+			if (withUnnamed) unnamed(it, second, 2);
+			const rule = it.constrain(it.guard, second);
+			expect(rulesIn(it.ws, `invariant-in-${scope}`)).toEqual(
+				withUnnamed ? refused(rule) : [[], []],
+			);
+		},
+	);
+
+	/** The rule that refuses each shape, which must survive the round trip too. */
+	const refusedBy = {
+		"another provider's operation": "consumption-by-resolves",
+		"a policy": "consumption-by-operation",
+		"an informed operation and a policy": "consumption-by-operation",
+		"an event": "consumption-by-resolves",
+		"another context's operation": "consumption-by-resolves",
+		"another context's consumer": "internal-consumable",
+		"another context's policy": "policy-in-context",
+	} as const;
+
+	/**
+	 * A `by` the model refuses still says a call is made. What it names cannot
+	 * be trusted to have made it, so the route counts and holds nothing: an
+	 * invalid model is not read more generously than a valid one.
+	 */
+	function invalidCaller(scope: Scope, shape: keyof typeof refusedBy) {
+		const it = informedFront(scope);
+		const other = it.service("Other");
+		const a = it.op(other, "A");
+		it.op(other, "B");
+		const foreign = it.ws.addBoundedContext("Elsewhere", { description: "" });
+		const away = foreign.addService("Away", {
+			description: "",
+			type: "application",
+		});
+		const awayOp = away.provides("Away Op", {
+			description: "",
+			type: "operation",
+		});
+		const heard = it.known.provides("Heard", {
+			description: "",
+			type: "event",
+		});
+		it.op(it.known, "Publish", { internal: true }).raises(heard);
+		if (shape === "another provider's operation")
+			other.consumes(it.guard, { by: [it.front] });
+		if (
+			shape === "a policy" ||
+			shape === "an informed operation and a policy"
+		) {
+			const policy = it.bc.addPolicy("On Heard", { description: "" }).on(heard);
+			if (shape === "a policy") other.consumes(it.guard, { by: [policy] });
+			else {
+				other.consumes(it.read, { by: [a] });
+				other.consumes(it.guard, { by: [a, policy] });
+			}
+		}
+		if (shape === "an event") {
+			const raised = other.provides("Raised", {
+				description: "",
+				type: "event",
+			});
+			a.raises(raised);
+			other.consumes(it.guard, { by: [raised] });
+		}
+		if (shape === "another context's operation")
+			other.consumes(it.guard, { by: [awayOp] });
+		if (shape === "another context's consumer") away.consumes(it.guard);
+		if (shape === "another context's policy") {
+			const elsewhere = away.provides("Elsewhere Heard", {
+				description: "",
+				type: "event",
+				schema: it.fact,
+			});
+			awayOp.raises(elsewhere);
+			foreign
+				.addPolicy("On Elsewhere", { description: "" })
+				.on(elsewhere)
+				.issues(it.guard);
+		}
+		return { ws: it.ws, rule: it.constrain(it.guard) };
+	}
+
+	it.each(
+		scopes.flatMap((scope) =>
+			(Object.keys(refusedBy) as (keyof typeof refusedBy)[]).map(
+				(shape) => [scope, shape] as const,
+			),
+		),
+	)(
+		"%s precondition counts a call whose by names %s as a route holding nothing",
+		(scope, shape) => {
+			const { ws, rule } = invalidCaller(scope, shape);
+			expect(rulesIn(ws, `invariant-in-${scope}`)).toEqual(refused(rule));
+			expect(
+				rulesIn(ws, refusedBy[shape]).map((refs) => refs.length > 0),
+			).toEqual([true, true]);
+		},
+	);
+
+	it("leaves a published request-only contract to its request", () => {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const scheme = ws.addBoundedContext("Scheme", {
+			description: "",
+			external: true,
+		});
+		const request = scheme.addSchema("Capture Request");
+		const amount = request.addAttribute("amount", { type: "int64" });
+		const capture = scheme
+			.addService("Scheme API", { description: "", type: "application" })
+			.provides("Capture", {
+				description: "",
+				type: "operation",
+				schema: request,
+			});
+		scheme
+			.addInvariant("Positive", { description: "", precondition: true })
+			.constrains(capture, amount);
+		const ours = ws.addBoundedContext("Payments", { description: "" });
+		const app = ours.addService("Payments App", {
+			description: "",
+			type: "application",
+		});
+		app.provides("Pay", { description: "", type: "operation" });
+		app.provides("Refund", { description: "", type: "operation" });
+		app.consumes(capture);
+		expect(rulesIn(ws, "external-is-boundary")).toEqual([[], []]);
+	});
+});
+
+describe("precondition event timing in a process", () => {
+	function lifecycle(
+		scope: "aggregate" | "context",
+		payloadAt: "start" | "wait" | "on" | "end",
+		fronted: boolean,
+		explicit: boolean,
+	) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const aggregate = bc.addAggregate("Order", { description: "" });
+		aggregate
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const shape = bc.addSchema("Fact");
+		const field = shape.addAttribute("result", { type: "string" });
+		const service = bc.addService("Decision", {
+			description: "",
+			type: "application",
+		});
+		const decide = service.provides("Decide", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const started = service.provides("Started", {
+			description: "",
+			type: "event",
+			...(payloadAt === "start" ? { schema: shape } : {}),
+		});
+		service
+			.provides("Start", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(started);
+		let waited: Consumable | undefined;
+		if (payloadAt === "wait") {
+			waited = service.provides("EarlierFact", {
+				description: "",
+				type: "event",
+				schema: shape,
+			});
+			service
+				.provides("Publish Earlier Fact", {
+					description: "",
+					type: "operation",
+					internal: true,
+				})
+				.raises(waited);
+		}
+		const decided = service.provides("Decided", {
+			description: "",
+			type: "event",
+			...(payloadAt === "on" || payloadAt === "end" ? { schema: shape } : {}),
+		});
+		decide.raises(decided);
+		let issued = decide;
+		if (fronted) {
+			const front = bc.addService("Front", {
+				description: "",
+				type: "application",
+			});
+			issued = front.provides("Call", {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+			front.consumes(decide, explicit ? { by: [issued] } : {});
+		}
+		const process = bc
+			.addProcess("Lifecycle", { description: "" })
+			.starts(started)
+			.issues(issued);
+		if (waited) process.on(waited);
+		if (payloadAt === "on") process.on(decided);
+		else process.ends(decided);
+		const owner = scope === "aggregate" ? aggregate : bc;
+		const rule = owner
+			.addInvariant("Before Decide", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it.each([
+		["aggregate", false, false],
+		["aggregate", true, false],
+		["aggregate", true, true],
+		["context", false, false],
+		["context", true, false],
+		["context", true, true],
+	] as const)(
+		"%s precondition distinguishes a starting fact from unordered later and future facts, front=%s explicit=%s",
+		(scope, fronted, explicit) => {
+			for (const payloadAt of ["start", "wait", "end", "on"] as const) {
+				const { ws, rule } = lifecycle(scope, payloadAt, fronted, explicit);
+				for (const candidate of [ws, Workspace.fromSchema(ws.toSchema())]) {
+					const refs = candidate
+						.validate()
+						.filter((d) => d.rule === `invariant-in-${scope}`)
+						.map((d) => d.ref);
+					// A process remembers `on` facts once they arrive, but `issues`
+					// does not map a command to a lifecycle step. Only `starts` proves
+					// this payload was present before every possible issue of the guard.
+					expect(refs).toEqual(payloadAt === "start" ? [] : [rule.ref]);
+				}
+			}
+		},
+	);
+
+	function laterAnswer(startingOperation = false) {
+		const ws = new Workspace("Review", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" })
+			.addBoundedcontext("Sales", { description: "" });
+		const shape = bc.addSchema("Fact");
+		const field = shape.addAttribute("result", { type: "string" });
+		const service = bc.addService("Application", {
+			description: "",
+			type: "application",
+		});
+		const started = service.provides("Started", {
+			description: "",
+			type: "event",
+		});
+		service
+			.provides("Publish Start", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(started);
+		const query = service.provides("Get Fact", {
+			description: "",
+			type: "operation",
+			internal: true,
+			returns: shape,
+		});
+		const decide = service.provides("Decide", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const done = service.provides("Done", {
+			description: "",
+			type: "event",
+		});
+		decide.raises(done);
+		const process = bc
+			.addProcess("Lifecycle", { description: "" })
+			.starts(startingOperation ? query : started)
+			.issues(decide)
+			.ends(done);
+		if (!startingOperation) process.on(query.returned()).issues(query);
+		const rule = bc
+			.addInvariant("Fact required", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(decide, field);
+		return { ws, rule };
+	}
+
+	it("does not treat an answer in process on as prior to every issued command", () => {
+		const { ws, rule } = laterAnswer();
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+
+	it("does not treat a starting operation's later answer as prior to an issued command", () => {
+		const { ws, rule } = laterAnswer(true);
+		expect(
+			[ws, Workspace.fromSchema(ws.toSchema())].map((candidate) =>
+				candidate
+					.validate()
+					.filter((d) => d.rule === "invariant-in-context")
+					.map((d) => d.ref),
+			),
+		).toEqual([[rule.ref], [rule.ref]]);
+	});
+});
+
 describe("invariant-in-value-object", () => {
 	const rules = (ws: Workspace) =>
 		ws.validate().filter((d) => d.rule === "invariant-in-value-object");
@@ -2160,6 +4845,42 @@ describe("invariant-in-value-object", () => {
 		expect(
 			ws.validate().filter((d) => d.rule === "context-invariant-is-checked"),
 		).toEqual([]);
+	});
+
+	it("refuses call timing on value rules in modelled and external contexts", () => {
+		for (const external of [false, true])
+			for (const flags of [
+				{ precondition: true },
+				{ postcondition: true },
+				{ precondition: true, postcondition: true },
+			]) {
+				const ws = emptyWorkspace();
+				const bc = ws.addBoundedContext("Standard", {
+					description: "",
+					external,
+				});
+				const iban = bc.addValueObject("IBAN", { description: "" });
+				const code = iban.addAttribute("code", { type: "string" });
+				iban
+					.addInvariant("Valid Checksum", { description: "" })
+					.constrains(code);
+				const timed = iban
+					.addInvariant("Timed Checksum", { description: "", ...flags })
+					.constrains(code);
+				for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+					expect(
+						model.validate().filter((d) => d.severity === "error"),
+					).toEqual([
+						{
+							severity: "error",
+							rule: "invariant-in-value-object",
+							message:
+								'Invariant "Timed Checksum" of value object "IBAN" sets call timing; a value\'s rule holds by construction and cannot be a precondition or postcondition. Move a rule about a call to the aggregate or context that owns it',
+							ref: timed.ref,
+						},
+					]);
+				}
+			}
 	});
 
 	it("refuses a value's rule that reaches for the entity holding it", () => {
@@ -3095,7 +5816,7 @@ describe("consumption-agreement", () => {
 		// until the crossing says it belongs to them.
 		expect(backed(ws).map((d) => d.message)).toEqual([
 			'"Warehouse" is declared open-host-service to "Shop", but nothing "Shop" consumes from "Warehouse" carries that upstream role',
-			'"Shop" is declared conformist to "Warehouse", but no consumption of "Shop" from "Warehouse" declares that downstream role, and nothing in it carries one of "Warehouse"\'s schemas or value objects',
+			'"Shop" is declared conformist to "Warehouse", but no consumption of "Shop" from "Warehouse" declares that downstream role, and nothing in it carries one of "Warehouse"\'s schemas or value objects or specialises one of its value objects',
 		]);
 	});
 
@@ -3261,7 +5982,7 @@ describe("relationship-roles-backed", () => {
 		expect(backedRules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"warning",
-				'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role, and nothing in "Down" carries one of its schemas or value objects',
+				'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role, and nothing in "Down" carries one of its schemas or value objects or specialises one of its value objects',
 				relationship.ref,
 			],
 		]);
@@ -3375,7 +6096,7 @@ describe("relationship-roles-backed", () => {
 		const { ws, relationship } = conformsToStandard();
 		expect(backedRules(ws).map((d) => [d.message, d.ref])).toEqual([
 			[
-				'"Clinical" is declared conformist to "FHIR", but no consumption of "Clinical" from "FHIR" declares that downstream role, and nothing in it carries one of "FHIR"\'s schemas or value objects',
+				'"Clinical" is declared conformist to "FHIR", but no consumption of "Clinical" from "FHIR" declares that downstream role, and nothing in it carries one of "FHIR"\'s schemas or value objects or specialises one of its value objects',
 				relationship.ref,
 			],
 		]);
@@ -3709,6 +6430,69 @@ describe("postcondition-names-operation", () => {
 				both.ref,
 			],
 		]);
+	});
+});
+
+describe("invariant-guards-are-operations", () => {
+	it("rejects event targets at every timing and both modelled ownership scopes", () => {
+		for (const ownerKind of ["aggregate", "context"] as const)
+			for (const timing of [
+				"unflagged",
+				"precondition",
+				"postcondition",
+			] as const)
+				for (const [operationTarget, eventTarget] of [
+					[true, false],
+					[false, true],
+					[true, true],
+				] as const) {
+					const ws = emptyWorkspace();
+					const bc = ws
+						.addDomain("Billing", { description: "" })
+						.addSubdomain("Capture", { description: "", type: "core" })
+						.addBoundedcontext("Payments", { description: "" });
+					const payment = bc.addAggregate("Payment", { description: "" });
+					payment
+						.addRootEntity("Payment", { description: "" })
+						.addAttribute("id", { type: "uuid", identity: true });
+					const captured = payment.provides("Captured", {
+						description: "",
+						type: "event",
+						internal: true,
+					});
+					const capture = payment
+						.provides("Capture", {
+							description: "",
+							type: "operation",
+							internal: true,
+						})
+						.raises(captured);
+					const owner = ownerKind === "aggregate" ? payment : bc;
+					const flags = timing === "unflagged" ? {} : { [timing]: true };
+					const rule = owner.addInvariant("Ready", {
+						description: "",
+						...flags,
+					});
+					if (operationTarget) rule.constrains(capture);
+					if (eventTarget) rule.constrains(captured);
+					for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+						const diagnostics = model.validate();
+						const expected = [
+							...(!operationTarget &&
+							timing === "unflagged" &&
+							ownerKind === "context"
+								? ["context-invariant-is-checked"]
+								: []),
+							...(!operationTarget && timing !== "unflagged"
+								? [`${timing}-names-operation`]
+								: []),
+							...(eventTarget ? ["invariant-guards-are-operations"] : []),
+						];
+						expect(diagnostics.map((d) => d.rule).sort()).toEqual(
+							expected.sort(),
+						);
+					}
+				}
 	});
 });
 
@@ -5933,12 +8717,36 @@ describe("shared-kernel-backed", () => {
 	const backed = (ws: Workspace) =>
 		ws.validate().filter((d) => d.rule === "shared-kernel-backed");
 
+	it("allows reciprocal schema, value and kind borrowing across a shared kernel", () => {
+		const ws = emptyWorkspace();
+		const subdomain = ws
+			.addDomain("D", { description: "" })
+			.addSubdomain("S", { description: "", type: "core" });
+		const a = subdomain.addBoundedcontext("A", { description: "" });
+		const b = subdomain.addBoundedcontext("B", { description: "" });
+		a.sharesKernelWith(b);
+		const aValue = a.addValueObject("AValue", { description: "" });
+		const bValue = b.addValueObject("BValue", { description: "" });
+		a.addSchema("RequestA", { description: "" }).addAttribute("value", {
+			type: "BValue",
+			valueobject: bValue,
+		});
+		b.addSchema("RequestB", { description: "" }).addAttribute("value", {
+			type: "AValue",
+			valueobject: aValue,
+		});
+		a.addValueObject("AKind", { description: "", specialises: bValue });
+		b.addValueObject("BKind", { description: "", specialises: aValue });
+		for (const model of [ws, Workspace.fromSchema(ws.toSchema())])
+			expect(model.validate()).toEqual([]);
+	});
+
 	it("warns about a kernel with nothing in it", () => {
 		const { ws, relationship } = kernel();
 		expect(backed(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"warning",
-				'"A" and "B" declare a shared kernel, but neither types an attribute by a value object the other declares, carries one of its schemas or calls one of its operations, so nothing is in the kernel',
+				'"A" and "B" declare a shared kernel, but neither types an attribute by a value object the other declares, specialises one, carries one of its schemas or calls one of its operations, so nothing is in the kernel',
 				relationship.ref,
 			],
 		]);
@@ -5996,6 +8804,98 @@ describe("shared-kernel-backed", () => {
 		const a = ws.addBoundedContext("A", { description: "" });
 		a.partnerOf(ws.addBoundedContext("B", { description: "" }));
 		expect(backed(ws)).toEqual([]);
+	});
+});
+
+describe("a value object that specialises another context's is borrowing (issue #111)", () => {
+	const BACKING = [
+		"shared-kernel-backed",
+		"conformist-backed",
+		"relationship-roles-backed",
+		"specialisation-in-boundary",
+	];
+	const routes: [string, (up: BoundedContext, down: BoundedContext) => void][] =
+		[
+			["a shared kernel", (up, down) => void up.sharesKernelWith(down)],
+			[
+				"a conformist",
+				(up, down) =>
+					void up.upstreamOf(down, {
+						upstreamRoles: ["published-language"],
+						downstreamRoles: ["conformist"],
+					}),
+			],
+			[
+				"a customer-supplier pair",
+				(up, down) =>
+					void up.upstreamOf(down, {
+						type: "customer-supplier",
+						upstreamRoles: ["published-language"],
+					}),
+			],
+		];
+
+	/** Two contexts whose only link is that Down's value object is a kind of Up's. */
+	function specialising(
+		declare?: (up: BoundedContext, down: BoundedContext) => void,
+	) {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const money = up.addValueObject("Money", { description: "" });
+		money.addAttribute("amount", { type: "decimal" });
+		down.addValueObject("Fee", { description: "", specialises: money });
+		declare?.(up, down);
+		return ws;
+	}
+	const findings = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => BACKING.includes(d.rule))
+			.map((d) => [d.rule, d.message]);
+	const roundTripped = (ws: Workspace) =>
+		Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema())));
+
+	for (const [name, declare] of routes) {
+		it(`counts as the borrowing ${name} is backed by, with nothing else shared`, () => {
+			const ws = specialising(declare);
+			expect(findings(ws)).toEqual([]);
+			expect(findings(roundTripped(ws))).toEqual([]);
+		});
+	}
+
+	it("still breaks the boundary when no relationship permits it", () => {
+		const ws = specialising();
+		expect(findings(ws).map(([rule]) => rule)).toEqual([
+			"specialisation-in-boundary",
+		]);
+		expect(findings(roundTripped(ws)).map(([rule]) => rule)).toEqual([
+			"specialisation-in-boundary",
+		]);
+	});
+
+	it("still warns about a shared kernel where nothing is specialised or shared", () => {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		up.addValueObject("Money", { description: "" });
+		down.addValueObject("Fee", { description: "" });
+		up.sharesKernelWith(down);
+		expect(findings(ws).map(([rule]) => rule)).toEqual([
+			"shared-kernel-backed",
+		]);
+	});
+
+	it("does not count a kind of the borrower's own value object", () => {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const own = down.addValueObject("Money", { description: "" });
+		down.addValueObject("Fee", { description: "", specialises: own });
+		up.sharesKernelWith(down);
+		expect(findings(ws).map(([rule]) => rule)).toEqual([
+			"shared-kernel-backed",
+		]);
 	});
 });
 
@@ -6520,6 +9420,39 @@ describe("reaction-cycle", () => {
 			expect(reactions(ws)).toEqual([]);
 		});
 
+		// The lifecycle through the layer stays quiet, and a second process
+		// that hears the translated fact while alive and feeds the first back
+		// is feedback beside it, whichever ring the walk meets first (issue
+		// #108, local audit before the twenty-first review).
+		it("still reports a second live process fed beside the lifecycle through the layer", () => {
+			const { ws, process } = gateway();
+			const app = ws.getServiceByRefOrThrow(
+				"#/boundedcontexts/bank/services/gateway",
+			);
+			const notified = app.provides("Notified", {
+				description: "",
+				type: "event",
+			});
+			const notify = app
+				.provides("Notify", { description: "", type: "operation" })
+				.raises(notified);
+			process.boundedcontext
+				.addProcess("Echo", { description: "" })
+				.starts(
+					app.provides("Begin Echo", { description: "", type: "operation" }),
+				)
+				.on(app.consumables.get("instruction_authorised")!)
+				.issues(notify)
+				.ends(notified);
+			process.on(notified);
+			expect(reactions(ws).map((d) => [d.message, d.ref])).toEqual([
+				[
+					'Reactions run in a cycle: "Publish Scheme Answer" -> "Publish Authorised" -> "Instruction Authorised" -> "Echo" -> "Notify" -> "Notified" -> "Instruction" -> "Send Authorisation" -> "Authorise" -> "Authorised" -> "Publish Scheme Answer"; the chain triggers itself and nothing in the model says what ends it; it runs through "Bank" and "Scheme", so no one context can see the whole ring',
+					"#/boundedcontexts/bank/policies/publish_scheme_answer",
+				],
+			]);
+		});
+
 		it("still reports a ring where the policy does not translate through an ACL", () => {
 			// Same shape, but the policy hears the scheme's event as an ordinary
 			// conformist rather than through an anti-corruption-layer consumption:
@@ -6721,7 +9654,7 @@ describe("relationship-roles-backed and published languages", () => {
 		expect(
 			backedRules(crossingWithSchema(false)).map((d) => d.message),
 		).toEqual([
-			'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role, and nothing in "Down" carries one of its schemas or value objects',
+			'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role, and nothing in "Down" carries one of its schemas or value objects or specialises one of its value objects',
 		]);
 	});
 
@@ -7072,11 +10005,15 @@ describe("consumption-once", () => {
 		// The pair repeats, so each ref carries its first caller and the two
 		// are reachable one at a time (decision 26).
 		const pairRef =
-			"#/boundedcontexts/down/services/reader/consumes/boundedcontexts~up~services~feed~provides~happened";
+			"#/boundedcontexts/down/services/reader/consumes/#~1boundedcontexts~1up~1services~1feed~1provides~1happened";
 		// The caller's collection is part of the segment, so an operation and
 		// a policy sharing an id stay apart (card 95).
-		expect(asIs.ref).toBe(`${pairRef}/provides/archive`);
-		expect(translated.ref).toBe(`${pairRef}/policies/decide`);
+		expect(asIs.ref).toBe(
+			`${pairRef}/by/#~1boundedcontexts~1down~1services~1reader~1provides~1archive`,
+		);
+		expect(translated.ref).toBe(
+			`${pairRef}/by/#~1boundedcontexts~1down~1policies~1decide`,
+		);
 		expect(ws.findConsumption(asIs.ref)).toBe(asIs);
 		expect(ws.findConsumption(translated.ref)).toBe(translated);
 	});
@@ -7136,7 +10073,7 @@ describe("consumption-once", () => {
 			by: [archive],
 		});
 		expect(only.ref).toBe(
-			"#/boundedcontexts/down/services/reader/consumes/boundedcontexts~up~services~feed~provides~happened",
+			"#/boundedcontexts/down/services/reader/consumes/#~1boundedcontexts~1up~1services~1feed~1provides~1happened",
 		);
 		expect(once(ws)).toEqual([]);
 	});
@@ -7234,8 +10171,8 @@ describe("relationship-duplicate", () => {
 		});
 		expect(duplicates(ws)).toEqual([]);
 		expect([api.ref, feed.ref]).toEqual([
-			"#/relationships/a~upstream-downstream~b~fulfilment_api",
-			"#/relationships/a~upstream-downstream~b~legacy_feed",
+			"#/relationships/a/upstream-downstream/b/fulfilment_api",
+			"#/relationships/a/upstream-downstream/b/legacy_feed",
 		]);
 		expect(ws.findRelationship(feed.ref)).toBe(feed);
 	});
@@ -7531,6 +10468,193 @@ describe("external-is-boundary", () => {
 		expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
 	});
 
+	it.each([false, true])(
+		"limits an external precondition to its published request, request carries fact=%s",
+		(requestCarriesFact) => {
+			const { ws, external } = scheme();
+			const api = external.addService("Scheme API", {
+				description: "",
+				type: "application",
+			});
+			const fact = external.addSchema("Fact");
+			const value = fact.addAttribute("value", { type: "string" });
+			const query = api.provides("Query", {
+				description: "",
+				type: "operation",
+				returns: fact,
+			});
+			const guard = api.provides("Guard", {
+				description: "",
+				type: "operation",
+				...(requestCarriesFact ? { schema: fact } : {}),
+			});
+			api.consumes(query, { by: [guard] });
+			const rule = external
+				.addInvariant("Fact required", {
+					description: "",
+					precondition: true,
+				})
+				.constrains(guard, value);
+			for (const candidate of [
+				ws,
+				Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+			]) {
+				const errors = boundary(candidate);
+				if (requestCarriesFact) expect(errors).toEqual([]);
+				else
+					expect(errors).toEqual([
+						[
+							"error",
+							expect.stringContaining(
+								'states a precondition on "Fact.value", which is not part of that contract',
+							),
+							rule.ref,
+						],
+					]);
+			}
+		},
+	);
+
+	it.each([false, true])(
+		"intersects composed operation answers with event payloads, event carries shape=%s",
+		(eventCarriesShape) => {
+			const { ws, external } = scheme();
+			const api = external.addService("Scheme API", {
+				description: "",
+				type: "application",
+			});
+			const fact = external.addSchema("Fact");
+			const value = fact.addAttribute("value", { type: "string" });
+			const envelope = external.addSchema("Envelope");
+			envelope.addAttribute("fact", { type: "Fact", schema: fact });
+			const capture = api.provides("Capture", {
+				description: "",
+				type: "operation",
+				returns: envelope,
+			});
+			const captured = api.provides("Captured", {
+				description: "",
+				type: "event",
+				...(eventCarriesShape ? { schema: envelope } : {}),
+			});
+			const rule = external
+				.addInvariant("Fact guaranteed", {
+					description: "",
+					postcondition: true,
+				})
+				.constrains(capture, captured, value);
+			for (const candidate of [
+				ws,
+				Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+			]) {
+				const errors = boundary(candidate);
+				if (eventCarriesShape) expect(errors).toEqual([]);
+				else expect(errors.map(([, , ref]) => ref)).toEqual([rule.ref]);
+			}
+		},
+	);
+
+	it.each([false, true])(
+		"requires every named operation to carry a postcondition shape even beside an event, shared answer=%s",
+		(sharedAnswer) => {
+			const { ws, external, capture, amount } = publishedCapture();
+			const api = external.services.get("scheme_api");
+			if (!api) throw new Error("no scheme API");
+			const receipt = external.schemas.get("captured_payment");
+			if (!receipt) throw new Error("no captured payment schema");
+			const ping = api.provides("Ping", {
+				description: "",
+				type: "operation",
+				...(sharedAnswer ? { returns: receipt } : {}),
+			});
+			const captured = api.provides("Captured", {
+				description: "",
+				type: "event",
+				schema: receipt,
+			});
+			const rule = external
+				.addInvariant("Positive amount", {
+					description: "",
+					postcondition: true,
+				})
+				.constrains(capture, ping, captured, amount);
+			for (const candidate of [
+				ws,
+				Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+			]) {
+				const errors = boundary(candidate);
+				if (sharedAnswer) expect(errors).toEqual([]);
+				else
+					expect(errors).toEqual([
+						[
+							"error",
+							expect.stringContaining(
+								'states a postcondition on "Captured Payment.amount", which is not part of that contract',
+							),
+							rule.ref,
+						],
+					]);
+			}
+		},
+	);
+
+	it.each([false, true])(
+		"requires both guarded events to carry the postcondition shape, shared payload=%s",
+		(sharedPayload) => {
+			const { ws, external, notified, amount } = webhook();
+			const api = external.services.get("scheme_api");
+			if (!api) throw new Error("no scheme API");
+			const other = api.provides("Second Notification", {
+				description: "",
+				type: "event",
+				...(sharedPayload ? { schema: notified.schema } : {}),
+			});
+			const rule = external
+				.addInvariant("Published amount", {
+					description: "",
+					postcondition: true,
+				})
+				.constrains(notified, other, amount);
+			for (const candidate of [
+				ws,
+				Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema()))),
+			]) {
+				const errors = boundary(candidate);
+				if (sharedPayload) expect(errors).toEqual([]);
+				else expect(errors.map(([, , ref]) => ref)).toEqual([rule.ref]);
+			}
+		},
+	);
+
+	it("rejects an external contract marked both before and after", () => {
+		const { ws, external, capture, amount } = publishedCapture();
+		const both = external
+			.addInvariant("Two Moments At Once", {
+				description: "",
+				precondition: true,
+				postcondition: true,
+			})
+			.constrains(capture, amount);
+		external
+			.addInvariant("Captured Answer", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(capture, amount);
+		for (const workspace of [ws, Workspace.fromSchema(ws.toSchema())]) {
+			expect(boundary(workspace)).toEqual([
+				[
+					"error",
+					'External context "Card Scheme" marks invariant "Two Moments At Once" both a precondition and a postcondition; a published contract checks a request before a call or guarantees its answer or an event\'s payload, and cannot claim both moments',
+					both.ref,
+				],
+			]);
+			expect(
+				workspace.validate().filter((d) => d.severity === "error"),
+			).toHaveLength(1);
+		}
+	});
+
 	it("still refuses one with neither flag, and says which is allowed", () => {
 		const { ws, external, capture } = publishedCapture();
 		const atRest = external
@@ -7580,7 +10704,7 @@ describe("external-is-boundary", () => {
 		expect(boundary(ws)).toEqual([
 			[
 				"error",
-				'External context "Card Scheme" states precondition "Never Overdrawn" on none of its own operations; what a system we do not own publishes is the contract of an operation it offers, so name that operation. A published contract states what one of this system\'s own operations takes and answers with, in the attributes of its own request and answer schemas, what one of its own events carries, in the attributes of that event\'s payload, and what its own value objects are; anything else about that system is ours to guess and not to state',
+				'External context "Card Scheme" states precondition "Never Overdrawn" on none of its own operations; what a system we do not own publishes is the contract of an operation it offers, so name that operation. A published precondition reaches only an operation\'s request; a postcondition reaches its request, answer or refusal, or an event\'s payload. Every named operation or event must carry each constrained shape. This context\'s own value objects are also in reach; anything else about that system is ours to guess and not to state',
 				unguarded.ref,
 			],
 		]);
@@ -7609,7 +10733,7 @@ describe("external-is-boundary", () => {
 			["error", reaching.ref],
 		]);
 		expect(boundary(ws)[1][1]).toBe(
-			'External context "Card Scheme" states a postcondition on "Order.total", which is not part of that contract. A published contract states what one of this system\'s own operations takes and answers with, in the attributes of its own request and answer schemas, what one of its own events carries, in the attributes of that event\'s payload, and what its own value objects are; anything else about that system is ours to guess and not to state',
+			'External context "Card Scheme" states a postcondition on "Order.total", which is not part of that contract. A published precondition reaches only an operation\'s request; a postcondition reaches its request, answer or refusal, or an event\'s payload. Every named operation or event must carry each constrained shape. This context\'s own value objects are also in reach; anything else about that system is ours to guess and not to state',
 		);
 	});
 
@@ -7741,13 +10865,62 @@ describe("external-is-boundary", () => {
 		expect(boundary(ws).map((d) => [d[0], d[2]])).toEqual([
 			["error", before.ref],
 			["error", before.ref],
+			["error", before.ref],
 		]);
 		expect(boundary(ws)[0][1]).toContain(
 			'states precondition "Captured Within The Authorisation" on none of its own operations',
 		);
 		expect(boundary(ws)[1][1]).toContain(
+			'states a precondition on "Payment Captured", an event of this context; an event has no request to check before it is published',
+		);
+		expect(boundary(ws)[2][1]).toContain(
 			'states a precondition on "Capture Notification.amount", which is not part of that contract',
 		);
+	});
+
+	it("rejects an event target even beside a valid operation precondition", () => {
+		for (const { precondition, operation, event, valid } of [
+			{ precondition: true, operation: true, event: false, valid: true },
+			{ precondition: true, operation: false, event: true, valid: false },
+			{ precondition: true, operation: true, event: true, valid: false },
+			{ precondition: false, operation: true, event: true, valid: true },
+		]) {
+			const { ws, external } = scheme();
+			const api = external.addService("Scheme API", {
+				description: "",
+				type: "application",
+			});
+			const capture = api.provides("Capture", {
+				description: "",
+				type: "operation",
+			});
+			const captured = api.provides("Captured", {
+				description: "",
+				type: "event",
+			});
+			const contract = external.addInvariant("Ready", {
+				description: "",
+				precondition,
+				postcondition: !precondition,
+			});
+			if (operation) contract.constrains(capture);
+			if (event) contract.constrains(captured);
+			for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+				const errors = boundary(model);
+				if (valid) expect(errors).toEqual([]);
+				else {
+					expect(
+						errors.some((d) =>
+							d[1].includes(
+								'states a precondition on "Captured", an event of this context; an event has no request to check before it is published',
+							),
+						),
+					).toBe(true);
+					if (operation) expect(errors).toHaveLength(1);
+					else expect(errors).toHaveLength(2);
+				}
+			}
+		}
 	});
 
 	it("refuses a postcondition on another context's event", () => {
@@ -9208,7 +12381,7 @@ describe("waiting on an answer", () => {
 		);
 		const waited = rebuilt.getProcessByRefOrThrow(process.ref).events;
 		expect(waited.map((it) => it.ref)).toEqual([
-			`${authorise.ref}/rejects/${declined.id}`,
+			`${authorise.ref}/rejects/${declined.boundedcontext.id}/${declined.id}`,
 		]);
 		expect(rebuilt.toSchema()).toEqual(ws.toSchema());
 	});
@@ -9216,7 +12389,9 @@ describe("waiting on an answer", () => {
 	it("names an answer by its origin, and resolves that ref", () => {
 		const { ws, authorise, declined } = answered();
 		const rejected = authorise.rejected(declined);
-		expect(rejected.ref).toBe(`${authorise.ref}/rejects/payment_declined`);
+		expect(rejected.ref).toBe(
+			`${authorise.ref}/rejects/${declined.boundedcontext.id}/payment_declined`,
+		);
 		expect(ws.getByRef(rejected.ref)).toBe(rejected);
 		authorise.returns = declined;
 		expect(authorise.returned().ref).toBe(`${authorise.ref}/returns`);

@@ -6,8 +6,11 @@ parameter or the form, upload one from disk, or pick one of the reference models
 example cards. Nothing is sent anywhere: the file is read in
 your browser, validated with the core package, and rendered client-side.
 
-Every element has a page, addressed by its ref in the URL hash, so links into a workspace can
-be shared: `#/boundedcontexts/sales_bc/aggregates/order` opens the Order aggregate.
+Every page-owning element is addressed by a URL-safe transport of its canonical ref in the
+hash, so links into a workspace can be shared:
+`#/boundedcontexts/sales_bc/aggregates/order` opens the Order aggregate. A leaf ref, such as an
+attribute, answer, deadline or consumption, opens its nearest owner's page. Attribute refs
+also select their table row. The transport encoding preserves the model ref exactly.
 
 The viewer, the static site export and the extension's detail panel are one Svelte app from
 the pages package; `apps/ods-ui` is the deployable copy that open-ds.io publishes. See the

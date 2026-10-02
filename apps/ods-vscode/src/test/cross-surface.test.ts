@@ -1,5 +1,5 @@
 import * as assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { promises as fs, readFileSync } from "node:fs";
 import * as path from "node:path";
 import {
 	relationshipArrow,
@@ -80,9 +80,13 @@ describe("the cross-surface facts in a real VS Code webview", function () {
 		heading: string,
 		selectors: string[],
 		ready: (probed: Probed) => boolean = () => true,
+		targetFile = file,
 	): Promise<Probed> {
 		answers.length = 0;
-		await vscode.commands.executeCommand("ods.openPage", { file, ref });
+		await vscode.commands.executeCommand("ods.openPage", {
+			file: targetFile,
+			ref,
+		});
 		const all = ["main h1", ...selectors];
 		const deadline = Date.now() + 45_000;
 		for (;;) {
@@ -260,6 +264,143 @@ describe("the cross-surface facts in a real VS Code webview", function () {
 			const at = contexts.indexOf(i.context);
 			assert.ok(at >= 0, `${i.context} is on the map`);
 			assert.equal(kinds[at], `«${i.stereotype}»`);
+		}
+	});
+
+	it("keeps duplicate refusal diagnostics and renders their authored rows in the real webview", async () => {
+		const workspace = new Workspace("Duplicate refusal acceptance", {
+			description: "Two authored refusals of one schema.",
+			version: "test",
+		});
+		const context = workspace.addBoundedContext("Payments", {
+			description: "",
+		});
+		const declined = context.addSchema("Declined", { description: "" });
+		declined.addAttribute("code", { type: "string" });
+		const aggregate = context.addAggregate("Ledger", {
+			description: "",
+		});
+		const root = aggregate.addRootEntity("Charge Record", {
+			description: "",
+		});
+		root.addAttribute("id", { type: "string", identity: true });
+		const operation = aggregate.provides("Charge", {
+			description: "Declines a charge with a reason.",
+			type: "operation",
+			rejects: [
+				{ schema: declined, reasons: ["late", "late"] },
+				{ schema: declined, many: true, reasons: ["late", "unknown"] },
+			],
+		});
+		const schema = workspace.toSchema();
+		const boundedContext = Object.values(schema.boundedcontexts)[0];
+		const aggregateSchema = Object.values(boundedContext.aggregates ?? {})[0];
+		const operationSchema = Object.values(aggregateSchema.provides ?? {}).find(
+			(consumable) => consumable.name === "Charge",
+		);
+		const originalRejections = operationSchema?.rejects;
+		assert.deepEqual(JSON.parse(JSON.stringify(originalRejections)), [
+			{ $ref: declined.ref, reasons: ["late", "late"] },
+			{
+				$ref: declined.ref,
+				many: true,
+				reasons: ["late", "unknown"],
+			},
+		]);
+
+		const folder = path.join(
+			__dirname,
+			"../../src/test/fixtures/cross-surface/.ods",
+		);
+		const relativePath = `duplicate-refusals-${Date.now()}.json`;
+		const uri = vscode.Uri.file(path.join(folder, relativePath));
+		const sourceText = `${JSON.stringify({ $schema: "./schema.json", ...workspace.toSchema() }, null, 2)}\n`;
+		await fs.writeFile(uri.fsPath, sourceText, "utf8");
+		try {
+			await api.project.reload();
+			const loaded = api.project.workspaces.find(
+				(candidate) => candidate.relativePath === relativePath,
+			);
+			assert.ok(
+				loaded?.workspace,
+				"the extension loads the temporary workspace",
+			);
+			const loadedSchema = loaded.workspace.toSchema();
+			const loadedContext = Object.values(loadedSchema.boundedcontexts)[0];
+			const loadedAggregate = Object.values(loadedContext.aggregates ?? {})[0];
+			const loadedCharge = Object.values(loadedAggregate.provides ?? {}).find(
+				(consumable) => consumable.name === "Charge",
+			);
+			assert.deepEqual(JSON.parse(JSON.stringify(loadedCharge?.rejects)), [
+				{ $ref: declined.ref, reasons: ["late", "late"] },
+				{
+					$ref: declined.ref,
+					many: true,
+					reasons: ["late", "unknown"],
+				},
+			]);
+			const diagnostics = loaded.workspace
+				.validate()
+				.filter((diagnostic) => diagnostic.rule === "rejects-duplicate");
+			assert.ok(
+				diagnostics.length > 0,
+				"the extension model reports duplicates",
+			);
+			assert.ok(
+				diagnostics.every((diagnostic) => diagnostic.ref === operation.ref),
+				"duplicate diagnostics belong to Charge",
+			);
+			const problems = vscode.languages.getDiagnostics(uri);
+			const chargeLine = sourceText
+				.split("\n")
+				.findIndex((line) => line.includes(`"${operation.id}": {`));
+			assert.ok(
+				problems.some(
+					(diagnostic) =>
+						diagnostic.source === "ods" &&
+						String(diagnostic.code) === "rejects-duplicate" &&
+						diagnostic.range.start.line === chargeLine,
+				),
+				"the extension publishes rejects-duplicate on Charge in the Problems collection",
+			);
+
+			const loadedFile = loaded as OdsTestApi["project"]["workspaces"][number];
+			const overview = await read(
+				"#/boundedcontexts/payments/aggregates/ledger",
+				"Ledger",
+				["#behaviour .subsection .rejection"],
+				(p) => (p["#behaviour .subsection .rejection"]?.length ?? 0) === 2,
+				loadedFile,
+			);
+			assert.deepEqual(
+				trimmed(overview["#behaviour .subsection .rejection"]),
+				["Declined", "many Declined"],
+				"the operation overview retains both refusal declarations and the many marker",
+			);
+
+			const detail = await read(
+				operation.ref,
+				"Charge",
+				[
+					".page-header .rejection",
+					"#rejects .subsection h3",
+					"#rejects .reasons .keyword",
+				],
+				(p) =>
+					(p[".page-header .rejection"]?.length ?? 0) === 2 &&
+					(p["#rejects .subsection h3"]?.length ?? 0) === 2,
+				loadedFile,
+			);
+			assert.equal(detail["#rejects .reasons .keyword"].length, 4);
+			assert.deepEqual(trimmed(detail["#rejects .reasons .keyword"]), [
+				"late",
+				"late",
+				"late",
+				"unknown",
+			]);
+		} finally {
+			await fs.rm(uri.fsPath, { force: true });
+			await api.project.reload();
 		}
 	});
 });

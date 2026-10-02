@@ -41,13 +41,13 @@ const caption = $derived(`${s.name} consumable map`);
 <Section
 	id="integration"
 	title="Integration"
-	lead="Operations this service opens to other contexts, and the consumables it depends on."
+	lead="Consumables this service provides and consumes."
 	count={provides.length + s.consumptions.length}
 	problems={problemsUnder(model, s.ref)}
 >
 	<DiagramFigure
 		{caption}
-		emptyText="Depends on nothing outside itself."
+		emptyText="No consumable flow to draw."
 		graph={consumableGraph(consumableMap)}
 	/>
 	<Heading level={3} count={provides.length}>Provides</Heading>

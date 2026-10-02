@@ -25,11 +25,11 @@ Order for a single pet
 
 
 ## Invariants
-| Name | Description | Constrains |
-| --- | --- | --- |
-| OneAnimalPerOrder | Quantity is exactly 1: a Pet is one animal with one status, so it cannot be sold five times. The API's quantity field is accepted but never exceeds one | Quantity |
-| DeliverOnlyWhenApproved | Deliver only from approved and only once a ship date is set, so nothing is marked delivered that was never checked or never dispatched | OrderStatus, ShipDate |
-| ApproveOnlyWhenAvailable | Move to approved only while PetSummary.status, fetched through the ACL by CheckPetAvailable, says the pet is available; the catalogue's own Pet is outside this aggregate, so what the rule reads is the answer we were given, not the catalogue's model | OrderStatus, ApproveOrder, CheckPetAvailable, PetSummary.status |
+| Name | Description | When | Constrains |
+| --- | --- | --- | --- |
+| OneAnimalPerOrder | Quantity is exactly 1: a Pet is one animal with one status, so it cannot be sold five times. The API's quantity field is accepted but never exceeds one | Holds after every change | Quantity |
+| DeliverOnlyWhenApproved | Deliver only from approved and only once a ship date is set, so nothing is marked delivered that was never checked or never dispatched | Holds after every change | OrderStatus, ShipDate |
+| ApproveOnlyWhenAvailable | Move to approved only while PetSummary.status, fetched through the ACL by CheckAndApproveOrder, says the pet is available; the catalogue's own Pet is outside this aggregate, so what the rule reads is the answer we were given, not the catalogue's model | Checked before | OrderStatus, ApproveOrder, CheckAndApproveOrder, PetSummary.status |
 
 
 ## Provides

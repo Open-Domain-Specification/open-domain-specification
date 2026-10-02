@@ -70,10 +70,12 @@ job is to get the model out of their head without making them learn the vocabula
   Yes → `customer-supplier`.
 - "Do those two teams plan and release together, as one?" → `partnership`.
 - "Do they share actual code or tables that both change?" → `shared-kernel`, declared
-  directly between the two. If more than two contexts share the same library, model the
-  library as a bounded context of its own and give each sharer its own `shared-kernel`
-  relationship with that context — six sharers is six relationships to one kernel, not
-  fifteen among themselves.
+  directly between the two. Ask who changes it, not who uses it: a kernel joins only the
+  teams that change it together. A context that only compiles against it borrows over a
+  directed relationship with the context that declares it — a conformist if it takes each
+  release as it comes, a customer-supplier downstream if it is consulted first. If three or
+  more teams change the same library together, model the library as a bounded context of its
+  own and give each co-owner its own `shared-kernel` relationship with that context.
 - "Are there two parts that you have decided, on purpose, should never integrate?" →
   `separate-ways`.
 - "How does the downstream side take the data: as it comes, or does it copy and reshape it
@@ -99,9 +101,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   value is genuinely the same in a neighbouring context, that is a `shared-kernel`
   relationship, or a conformist one if this context only follows the other's language; either
   is a way one context may name another's value object. If the
-  same value is genuinely the same in several contexts, it is not declared in any of them:
-  it belongs to a kernel context of its own, and each sharer borrows it over its own
-  `shared-kernel` relationship with that context.
+  same value is genuinely the same in several contexts, ask who changes it. The teams that
+  change it together co-own it: two share a kernel directly and declare it in one of them, and
+  three or more give it a kernel context of its own. Every context that only uses it borrows
+  it from the context that declares it, over a directed relationship, and is not a co-owner.
 - "What identifies it: an order number, an email?" → an attribute with `identity: true`.
 - "What details does it carry?" → attributes, with `type` in the user's words.
 - "Are there kinds of this that differ in what they hold?" → ask when an attribute applies
@@ -151,19 +154,23 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   guarantee about the answer is a postcondition, not a precondition: `postcondition: true`,
   naming the operation and the attributes of what it returns or rejects with. Every returned
   itinerary meets the requested deadline, every quoted premium is inside the band. The answer
-  does not exist before the call, so nothing checks it beforehand, and it is saved nowhere,
-  so no aggregate keeps it true. The two flags are exclusive. Only a precondition or a
-  postcondition may name a schema's attributes; a rule that is still true after the call is
+  does not exist before the call, so nothing checks it beforehand. The model makes no claim
+  that an aggregate keeps the answer true afterward, even if underlying facts are stored.
+  The two flags are exclusive. Only a precondition or a postcondition may name a schema's
+  attributes; a rule that is still true after the call is
   about the model, so it names the model.
 - Per rule: "is this true of the value itself, whatever holds it?" → a rule that is about a
   value alone — a checksum, a currency, a range — is that value object's:
-  `valueObject.addInvariant(...)`, constraining its own attributes and nothing else. Nothing
-  guards it, because a value that breaks it is never constructed.
+  `valueObject.addInvariant(...)`, constraining its own and inherited attributes and the
+  attributes of values it composes, transitively, but nothing outside that path. Nothing guards
+  it, because a value that breaks it is never constructed. Do not mark it
+  `precondition` or `postcondition`: those flags describe call timing.
 - Per rule: "is this true of one of these, or of all of them together?" → one of them is the
-  aggregate's invariant, checked every time that one is saved. All of them together — at most
+  aggregate's invariant. Ask whether it holds on every save, is checked before a named operation,
+  or guarantees its answer, and set the timing flag when needed. All of them together — at most
   one open application per customer, one active offer per seller and SKU, a daily total — is
   the context's invariant: `boundedContext.addInvariant(...)`, constraining what it counts in
-  any of the context's aggregates. Then ask "who checks that before acting?" and name that
+  any of the context's aggregates. Then ask "which operation checks it, and when?" and name that
   operation in `constrains` too; nothing keeps a rule across instances as a side effect of
   being saved, so a context invariant without a guard is a rule nobody keeps.
 - "Does a <root> point at things in another cluster, for example an order pointing at a
@@ -243,7 +250,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   `rejects: [{schema, reasons: ["insufficient_funds", "issuer_unavailable"]}]`. Take only what
   the contract enumerates, in its own words. A reason is a named outcome, never a condition on
   data — "the issuer said no money", not "the amount was over the limit" — and if the caller
-  does nothing different for each of them, leave `reasons` off: one shape is one answer.
+  does nothing different for each of them, leave `reasons` off: one shape is one answer. List
+  each rejection schema once and each nonempty reason once; repeating either makes the same
+  answer ref have competing declarations. Empty reasons may repeat as aliases of the shape-level
+  refusal, which is still enumerated once.
 - "When <event> happens, what do you then do automatically?" → a policy with `on` the event
   and `then` the operation. If what it waits for is a reply rather than a fact — "when the
   authorisation comes back declined" — that is an answer, and `on` names it as the call it

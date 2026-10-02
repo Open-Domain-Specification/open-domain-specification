@@ -1,4 +1,5 @@
 import { getDebug } from "./debug";
+import { encodeRefSegment } from "./reference";
 import {
 	type AggregateSchema,
 	type AttributeSchema,
@@ -387,11 +388,22 @@ function checkKeys(
 	if (!raw) return;
 	for (const [field, value] of Object.entries(raw)) {
 		if (!known.includes(field)) {
-			workspace.unknownFields.push({ ref: `${ref}/${field}`, owner, field });
+			workspace.unknownFields.push({
+				ref: `${ref}/${encodeRefSegment(field)}`,
+				owner,
+				field,
+			});
 			continue;
 		}
 		const shape = nested?.[field];
-		if (shape) checkNested(workspace, owner, `${ref}/${field}`, shape, value);
+		if (shape)
+			checkNested(
+				workspace,
+				owner,
+				`${ref}/${encodeRefSegment(field)}`,
+				shape,
+				value,
+			);
 	}
 }
 
@@ -583,7 +595,7 @@ function addProvides(
 		const at = site(
 			consumableSchema.type === "event" ? "Event" : "Operation",
 			consumableSchema.name,
-			`${provider.ref}/provides/${id}`,
+			`${provider.ref}/provides/${encodeRefSegment(id)}`,
 		);
 		const returns = refs.one(at, "returns", A_SCHEMA, returnsRef);
 		const request = refs.one(at, "schema", A_SCHEMA, schemaRef);
@@ -622,7 +634,7 @@ function linkRaises(
 	for (const [id, consumableSchema] of entriesOf(schema.provides)) {
 		if (!consumableSchema.raises?.length) continue;
 		const consumable = workspace.getConsumableByRefOrThrow(
-			`${provider.ref}/provides/${id}`,
+			`${provider.ref}/provides/${encodeRefSegment(id)}`,
 		);
 		consumable.raises(
 			...refs.many(
@@ -726,7 +738,7 @@ function addAttributes(
 		const at = site(
 			"Attribute",
 			`${owner.name}.${attributeSchema.name}`,
-			`#/${owner.path}/attributes/${id}`,
+			`#/${owner.path}/attributes/${encodeRefSegment(id)}`,
 		);
 		checkUnknownFields(
 			refs.workspace,
@@ -942,7 +954,7 @@ function addBoundedContext(
 			checkUnknownFields(
 				workspace,
 				`Deadline "${deadlineSchema.name}"`,
-				`${process.ref}/deadlines/${deadlineId}`,
+				`${process.ref}/deadlines/${encodeRefSegment(deadlineId)}`,
 				"deadline",
 				deadlineSchema,
 			);

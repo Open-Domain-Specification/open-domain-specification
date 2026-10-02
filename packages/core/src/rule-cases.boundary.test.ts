@@ -104,15 +104,9 @@ const boundaryCases: Case[] = [
 			const money = up.addValueObject("Money", { description: "" });
 			money.addAttribute("Amount", { type: "int64" });
 			down.addValueObject("Fee", { description: "", specialises: money });
-			if (!hostile) {
-				// A kernel with nothing in it is reported by shared-kernel-backed,
-				// so the near-miss puts Money in it: Down holds one.
-				up.sharesKernelWith(down);
-				aggregate(down, "Order").root.addAttribute("Total", {
-					type: "Money",
-					valueobject: money,
-				});
-			}
+			// The specialisation is itself the borrowing that backs the kernel
+			// (issue #111), so the near-miss needs nothing else in it.
+			if (!hostile) up.sharesKernelWith(down);
 			return ws;
 		},
 	},

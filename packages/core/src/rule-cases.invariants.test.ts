@@ -139,6 +139,27 @@ const invariantCases: Case[] = [
 		},
 	},
 	{
+		rules: ["invariant-guards-are-operations"],
+		name: "a modelled invariant names an operation, never an event beside it, as its guard",
+		fires: ["invariant-guards-are-operations"],
+		build: (hostile) => {
+			const { ws, order, status } = ledger();
+			const placed = order.agg.provides("Placed", {
+				description: "",
+				type: "event",
+				internal: true,
+			});
+			const place = operation(order.agg, "Place", {
+				internal: true,
+			}).raises(placed);
+			const rule = order.agg
+				.addInvariant("Placed orders have a status", { description: "" })
+				.constrains(status, place);
+			if (hostile) rule.constrains(placed);
+			return ws;
+		},
+	},
+	{
 		rules: ["external-is-boundary"],
 		name: "an external context's published contract reaches the attributes of the shapes its own operation carries, not an attribute of our entity",
 		fires: ["external-is-boundary"],

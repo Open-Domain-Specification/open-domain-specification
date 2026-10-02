@@ -5,13 +5,19 @@ import {
 	constrainableLabel,
 	type DataSchema,
 	Deadline,
+	distinguish,
 	type Invariant,
+	invariantTimingLabel,
 	ODSConsumptionGraph,
 	type Policy,
 	type Process,
 	type ProcessTrigger,
+	type SchemaUser,
 	type Service,
+	usersOfSchema,
+	usersOfValueObject,
 	type ValueObject,
+	type ValueObjectUser,
 } from "@open-domain-specification/core";
 import { attributeListMd } from "./attributes.md";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
@@ -23,7 +29,6 @@ import {
 	pathToFlowMapSvg,
 	pathToIndexMd,
 } from "./lib/paths";
-import { aggregatesHolding } from "./lib/value-objects";
 import type { Options } from "./options";
 import { strategicPositionMd } from "./strategic-position.md";
 import { teamLinkMd } from "./team.md";
@@ -42,19 +47,28 @@ ${aggregate.description}
  * whole of what there is to name. A deadline is named by how long the instance
  * had and, where the process anchors the clock, what it counts from: a limit
  * nobody outside can see is nothing but its length and its start.
+ *
+ * Where two of them would still read the same — a local and a borrowed shape
+ * of one name refusing the same call, two timers of one name and length from
+ * answers that both read "completes" — they are read the way every surface
+ * tells them apart (see `distinguish`; issue #108).
  */
-const triggerList = (triggers: ProcessTrigger[]) =>
-	triggers
-		.map((it) => {
-			if (it instanceof Answer)
-				return it.completion
-					? `${it.operation.name} (completes)`
-					: `${it.name} (answer to ${it.operation.name})`;
-			if (it instanceof Deadline)
-				return `${it.name} (after ${it.after}${it.from ? ` from ${it.from.name}` : ""})`;
-			return it.name;
-		})
-		.join(", ") || "-";
+const triggerList = (triggers: ProcessTrigger[]) => {
+	return (
+		triggers.map(distinguish(triggers, triggerText, (it) => it)).join(", ") ||
+		"-"
+	);
+};
+
+const triggerText = (it: ProcessTrigger) => {
+	if (it instanceof Answer)
+		return it.completion
+			? `${it.operation.name} (completes)`
+			: `${it.name} (answer to ${it.operation.name})`;
+	if (it instanceof Deadline)
+		return `${it.name} (after ${it.after}${it.from ? ` from ${it.from.name}` : ""})`;
+	return it.name;
+};
 
 const policySection = (policy: Policy) => [
 	policy.name,
@@ -74,11 +88,60 @@ const processSection = (process: Process) => [
 	triggerList(process.endEvents),
 ];
 
+/**
+ * Who uses a value object or a schema, anywhere in the workspace, each linked
+ * to its generated page. A user in another context is written `Context /
+ * Name`, the form the Serves list uses, so a reader can tell a borrower from a
+ * local holder; everything but an aggregate says what it is, since an
+ * aggregate is what the column mostly names.
+ */
+const usedByMd = (
+	declaring: BoundedContext,
+	users: (ValueObjectUser | SchemaUser)[],
+) =>
+	users
+		.map((user) => {
+			const { kind, boundedcontext, owner } = user;
+			const label =
+				boundedcontext !== declaring
+					? `${boundedcontext.name} / ${owner.name}`
+					: owner.name;
+			// An aggregate has a page of its own and a consumable is on its
+			// provider's; a nested value object or schema is a section of its
+			// context's page.
+			const href =
+				kind === "consumable"
+					? pathToIndexMd(owner.provider.path, declaring.path)
+					: kind === "aggregate"
+						? pathToIndexMd(owner.path, declaring.path)
+						: `${pathToIndexMd(boundedcontext.path, declaring.path)}#${kind === "schema" ? "schemas" : "value-objects"}`;
+			const kindMark =
+				kind === "consumable" ? owner.type : kind === "aggregate" ? "" : kind;
+			const identityMark =
+				"use" in user && user.use !== "shape" ? user.use : "";
+			const kindOfValueMark = "asKind" in user && user.asKind ? "kind" : "";
+			const throughMark =
+				"through" in user && user.through.length
+					? `through ${user.through
+							.map((via) =>
+								via.boundedcontext === declaring
+									? via.name
+									: `${via.boundedcontext.name} / ${via.name}`,
+							)
+							.join(", ")}`
+					: "";
+			const mark = [kindMark, identityMark, kindOfValueMark, throughMark]
+				.filter(Boolean)
+				.join(", ");
+			return `[${label}](${href})${mark ? ` (${mark})` : ""}`;
+		})
+		.join(", ") || "-";
+
 const schemaSection = (schema: DataSchema) => [
 	schema.name,
 	schema.description ?? "-",
 	attributeListMd(schema.attributes, schema.boundedcontext.path),
-	schema.consumables.map((it) => it.name).join(", ") || "-",
+	usedByMd(schema.boundedcontext, usersOfSchema(schema)),
 ];
 
 const valueObjectSection = (valueObject: ValueObject) => [
@@ -100,16 +163,15 @@ const valueObjectSection = (valueObject: ValueObject) => [
 		valueObject.invariants.values(),
 		(it) => `${it.name}: ${it.description}`,
 	).join("; ") || "-",
-	aggregatesHolding(valueObject)
-		.map((it) => it.name)
-		.join(", ") || "-",
+	usedByMd(valueObject.boundedcontext, usersOfValueObject(valueObject)),
 ];
 
-// The same three columns the aggregate page uses, because a rule reads the
-// same either way; what changes is which boundary keeps it (decision 27).
+// A rule's timing reads the same on context and aggregate pages; what changes
+// is which boundary keeps it (decision 27).
 const invariantSection = (invariant: Invariant) => [
 	invariant.name,
 	invariant.description,
+	invariantTimingLabel(invariant),
 	invariant.targets.map(constrainableLabel).join(", ") || "-",
 ];
 
@@ -174,13 +236,13 @@ ${
 ## Invariants
 ${
 	boundedcontext.invariants.size > 0
-		? `Rules that hold across this context's instances and aggregates; each names the operation that checks it before acting.
+		? `Rules checked or guaranteed by this context's consumables. The Check column distinguishes preconditions, postconditions and checks without a timing flag.
 
 ${markdownTable(
-	["Name", "Description", "Constrains"],
+	["Name", "Description", "Check", "Constrains"],
 	Array.from(boundedcontext.invariants.values()).map(invariantSection),
 )}`
-		: "> No invariants across aggregates."
+		: "> No context invariants declared."
 }
 
 ## Value Objects

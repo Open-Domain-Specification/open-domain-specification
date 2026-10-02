@@ -56,11 +56,12 @@ Each of these costs something, and the cost is named rather than hidden:
   takes, and no further: what the neighbour calls next is the neighbour's chain
   and nothing here has spoken for it, so a process hears the answer to the call
   its context made and not the one behind it (decisions 21 and 23).
-- **A kernel context loses the pairwise fact.** Many contexts sharing a kernel
-  is drawn as a third context they all consume, which gains an honest owner and
-  loses Evans's reading of a kernel as code inside each sharer; two contexts
-  sharing one borrow each other's value objects and schemas directly instead
-  (decision 16).
+- **A kernel context loses the pairwise fact.** Three or more co-owners of a
+  kernel are drawn as a third context they all consume, which gains one
+  declaration and loses Evans's reading of a kernel as code inside each sharer;
+  two co-owners borrow each other's value objects and schemas directly instead,
+  and a context that only uses the kernel borrows over a directed relationship
+  and is not drawn as a co-owner (decision 16).
 - **Union answers and aggregate timers each wait on a named condition.** An
   operation answers with one shape, so an either-or that is not a refusal has no
   form yet; and a deadline belongs to a process, so an aggregate that expires on
@@ -101,13 +102,37 @@ Each of these costs something, and the cost is named rather than hidden:
   events may raise either or both, and the flow map draws every edge the
   same way; which combination happens on a given call is the operation's
   description, not the model (decision 15).
+- **A change to a value's behaviour shows nowhere.** A value object has
+  attributes and invariants, so changing an attribute of `Money` shows on its
+  page and in the Used by column on its declaring context's page,
+  which lists users across contexts; changing how `Money` rounds names no consumer. It reopens when a source
+  states a value's behaviour with a named input, result or refusal, another
+  element's contract depends on it, the model's form loses the change and a
+  domain-service operation was tried (decision 15).
+- **A ring of queued commands is warned about even when neither sender
+  waits.** The model records who called and who receives the answer, not the
+  queue or the timing, so a command carried over a queue still makes the sender
+  depend on the receiver's contract and `relationship-cycle` reads it as a
+  step. A comment on the consumption says how it travels and does not exempt
+  it; the repair is an anti-corruption layer, a partnership or an event when
+  the source says it is a fact. It reopens when delivery changes an answer route or a reaction, or makes a
+  `reaction-cycle` finding false that no repair states truthfully (decision 15).
 - **A consumption's ref moves.** The ref is computed from the pair it joins
-  and only carries a caller's name once a second consumption of the same
-  pair exists, so adding that second consumption changes the first one's ref
-  (decision 26).
-- **A kernel's co-owners are not listed, and a context keeps one team.** The
-  kernel's `team` names whoever keeps it, not the sharers who jointly own it,
-  because the model gives every context exactly one team (decision 16).
+  and only carries the first caller's complete ref once a second consumption
+  of the same pair exists, so adding that second consumption changes the
+  first one's ref (decision 26).
+- **A kernel's co-owners are not listed, and a context keeps one team.** A
+  kernel context's `team` names whoever keeps it, not the sharers who jointly
+  own it, because the model gives every context exactly one team; its co-owners
+  are its `shared-kernel` sharers. A pairwise kernel's shapes are declared in
+  one of the two co-owners, so their page names that context and its team, and
+  the co-ownership reads on the relationship (decision 16).
+- **A kernel context with users loses its exemption.** A context that uses a
+  kernel context's shapes without co-owning them stands downstream of it, so
+  the kernel context's relationships are no longer all shared-kernel and
+  `context-serves-subdomain` asks it for a subdomain. Reopens when a model's
+  source names three or more co-owners of one shared part and a context that
+  only uses it (decision 16).
 - **A lifecycle has no transition table, and a deadline is never a fixed
   date.** A status's values, and the operations that move them, are the
   author's prose on an invariant, and a deadline is always an interval
@@ -242,7 +267,7 @@ which operations change it, and the rest of the diagram a reader might
 expect is prose on those invariants.
 
 Naming an operation says which operation keeps the rule, and nothing more. A
-rule checked before that operation runs and not kept true afterwards — enough
+rule checked before that operation runs without claiming it remains true afterward — enough
 funds at initiation, an entitlement at playback start — says so with
 `precondition: true`, and must name the operation it guards
 (`precondition-names-operation`). A guarantee about what the call answers with
@@ -253,34 +278,70 @@ the moment before the call and the other about what comes back. Without either
 flag the rule is still true after the operation it names: `PostEntry` must
 produce balanced postings, and the postings stay balanced.
 
+An event is never a guard of a modelled aggregate or context invariant, even
+beside an operation (`invariant-guards-are-operations`). A precondition may
+instead constrain the reachable attributes of an event payload its issuing
+reactor already heard. A process holds a starting event's payload, but its
+`on` or `ends` triggers and a starting operation's later answer are not
+guaranteed before a command it issues. A policy's immediate `on` event or
+returned or rejected answer is a completed occurrence before the command
+that reaction issues, even if the same event or operation is named on a later
+chain. The current guarded invocation's future answer or raised event alone
+supplies no fact. An external
+context's own published-event guarantee is a separate `postcondition` case below.
+
 Both may reach the payload the call carries. A precondition may constrain the
 attributes of the schema its guarded operation takes, and those of what a call
-that guard — or the front that calls it in the same context — already made
-comes back with: "approve only if the customer is in good standing" reads a
+that guard — or a front on its local call chain in the same context — already
+made comes back with: "approve only if the customer is in good standing" reads a
 standing another context answered with before this call began, and the shape it
-came back in is a fact this context holds. It may not name this call's own
-answer, which does not exist when the check runs, nor the other context's
+came back in is a fact this context holds. An earlier completed occurrence
+can supply a fact even when its event or operation has the same identity as
+one on the current chain; the current invocation's future answer cannot.
+A fact must be held on every finite admitted entry-to-guard caller or
+reactor walk. Sequential local fronts and recursive callers keep facts from
+informed real entries; an uninformed alternate entry removes them, and a
+closed internal caller cycle with no entry supplies none. A local consumption
+whose caller cannot be identified adds an independent entry with no held facts,
+even beside known callers or reactors. Omitting `by` infers a sole operation;
+zero or several possible callers infer none, and no causal edge is invented.
+Fact reach does not establish reaction bootstrap or settle a reaction cycle.
+Nor may it name the other context's
 entities, which are never in reach. A postcondition constrains what its
 operation returns or rejects with, and the request it relates them to. Either
 follows composition: a rule about the amount of an order line is a rule about
-the request that holds the lines. No other invariant may name a schema's
+the request that holds the lines. Where a postcondition names several operations,
+it guarantees its target shape at each operation, through composition; their
+shapes are not combined into a union. No other invariant may name a schema's
 attribute at all — a rule kept true on every save is a rule about the model,
 and a transport shape is not the model.
+
+An external context may state a published contract as a flagged context
+invariant on its own operation, or as a `postcondition` on its own event's
+payload. If a postcondition names several operations or events, it must reach
+a relevant attribute in **each** named operation's published request, answer or
+refusal and **each** named event's payload, including nested shapes. Their fields cannot be pooled to
+make one guarantee. An event has no request, so a precondition cannot name it.
+An external precondition reaches the operation's published request, not an
+answer fetched by a call inside the external system.
 
 An invariant may instead belong to a value object. A rule that is about a
 value alone — an IBAN's mod-97 checksum, a Money's single currency — holds by
 construction: a value that breaks it is never made, so no save keeps it and no
-operation guards it. It constrains that value object's own attributes and
-nothing else (`invariant-in-value-object`); a rule that reaches for the entity
+operation guards it. It has neither `precondition` nor `postcondition`, which
+describe a call's timing. It constrains that value object's own and inherited
+attributes and the attributes of values it composes, transitively, but nothing
+outside that path (`invariant-in-value-object`); a rule that reaches for the entity
 holding the value is that aggregate's.
 
 An invariant may instead belong to the bounded context rather than to one
 aggregate: one open application per customer, one active offer per seller
-and SKU, a daily transfer limit are true across instances, or across
-aggregates, of a context — no single instance can see the others, so the
-rule holds only because something checks it before acting. A context
-invariant constrains entities and attributes of any aggregate in the
-context and must name at least one operation of the context that checks it
+and SKU, a daily transfer limit concern several instances or aggregates.
+No single instance can see the others, so the rule names the operation that
+checks it. A context invariant may also state a precondition or postcondition
+on an operation whose contract no aggregate holds. It constrains entities and
+attributes of any aggregate in the context. In a context we own, an unflagged
+rule must name at least one operation of the context that checks it
 (`context-invariant-is-checked`); nothing it constrains may reach outside the
 context (`invariant-in-context`). It is always a check, and the model records
 who checks it, not how strongly the store holds it: whether a unique index or
@@ -297,6 +358,11 @@ wallet's balance and an escrow account's balance in a different context can
 never be compared inside one save, so keeping them equal is a policy of one
 context that reacts to the other's postings and issues its own reconciling
 operation, not an invariant reaching across the boundary.
+
+An external context may also mark a rule on one of its own events as a
+`postcondition`. That is a guarantee about the payload it sends, not a check
+after an operation: a payment provider can state what every notification
+carries even when it publishes no operation that raises one.
 
 ## Schemas
 
@@ -339,8 +405,14 @@ An operation may also list the schemas it `rejects` with: the shapes it
 answers with when it refuses. A declined payment, a transfer over the daily
 limit, a reservation the stock will not cover — nothing happened, so none of
 these is an event, and a transport error stays outside the model. Each
-rejection is a schema of the provider's own context, checked by
-`schema-context` exactly as `schema` and `returns` are. Leave `rejects` off
+rejection's shape is checked by `schema-context` exactly as `schema` and
+`returns` are: the provider's own context's, or one that context borrows over a
+shared kernel, as a conformist or as a customer, or the caller's shape on an
+operation that caller reaches through an anti-corruption layer. A process waits
+on one by its origin,
+`<operation ref>/rejects/<encoded context>/<encoded schema>`, the shape named
+by its context because an id is unique only inside its own. Every id in the
+operation ref is one encoded segment too. Leave `rejects` off
 when the operation always succeeds or refuses without a shape worth naming,
 which is honest for most commands; an event never lists one, because a fact
 that already happened has nothing left to refuse.
@@ -353,7 +425,14 @@ several shapes when it has one. Each reason is an answer a policy or a process
 may wait on by itself — `operation.rejected(schema, reason)` — beside the
 shape-level `operation.rejected(schema)`, which hears them all. A reason is a
 named outcome, never a condition on data: how the caller decides what to do
-about it stays in the code.
+about it stays in the code. An operation names each rejection schema once and
+each nonempty reason once within that entry; repeating either gives one answer
+ref competing declarations. `rejects-duplicate` reports the repeated entry
+or nonempty reason while preserving the authored arrays for correction. Empty
+reasons may repeat as aliases of the shape-level refusal, which is enumerated
+once. Schemas from distinct
+contexts remain distinct even when their local ids match (decision 25,
+amended). This representation rule is not a law of Domain-Driven Design.
 
 A consumable is published by default and carries the upstream `pattern` it
 is offered under. Mark it `internal: true` when it is raised or handled
@@ -399,6 +478,8 @@ the flow map stop there and an answer to the call reaches nobody.
 
 A **policy** lives on a bounded context and says "on these events, then
 these operations" (`policy.on(...events).issues(...operations)`). The
+`on` entry is the immediate trigger on that reaction route; a later event or
+answer may wake the policy on another route. The
 operations it issues are always this context's own; reaching into another
 context to run an operation there is that context acting through someone
 else's model instead of through the boundary it published, and

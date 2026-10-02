@@ -27,7 +27,7 @@ describe("Lockup", () => {
 		) as HTMLElement;
 		expect(icon.style.color).toContain("symbolIcon-classForeground");
 		expect(screen.getByRole("link", { name: "Catalog BC" })).toHaveAttribute(
-			"href",
+			"data-ref",
 			"#/boundedcontexts/catalog_bc",
 		);
 		expect(container.querySelector(".id")).toBeNull();

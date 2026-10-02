@@ -21,7 +21,7 @@ describe("ContextLockup", () => {
 		// of ours, so every render here passes them under `props`.
 		const { container } = render(ContextLockup, { props: { context: clean } });
 		expect(screen.getByRole("link", { name: clean.name })).toHaveAttribute(
-			"href",
+			"data-ref",
 			clean.ref,
 		);
 		expect(

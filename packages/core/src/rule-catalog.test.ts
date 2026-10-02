@@ -79,6 +79,15 @@ function everythingWrong(): Workspace {
 		description: "",
 		rejects: [b.addSchema("Refusal")],
 	});
+	const refusal = b.addSchema("Duplicated Refusal");
+	other.provides("Duplicate Refusal", {
+		type: "operation",
+		description: "",
+		rejects: [
+			{ schema: refusal, reasons: ["duplicate", "duplicate"] },
+			{ schema: refusal },
+		],
+	});
 	// consumable-kind: event raises, policy on operation / then event
 	plain.raises(carries);
 	a.addPolicy("Backwards", { description: "" }).on(carries).issues(plain);
@@ -173,7 +182,10 @@ function everythingWrong(): Workspace {
 	// invariant-in-context: a context's rule counting another context's entity,
 	// and context-invariant-is-checked: no operation of A checks it and it sets
 	// no flag to say which side of a call the check falls on
-	a.addInvariant("Counts Elsewhere", { description: "" }).constrains(otherRoot);
+	a.addInvariant("Counts Elsewhere", { description: "" }).constrains(
+		otherRoot,
+		plain,
+	);
 	// A context's rule may be a check before the call or of what comes back;
 	// these two set the flag and name no operation, which the two
 	// names-operation rules below report.

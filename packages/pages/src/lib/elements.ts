@@ -1,14 +1,16 @@
-import {
-	type Aggregate,
-	type Attribute,
-	type Consumable,
+import type {
+	Aggregate,
+	Consumable,
 	Entity,
-	type GlossaryTerm,
-	type Policy,
-	type Process,
-	type ValueObject,
-	type Workspace,
+	EntityRelation,
+	GlossaryTerm,
+	Invariant,
+	Policy,
+	Process,
+	ValueObject,
+	Workspace,
 } from "@open-domain-specification/core";
+import { Attribute } from "@open-domain-specification/core";
 
 /**
  * The workspace lookups every layer asks for — which terms name an element,
@@ -54,24 +56,56 @@ export function* consumablesOf(ws: Workspace): Iterable<Consumable> {
 	}
 }
 
-export function* termsOf(ws: Workspace): Iterable<GlossaryTerm> {
-	for (const bc of ws.boundedcontexts.values()) yield* bc.glossary.values();
+/** Direct incoming relations, including those a kind inherits from a parent. */
+export type NamedRelation = {
+	source: Entity | ValueObject;
+	relation: EntityRelation;
+};
+
+export function relationsNaming(
+	ws: Workspace,
+	target: Entity | ValueObject,
+): NamedRelation[] {
+	const incoming: NamedRelation[] = [];
+	for (const bc of ws.boundedcontexts.values()) {
+		for (const aggregate of bc.aggregates.values()) {
+			for (const source of aggregate.entities.values()) {
+				for (const relation of source.allRelations)
+					if (relation.target === target) incoming.push({ source, relation });
+			}
+		}
+		for (const source of bc.valueobjects.values()) {
+			for (const relation of source.allRelations)
+				if (relation.target === target) incoming.push({ source, relation });
+		}
+	}
+	return incoming;
 }
 
-/**
- * The value objects an aggregate holds: the ones typing its entities'
- * attributes or targeted by their relations. A value object belongs to the
- * context (decision 16), so this is what the aggregate uses of it.
- */
-export function valueObjectsOf(aggregate: Aggregate): ValueObject[] {
-	const used = new Set<ValueObject>();
-	for (const e of aggregate.entities.values()) {
-		for (const a of e.attributes.values())
-			if (a.valueobject) used.add(a.valueobject);
-		for (const r of e.relations)
-			if (!(r.target instanceof Entity)) used.add(r.target);
+/** Aggregate and context rules naming an element or one of its attributes. */
+export function invariantsNaming(
+	ws: Workspace,
+	target: Entity | ValueObject,
+): Invariant[] {
+	const named: Invariant[] = [];
+	const attributes = new Set(target.allAttributes);
+	const namesTarget = (invariant: Invariant) =>
+		invariant.targets.some(
+			(it) => it === target || (it instanceof Attribute && attributes.has(it)),
+		);
+	for (const bc of ws.boundedcontexts.values()) {
+		for (const invariant of bc.invariants.values())
+			if (namesTarget(invariant)) named.push(invariant);
+		for (const aggregate of bc.aggregates.values()) {
+			for (const invariant of aggregate.invariants.values())
+				if (namesTarget(invariant)) named.push(invariant);
+		}
 	}
-	return [...used].sort((a, b) => a.name.localeCompare(b.name));
+	return named;
+}
+
+export function* termsOf(ws: Workspace): Iterable<GlossaryTerm> {
+	for (const bc of ws.boundedcontexts.values()) yield* bc.glossary.values();
 }
 
 /** Attributes anywhere in the workspace whose type is this value object. */

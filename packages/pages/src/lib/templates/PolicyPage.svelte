@@ -9,6 +9,7 @@ export const sections = [
 <script lang="ts">
 import {
 	Answer,
+	distinguish,
 	ODSFlowMap,
 	type Policy,
 	type ReactionTrigger,
@@ -61,6 +62,17 @@ const linkOf = (trigger: ReactionTrigger) =>
 
 
 /**
+ * How a row reads across its name, provider and context; two rows of one
+ * table that would read the same are named the way every surface tells them
+ * apart (see `distinguish`; issue #108).
+ */
+const rowReading = (trigger: ReactionTrigger) =>
+	[trigger.name, sourceOf(trigger).name, trigger.boundedcontext.name].join(" · ");
+
+const namesOf = (rows: ReactionTrigger[]) =>
+	distinguish(rows, rowReading, (it) => it);
+
+/**
  * Both tables name the kind: what a policy issues is an operation or an event,
  * and what triggers it is an event or an answer (decision 23).
  */
@@ -74,10 +86,12 @@ const columnsFor = (label: string): Column[] => [
 </script>
 
 {#snippet consumables(rows: ReactionTrigger[], label: string, empty: string)}
+	{@const names = namesOf(rows)}
 	<DataTable columns={columnsFor(label)} {rows} {empty} rowId={(c) => c.ref}>
 		{#snippet cell(c, col)}
 			{#if col.key === "name"}
-				<Lockup kind={kindOf(c)} name={c.name} ref={linkOf(c)} />
+				{@const told = names(c) !== rowReading(c)}
+				<Lockup kind={kindOf(c)} name={told ? names(c) : c.name} ref={linkOf(c)} />
 			{:else if col.key === "kind"}
 				{#if c instanceof Answer}<Keyword text={answerKeyword(c)} />{:else}<ConsumableKeywords consumable={c} />{/if}
 			{:else if col.key === "provider"}

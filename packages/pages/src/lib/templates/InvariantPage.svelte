@@ -1,6 +1,7 @@
 <script module lang="ts">
 import {
 	BoundedContext as InvariantContext,
+	invariantTimingLabel,
 	type Invariant as Rule,
 } from "@open-domain-specification/core";
 
@@ -9,15 +10,18 @@ import {
  * section says "Checked" where an aggregate's and a value's say "Guarded by".
  * A check is made on one side of the call or the other, and the heading says
  * which: "Checked before" for a precondition, "Checked after" for a
- * postcondition, and plain "Checked by" where the rule sets neither flag
- * (decision 27, third amendment). The side nav shows the same heading the page
- * does, so both read it from here.
+ * postcondition, plain "Checked by" where the rule sets neither flag, and
+ * "Guaranteed on event" for an external event's payload (decisions 27–28).
+ * The side nav shows the same heading the page does, so both read it here.
  */
+const eventOnlyPostcondition = (i: Rule) =>
+	i.postcondition &&
+	i.guarded.length > 0 &&
+	i.guarded.every((it) => it.type === "event");
+
 export const guardsLabel = (i: Rule) => {
 	if (!(i.owner instanceof InvariantContext)) return "Guarded by";
-	if (i.precondition) return "Checked before";
-	if (i.postcondition) return "Checked after";
-	return "Checked by";
+	return invariantTimingLabel(i);
 };
 
 export const sectionsFor = (i: Rule) => [
@@ -49,22 +53,24 @@ import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
 import Section from "../organisms/Section.svelte";
 
-/** One rule that must hold after every change, and the elements it is about. */
+/** One rule and the elements it is about. Its owner and flags say when it holds. */
 const { invariant: i }: { invariant: Invariant } = $props();
 const model = useModel();
 // A rule belongs to a value object, where it holds by construction, to one
-// aggregate, where it holds on every save, or to the whole context, where it
-// holds across instances and something checks it before acting (decision 27).
+// aggregate, where its flags distinguish call timing from an unflagged save
+// rule, or to the whole context, where it is checked across instances or of
+// an answer (decision 27).
 // The header says which, because the three promise different things.
 const owner = $derived(i.owner);
 const inAggregate = $derived(owner instanceof Aggregate);
 const inContext = $derived(owner instanceof BoundedContext);
+const isExternal = $derived(owner instanceof BoundedContext && owner.external);
 const KIND = {
 	value: {
 		label: "value invariant",
 		title:
 			"Holds by construction of the value: one that breaks it is never made.",
-		lead: "The attributes of this value the rule is about. A value knows nothing outside itself, so the list goes no further.",
+		lead: "The attributes of this value the rule is about, including inherited attributes and those of values it composes. It reaches nothing outside that path.",
 		guards:
 			"Nothing guards a value's rule. It is kept by refusing to construct a value that breaks it, which is why no operation appears here.",
 		empty:
@@ -73,7 +79,7 @@ const KIND = {
 	aggregate: {
 		label: "aggregate invariant",
 		title: "Holds inside the aggregate's boundary, every time it is saved.",
-		lead: "The elements this rule is about, all inside the aggregate that is saved as one.",
+		lead: "The held model elements this rule is about, plus any named operation of this context that keeps it.",
 		guards:
 			"The operations this rule is about. Naming one says which operation keeps the rule, not that the rule stops holding after it: balanced postings are still balanced once the posting is made.",
 		empty:
@@ -86,10 +92,10 @@ const KIND = {
 	precondition: {
 		label: "precondition",
 		title:
-			"Checked before the operations it names run, and not true again after them.",
-		lead: "The elements this rule is about, all inside the boundary that states it.",
+			"Checked before the operations it names run; the model does not promise it remains true afterward.",
+		lead: "The elements this rule is about: model elements of the aggregate, the guarded request, and facts every named guard and caller route holds — an earlier answer, a process start-event payload, or a policy's immediate event or answer trigger. A process's `on` trigger or a starting operation's later answer is not assumed before its command.",
 		guards:
-			"The operations this rule is checked before. What it was checked against — a balance, an entitlement, another context's answer — may move on the moment the call returns, so nothing re-establishes it afterwards.",
+			"The operations this rule is checked before. What it was checked against — a balance, an entitlement, another context's answer — may move when the call returns, so the model makes no later guarantee.",
 		empty:
 			"No operation names this rule, so nothing checks it: a precondition is checked before something runs, and the model has to say what.",
 	},
@@ -100,9 +106,9 @@ const KIND = {
 		label: "postcondition",
 		title:
 			"Guaranteed of what the operations it names answer with, every time they answer.",
-		lead: "The elements this rule is about, which are the fields of what the guarded call answers or refuses with.",
+		lead: "The elements this rule is about. A guarantee may relate each guarded call's request to its answer or refusal and to model elements of this boundary. Where it names several operations, each guarantees the target shape through composition; their shapes are not combined into a union.",
 		guards:
-			"The operations this rule is a guarantee about. The answer does not exist before the call runs and is saved nowhere after it, so nothing but the operation itself keeps this true.",
+			"The operations this rule is a guarantee about. It describes what each call answers with, without claiming an aggregate keeps that answer true afterward.",
 		empty:
 			"No operation names this rule, so there is no answer for it to be about: a postcondition is a guarantee about what a call comes back with, and the model has to say which call.",
 	},
@@ -125,9 +131,9 @@ const KIND = {
 		label: "context invariant",
 		title:
 			"Checked before the operations it names run, across the instances and aggregates of the context. Never a promise about afterwards.",
-		lead: "The elements this rule is about: anything in the context, and the fields of what the guarded call carries.",
+		lead: "The elements this rule is about: model elements of the context, the guarded request, and facts every named guard and caller route holds — an earlier answer, a process start-event payload, or a policy's immediate event or answer trigger. A process's `on` trigger or a starting operation's later answer is not assumed before its command.",
 		guards:
-			"The operations this rule is checked before. What it was checked against may move on the moment the call returns, and a check across instances can race, so nothing re-establishes it afterwards.",
+			"The operations this rule is checked before. What it was checked against may move when the call returns, and a check across instances can race, so the model makes no later guarantee.",
 		empty:
 			"No operation names this rule, so nothing checks it: a precondition is checked before something runs, and the model has to say what.",
 	},
@@ -135,33 +141,64 @@ const KIND = {
 		label: "context invariant",
 		title:
 			"Checked of what the operations it names answer with, against the instances and aggregates of the context. Never a promise about afterwards.",
-		lead: "The elements this rule is about: anything in the context, and the fields of what the guarded call carries, request and answer alike.",
+		lead: "The elements this rule is about: anything in the context, and the fields of what each guarded call carries, request and answer alike. Where it names several operations, each guarantees the target shape through composition; their shapes are not combined into a union.",
 		guards:
-			"The operations this rule is checked of. The answer does not exist before the call runs and is saved nowhere after it, so nothing but the operation itself makes this check.",
+			"The operations this rule is checked of. It describes what each call answers with, without claiming that answer remains true afterward.",
 		empty:
 			"No operation names this rule, so there is no answer for it to be about: a postcondition is checked of what a call comes back with, and the model has to say which call.",
 	},
+	contextEvent: {
+		label: "published postcondition",
+		title: "Guaranteed of every named event's payload whenever this external context sends it.",
+		lead: "The fields of every named event payload, including composed shapes, and this external context's own value objects. An event without the target field cannot share this guarantee.",
+		guards: "Every event named here carries this guarantee in its own published payload.",
+		empty: "No event names this guarantee.",
+	},
+	contextMixed: {
+		label: "published postcondition",
+		title: "Guaranteed separately by every named operation and event.",
+		lead: "The fields every named operation carries in its own published request, answer or refusal, and every named event carries in its payload, including composed shapes. Fields from different contracts cannot be pooled.",
+		guards: "Each named operation or event publishes this guarantee in its own contract.",
+		empty: "No consumable names this guarantee.",
+	},
+	externalBefore: {
+		label: "published precondition",
+		title: "The published requirement checked before each named operation runs.",
+		lead: "The fields of every named operation's published request, including composed shapes, and this external context's own value objects. Its internal calls cannot supply a fact here.",
+		guards: "The operations whose published request requires this before each call. An event has no request and cannot name a precondition.",
+		empty: "Name the external operation whose request this precondition is about.",
+	},
+	externalAfter: {
+		label: "published postcondition",
+		title: "Guaranteed separately by every named operation.",
+		lead: "The fields of every named operation's published request, answer or refusal, including composed shapes, and this external context's own value objects. Fields from separate contracts cannot be pooled.",
+		guards: "Every named operation publishes this guarantee in its own contract.",
+		empty: "Name the external operation whose published contract carries this guarantee.",
+	},
 } as const;
-// The elements the rule holds true of, and the operations that have to uphold
-// it, are two different readings of the same list, so the page splits them by
-// what each target is: a consumable is an operation the rule guards, anything
-// else is something the rule is about.
+// The elements the rule holds true of and the consumables responsible for it
+// are two readings of the same list. The page separates them by target kind.
 const guarded = $derived(i.guarded);
 // Which of the three an invariant is, the invariant states: naming an
 // operation says who keeps the rule, and `precondition` and `postcondition`
-// say whether it is checked before one, guaranteed of what it answers with, or
-// still true after it. The two flags are exclusive
-// (`postcondition-names-operation`), so the order here decides nothing a valid
-// model can see. A context's rule is a check whatever it sets, and the flags
-// say which side of the call the check is made on: the page reads it as
-// checked before or checked after, and never as a promise about at rest
-// (decision 27, third amendment).
+// say whether it is checked before one, guaranteed of its answer or an
+// external event's payload, or still true after it. The two flags are
+// exclusive (`postcondition-names-operation` for modelled contexts). A
+// context's rule never promises to hold at rest (decisions 27–28).
 const words = $derived(
 	inContext
 		? i.precondition
-			? KIND.contextBefore
+			? isExternal
+				? KIND.externalBefore
+				: KIND.contextBefore
 			: i.postcondition
-				? KIND.contextAfter
+				? eventOnlyPostcondition(i)
+					? KIND.contextEvent
+					: i.guarded.some((it) => it.type === "event")
+						? KIND.contextMixed
+						: isExternal
+							? KIND.externalAfter
+							: KIND.contextAfter
 				: KIND.context
 		: KIND[
 				i.precondition
@@ -236,7 +273,16 @@ const columns: Column[] = [
 	lead={words.guards}
 	count={guarded.length}
 >
-	<RefList items={guarded} kind="command" block empty={words.empty} />
+	<RefList
+		items={guarded}
+		kind={inContext && eventOnlyPostcondition(i)
+			? "event"
+			: inContext && i.postcondition && guarded.some((it) => it.type === "event")
+				? undefined
+				: "command"}
+		block
+		empty={words.empty}
+	/>
 </Section>
 
 <LanguageSection target={i} />

@@ -1,4 +1,7 @@
-import type { BoundedContext } from "@open-domain-specification/core";
+import {
+	type BoundedContext,
+	Workspace,
+} from "@open-domain-specification/core";
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import Harness from "../evidence/WithModel.harness.svelte";
@@ -68,6 +71,132 @@ describe("ContextPage", () => {
 			0,
 		);
 		expect(container.querySelector(".card, .grid")).toBeNull();
+	});
+
+	it("names a foreign kind when an aggregate holds a parent's value through it", () => {
+		const workspace = new Workspace("Family", {
+			description: "",
+			version: "test",
+		});
+		const kernel = workspace.addBoundedContext("Kernel", { description: "" });
+		const cards = workspace.addBoundedContext("Cards", { description: "" });
+		kernel.upstreamOf(cards, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		const money = kernel.addValueObject("Money", { description: "" });
+		const fee = cards.addValueObject("Fee", {
+			description: "",
+			specialises: money,
+		});
+		const card = cards.addAggregate("Card", { description: "" });
+		card
+			.addEntity("Card", { description: "", root: true })
+			.addAttribute("fee", { type: "Fee", valueobject: fee });
+		kernel
+			.addAggregate("Account", { description: "" })
+			.addEntity("Account", { description: "", root: true })
+			.addAttribute("balance", { type: "Money", valueobject: money });
+		const model = { workspace, fileLabel: "family.json", diagnostics: [] };
+		const { container } = page(model, kernel);
+		const values = container.querySelector("#values") as HTMLElement;
+		expect(values).toHaveTextContent("Cards / Card");
+		expect(values).toHaveTextContent("Cards / Fee");
+		expect(values).toHaveTextContent("through Cards / Fee");
+		expect(values).not.toHaveTextContent("nothing");
+		const cardsPage = page(model, cards);
+		const feeRow = cardsPage.container.querySelector(
+			`[id="${fee.ref}"]`,
+		) as HTMLElement;
+		expect(feeRow).toHaveTextContent("Card");
+		expect(feeRow).not.toHaveTextContent("Kernel / Account");
+	});
+
+	it("does not deny borrowed values and payloads when it declares neither locally", () => {
+		const workspace = new Workspace("Borrowing", {
+			description: "",
+			version: "test",
+		});
+		const subdomain = workspace
+			.addDomain("Bank", { description: "" })
+			.addSubdomain("Banking", { description: "", type: "core" });
+		const ledger = subdomain.addBoundedcontext("Ledger", {
+			description: "",
+		});
+		const cards = subdomain.addBoundedcontext("Cards", {
+			description: "",
+		});
+		ledger.sharesKernelWith(cards);
+		const money = ledger.addValueObject("Money", { description: "" });
+		money.addAttribute("amount", { type: "int" });
+		const request = ledger.addSchema("CardRequest");
+		request.addAttribute("amount", { type: "Money", valueobject: money });
+		const card = cards.addAggregate("Card", { description: "" });
+		const root = card.addRootEntity("Card", { description: "" });
+		root.addAttribute("id", { type: "string", identity: true });
+		root.addAttribute("balance", { type: "Money", valueobject: money });
+		card.provides("Adjust", {
+			type: "operation",
+			description: "",
+			internal: true,
+			schema: request,
+		});
+
+		for (const ws of [workspace, Workspace.fromSchema(workspace.toSchema())]) {
+			expect(ws.validate()).toEqual([]);
+			const context = ws.getBoundedContextByRefOrThrow(cards.ref);
+			const model = {
+				workspace: ws,
+				fileLabel: "borrowing.json",
+				diagnostics: [],
+			};
+			const { container } = page(model, context);
+			expect(container.querySelector("#values")).toHaveTextContent(
+				"No value objects declared in this context.",
+			);
+			expect(container.querySelector("#schemas")).toHaveTextContent(
+				"No schemas declared in this context.",
+			);
+			expect(container).not.toHaveTextContent(
+				"Every attribute here is a bare type.",
+			);
+			expect(container).not.toHaveTextContent(
+				"Consumables carry no declared payload.",
+			);
+		}
+	});
+
+	it("lists a value-object kind that inherits an identity naming an external schema", () => {
+		const workspace = new Workspace("Identity", {
+			description: "",
+			version: "test",
+		});
+		const local = workspace.addBoundedContext("Local", { description: "" });
+		const provider = workspace.addBoundedContext("Provider", {
+			description: "",
+			external: true,
+		});
+		const payment = provider.addSchema("ProviderPayment");
+		const parent = local.addValueObject("PaymentReference", {
+			description: "",
+		});
+		parent.addAttribute("providerPaymentId", {
+			type: "string",
+			identifies: payment,
+		});
+		local.addValueObject("CardPaymentReference", {
+			description: "",
+			specialises: parent,
+		});
+		const model = { workspace, fileLabel: "identity.json", diagnostics: [] };
+		const { container } = page(model, provider);
+		const heading = container.querySelector(
+			`[id="${payment.ref}"]`,
+		) as HTMLElement;
+		expect(heading).toHaveTextContent("Local / PaymentReference");
+		expect(heading).toHaveTextContent("Local / CardPaymentReference");
+		expect(heading.querySelectorAll(".keyword")).toHaveLength(4);
+		expect(heading).not.toHaveTextContent("unused");
 	});
 
 	it("lists the integration surface, the policies and the language as tables", () => {
@@ -155,11 +284,11 @@ describe("ContextPage", () => {
 		expect(words.filter((w) => w.classList.contains("warn"))).toHaveLength(2);
 	});
 
-	it("makes each schema a subsection with its attribute table, naming what carries it", () => {
+	it("makes each schema a subsection with its attribute table, naming what uses it", () => {
 		const { model, context } = petstoreSales();
 		const { container } = page(model, context);
 		const schemas = container.querySelector("#schemas") as HTMLElement;
-		expect(schemas.querySelector(".carried")).toHaveTextContent("carried by");
+		expect(schemas.querySelector(".carried")).toHaveTextContent("used by");
 		expect(schemas.querySelectorAll("h3").length).toBeGreaterThan(0);
 		expect(schemas.querySelector("table")).toBeInTheDocument();
 	});
@@ -180,9 +309,7 @@ describe("ContextPage", () => {
 		expect(services.querySelector(".count")).toBeNull();
 		expect(screen.getByText("No services.")).toBeInTheDocument();
 		expect(screen.getByText("Provides nothing.")).toBeInTheDocument();
-		expect(
-			screen.getByText("Depends on nothing outside itself."),
-		).toBeInTheDocument();
+		expect(screen.getByText("Consumes no consumables.")).toBeInTheDocument();
 		expect(screen.getByText("No policies.")).toBeInTheDocument();
 		expect(
 			screen.getByText(
@@ -190,7 +317,7 @@ describe("ContextPage", () => {
 			),
 		).toBeInTheDocument();
 		expect(
-			screen.getByText("No schemas. Consumables carry no declared payload."),
+			screen.getByText("No schemas declared in this context."),
 		).toBeInTheDocument();
 		expect(
 			screen.getByText(

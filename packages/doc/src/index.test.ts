@@ -1,5 +1,12 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import {
 	narrativeText,
 	PATTERNS,
@@ -8,6 +15,7 @@ import {
 } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { toDoc } from "./index";
+import { pathToIndexMd } from "./lib/paths";
 
 const petstoreSchema = JSON.parse(
 	readFileSync(
@@ -16,8 +24,248 @@ const petstoreSchema = JSON.parse(
 	),
 );
 const petstore = Workspace.fromSchema(petstoreSchema);
+const northbankSchema = JSON.parse(
+	readFileSync(
+		join(__dirname, "../../../models/northbank/.ods/northbank.json"),
+		"utf8",
+	),
+);
 
 describe("toDoc", () => {
+	it("writes distinct portable paths and links for adversarial identities", async () => {
+		const ws = new Workspace("Docs", { description: "", version: "0" });
+		const slash = ws.addDomain("Slash", { description: "", id: "a/b" });
+		ws.addDomain("Literal escape", { description: "", id: "a~1b" });
+		ws.addDomain("Percent", { description: "", id: "%2F" });
+		ws.addDomain("Keyword", { description: "", id: "returns" });
+		ws.addDomain("Empty", { description: "", id: "" });
+		ws.addDomain("Unicode", { description: "", id: "é" });
+		ws.addDomain("Dot", { description: "", id: "." });
+		ws.addDomain("Backslash", { description: "", id: "a\\b" });
+		ws.addDomain("Case", { description: "", id: "Case" });
+		slash.addSubdomain("Empty child", {
+			description: "",
+			type: "core",
+			id: "",
+		});
+
+		const docs = await toDoc(ws);
+		const slashPath = "domains/_ods_0061007e00310062/index.md";
+		const literalPath = "domains/_ods_0061007e003000310062/index.md";
+		expect(docs).toHaveProperty(slashPath);
+		expect(docs).toHaveProperty(literalPath);
+		expect(slashPath).not.toBe(literalPath);
+		expect(docs[slashPath]).toContain("(subdomains/_ods_/index.md)");
+		expect(docs).toHaveProperty(
+			"domains/_ods_0061007e00310062/subdomains/_ods_/index.md",
+		);
+	});
+
+	it("writes bounded physical components for long identities and links to them", async () => {
+		const ws = new Workspace("Long paths", { description: "", version: "0" });
+		const longTilde = ws.addDomain("Long tilde", {
+			description: "",
+			id: "~".repeat(70),
+		});
+		const literalEscape = ws.addDomain("Literal escape", {
+			description: "",
+			id: "~0".repeat(70),
+		});
+		const prefixSpoof = ws.addDomain("Prefix spoof", {
+			description: "",
+			id: `_ods_long_bc_${"0".repeat(110)}`,
+		});
+		const child = longTilde.addSubdomain("Child", {
+			description: "",
+			type: "core",
+			id: "child",
+		});
+		const longSafe = ws.addDomain("Long safe", {
+			description: "",
+			id: "a".repeat(260),
+		});
+
+		const docs = await toDoc(ws);
+		const tildePath = pathToIndexMd(longTilde.path);
+		const literalPath = pathToIndexMd(literalEscape.path);
+		const spoofPath = pathToIndexMd(prefixSpoof.path);
+		const safePath = pathToIndexMd(longSafe.path);
+		const childPath = pathToIndexMd(child.path);
+		expect(
+			new Set([tildePath, literalPath, spoofPath, safePath, childPath]).size,
+		).toBe(5);
+		expect(spoofPath.split("/")).not.toContain(prefixSpoof.id);
+		for (const path of Object.keys(docs))
+			expect(path.split("/").every((part) => part.length <= 240)).toBe(true);
+
+		const childLink = pathToIndexMd(child.path, longTilde.path);
+		expect(docs[tildePath]).toContain(`(${childLink})`);
+
+		const output = mkdtempSync(join(tmpdir(), "ods-long-path-"));
+		try {
+			for (const [path, contents] of Object.entries(docs)) {
+				const destination = join(output, path);
+				mkdirSync(dirname(destination), { recursive: true });
+				writeFileSync(destination, contents);
+			}
+			expect(
+				readFileSync(join(dirname(join(output, tildePath)), childLink), "utf8"),
+			).toContain("# Child (core)");
+		} finally {
+			rmSync(output, { recursive: true, force: true });
+		}
+	});
+	it("prints NorthBank aggregate rule timing before and after JSON round-trip", async () => {
+		const workspace = Workspace.fromSchema(northbankSchema);
+		for (const model of [
+			workspace,
+			Workspace.fromSchema(workspace.toSchema()),
+		]) {
+			const docs = await toDoc(model);
+			const payment =
+				docs[
+					"boundedcontexts/payments_hub/aggregates/payment_instruction/index.md"
+				];
+			const card = docs["boundedcontexts/cards/aggregates/card/index.md"];
+			expect(payment).toContain("| Name | Description | When | Constrains |");
+			expect(payment).toContain("| FundsAvailableAtInitiation |");
+			expect(payment).toMatch(
+				/\| FundsAvailableAtInitiation \|[^\n]*\| Checked before \|/,
+			);
+			expect(payment).toMatch(
+				/\| PayerNotPayee \|[^\n]*\| Holds after every change \|/,
+			);
+			expect(card).toMatch(
+				/\| AuthWithinAvailableBalance \|[^\n]*\| Checked after \|/,
+			);
+		}
+	});
+
+	// The process table and the flow map Markdown writes beside it tell one
+	// story: Run waits on First's completion and ends on Last's, both through
+	// Front (issue #108, twenty-second review).
+	it("draws in its flow map the ending its process table names", async () => {
+		const ws = new Workspace("Flow", { description: "", version: "0" });
+		const bc = ws
+			.addDomain("Selling", { description: "" })
+			.addSubdomain("Orders", { description: "", type: "core" })
+			.addBoundedcontext("Orders", { description: "" });
+		const op = (name: string) =>
+			bc
+				.addService(`${name} Handler`, {
+					description: "",
+					type: "application",
+				})
+				.provides(name, {
+					description: "",
+					type: "operation",
+					internal: true,
+				});
+		const [first, last, front, begin] = ["First", "Last", "Front", "Begin"].map(
+			op,
+		);
+		front!.provider.consumes(first!);
+		front!.provider.consumes(last!);
+		bc.addProcess("Run", { description: "" })
+			.starts(begin!)
+			.on(first!.completed())
+			.issues(front!)
+			.ends(last!.completed());
+		for (const model of [ws, Workspace.fromSchema(ws.toSchema())]) {
+			expect(model.validate()).toEqual([]);
+			const docs = await toDoc(model);
+			expect(docs["boundedcontexts/orders/index.md"]).toMatch(
+				/\| Run \|[^\n]*\| Begin \| First \(completes\) \| Front \| Last \(completes\) \|/,
+			);
+			const svg = docs["boundedcontexts/orders/flowmap.svg"];
+			expect(svg.match(/>completes</g)).toHaveLength(1);
+			expect(svg.match(/>completes \(ends\)</g)).toHaveLength(1);
+		}
+	});
+
+	// Two refusals sharing a shape id, one local and one kernel-shared, read
+	// back from JSON: the table names both, and the flow map draws both.
+	it("lists and draws both refusals of one id from two contexts", async () => {
+		for (const sameName of [false, true]) {
+			const model = kernelPair(sameName);
+			expect(model.validate()).toEqual([]);
+			const docs = await toDoc(model);
+			const svg = docs["boundedcontexts/local/flowmap.svg"];
+			if (!sameName) {
+				expect(docs["boundedcontexts/local/index.md"]).toContain(
+					"| LocalRefusal (answer to Charge), ForeignRefusal (answer to Charge) |",
+				);
+				expect(svg).toContain(">LocalRefusal<");
+				expect(svg).toContain(">ForeignRefusal<");
+			} else {
+				// The table names each the way the diagram does, not twice
+				// as "Decline (answer to Charge)".
+				expect(docs["boundedcontexts/local/index.md"]).toContain(
+					"| Local / Handler / Charge rejects with Local / Decline, Local / Handler / Charge rejects with Foreign / Decline |",
+				);
+				for (const label of [
+					"Local / Handler / Charge rejects with Foreign / Decline",
+					"Local / Handler / Charge rejects with Local / Decline",
+				])
+					expect(svg).toContain(`>${label}<`);
+			}
+		}
+	});
+
+	// Two timers of one name and length, each counting from an answer that
+	// reads "completes": the table says which call each counts from.
+	it("names same-named timers in a process table by what each counts from", async () => {
+		const ws = kernelPair(false);
+		const local = ws.boundedcontexts.get("local")!;
+		const handler = local.services.get("handler")!;
+		const op = (name: string) =>
+			handler.provides(name, {
+				description: "",
+				type: "operation",
+				internal: true,
+			});
+		const [first, last] = [op("First"), op("Last")];
+		const run = local.processes.get("run")!;
+		run.issues(first!, last!).on(first!.completed(), last!.completed());
+		for (const [id, from] of [
+			["late_first", first!],
+			["late_last", last!],
+		] as const)
+			run.on(
+				run.addDeadline("Late", {
+					id,
+					description: "",
+					after: "1 day",
+					from: from.completed(),
+				}),
+			);
+		const back = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		expect(back.validate()).toEqual([]);
+		const md = (await toDoc(back))["boundedcontexts/local/index.md"];
+		expect(md).toContain(
+			"LocalRefusal (answer to Charge), ForeignRefusal (answer to Charge), First (completes), Last (completes), Late: after 1 day from First completes, Late: after 1 day from Last completes |",
+		);
+	});
+
+	it("writes mutually anchored deadlines without expanding their chains", async () => {
+		const source = mutualDeadlineAnchors();
+		for (const workspace of [
+			source,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(source.toSchema()))),
+		]) {
+			expect(workspace.validate()).toEqual([]);
+			const docs = await toDoc(workspace);
+			expect(docs["boundedcontexts/orders/index.md"]).toContain(
+				"A (after 1 day from B), B (after 1 day from A)",
+			);
+			const svg = docs["boundedcontexts/orders/flowmap.svg"];
+			for (const label of ["after 1 day from A", "after 1 day from B"])
+				expect(svg).toContain(`>${label}<`);
+		}
+	});
+
 	it("should generate documentation for empty workspace", async () => {
 		const workspace = new Workspace("Test Workspace", {
 			description: "A test workspace",
@@ -243,18 +491,20 @@ describe("toDoc", () => {
 		expect(contextDoc).toContain("## Schemas");
 		// The nested schema is linked from the type, so a reader can open it.
 		expect(contextDoc).toContain(
-			"| Order Summary | What an order looks like | **orderId**: `string`, total: `number`, lines: [`OrderLine[]`](./index.md#schemas) | Order Placed, Approve Order |",
+			"| Order Summary | What an order looks like | **orderId**: `string`, total: `number`, lines: [`OrderLine[]`](./index.md#schemas) | [Order Placed](aggregates/order/index.md) (event), [Approve Order](aggregates/order/index.md) (operation) |",
 		);
 		// An invariant that names an operation reads on the aggregate too.
-		expect(aggregateDoc).toContain("| Approved once |  | Approve Order |");
+		expect(aggregateDoc).toContain(
+			"| Approved once |  | Holds after every change | Approve Order |",
+		);
 		// A schema nothing sends and nothing answers with is still used: it is
 		// what Approve Order says no with.
 		expect(contextDoc).toContain(
-			"| Approval Refused | Why an approval was declined | reason: `string` | Approve Order, Import Orders, Validate Orders |",
+			"| Approval Refused | Why an approval was declined | reason: `string` | [Approve Order](aggregates/order/index.md) (operation), [Import Orders](aggregates/order/index.md) (operation), [Validate Orders](aggregates/order/index.md) (operation) |",
 		);
 		// A schema nothing sends is still used: Approve Order answers with it.
 		expect(contextDoc).toContain(
-			"| Order Receipt | What an approval answers with | approvedAt: `string` | Approve Order |",
+			"| Order Receipt | What an approval answers with | approvedAt: `string` | [Approve Order](aggregates/order/index.md) (operation) |",
 		);
 		expect(contextDoc).toContain(
 			"| Auto approve |  | Order Placed | Approve Order |",
@@ -288,12 +538,122 @@ describe("toDoc", () => {
 		const contextDoc = docs["boundedcontexts/lending/index.md"];
 		expect(contextDoc).toContain("## Invariants");
 		expect(contextDoc).toContain(
-			"| One open application per customer | A customer has at most one open application | Application, Submit Application |",
+			"| One open application per customer | A customer has at most one open application | Checked by | Application, Submit Application |",
 		);
 		// The rule belongs to the context, so the aggregate page does not claim it.
 		expect(
 			docs["boundedcontexts/lending/aggregates/application/index.md"],
 		).toContain("> No invariants.");
+	});
+
+	it("distinguishes a context check before a call from a guarantee of its answer", async () => {
+		const workspace = new Workspace("Quotes", {
+			description: "",
+			version: "test",
+		});
+		const context = workspace
+			.addDomain("Sales", { description: "" })
+			.addSubdomain("Quoting", { description: "", type: "core" })
+			.addBoundedcontext("Quotes", { description: "" });
+		const request = context.addSchema("Request", { description: "" });
+		const requestedAmount = request.addAttribute("amount", { type: "number" });
+		const answer = context.addSchema("Answer", { description: "" });
+		const returnedAmount = answer.addAttribute("amount", { type: "number" });
+		const service = context.addService("Quoter", {
+			type: "application",
+			description: "",
+		});
+		const quote = service.provides("Quote", {
+			type: "operation",
+			description: "",
+			internal: true,
+			schema: request,
+			returns: answer,
+		});
+		context
+			.addInvariant("PositiveRequest", {
+				description: "The requested amount is positive.",
+				precondition: true,
+			})
+			.constrains(requestedAmount, quote);
+		context
+			.addInvariant("NonnegativeAnswer", {
+				description: "The returned amount is nonnegative.",
+				postcondition: true,
+			})
+			.constrains(returnedAmount, quote);
+
+		for (const ws of [
+			workspace,
+			Workspace.fromSchema(JSON.parse(JSON.stringify(workspace.toSchema()))),
+		]) {
+			expect(ws.validate()).toEqual([]);
+			const docs = await toDoc(ws);
+			const page = docs["boundedcontexts/quotes/index.md"];
+			expect(page).toContain("| Name | Description | Check | Constrains |");
+			expect(page).toContain(
+				"| PositiveRequest | The requested amount is positive. | Checked before | Request.amount, Quote |",
+			);
+			expect(page).toContain(
+				"| NonnegativeAnswer | The returned amount is nonnegative. | Checked after | Answer.amount, Quote |",
+			);
+			expect(page).not.toContain(
+				"each names the operation that checks it before acting",
+			);
+		}
+	});
+
+	it("calls an external event postcondition a payload guarantee", async () => {
+		const workspace = new Workspace("Feeds", {
+			description: "",
+			version: "test",
+		});
+		const context = workspace.addBoundedContext("Scheme", {
+			description: "",
+			external: true,
+		});
+		const payload = context.addSchema("Notification", { description: "" });
+		const amount = payload.addAttribute("amount", { type: "number" });
+		const service = context.addService("Feed", {
+			type: "application",
+			description: "",
+		});
+		const captured = service.provides("Captured", {
+			type: "event",
+			description: "",
+			pattern: "published-language",
+			schema: payload,
+		});
+		context
+			.addInvariant("NonnegativeCapture", {
+				description: "The captured amount is nonnegative.",
+				postcondition: true,
+			})
+			.constrains(amount, captured);
+
+		for (const ws of [workspace, Workspace.fromSchema(workspace.toSchema())]) {
+			expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+			const page = (await toDoc(ws))["boundedcontexts/scheme/index.md"];
+			expect(page).toContain(
+				"| NonnegativeCapture | The captured amount is nonnegative. | Guaranteed on event | Notification.amount, Captured |",
+			);
+			expect(page).not.toContain("checks it before acting");
+		}
+
+		const lookup = service.provides("Get Capture", {
+			type: "operation",
+			description: "",
+			pattern: "open-host-service",
+			returns: payload,
+		});
+		context.invariants.get("nonnegative_capture")!.constrains(lookup);
+		for (const ws of [workspace, Workspace.fromSchema(workspace.toSchema())]) {
+			expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+			const page = (await toDoc(ws))["boundedcontexts/scheme/index.md"];
+			expect(page).toContain(
+				"| NonnegativeCapture | The captured amount is nonnegative. | Guaranteed by | Notification.amount, Captured, Get Capture |",
+			);
+		}
 	});
 
 	it("says a context has no invariants across aggregates when it has none", async () => {
@@ -304,7 +664,7 @@ describe("toDoc", () => {
 		workspace.addBoundedContext("Quiet", { description: "" });
 		const docs = await toDoc(workspace);
 		expect(docs["boundedcontexts/quiet/index.md"]).toContain(
-			"> No invariants across aggregates.",
+			"> No context invariants declared.",
 		);
 	});
 
@@ -518,11 +878,11 @@ describe("toDoc", () => {
 		expect(section("MarkPetSoldForOrder")).toContain(
 			"- **Made by**: MarkPetSold",
 		);
-		// The read beside them is CheckPetAvailable's: a call is made by an
+		// The read beside them is CheckAndApproveOrder's: a call is made by an
 		// operation, and the process that issues it is not one
 		// (`consumption-by-operation`, card 92).
 		expect(section("GetPetSummary")).toContain(
-			"- **Made by**: CheckPetAvailable",
+			"- **Made by**: CheckAndApproveOrder",
 		);
 		// The line is left off where the whole consumer is the answer, which in
 		// this model is every event Inventory's projection takes in.
@@ -592,6 +952,9 @@ describe("toDoc", () => {
 
 		expect(Object.keys(docs).sort()).toMatchInlineSnapshot(`
 			[
+			  "_ods_0073007700610067006700650072005f00700065007400730074006f00720065005f0028007600330029/contextmap.svg",
+			  "_ods_0073007700610067006700650072005f00700065007400730074006f00720065005f0028007600330029/glossary.md",
+			  "_ods_0073007700610067006700650072005f00700065007400730074006f00720065005f0028007600330029/index.md",
 			  "_sidebar.md",
 			  "boundedcontexts/catalog_bc/aggregates/pet/consumablemap.svg",
 			  "boundedcontexts/catalog_bc/aggregates/pet/index.md",
@@ -630,10 +993,10 @@ describe("toDoc", () => {
 			  "boundedcontexts/sales_bc/index.md",
 			  "boundedcontexts/sales_bc/services/order_app/consumablemap.svg",
 			  "boundedcontexts/sales_bc/services/order_app/index.md",
-			  "domains/identity_&_accounts/contextmap.svg",
-			  "domains/identity_&_accounts/index.md",
-			  "domains/identity_&_accounts/subdomains/users/contextmap.svg",
-			  "domains/identity_&_accounts/subdomains/users/index.md",
+			  "domains/_ods_006900640065006e0074006900740079005f0026005f006100630063006f0075006e00740073/contextmap.svg",
+			  "domains/_ods_006900640065006e0074006900740079005f0026005f006100630063006f0075006e00740073/index.md",
+			  "domains/_ods_006900640065006e0074006900740079005f0026005f006100630063006f0075006e00740073/subdomains/users/contextmap.svg",
+			  "domains/_ods_006900640065006e0074006900740079005f0026005f006100630063006f0075006e00740073/subdomains/users/index.md",
 			  "domains/petstore_commerce/contextmap.svg",
 			  "domains/petstore_commerce/index.md",
 			  "domains/petstore_commerce/subdomains/catalog/contextmap.svg",
@@ -645,16 +1008,13 @@ describe("toDoc", () => {
 			  "domains/petstore_commerce/subdomains/sales/contextmap.svg",
 			  "domains/petstore_commerce/subdomains/sales/index.md",
 			  "index.html",
-			  "swagger_petstore_(v3)/contextmap.svg",
-			  "swagger_petstore_(v3)/glossary.md",
-			  "swagger_petstore_(v3)/index.md",
 			]
 		`);
 	});
 
 	it("prints the health report on the workspace page, in the same three lists as the pages surface", async () => {
 		const docs = await toDoc(petstore);
-		const health = docs["swagger_petstore_(v3)/index.md"]
+		const health = docs[pathToIndexMd(petstore.path)]
 			.split("## Health")[1]
 			.split("## Teams")[0];
 
@@ -722,6 +1082,81 @@ describe("toDoc", () => {
 		);
 	});
 
+	it("does not make an upstream holder a user of a downstream value-object kind", async () => {
+		const workspace = new Workspace("Borrowing", {
+			description: "Directional value-object borrowing.",
+			version: "0.1.0",
+		});
+		const accounts = workspace.addBoundedContext("Accounts", {
+			description: "Accounts.",
+		});
+		const cards = workspace.addBoundedContext("Cards", {
+			description: "Cards.",
+		});
+		accounts.upstreamOf(cards, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		const money = accounts.addValueObject("Money", { description: "Money." });
+		const fee = cards.addValueObject("Fee", {
+			description: "A kind of money.",
+			specialises: money,
+		});
+		const account = accounts.addAggregate("Account", {
+			description: "Account.",
+		});
+		account
+			.addRootEntity("Account", { description: "Account." })
+			.addAttribute("balance", { type: "Money", valueobject: money });
+		const card = cards.addAggregate("Card", { description: "Card." });
+		card
+			.addRootEntity("Card", { description: "Card." })
+			.addAttribute("fee", { type: "Fee", valueobject: fee });
+
+		const context = (await toDoc(workspace))["boundedcontexts/cards/index.md"];
+		const feeRow = context
+			.split("\n")
+			.find((line) => line.startsWith("| Fee "));
+		expect(feeRow).toContain("[Card](aggregates/card/index.md)");
+		expect(feeRow).not.toContain("Accounts / Account");
+	});
+
+	it("lists a kind's inherited identity as a schema user, without a carrier", async () => {
+		const workspace = new Workspace("Identity", {
+			description: "Inherited identity.",
+			version: "0.1.0",
+		});
+		const local = workspace.addBoundedContext("Local", {
+			description: "Local.",
+		});
+		const provider = workspace.addBoundedContext("Provider", {
+			description: "Provider.",
+			external: true,
+		});
+		const payment = provider.addSchema("ProviderPayment");
+		const reference = local.addValueObject("PaymentReference", {
+			description: "Payment identity.",
+		});
+		reference.addAttribute("providerPaymentId", {
+			type: "string",
+			identifies: payment,
+		});
+		local.addValueObject("CardPaymentReference", {
+			description: "Card payment identity.",
+			specialises: reference,
+		});
+
+		const context = (await toDoc(workspace))[
+			"boundedcontexts/provider/index.md"
+		];
+		const row = context
+			.split("\n")
+			.find((line) => line.startsWith("| ProviderPayment |"));
+		expect(row).toContain("[Local / PaymentReference]");
+		expect(row).toContain("[Local / CardPaymentReference]");
+		expect(row?.match(/\(value object, identity\)/g)).toHaveLength(2);
+	});
+
 	it("treats an empty or whitespace-only relationship description as generated", async () => {
 		const workspace = new Workspace("Blank", {
 			description: "Relationships with blank descriptions.",
@@ -773,3 +1208,88 @@ describe("toDoc", () => {
 		expect(rowFor("Written")).not.toContain("generated");
 	});
 });
+
+function kernelPair(sameName: boolean) {
+	const ws = new Workspace("Refs", { description: "", version: "0" });
+	const served = ws
+		.addDomain("Payments", { description: "" })
+		.addSubdomain("Charging", { description: "", type: "core" });
+	const local = ws
+		.addBoundedContext("Local", { description: "" })
+		.serves(served);
+	const foreign = ws
+		.addBoundedContext("Foreign", { description: "" })
+		.serves(served);
+	local.sharesKernelWith(foreign);
+	const shape = (owner: typeof local, name: string) => {
+		const schema = owner.addSchema(sameName ? "Decline" : name, {
+			id: "decline",
+		});
+		schema.addAttribute("why", { type: "string" });
+		return schema;
+	};
+	const refusals = [
+		shape(local, "LocalRefusal"),
+		shape(foreign, "ForeignRefusal"),
+	];
+	const handler = local.addService("Handler", {
+		description: "",
+		type: "application",
+	});
+	const event = (name: string) =>
+		handler.provides(name, { description: "", type: "event", internal: true });
+	const start = event("Start");
+	const done = event("Done");
+	handler
+		.provides("Seed", { description: "", type: "operation", internal: true })
+		.raises(start);
+	const charge = handler
+		.provides("Charge", {
+			description: "",
+			type: "operation",
+			internal: true,
+			rejects: refusals,
+		})
+		.raises(done);
+	local
+		.addProcess("Run", { description: "" })
+		.starts(start)
+		.issues(charge)
+		.on(...refusals.map((it) => charge.rejected(it)))
+		.ends(done);
+	// Read back from JSON, so the readers draw what the file says.
+	return Workspace.fromSchema(JSON.parse(JSON.stringify(ws.toSchema())));
+}
+
+function mutualDeadlineAnchors() {
+	const ws = new Workspace("Timers", { description: "", version: "0" });
+	const served = ws
+		.addDomain("Delivery", { description: "" })
+		.addSubdomain("Orders", { description: "", type: "core" });
+	const bc = ws.addBoundedContext("Orders", { description: "" }).serves(served);
+	const app = bc.addService("Handler", {
+		description: "",
+		type: "application",
+	});
+	const event = (name: string) =>
+		app.provides(name, { description: "", type: "event", internal: true });
+	const start = event("Start");
+	const done = event("Done");
+	app
+		.provides("Seed", { description: "", type: "operation", internal: true })
+		.raises(start);
+	const act = app
+		.provides("Act", { description: "", type: "operation", internal: true })
+		.raises(done);
+	const run = bc
+		.addProcess("Run", { description: "" })
+		.starts(start)
+		.issues(act)
+		.ends(done);
+	const a = run.addDeadline("A", { description: "", after: "1 day" });
+	const b = run.addDeadline("B", { description: "", after: "1 day" });
+	run.on(a, b);
+	a.countsFrom(b);
+	b.countsFrom(a);
+	return ws;
+}

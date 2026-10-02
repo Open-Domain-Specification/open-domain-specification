@@ -219,7 +219,8 @@ agents could see them; it goes stale and we've had wrong refunds because of it."
 Recorded as: Customer Service as supporting; the Case aggregate with Interaction `includes`,
 Resolution and `ResolvedCaseHasInteraction`; the "Open case on failed delivery" policy;
 anti-corruption consumptions of `GetOrder`, `RequestReturn` and `DeliveryAttemptFailed`;
-and the copied order lines modelled as found (section 7).
+and an optional `orderId` on Case. The copied lines remain an observed problem, but the
+model no longer claims that Case owns them: agents read orders through the Orders API.
 
 ### Retail Systems engineer (VPS)
 
@@ -285,7 +286,9 @@ which is now somewhere in the model, were:
   puts the order into awaiting-stock in Orders).
 - A fraud flag arriving after the warehouse had already reserved (Fulfilment and Trust &
   Safety disagreed on who guaranteed no pick; now `OrderCancelled` releases and voids).
-- Order lines copied onto cases (Customer Service; left in as the deliberate
+- Order lines copied onto cases (Customer Service; recorded as the optional `orderId` on
+  Case and an Orders API consumption, rather than as a relation to OrderLine).
+- Saved items copied into carts (Checkout; left in as the deliberate
   `cross-aggregate-reference`, section 7).
 - Who translates the dispatch feed (Logistics; still unagreed, and the relationship says so,
   section 7).
@@ -374,9 +377,13 @@ real finding, and the client asked that they stay in the model so the owning tea
 
 - `aggregate-root` on the Wishlist: the growth squad marked both Wishlist and WishlistItem
   as roots. The fix is to make the item a child; that is the Checkout Team's call.
-- `cross-aggregate-reference` on Case: the case system `includes` order lines that belong to
-  the Order aggregate. This is the stale-lines problem behind the wrong refunds. The fix is
-  to hold the line ids and read through the Orders API.
+- `cross-aggregate-reference` on Cart: Cart `includes` WishlistItem from the separate
+  Wishlist aggregate in Cart & Checkout. The basket screen wanted saved items beside its
+  lines, and the model still claims the cart owns those items. The fix is to reference the
+  Wishlist root and hold the saved item's identity beside it. The earlier Case-to-OrderLine
+  relation was removed when Case began holding an optional `orderId` and reading Orders
+  through its API; the wrong-refund problem remains in the discovery record, but it is not
+  this diagnostic.
 
 The partnership between Search and Advertising used to raise `partnership-backed` as a third
 finding. The two teams call the results page one product and release it together, but every
@@ -647,6 +654,11 @@ hold in lockstep (decision 16's amendment); five contexts independently pricing 
 different things is what decision 16's default, a value object belonging to its own context,
 describes, and forcing them onto one library would couple a seller's listing price to an
 auction's bid ceiling for no reason the interviews give. Nothing changed.
+
+Note (card 157): NorthBank no longer has a Shared Kernel context. Its Accounts and Ledger
+co-own `@northbank/money` in a pairwise kernel, and its other four contexts borrow Money from
+Ledger without owning it. The comparison above stands: NorthBank's contexts use one library,
+and RiverMart's five do not.
 
 ## Revision (card 107): two agreements with Vendor Purchasing, and which exchange belongs to which
 

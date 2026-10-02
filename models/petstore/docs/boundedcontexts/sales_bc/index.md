@@ -33,23 +33,23 @@ Open-host service for /store/order endpoints
 
 
 ## Invariants
-> No invariants across aggregates.
+> No context invariants declared.
 
 ## Value Objects
 | Name | Description | Attributes | Invariants | Used by |
 | --- | --- | --- | --- | --- |
-| OrderStatus | Where the order is in its lifecycle | value: `'placed' | 'approved' | 'delivered'` | - | Order |
-| Quantity | The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1 | value: `int > 0` | - | Order |
-| ShipDate | When the order ships; set by Fulfilment once dispatch is planned | value: `date-time` | - | Order |
+| OrderStatus | Where the order is in its lifecycle | value: `'placed' | 'approved' | 'delivered'` | - | [Order](aggregates/order/index.md), [OrderDetail](./index.md#schemas) (schema) |
+| Quantity | The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1 | value: `int > 0` | - | [Order](aggregates/order/index.md), [OrderPlaced](./index.md#schemas) (schema), [PlaceOrder](./index.md#schemas) (schema), [OrderDetail](./index.md#schemas) (schema) |
+| ShipDate | When the order ships; set by Fulfilment once dispatch is planned | value: `date-time` | - | [Order](aggregates/order/index.md), [OrderDetail](./index.md#schemas) (schema) |
 
 
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| OrderPlaced | - | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | OrderPlaced |
-| PlaceOrder | Request body for placing an order | petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | PlaceOrder |
-| OrderId | - | **orderId**: `int64` | OrderApproved, OrderDelivered, OrderDeleted, ApproveOrder, DeliverOrder, GetOrderById, DeleteOrder, ConfirmDelivery, ReservePet, MarkPetSold, CheckPetAvailable |
-| OrderDetail | One order, as GET /store/order/{orderId} answers with it | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus` | GetOrderById |
+| OrderPlaced | - | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | [OrderPlaced](aggregates/order/index.md) (event) |
+| PlaceOrder | Request body for placing an order | petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | [PlaceOrder](services/order_app/index.md) (operation) |
+| OrderId | - | **orderId**: `int64` | [OrderApproved](aggregates/order/index.md) (event), [OrderDelivered](aggregates/order/index.md) (event), [OrderDeleted](aggregates/order/index.md) (event), [ApproveOrder](aggregates/order/index.md) (operation), [DeliverOrder](aggregates/order/index.md) (operation), [GetOrderById](services/order_app/index.md) (operation), [DeleteOrder](services/order_app/index.md) (operation), [ConfirmDelivery](services/order_app/index.md) (operation), [ReservePet](services/order_app/index.md) (operation), [MarkPetSold](services/order_app/index.md) (operation), [CheckAndApproveOrder](services/order_app/index.md) (operation) |
+| OrderDetail | One order, as GET /store/order/{orderId} answers with it | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus` | [GetOrderById](services/order_app/index.md) (operation) |
 
 
 ## Policies
@@ -62,7 +62,7 @@ Reactions that hold state across events: each one remembers which of its events 
 
 | Name | Description | Starts | On | Then | Ends |
 | --- | --- | --- | --- | --- | --- |
-| Order fulfilment | From an order being placed to the pet being sold. It starts on OrderPlaced and waits, because the pet may not be available yet: a relisting (PetStatusChanged) makes it look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. On approval it holds the pet (available → pending), and once the order is delivered it tells the catalogue the pet has gone to its owner (pending → sold). It does not listen to PetReserved: that is the fact this very chain produces. Correlation is by petId and then orderId; an order nobody can fulfil is cancelled by hand, which is why there is no timeout here | OrderPlaced | PetStatusChanged | CheckPetAvailable, ApproveOrder, ReservePet, MarkPetSold | OrderDelivered |
+| Order fulfilment | From an order being placed to the pet being sold. It starts on OrderPlaced and waits, because the pet may not be available yet: a relisting (PetStatusChanged) makes it look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. On approval it holds the pet (available → pending), and once the order is delivered it tells the catalogue the pet has gone to its owner (pending → sold). It does not listen to PetReserved: that is the fact this very chain produces. Correlation is by petId and then orderId; an order nobody can fulfil is cancelled by hand, which is why there is no timeout here | OrderPlaced | PetStatusChanged | CheckAndApproveOrder, ReservePet, MarkPetSold | OrderDelivered |
 
 
 ## Context Relationships
@@ -114,11 +114,12 @@ Reactions that hold state across events: each one remembers which of its events 
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderApproved | published-language |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderDelivered | published-language |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderDeleted | published-language |
+| [OrderApp](services/order_app/index.md) | CheckAndApproveOrder | - | Order | ApproveOrder | - |
 | [OrderApp](services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | MarkPetSoldForOrder | - | Pet | MarkPetSold | - |
 | [OrderApp](services/order_app/index.md) | MarkPetSold | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
-| [OrderApp](services/order_app/index.md) | CheckPetAvailable | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](services/order_app/index.md) | CheckAndApproveOrder | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
 | [OrderApp](services/order_app/index.md) | Order fulfilment | anti-corruption-layer | Pet | PetStatusChanged | published-language |
 
 

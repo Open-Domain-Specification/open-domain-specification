@@ -6,7 +6,11 @@ import {
 	type BoundedContext,
 	Workspace,
 } from "@open-domain-specification/core";
-import { toDoc } from "@open-domain-specification/doc";
+import {
+	pathToGlossaryMd,
+	pathToIndexMd,
+	toDoc,
+} from "@open-domain-specification/doc";
 
 const require = createRequire(import.meta.url);
 
@@ -15,10 +19,16 @@ const require = createRequire(import.meta.url);
  * under `docs/`, and `.ods/<file>.json` with `$schema` pointing at a copy of
  * core's JSON schema written beside it as `.ods/schema.json` -- what the VS
  * Code extension and the pages viewer open.
+ *
+ * `docs/` is replaced, not added to: the site is written beside it first and
+ * swapped in once `toDoc` has succeeded, so a page for an element the model no
+ * longer has cannot outlive it, and a failed `toDoc` leaves the old site
+ * untouched. `root` is the package directory the outputs go under; it defaults
+ * to the working directory, where each model's `build` script runs.
  */
 export async function generate(
 	workspace: Workspace,
-	{ file }: { file: string },
+	{ file, root = "." }: { file: string; root?: string },
 ): Promise<void> {
 	const diagnostics = workspace.validate();
 	console.log(`${workspace.name}: ${diagnostics.length} diagnostic(s)`);
@@ -27,15 +37,21 @@ export async function generate(
 	}
 
 	const docs = await toDoc(workspace);
+	const docsDir = path.join(root, "docs");
+	const nextDir = path.join(root, "docs.next");
+	fs.rmSync(nextDir, { recursive: true, force: true });
 	for (const [docFile, content] of Object.entries(docs)) {
-		const target = path.join("docs", docFile);
+		const target = path.join(nextDir, docFile);
 		fs.mkdirSync(path.dirname(target), { recursive: true });
 		fs.writeFileSync(target, content, "utf-8");
 	}
+	fs.rmSync(docsDir, { recursive: true, force: true });
+	fs.renameSync(nextDir, docsDir);
 
-	fs.mkdirSync(".ods", { recursive: true });
+	const odsDir = path.join(root, ".ods");
+	fs.mkdirSync(odsDir, { recursive: true });
 	fs.writeFileSync(
-		path.join(".ods", `${file}.json`),
+		path.join(odsDir, `${file}.json`),
 		JSON.stringify(
 			{ $schema: "./schema.json", ...workspace.toSchema() },
 			null,
@@ -47,7 +63,7 @@ export async function generate(
 	const coreSchema = require.resolve(
 		"@open-domain-specification/core/dist/workspace.schema.json",
 	);
-	fs.copyFileSync(coreSchema, path.join(".ods", "schema.json"));
+	fs.copyFileSync(coreSchema, path.join(odsDir, "schema.json"));
 }
 
 /**
@@ -183,20 +199,23 @@ function resolveFrom(from: string, destination: string): string {
 
 /** The `index.md` (and, for the workspace, `glossary.md`) pages toDoc emits. */
 function expectedPages(workspace: Workspace): string[] {
-	const pages = [`${workspace.path}/index.md`, `${workspace.path}/glossary.md`];
+	const pages = [
+		pathToIndexMd(workspace.path),
+		pathToGlossaryMd(workspace.path),
+	];
 	for (const domain of workspace.domains.values()) {
-		pages.push(`${domain.path}/index.md`);
+		pages.push(pathToIndexMd(domain.path));
 		for (const subdomain of domain.subdomains.values()) {
-			pages.push(`${subdomain.path}/index.md`);
+			pages.push(pathToIndexMd(subdomain.path));
 		}
 	}
 	for (const context of workspace.boundedcontexts.values()) {
-		pages.push(`${context.path}/index.md`);
+		pages.push(pathToIndexMd(context.path));
 		for (const aggregate of context.aggregates.values()) {
-			pages.push(`${aggregate.path}/index.md`);
+			pages.push(pathToIndexMd(aggregate.path));
 		}
 		for (const service of context.services.values()) {
-			pages.push(`${service.path}/index.md`);
+			pages.push(pathToIndexMd(service.path));
 		}
 	}
 	return pages;
@@ -215,16 +234,16 @@ function expectedSidebar(workspace: Workspace): SidebarEntry[] {
 	});
 
 	const contextEntry = (context: BoundedContext, depth: number) =>
-		entry(depth, context.name, `${context.path}/index.md`);
+		entry(depth, context.name, pathToIndexMd(context.path));
 
 	const entries: SidebarEntry[] = [
-		entry(0, workspace.name, `${workspace.path}/index.md`),
-		entry(1, "Glossary", `${workspace.path}/glossary.md`),
+		entry(0, workspace.name, pathToIndexMd(workspace.path)),
+		entry(1, "Glossary", pathToGlossaryMd(workspace.path)),
 	];
 	for (const domain of workspace.domains.values()) {
-		entries.push(entry(1, domain.name, `${domain.path}/index.md`));
+		entries.push(entry(1, domain.name, pathToIndexMd(domain.path)));
 		for (const subdomain of domain.subdomains.values()) {
-			entries.push(entry(2, subdomain.name, `${subdomain.path}/index.md`));
+			entries.push(entry(2, subdomain.name, pathToIndexMd(subdomain.path)));
 			for (const context of subdomain.boundedcontexts.values()) {
 				entries.push(contextEntry(context, 3));
 			}
@@ -317,7 +336,9 @@ function markdownPages(docs: Record<string, string>): [string, string][] {
  * any `index.html` are link targets, never sources. External `http(s)` and
  * `mailto:` links are skipped.
  */
-export async function assertDocSite(workspace: Workspace): Promise<void> {
+export async function assertDocSite(
+	workspace: Workspace,
+): Promise<Record<string, string>> {
 	const docs = await toDoc(workspace);
 	const files = new Set(Object.keys(docs));
 
@@ -342,4 +363,5 @@ export async function assertDocSite(workspace: Workspace): Promise<void> {
 		expectedSidebar(workspace),
 		"_sidebar.md does not navigate the workspace tree depth-first",
 	);
+	return docs;
 }

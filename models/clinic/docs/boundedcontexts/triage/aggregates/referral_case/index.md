@@ -21,11 +21,11 @@ One referral, from the moment it becomes a case of ours.
 
 
 ## Invariants
-| Name | Description | Constrains |
-| --- | --- | --- |
-| Accept Only Known Patient | Accept a referral only once Records already holds a record for its patient: PatientSummary.patientId, fetched through the ACL by Referral Intake's own Accept Referral front, must resolve before the referral moves to accepted; Records' own Patient is outside this aggregate, so what the rule reads is the answer the front was given, not Records' model. | Referral.status, Accept Referral, Accept Referral, Patient Summary.patientId |
-| Status Moves Forward Only | A referral's status only ever moves on -- once accepted or declined, triage's other decisions no longer apply to it. | Referral.status, Accept Referral, Decline Referral, Request More Information |
-| Accepted Referral Carries A Code | Once a referral is accepted it always carries a diagnosis code from the current coding standard. | Referral.diagnosisCode, Accept Referral |
+| Name | Description | When | Constrains |
+| --- | --- | --- | --- |
+| Accept Only Known Patient | Accept a referral only once Records already holds a record for its patient: PatientSummary.patientId, fetched through the ACL by Referral Intake's own Accept Referral front, must resolve before the referral moves to accepted; Records' own Patient is outside this aggregate, so what the rule reads is the answer the front was given, not Records' model. | Checked before | Referral.status, Accept Referral, Accept Referral, Patient Summary.patientId |
+| Status Moves Forward Only | A referral's status only ever moves on -- once accepted or declined, triage's other decisions no longer apply to it. | Holds after every change | Referral.status, Accept Referral, Decline Referral, Request More Information |
+| Accepted Referral Carries A Code | Once a referral is accepted it always carries a diagnosis code from the current coding standard. | Holds after every change | Referral.diagnosisCode, Accept Referral |
 
 
 ## Provides

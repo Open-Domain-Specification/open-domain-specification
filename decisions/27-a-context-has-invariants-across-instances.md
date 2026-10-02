@@ -16,6 +16,14 @@ A context invariant is always a check and never claims to hold at rest (second a
 
 A value object's invariant reaches its own and inherited attributes and, through composition, the attributes of the value objects its attributes hold (amendment of 2026-09-10, card 113; decision 22).
 
+Since the note of 2026-10-01 (card 171), the save claim above is explicitly about an unflagged aggregate invariant. A flagged aggregate rule is a precondition checked before a call or a postcondition about its answer; NorthBank has both, and neither is held on every save.
+
+Since the second note of 2026-10-01 (card 174), a value-object invariant also cannot carry either timing flag: construction, not an operation, is the moment at which its rule holds.
+
+Since the third note of 2026-10-01 (card 175), saying a precondition is not kept true afterward means the model makes no later promise. The checked fact may remain true; it is not asserted to become false.
+
+Since the fourth note of 2026-10-01 (card 178), every modelled context check names an operation as its guard. Naming an event alongside it does not make that event an operation; only an external context's published event-payload postcondition uses an event target (decision 28).
+
 The note of 2026-09-07 stands: five cross-instance rules, not eleven, and a rule checked against another context's data is a precondition on the aggregate's operation (decision 19). The bullet "nothing crosses a context" stands for targets, with a qualification recorded in decision 19: a precondition may constrain the `returns` of a consumed consumable or a consumed event's payload held in the same context (cards 116 and 124), never another context's entities. An external context may state flagged invariants on its own operations, reaching their request and answer schemas and its own value objects (decision 28, cards 107 and 116). An obligation across contexts is a process (amendment of 2026-09-08).
 
 ## Context
@@ -78,3 +86,19 @@ Reviewers read "a context invariant is always a check, because a count across in
 ## Note (2026-09-10, third)
 
 "Nothing crosses a context" is about entities and their attributes. A precondition that reads the answer its front fetched (card 116) or the payload its reactor heard (card 124) reads the context's own copy of a fact in the shape it arrived, which decision 19 allows; another context's entity is still out of reach.
+
+## Note (2026-10-01)
+
+The standing save sentence in this decision is true for an unflagged aggregate invariant, not for every invariant owned by an aggregate. NorthBank PaymentInstruction's `FundsAvailableAtInitiation` checks before initiation, and Cards' `AuthWithinAvailableBalance` guarantees an operation's answer at that moment. Both are valid aggregate rules, but the root does not keep them true after every change (card 171, issue #121). Their pages and Markdown now state the timing alongside each rule.
+
+## Note (2026-10-01, second)
+
+A value object's invariant holds by construction and names no operation. The general timing checks had skipped external contexts, allowing a standard's value rule to claim `precondition`, `postcondition`, or both with no diagnostic. `invariant-in-value-object` now refuses either flag for every context, modelled or external (card 174, issue #124). A rule about a call belongs to the aggregate or context that owns it.
+
+## Note (2026-10-01, third)
+
+A check made before a call can remain true afterwards by chance or by some other mechanism. `precondition: true` promises the check at the moment before the call, and does not promise the result persists. The schema, validator guidance and reader pages now use that precise claim (card 175, issue #125). A context precondition may also read an event payload that the policy or process issuing its guard already heard, as decision 19's third amendment permits.
+
+## Note (2026-10-01, fourth)
+
+A context rule names operations as guards at every timing. The validator previously accepted a local event target beside one operation, letting Markdown and the shared page call it an operation checked at call time or simply checked by an event. `invariant-guards-are-operations` now rejects such a target for modelled contexts; a precondition may still constrain the payload of an event its issuing reactor already heard (issue #128, card 178; decision 19).
