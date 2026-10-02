@@ -1,0 +1,213 @@
+{
+  "goal": "Clear the ODS backlog autonomously",
+  "baseline_at": "2026-10-02T21:44:53Z",
+  "baseline_open": 54,
+  "current_open": 54,
+  "closed": 0,
+  "new": 0,
+  "reopened": 0,
+  "active_milestone": 1,
+  "integration_batch": "PR132",
+  "owner": "lead",
+  "candidate": "d7d9d319c68e385904d903b538ccf36fcc7c9b7f",
+  "candidate_state": "documentation controls being integrated; new clean head must pass gate before final review",
+  "approval": null,
+  "merged": null,
+  "durable_checkpoint": "/Users/jonathanturnock/.codex/ods-delivery/milestone-01/d7d9d319/checkpoint.json",
+  "milestones": [
+    {
+      "id": 1,
+      "name": "Finalise and land the model",
+      "issues": [
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131
+      ],
+      "owner": "lead",
+      "state": "active",
+      "expected_remaining": 29,
+      "entry_scope": "Existing PR #132 only; model semantics and faithful four readers. No tooling or speculative expansion.",
+      "exit_acceptance": "Explicit Astra low APPROVE, exact-head required gates, verified merged tree and individual25 story/card reconciliation.",
+      "investigation_limit": "Each blocker needs a defect-class matrix and local proof before another final review.",
+      "evidence": [],
+      "closed_issues": []
+    },
+    {
+      "id": 2,
+      "name": "Resolve the model proposals",
+      "issues": [
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        64,
+        65
+      ],
+      "owner": "lead",
+      "state": "waiting",
+      "expected_remaining": 21,
+      "entry_scope": "Apply current decisions; reconcile63 module promise while retaining59/54.",
+      "exit_acceptance": "Each not-planned disposition states retained cost, reopening condition and actual source evidence; parents reconciled last.",
+      "investigation_limit": "No implementation or new DDD debate without a recorded reopening condition being met.",
+      "evidence": [],
+      "closed_issues": []
+    },
+    {
+      "id": 3,
+      "name": "Diagrams and reliable drag checks",
+      "issues": [
+        102,
+        86,
+        89,
+        90,
+        103
+      ],
+      "owner": "lead",
+      "state": "waiting",
+      "expected_remaining": 16,
+      "entry_scope": "Existing PR #106 after model closeout;103 separate PR if unrelated cause.",
+      "exit_acceptance": "Measured inline/fullscreen fit, panel clearance, actual hosts and explained stable released-node geometry.",
+      "investigation_limit": "No geometry redesign, weakened assertions, blind sleeps or accepted rerun as flake repair.",
+      "evidence": [],
+      "closed_issues": []
+    },
+    {
+      "id": 4,
+      "name": "Readable tables",
+      "issues": [
+        105,
+        87,
+        88,
+        80
+      ],
+      "owner": "lead",
+      "state": "waiting",
+      "expected_remaining": 12,
+      "entry_scope": "Only prose sizing, intact type tokens and accessible identity-column name.",
+      "exit_acceptance": "Actual before/after geometry across table callers/hosts;24ch glossary, token integrity and accessible associations.",
+      "investigation_limit": "No general redesign, phone navigation, contrast or unrelated copy.",
+      "evidence": [],
+      "closed_issues": []
+    },
+    {
+      "id": 5,
+      "name": "Accessible reading",
+      "issues": [
+        78,
+        79,
+        83
+      ],
+      "owner": "lead",
+      "state": "waiting",
+      "expected_remaining": 9,
+      "entry_scope": "Named contrast failures, prose links and keyboard skip paths.",
+      "exit_acceptance": "Both-theme measured contrast; underlined prose links; first-stop content skip and one-step diagram bypass with real keys.",
+      "investigation_limit": "No visual redesign outside failing tokens and specified interactions.",
+      "evidence": [],
+      "closed_issues": []
+    },
+    {
+      "id": 6,
+      "name": "Location and return paths",
+      "issues": [
+        91,
+        77
+      ],
+      "owner": "lead",
+      "state": "waiting",
+      "expected_remaining": 7,
+      "entry_scope": "Active tree row visibility and extension Back/Forward only.",
+      "exit_acceptance": "Deep-link/load/route/reduced-motion visibility; pointer/key history states and heading focus.",
+      "investigation_limit": "No routing rewrite unless existing behavior concretely prevents acceptance.",
+      "evidence": [],
+      "closed_issues": []
+    },
+    {
+      "id": 7,
+      "name": "Phone reading",
+      "issues": [
+        82
+      ],
+      "owner": "lead",
+      "state": "waiting",
+      "expected_remaining": 6,
+      "entry_scope": "Page-first phone layout and accessible tree access.",
+      "exit_acceptance": "All9reported families fit 390\u00d7844 without page-level horizontal overflow; desktop preserved.",
+      "investigation_limit": "Shared layout first; local exceptions only for measured residual failures.",
+      "evidence": [],
+      "closed_issues": []
+    },
+    {
+      "id": 8,
+      "name": "Import and copy finish",
+      "issues": [
+        92,
+        93,
+        94
+      ],
+      "owner": "lead",
+      "state": "waiting",
+      "expected_remaining": 3,
+      "entry_scope": "Import refinements and editorial slice independently accepted.",
+      "exit_acceptance": "Themed native focus target, file name, Problems-style error and exact two copy corrections.",
+      "investigation_limit": "No import architecture rewrite or wording sweep; unrelated slices use separate PRs.",
+      "evidence": [],
+      "closed_issues": []
+    },
+    {
+      "id": 9,
+      "name": "Team-owned model files",
+      "issues": [
+        59
+      ],
+      "owner": "lead",
+      "state": "waiting",
+      "expected_remaining": 2,
+      "entry_scope": "Reconcile decision08/current29 and settle identity/linking/diagnostics/persistence/reader packaging before code.",
+      "exit_acceptance": "Split substantial reference model equivalent to single-file including pins; missing/ambiguous/cyclic refs, lossless owning-file save and four readers.",
+      "investigation_limit": "No modules, forms, independent crossing permissions or new expressiveness.",
+      "evidence": [],
+      "closed_issues": []
+    },
+    {
+      "id": 10,
+      "name": "Informed forms and authoring epic",
+      "issues": [
+        54,
+        63
+      ],
+      "owner": "lead",
+      "state": "waiting",
+      "expected_remaining": 0,
+      "entry_scope": "Forms consume accepted assembled-workspace resolver; epic #63 last.",
+      "exit_acceptance": "Legal target options, stale choice diagnostics, own-file writes preserving unrelated edits and complete authoring journey.",
+      "investigation_limit": "No form-specific second resolver or independent model semantics.",
+      "evidence": [],
+      "closed_issues": []
+    }
+  ]
+}

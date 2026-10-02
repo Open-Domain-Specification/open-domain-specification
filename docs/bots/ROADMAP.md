@@ -1,3 +1,28 @@
+# ODS backlog delivery roadmap
+
+## Current position (2026-10-02)
+
+The owner accepted the guarded ten-milestone plan. The operative ledger is [delivery/manifest.json](delivery/manifest.json); entry/exit criteria, scope boundaries, investigation limits and restart/journal protocol are [delivery/CONTROLS.md](delivery/CONTROLS.md). Lead owns enforcement.
+
+Current: 54 open, zero closures, milestone 1 / PR #132 active. The archived d7 candidate passed gate and actual hosts, but the CLI review was interrupted without a verdict. The documentation-only controls addition needs a fresh clean-head gate before review. Later milestones wait for model landing; actual closure counts replace forecasts.
+
+| Milestone | Issues | Expected remaining | State |
+| --- | --- | ---: | --- |
+| 1. Finalise and land the model | #107, #108, #109, #110, #111, #112, #113, #114, #115, #116, #117, #118, #119, #120, #121, #122, #123, #124, #125, #126, #127, #128, #129, #130, #131 | 29 | active: approval/landing |
+| 2. Resolve the model proposals | #35, #36, #37, #38, #39, #40, #64, #65 | 21 | waiting |
+| 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | waiting |
+| 4. Readable tables | #105, #87, #88, #80 | 12 | waiting |
+| 5. Accessible reading | #78, #79, #83 | 9 | waiting |
+| 6. Location and return paths | #91, #77 | 7 | waiting |
+| 7. Phone reading | #82 | 6 | waiting |
+| 8. Import and copy finish | #92, #93, #94 | 3 | waiting |
+| 9. Team-owned model files | #59 | 2 | waiting |
+| 10. Informed forms and authoring epic | #54, #63 | 0 | waiting |
+
+## Historical roadmap and retrospective records
+
+The following dated snapshots are retained as history; the current ledger above supersedes their readiness/count claims.
+
 # Roadmap
 
 Kept by the lead. Milestones in order, with why. Work items are RepoDoc cards under `boards/`; engineering decisions are records under `decisions/` (the repo's existing ADR stream, not a second one here).

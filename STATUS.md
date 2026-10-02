@@ -2,22 +2,24 @@
 
 ## Goal / health
 
-Clear the ODS backlog autonomously, model finality before tooling. 54 issues remain open: 25 model stories #107–#131 and 29 later outcomes. Zero model closures and no new ticket for this correction. Draft PR #132 is the model integration batch.
+Execute the guarded backlog plan: 54 open, zero closed. Model before tooling. The ten milestones and their actual counts are in [manifest](docs/bots/delivery/manifest.json); entry/exit and investigation controls are in [controls](docs/bots/delivery/CONTROLS.md).
 
 ## Now
 
-Both final24 blocker classes are corrected and integrated. The validator shares its complete existing language-borrowing inventory between relationship backing and separate ways. The attribute resolver accepts only exact owner grammars through direct map lookup, preserving diagnostic-not-crash loading.
+Milestone 1: finalise and land PR #132, then reconcile and close 25 individual stories/cards. Product candidate `d7d9d319` passed the unmodified full gate: core 1,568, Pages 1,055 at 100% coverage, browser 431 passed / 20 documented skips. Fresh real VS Code suites passed 15 extension and 23 keyboard tests; checker passed.
 
-Lead verified core 1,568/1,568, exact diagnostics for both reviewer borrowing artifacts, and successful load/raw preservation of the 78 KB malformed ref. All eight scoped quality checks are clear. Generated outputs were rebuilt; skill154, allfive model suites48/shared13 pass, diagnostic pins stay0/2/4/3/0. Biome/diff clear. This is focused readiness, not final model approval.
+Final25 CLI was interrupted by quota and returned no verdict. Twenty-four completed BLOCK reviews are historical. There is no current approval, merge or closure. Owner-approved controls are a documentation-only addition; product source remains unchanged. Freeze this addition and run the required clean-head gate before one in-app Astra low final review.
+
+Claude quota resets 2026-10-03 01:00 Europe/London. SOL coding and OpenAI-only final approval are authorized. Do not retry an unavailable review route without an availability change.
 
 ## Next
 
-Freeze this candidate, run fresh actual VS Code suites/checker then unmodified verify-all on its clean committed head. Final25 Astra low only after lead is satisfied and those checks pass. Claude quota is exhausted until2026-10-03 01:00 Europe/London; owner's SOL coding/OpenAI-only final approval exception applies. After approval and verified merge, reconcile all25 stories/cards individually before closure.
+Freeze controls commit and run the unmodified gate. After explicit exact-head approval, publish to existing PR #132, verify merged content and reconcile each acceptance before closure. A concrete blocker requires a bounded defect-class matrix; unavailable quota requires a journaled resume condition. Keep tooling parked.
 
 ## Later
 
-PR #106 stays parked until model landing/closeout. [ROADMAP.md](docs/bots/ROADMAP.md) orders reader/plugin outcomes; multi-file #59 precedes forms #54. Decision conditions govern speculative model extensions.
+Decision dispositions; diagrams/drag; tables; accessibility; navigation; phone reading; import/copy; multi-file #59; forms #54 and epic #63. Conditional closure sequence: 54 → 29 → 21 → 16 → 12 → 9 → 7 → 6 → 3 → 2 → 0.
 
 ## Working state
 
-Updated: 2026-10-01T22:36:01Z. Branch codex/model-fidelity-northbank; base a0e88e97; committed head ad6b7dc2 plus integrated uncommitted corrections/records. Remote PR132 stays635bcc7e. Twenty-four completed final BLOCK rounds; no final25/current-candidate whole gate/host run, push, CI, merge or closure yet. [Card160](boards/project-backlog/160-final-model-signoff-preparation.md) and [sprint04](docs/bots/sprints/2026-10-01-sprint-04.md) preserve history.
+Updated: 2026-10-02T21:44:53Z. Worktree relationship-pages; branch `codex/model-fidelity-northbank`; product evidence belongs to `d7d9d319c68e385904d903b538ccf36fcc7c9b7f`. New control records require their own frozen head and gate. Base `a0e88e97`, remote PR #132 `635bcc7e` verified. Durable evidence: `/Users/jonathanturnock/.codex/ods-delivery/milestone-01/d7d9d319`; latest checkpoint via `CURRENT.json` in that delivery directory. [Card 160](boards/project-backlog/160-final-model-signoff-preparation.md) preserves history. One integration batch; no new issue or CI run.

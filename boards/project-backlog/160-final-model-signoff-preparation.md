@@ -2,12 +2,12 @@
 column: review
 labels: [docs, model]
 priority: high
-status: Final24 corrections integrated - fresh candidate verification pending
+status: Controls installed - fresh gate and available Astra final review pending
 progress: 90
 agent: lead
 live: false
 clean-code-swept: true
-updatedAt: 2026-10-01T22:36:01Z
+updatedAt: 2026-10-02T21:44:53Z
 ---
 # Final model sign-off: the record says only what holds
 
@@ -678,3 +678,5 @@ The lead's exact source and JSON reproduction validates with no diagnostics, the
 - **lead** (2026-10-01T22:21:03Z): Astra low final24 BLOCKED exact clean ad6b7dc2; CLI exit0, report /tmp/ods-astra-final-review-ad6b7dc2.md. Its unmodified gate passed core1545/pages1055at100%/browser431pass20skip/allmodels/schemaimports. SeparateWays in packages/core/src/validate.ts:3352 only checks foreign value-typed attributes, while its backing helper already recognizes foreign specialisation and schema attr/request/return/rejection borrowing. Source/JSON shared-kernel+separate-ways cases validate[] despite actual dependency. Attribute resolver packages/core/src/workspace.ts:510 recursively resolves an apparent attribute owner through generic lookup; schema-admitted78KB glossary ref with6000attribute suffixes throwsRangeError; shorttwin unresolved. Root independently ran all3 reviewer artifacts and accepts both. Disjoint SOL validator and resolver lanes own full classes; no new issue/CI. Fivewhys: separation missed borrowing because semantic inventories were parallel and one was updated by111; acceptance proved borrowing permission and separate-ways negatives independently, not their intersection; the rule's broad claim therefore exceeded the reused dependency census; lead now requires shared existing inventory plus contradiction/permission pairs. Loader crashed because generic attribute ownership recursively accepted structurally impossible owners; earlier exactness tests covered aliases but not attacker-sized grammar repetition; PANIC static review assumed bounded getter composition; lead now requires malformed structural depth across typed/generic and hydrated external refs, without arbitrary caps. No final25 while either class remains incomplete.
 
 - **lead** (2026-10-01T22:36:01Z): Both final24 correction classes are integrated. Root full-core suite passes 1,568/1,568; independent reviewer artifacts now report one exact separate-ways diagnostic each, and the 78,029-character malformed external ref loads with one unresolved-ref and survives serialization unchanged. New 21-case borrowing matrix proves source/JSON exact negatives, fully clean permitted twins and permission contradictions; two resolver regressions prove short/deep invalid structures without recursion. All eight scoped quality reports /tmp/ods-final24-quality-*.md are clear by static inspection, read and reconciled by lead; no introduced finding above0.5. Core/graphviz/doc/skill and all five reference outputs/fixture regenerated; skill154, allfive48/shared13 and Biome/diff pass. Reference pins unchanged0/2/4/3/0; no pin or DISCOVERY edits. Card exits doing to review with clean-code-swept true. Fresh actualhosts, unmodified clean committed-head whole gate and final25 remain pending; old ad6 evidence is historical. Zero closures/newtickets/CI.
+
+- **lead** (2026-10-02T21:44:53Z): Owner authorized the guarded full delivery plan. Candidate d7d9d319 passed full gate and actual hosts; final25 CLI was interrupted by quota with NO verdict, not another BLOCK. Product source unchanged. Installed ledger docs/bots/delivery/manifest.json:1, controls docs/bots/delivery/CONTROLS.md:1, STATUS.md:1 and docs/bots/ROADMAP.md:1. Exact-head gate/host evidence and acceptance reports are archived under /Users/jonathanturnock/.codex/ods-delivery/milestone-01/d7d9d319. New documentation-only freeze/gate before one available in-app Astra low reviewer route; no repeated quota-limited CLI attempt. Card stays review and clean-code-swept true from the reconciled production audit. No fabricated human approval or closure.
