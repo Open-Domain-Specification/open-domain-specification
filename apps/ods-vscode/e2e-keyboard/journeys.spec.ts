@@ -1,3 +1,12 @@
+import {
+	cpSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { expect, type Frame, type Page, test } from "@playwright/test";
 import {
 	expectClear,
@@ -1106,5 +1115,368 @@ test.describe("the diagram fits the webview it is drawn in", () => {
 		expect(sizeOf(back.view)).toEqual(sizeOf(toggled.view));
 		expect(back.zoom).toBeCloseTo(toggled.zoom, 5);
 		expectClear(back, "the Orders map after Escape");
+	});
+});
+
+/**
+ * Issue #77: Back and Forward in the page view's own toolbar, in the real
+ * webview. The buttons are native, reached by Tab and Shift+Tab and activated
+ * by Enter, Space or the pointer, and are disabled at the ends of the webview's
+ * own history. Every page's identity is read as it is first reached (its hash
+ * and heading), and each traversal must land on exactly that, heading focused.
+ *
+ * The first page the webview shows, root or not, is the first entry: Back is
+ * disabled there instead of falling into whatever lies beneath it. A host that
+ * has just opened a page for a different workspace file starts over.
+ */
+test.describe("history in the page toolbar", () => {
+	type Where = { hash: string; heading: string };
+	type Action = "back" | "forward";
+	type How = "enter" | "space" | "click";
+
+	let host: Host;
+	let folder: string;
+
+	/** The fixture, and a second workspace beside it whose names share nothing with the first. */
+	function twoWorkspaces(): string {
+		const root = mkdtempSync(join(tmpdir(), "ods-history-"));
+		const fixture = resolve(
+			__dirname,
+			"../src/test/fixtures/cross-surface/.ods",
+		);
+		cpSync(fixture, join(root, ".ods"), { recursive: true });
+		const second = JSON.parse(
+			readFileSync(join(fixture, "cross_surface.json"), "utf8"),
+		);
+		second.name = "Zebra Model";
+		second.description = "A second workspace in the same folder.";
+		writeFileSync(
+			join(root, ".ods", "zebra.json"),
+			JSON.stringify(second, null, "\t"),
+		);
+		return root;
+	}
+
+	// A fresh window for every test: the first page a webview shows is its first
+	// history entry, and a window that has shown a page of this file would only
+	// navigate in place to the next.
+	test.beforeEach(async () => {
+		folder = twoWorkspaces();
+		host = await launchVSCode({ folder });
+		await resize(host, 1300, 900);
+	});
+	test.afterEach(async () => {
+		await host.close();
+		rmSync(folder, { recursive: true, force: true });
+	});
+
+	/** Opens a first page with the extension's search, and parks the reader's place before the page. */
+	async function openFirst(search: string, heading: string): Promise<Frame> {
+		await openPageByKeyboard(host.window, search);
+		const frame = await webviewContentFrame(host.window);
+		await expect(frame.locator("main h1")).toContainText(heading);
+		await frame.evaluate(() => {
+			(document.activeElement as HTMLElement | null)?.blur();
+			window.scrollTo(0, 0);
+			const h1 = document.querySelector("main h1") as HTMLElement;
+			h1.focus({ preventScroll: true });
+			h1.blur();
+		});
+		return frame;
+	}
+
+	const where = (frame: Frame): Promise<Where> =>
+		frame.evaluate(() => ({
+			hash: location.hash,
+			heading: document.querySelector("main h1")?.textContent?.trim() ?? "",
+		}));
+
+	const ends = (frame: Frame) =>
+		frame.evaluate(() => ({
+			back: (
+				document.querySelector('[data-action="back"]') as HTMLButtonElement
+			).disabled,
+			forward: (
+				document.querySelector('[data-action="forward"]') as HTMLButtonElement
+			).disabled,
+		}));
+
+	/** Follows, with Tab and Enter, a route link on the page that no earlier page was reached by. */
+	async function follow(frame: Frame, visited: Where[]): Promise<Where> {
+		const seen = new Set(visited.map((v) => v.hash || "#"));
+		const hrefs = await frame.evaluate(() =>
+			[
+				...document.querySelectorAll('main a[href^="#/"]:not(.interactive a)'),
+			].map((a) => a.getAttribute("href") as string),
+		);
+		const href = hrefs.find((h) => !seen.has(h));
+		if (!href)
+			throw new Error(
+				`no new route link on the page; links: ${hrefs.join(" ")}`,
+			);
+		await tabToLink(host, frame, href);
+		await host.window.keyboard.press("Enter");
+		await expect.poll(() => frame.evaluate(() => location.hash)).toBe(href);
+		await expect.poll(async () => (await active(frame)).isH1).toBe(true);
+		return where(frame);
+	}
+
+	/** Activates Back or Forward the way the reader would: Shift+Tab to it and Enter or Space, or the pointer. */
+	async function use(frame: Frame, action: Action, how: How) {
+		if (how === "click") {
+			const box = await frame
+				.locator(`[data-action="${action}"]`)
+				.boundingBox();
+			if (!box) throw new Error(`no ${action} button box`);
+			await host.window.mouse.click(
+				box.x + box.width / 2,
+				box.y + box.height / 2,
+			);
+			return;
+		}
+		const label = action === "back" ? "Back" : "Forward";
+		const stop = await tabToLabel(host, frame, label, "Shift+Tab");
+		expect(stop.tag).toBe("BUTTON");
+		await host.window.keyboard.press(how === "enter" ? "Enter" : "Space");
+	}
+
+	/** The page, its heading focused, and the two buttons enabled as `disabled` says. */
+	async function expectAt(
+		frame: Frame,
+		page: Where,
+		disabled: { back: boolean; forward: boolean },
+		when: string,
+		focused = true,
+	) {
+		await expect
+			.poll(() => where(frame), { message: `${when}: the page shown` })
+			.toEqual(page);
+		// A page the host opened leaves focus where it was; one the reader arrived at holds it.
+		if (focused)
+			await expect
+				.poll(async () => (await active(frame)).isH1, {
+					message: `${when}: the heading holds focus`,
+				})
+				.toBe(true);
+		await expect
+			.poll(() => ends(frame), { message: `${when}: the buttons` })
+			.toEqual(disabled);
+	}
+
+	for (const [how, name] of [
+		["enter", "Enter"],
+		["space", "Space"],
+		["click", "the pointer"],
+	] as const) {
+		test(`#77 ${name} walks Back from the third page to the first and Forward again, from the workspace`, async () => {
+			const frame = await openFirst("Cross surface", "Cross surface");
+			const p1 = await where(frame);
+			expect(p1.hash).toBe("");
+			await expectAt(
+				frame,
+				p1,
+				{ back: true, forward: true },
+				"the first page",
+				false,
+			);
+			const p2 = await follow(frame, [p1]);
+			const p3 = await follow(frame, [p1, p2]);
+			await expectAt(frame, p3, { back: false, forward: true }, "page 3");
+
+			await use(frame, "back", how);
+			await expectAt(frame, p2, { back: false, forward: false }, "back to 2");
+			await use(frame, "back", how);
+			// The workspace the webview first showed, not the page it shows now.
+			await expectAt(frame, p1, { back: true, forward: false }, "back to 1");
+
+			await use(frame, "forward", how);
+			await expectAt(
+				frame,
+				p2,
+				{ back: false, forward: false },
+				"forward to 2",
+			);
+			await use(frame, "forward", how);
+			await expectAt(frame, p3, { back: false, forward: true }, "forward to 3");
+		});
+	}
+
+	test("#77 a first page that is not the workspace is the boundary Back cannot pass", async () => {
+		const frame = await openFirst("Orders", "Orders");
+		const p1 = await where(frame);
+		expect(p1.hash).not.toBe("");
+		await expectAt(
+			frame,
+			p1,
+			{ back: true, forward: true },
+			"the first page",
+			false,
+		);
+		// A disabled button takes neither the pointer nor a key.
+		const box = await frame.locator('[data-action="back"]').boundingBox();
+		if (!box) throw new Error("no back button box");
+		await host.window.mouse.click(
+			box.x + box.width / 2,
+			box.y + box.height / 2,
+		);
+		await expect.poll(() => where(frame)).toEqual(p1);
+		const p2 = await follow(frame, [p1]);
+		await use(frame, "back", "enter");
+		await expectAt(frame, p1, { back: true, forward: false }, "back to 1");
+		await host.window.mouse.click(
+			box.x + box.width / 2,
+			box.y + box.height / 2,
+		);
+		await expect.poll(() => where(frame)).toEqual(p1);
+		await use(frame, "forward", "enter");
+		await expectAt(frame, p2, { back: false, forward: true }, "forward to 2");
+	});
+
+	test("#77 opening a new page after going Back drops Forward", async () => {
+		const frame = await openFirst("Cross surface", "Cross surface");
+		const p1 = await where(frame);
+		const p2 = await follow(frame, [p1]);
+		const p3 = await follow(frame, [p1, p2]);
+		await use(frame, "back", "enter");
+		await expectAt(frame, p2, { back: false, forward: false }, "back to 2");
+		const branch = await follow(frame, [p1, p2, p3]);
+		expect(branch.hash).not.toBe(p3.hash);
+		await expectAt(frame, branch, { back: false, forward: true }, "the branch");
+		await use(frame, "back", "enter");
+		await expectAt(
+			frame,
+			p2,
+			{ back: false, forward: false },
+			"back from the branch",
+		);
+		await use(frame, "forward", "enter");
+		await expectAt(
+			frame,
+			branch,
+			{ back: false, forward: true },
+			"forward to the branch",
+		);
+	});
+
+	/**
+	 * Records, in the webview, every focus that lands on the page's heading and
+	 * the page that was showing when it did, so a burst of pointer clicks can be
+	 * checked for the arrival each valid click made. A click on a disabled button
+	 * makes no arrival and records nothing.
+	 */
+	async function recordHeadingFocus(frame: Frame) {
+		await frame.evaluate(() => {
+			const w = window as unknown as {
+				__arrivals?: Where[];
+				__recording?: boolean;
+			};
+			w.__arrivals = [];
+			if (w.__recording) return;
+			w.__recording = true;
+			document.addEventListener(
+				"focusin",
+				(event) => {
+					const el = event.target as HTMLElement;
+					if (el.matches("main h1"))
+						w.__arrivals?.push({
+							hash: location.hash,
+							heading: el.textContent?.trim() ?? "",
+						});
+				},
+				true,
+			);
+		});
+	}
+
+	const headingArrivals = (frame: Frame) =>
+		frame.evaluate(
+			() => (window as unknown as { __arrivals: Where[] }).__arrivals,
+		);
+
+	test("#77 a burst of clicks on Back stops at the first page", async () => {
+		const frame = await openFirst("Cross surface", "Cross surface");
+		const p1 = await where(frame);
+		const p2 = await follow(frame, [p1]);
+		const p3 = await follow(frame, [p1, p2]);
+		await recordHeadingFocus(frame);
+		const box = await frame.locator('[data-action="back"]').boundingBox();
+		if (!box) throw new Error("no back button box");
+		for (let click = 0; click < 6; click++)
+			await host.window.mouse.click(
+				box.x + box.width / 2,
+				box.y + box.height / 2,
+			);
+		// Two clicks were valid and arrived, each with the heading focused; the
+		// four that met a disabled Back made no navigation and no arrival. Where
+		// focus rests after them is not the heading's, and is not asserted.
+		await expectAt(
+			frame,
+			p1,
+			{ back: true, forward: false },
+			"after the burst",
+			false,
+		);
+		expect(await headingArrivals(frame), "back arrivals").toEqual([p2, p1]);
+		await recordHeadingFocus(frame);
+		const fwd = await frame.locator('[data-action="forward"]').boundingBox();
+		if (!fwd) throw new Error("no forward button box");
+		for (let click = 0; click < 6; click++)
+			await host.window.mouse.click(
+				fwd.x + fwd.width / 2,
+				fwd.y + fwd.height / 2,
+			);
+		await expectAt(
+			frame,
+			p3,
+			{ back: false, forward: true },
+			"after the burst forward",
+			false,
+		);
+		expect(await headingArrivals(frame), "forward arrivals").toEqual([p2, p3]);
+	});
+
+	test("#77 a page of a different workspace file starts the history over", async () => {
+		const frame = await openFirst("Cross surface", "Cross surface");
+		const first = await where(frame);
+		const second = await follow(frame, [first]);
+		await openPageByKeyboard(host.window, "Zebra Model");
+		await expect(frame.locator("main h1")).toContainText("Zebra Model");
+		const zebra = await where(frame);
+		expect(zebra.hash).toBe("");
+		await expect.poll(() => ends(frame)).toEqual({ back: true, forward: true });
+		const box = await frame.locator('[data-action="back"]').boundingBox();
+		if (!box) throw new Error("no back button box");
+		await host.window.mouse.click(
+			box.x + box.width / 2,
+			box.y + box.height / 2,
+		);
+		await expect.poll(() => where(frame)).toEqual(zebra);
+		// Its own pages are reached and left as usual, and Back stops at its workspace.
+		await expect.poll(async () => (await active(frame)).tag).toBe("BODY");
+		const inZebra = await follow(frame, [zebra, first, second]);
+		await use(frame, "back", "enter");
+		await expectAt(
+			frame,
+			zebra,
+			{ back: true, forward: false },
+			"back in the second workspace",
+		);
+		await host.window.mouse.click(
+			box.x + box.width / 2,
+			box.y + box.height / 2,
+		);
+		await expect.poll(() => where(frame)).toEqual(zebra);
+		// The click on a disabled button leaves focus on the body, so the reader's
+		// next Tab starts from the top of the page and meets Forward going forward.
+		await expect.poll(async () => (await active(frame)).tag).toBe("BODY");
+		const stop = await tabToLabel(host, frame, "Forward");
+		expect(stop.tag).toBe("BUTTON");
+		await host.window.keyboard.press("Enter");
+		await expectAt(
+			frame,
+			inZebra,
+			{ back: false, forward: true },
+			"forward in the second workspace",
+		);
 	});
 });

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Workspace } from "@open-domain-specification/core";
-import { onMount, tick, untrack } from "svelte";
+import { onDestroy, onMount, tick, untrack } from "svelte";
 import EmptyState from "../lib/atoms/EmptyState.svelte";
 import SkipLink from "../lib/atoms/SkipLink.svelte";
 import { focusArrival } from "../lib/focus";
@@ -10,6 +10,7 @@ import Sidebar from "../lib/organisms/Sidebar.svelte";
 import Page from "../lib/Page.svelte";
 import { modelRefToHash } from "../lib/ref-transport";
 import { createRouter } from "../lib/router.svelte";
+import type { ShellMessage } from "../protocol";
 import {
 	type Bootstrap,
 	embedded,
@@ -23,6 +24,7 @@ import WorkspacePicker from "./WorkspacePicker.svelte";
 /** Workspaces handed in by the host skip the import screen; more than one shows a picker. */
 let { initial }: { initial?: Bootstrap } = $props();
 const router = createRouter();
+onDestroy(router.destroy);
 let models = $state<Model[]>(
 	untrack(() => initial?.workspaces?.map(load) ?? []),
 );
@@ -56,11 +58,14 @@ onMount(() => {
 	const onMessage = (e: MessageEvent<HostMessage>) => {
 		const msg = e.data;
 		if (msg.type === "toolbar") {
-			host.postMessage({ type: msg.action, ref: router.ref });
+			if (msg.action === "back") router.back();
+			else if (msg.action === "forward") router.forward();
+			else host.postMessage({ type: msg.action, ref: router.ref });
 		} else if (msg.type === "model") {
 			models = msg.workspaces.map(load);
 			chosen = 0;
-			if (msg.ref) router.go(msg.ref);
+			if (msg.reset) router.reset(msg.ref ?? "#");
+			else if (msg.ref) router.go(msg.ref);
 		} else if (msg.type === "navigate") router.go(msg.ref);
 		else if (msg.type === "probe") {
 			const attr = (selector: string, name: string) =>
@@ -94,6 +99,17 @@ onMount(() => {
 
 $effect(() => {
 	vscode?.postMessage({ type: "navigated", ref: router.ref });
+});
+
+/** The shell's Back and Forward buttons are enabled by where the router stands. */
+$effect(() => {
+	if (!embedded) return;
+	const message: ShellMessage = {
+		type: "history",
+		canGoBack: router.canGoBack,
+		canGoForward: router.canGoForward,
+	};
+	window.postMessage(message, "*");
 });
 </script>
 
