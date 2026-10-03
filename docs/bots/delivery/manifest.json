@@ -2,17 +2,17 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 12,
-  "closed": 42,
-  "closed_implemented": 34,
+  "current_open": 9,
+  "closed": 45,
+  "closed_implemented": 37,
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
   "active_milestone": 5,
-  "integration_batch": "milestone-05-accessible-reading",
+  "integration_batch": "milestone-05-record-closeout",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M5 source, actual-reader acceptance and proportional quality complete; exact clean-head landing gate is the next required step. 12 remaining.",
+  "candidate_state": "Model approval preserved on e5cda126; M5 delivered three closures with9actualopen. Closing-record gate/publication pending; M6 held.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -726,7 +726,7 @@
         83
       ],
       "owner": "lead",
-      "state": "M5 source, actual-reader acceptance and proportional quality complete; exact clean-head landing gate is the next required step.",
+      "state": "complete: PR135 identical gated tree, required pre/postCI green, all three issues individually accepted and closed; closing-record gate/publication pending",
       "expected_remaining": 9,
       "entry_scope": "Named contrast failures, prose links and keyboard skip paths.",
       "exit_acceptance": "Both-theme measured contrast; underlined prose links; first-stop content skip and one-step diagram bypass with real keys.",
@@ -795,9 +795,65 @@
           "highest_introduced_score": 0.3,
           "blocking_findings": 0,
           "landing_gate": "pending exact cleanhead"
+        },
+        {
+          "scope": "M5 merged accepted closeout",
+          "at": "2026-10-03T18:20:24.875208+00:00",
+          "candidate": "f3ff556d509788b09462ae76ab670da5ad94d482",
+          "merge": "f2069a3464b5375fea00913b48bb2a3e766c7f71",
+          "merged_at": "2026-10-03T18:05:48Z",
+          "tree_equals_gated_candidate": true,
+          "pr": 135,
+          "local_gate_exit": 0,
+          "browser_passed": 614,
+          "documented_baseline_skips": 20,
+          "pages_unit_passed": 1244,
+          "pages_coverage_percent": 100,
+          "svelte_check_files": 974,
+          "svelte_check_errors": 0,
+          "svelte_check_warnings": 0,
+          "exact_pins_schema_esm_passed": true,
+          "premerge_ci": 37142462656,
+          "postmerge_ci": 37142959185,
+          "required_jobs": "test/e2e/real-vscode success on exact respective heads",
+          "release_input": false,
+          "publish": "skipped",
+          "closures": [
+            {
+              "closedAt": "2026-10-03T18:17:46Z",
+              "number": 78,
+              "state": "CLOSED",
+              "title": "Some secondary text is too faint to read against its background",
+              "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/78"
+            },
+            {
+              "closedAt": "2026-10-03T18:17:51Z",
+              "number": 79,
+              "state": "CLOSED",
+              "title": "A link inside a sentence is told apart only by its colour",
+              "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/79"
+            },
+            {
+              "closedAt": "2026-10-03T18:17:54Z",
+              "number": 83,
+              "state": "CLOSED",
+              "title": "A keyboard reader has no way to skip the tree and the diagrams",
+              "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/83"
+            }
+          ],
+          "actual_remaining": 9,
+          "new": 0,
+          "reopened": 0,
+          "record_closeout": "own clean-head unmodified gate/publication pending",
+          "root_review": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/landing/f3ff556d509788b09462ae76ab670da5ad94d482/root-integrated-review.json",
+          "retrospective": "docs/bots/sprints/2026-10-03-retro-06.md"
         }
       ],
-      "closed_issues": []
+      "closed_issues": [
+        78,
+        79,
+        83
+      ]
     },
     {
       "id": 6,
@@ -909,5 +965,57 @@
     "reset": "01:00 Europe/London per owner",
     "durable_policy": "/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.md",
     "updated": "2026-10-03T00:03:44.296855+00:00"
+  },
+  "active_delivery": {
+    "scope": "M5 merged accepted closeout",
+    "at": "2026-10-03T18:20:24.875208+00:00",
+    "candidate": "f3ff556d509788b09462ae76ab670da5ad94d482",
+    "merge": "f2069a3464b5375fea00913b48bb2a3e766c7f71",
+    "merged_at": "2026-10-03T18:05:48Z",
+    "tree_equals_gated_candidate": true,
+    "pr": 135,
+    "local_gate_exit": 0,
+    "browser_passed": 614,
+    "documented_baseline_skips": 20,
+    "pages_unit_passed": 1244,
+    "pages_coverage_percent": 100,
+    "svelte_check_files": 974,
+    "svelte_check_errors": 0,
+    "svelte_check_warnings": 0,
+    "exact_pins_schema_esm_passed": true,
+    "premerge_ci": 37142462656,
+    "postmerge_ci": 37142959185,
+    "required_jobs": "test/e2e/real-vscode success on exact respective heads",
+    "release_input": false,
+    "publish": "skipped",
+    "closures": [
+      {
+        "closedAt": "2026-10-03T18:17:46Z",
+        "number": 78,
+        "state": "CLOSED",
+        "title": "Some secondary text is too faint to read against its background",
+        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/78"
+      },
+      {
+        "closedAt": "2026-10-03T18:17:51Z",
+        "number": 79,
+        "state": "CLOSED",
+        "title": "A link inside a sentence is told apart only by its colour",
+        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/79"
+      },
+      {
+        "closedAt": "2026-10-03T18:17:54Z",
+        "number": 83,
+        "state": "CLOSED",
+        "title": "A keyboard reader has no way to skip the tree and the diagrams",
+        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/83"
+      }
+    ],
+    "actual_remaining": 9,
+    "new": 0,
+    "reopened": 0,
+    "record_closeout": "own clean-head unmodified gate/publication pending",
+    "root_review": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/landing/f3ff556d509788b09462ae76ab670da5ad94d482/root-integrated-review.json",
+    "retrospective": "docs/bots/sprints/2026-10-03-retro-06.md"
   }
 }

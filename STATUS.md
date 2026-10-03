@@ -2,7 +2,7 @@
 
 ## Goal / health
 
-Clear the guarded ODS backlog. Milestones 1–4 have delivered their accepted outcomes. The guarded baseline census is **12 remaining / 42 closed**, from 54 open: 34 implemented and eight not planned, with no new or reopened issues. No release is claimed.
+Clear the guarded ODS backlog. Milestones 1–5 have delivered their accepted outcomes. The actual census is **9 remaining / 45 closed**, from 54 open: 37 implemented and eight not planned, with no new or reopened issues. No release is claimed.
 
 ## Binding delegation policy — 2026-10-03
 
@@ -14,24 +14,20 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-Milestone 5 is active for #78, #79 and #83: readable text contrast, links distinguishable beyond colour, and keyboard bypasses. Opus 5.5 coordinates Sonnet verification after root accepted source, actual-reader evidence and proportional quality. The first whole gate on `1e35ce1e` passed all preceding checks and 613 browser tests, but failed one existing shared-kernel assertion requiring warning text and border to share a colour. A bounded test-only correction now checks their deliberately separate warning tokens; all four focused context tests, lint and strict ad hoc TypeScript passed. Product and accepted reader evidence remain unchanged. A fresh clean-head whole gate is required. Card 185 is doing. The published base is `96939eac134b5140754f81579ca04f81400d6105`; Final reader matrix and native suites passed:31 contrast classes/98 cells,232 static cases,32 native bypass cases and native keyboard25/25. Root checker passed; the measured asynchronous paint assertion correction preserved its complete predicates. Proportional quality is accepted; the exact-head landing gate and publication remain pending. Entry count is 12; target is 9 after three accepted closures.
+Milestone 5 delivered #78, #79 and #83 in PR #135. Gated candidate `f3ff556d509788b09462ae76ab670da5ad94d482` passed the unchanged Node26 whole gate:614 browser passes,20 documented baseline skips,1,244 pages tests at100% coverage,974-file svelte-check0/0, exact reference pins/schema/ESM passed. Merge `f2069a3464b5375fea00913b48bb2a3e766c7f71` at2026-10-03T18:05:48Z has the identical tree. Required pre/post CI37142462656/37142959185 passed test/e2e/real-vscode; publish skipped with release=false. All three issues closed individually at18:17:46/51/54Z. Card185 is done. This record-only closeout still requires its own unchanged clean-head gate and publication; no product changes remain.
 
-Milestone 4 is complete. PR #134 merged as `42ae867d` with the exact gated `ddbd01d1` tree. Required pre/post CI 37121515458/37122052999 passed all three jobs; publish was skipped. #87, #88 and #80 closed individually, #105 last. Closing records `96939eac134b5140754f81579ca04f81400d6105` passed their own unmodified gate (546 browser passes, 20 documented baseline skips, 1,156 pages tests and 100% coverage) and are published on `develop`. Exact model pins, schema and ESM remain correct.
+Actual four-reader proof:31 contrast classes/98 cells meet4.5:1;232 static cases,32 native bypass cases; actual native keyboard25/25 and checker0. Source and proportional quality accepted. First product gate `1e35ce1e` failed one stale border/text equality; the bounded test-only correction pins intentional marker and readable-text tokens separately. Accepted product/host/quality evidence was retained. Failed and aborted harness invocations remain archived, not passes.
 
-Milestone 3 closeout commit `000f5a7f` passed its own unmodified Node 26 gate and is published on `develop`: 485 browser tests passed, 20 documented skips, pages coverage 100%, schema/ESM checks and exact reference diagnostic pins unchanged. Its product tree is unchanged from accepted PR #106. Those are historical M3 results; the current guarded census is 12 remaining / 42 closed.
+Milestone4 and closing records `96939eac` are delivered and published. The final model approval remains the original exact AstraLow approval; M5 changes no metamodel rule or diagnostic pin.
 
 ## Next
 
-Run the unmodified landing gate on the exact frozen clean commit; then one PR to develop and required exact-head pre/post CI with release disabled. Preserve all passing host evidence and 1,244-test full-coverage proof. Keep the whole landing gate, required CI and closures ahead; no Astra UI review or release.
+Gate and publish these M5 closing records, then activate navigation #91/#77 from that actual published head. Capture a bounded baseline before source dispatch: visible current tree row on deep-link load and route changes, and actual extension page-view back/forward. Prepared handoff is held until closeout publication. Root owns acceptance; Opus5.5 coordinates Sonnet5.5. No Astra UI review or release.
 
 ## Later
 
-Follow the remaining [roadmap](docs/bots/ROADMAP.md): accessibility, navigation, phone reading, import/copy, multi-file #59, then forms #54 and parent #63 last. Preserve all four readers, reference diagnostic pins and generated integrity. No tooling expansion, optional redesign or new tickets as substitutes for delivery.
+Follow the remaining [roadmap](docs/bots/ROADMAP.md): navigation, phone reading, import/copy, multi-file #59, then forms #54 and parent #63 last. Preserve all four readers, reference diagnostic pins and generated integrity. No tooling expansion, optional redesign or new tickets as substitutes for delivery.
 
 ## Outcomes / blockers
 
-No external blocker. Milestones 1–4 and their closing records are delivered, gate-green and published. The eight not-planned proposal dispositions are decisions rather than delivered features. No new or reopened tickets. Model approval remains historical on `e5cda126`; no Astra UI review.
-
-## Working state
-
-Updated: 2026-10-03T17:35:18.533790+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/m5-accessible-reading`, base `96939eac134b5140754f81579ca04f81400d6105`. M5 records and the dated prose-link design amendment are uncommitted. Source, actual-reader and proportional quality evidence is accepted; the exact-head landing gate and publication remain. No feature closure is claimed. Main-checkout biome/promo work is preserved. Durable CURRENT.json identifies the completed baseline, root scope rulings and source assignment.
+No external blocker. Actual backlog is9; required M5 pre/post CI and individual closures are complete. Closing-record gate/publication is next. Keep baseline-first sequencing, foreground DONE, canonical-model checks and all saved stall/retry/resource controls. Switch to GPT-6 Luna only on an actual Claude quota response; none has occurred.

@@ -1,13 +1,13 @@
 ---
-column: doing
+column: done
 labels: [frontend, bug]
 priority: high
 agent: opus-coordinator
-live: true
-status: Source and reader quality complete; final landing gate
-progress: 80
+live: false
+status: Delivered after exact-head local gate, pre/post CI and three individual closures
+progress: 100
 clean-code-swept: true
-updatedAt: 2026-10-03T17:51:52.326716+00:00
+updatedAt: 2026-10-03T18:20:24.875208+00:00
 ---
 # Words, links and keyboard bypasses
 
@@ -23,16 +23,16 @@ Milestone 5, issues #78, #79 and #83. Readers can see flagged text in both theme
 - [x] #78: every affected text role meets the appropriate AA contrast threshold
 - [x] #79: running-text links have a visible cue beyond colour; standalone links retain their appearance
 - [x] #83: first-stop content skip and one-step diagram bypass work with real keyboard input
-- [ ] Preserve heading focus, existing meaningful stops, all four readers, exact model pins and generated integrity
+- [x] Preserve heading focus, existing meaningful stops, all four readers, exact model pins and generated integrity
 
 ## Gates
 
 - [x] Meaningful red/green regressions, owning-package typecheck and coverage
 - [x] Final rendered contrast/link and real keyboard/host acceptance
 - [x] Scoped proportional quality, no introduced blocking findings
-- [ ] Unmodified `bash scripts/verify-all.sh` on the clean final candidate
-- [ ] One independently reviewed delivery PR; necessary exact-head CI, release disabled
-- [ ] Individual issue acceptance and closures after merge and required post-merge verification
+- [x] Unmodified `bash scripts/verify-all.sh` on the clean final candidate
+- [x] One independently reviewed delivery PR; necessary exact-head CI, release disabled
+- [x] Individual issue acceptance and closures after merge and required post-merge verification
 
 ## Comments
 
@@ -49,3 +49,5 @@ Milestone 5, issues #78, #79 and #83. Readers can see flagged text in both theme
 - **lead** (2026-10-03T17:35:18.533790+00:00): Eight independent Sonnet quality lenses returned actualDONE through Opus; rawmodels/foregroundpairs verified, highestintroducedscore0.3,noblockers. Root preserved missing BOUNDARY/PANIC reports from completedtranscripts. Existing PageHeader.svelte:54 marker is unchanged/outside outgoingdiff under the skill’s explicit scope; no waiver or extra ticket. Candidate freeze for one unmodified exact-head gate follows. Source/host/quality accepted, gate/publication/closures notyetclaimed.
 
 - **lead** (2026-10-03T17:51:52.326716+00:00): First unmodified clean-head gate `1e35ce1e` exited1: all package checks/pins/schema/ESM passed, browser613pass/1fail/20documented skips. One stale shared-kernel test expected warning rim==text despite deliberate #78 contrast split. Accepted bounded Sonnet test-only correction under Opus: token-specific paints, unmarked distinction and evidence interactions preserved; focused4pass,lint0,strict ad hoc tsc0. Root corrected comment attribution to issue#78, reviewed delta with no blocking clean-code finding, and preserved all accepted product/native/reader/quality proof. Failed root PATH launch and first missing-dom.iterable tsc are counted. New frozen clean candidate and unchanged full gate precede publication; no closure or release claimed.
+
+- **lead** (2026-10-03T18:20:24.875208+00:00): PR135 merged f2069a3464b5375fea00913b48bb2a3e766c7f71 at2026-10-03T18:05:48Z; identical to gated f3ff556d509788b09462ae76ab670da5ad94d482 tree. Local614browser/20baseline skips,allpackages/100%coverage/check0/0/pins/schema/ESM passed. Necessarymanualpre/postCI37142462656/37142959185 all3jobs green,releasefalse/publishskipped. #78/#79/#83 individually accepted and closed18:17:46/51/54Z;actual9open/45closed,0new/reopened. Carddone,clean-code-swepttrue. This record-only closeout must pass its own mandatory gate before publication; M6 source remains held. Retrospective06 records real failures and controls, no model change/Astra/release.
