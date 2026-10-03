@@ -2,15 +2,17 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 29,
-  "closed": 25,
+  "current_open": 21,
+  "closed": 33,
+  "closed_implemented": 25,
+  "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
   "active_milestone": 2,
-  "integration_batch": "PR132",
+  "integration_batch": "milestone-02-decision-dispositions",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "PR132 merged and individually accepted; merged tree equals the Astra-reviewed product tree. A new metadata-only record update is in progress and still requires its own mandatory closeout gate.",
+  "candidate_state": "PR132 merged and individually accepted; merged tree equals the Astra-reviewed product tree. Milestone 1 records 0109d39e passed their own gate and landed on develop. Milestone 2 disposition records are metadata-only, add no product change, and still require their own mandatory records gate.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -195,13 +197,58 @@
         65
       ],
       "owner": "lead",
-      "state": "next: reconcile and resolve the eight model proposals under recorded decision triggers",
+      "state": "disposition complete / record gate pending: eight not-planned closures with #63 reconciled and open; no capability implemented",
       "expected_remaining": 21,
       "entry_scope": "Apply current decisions; reconcile63 module promise while retaining59/54.",
       "exit_acceptance": "Each not-planned disposition states retained cost, reopening condition and actual source evidence; parents reconciled last.",
       "investigation_limit": "No implementation or new DDD debate without a recorded reopening condition being met.",
-      "evidence": [],
-      "closed_issues": []
+      "evidence": [
+        {
+          "scope": "GitHub dispositions published and verified 2026-10-03",
+          "ledger": "/Users/jonathanturnock/.codex/ods-delivery/milestone-02/disposition-execution/actions.jsonl",
+          "source_candidate": "5a6241288973fc3befdb2f46876e28174534126e",
+          "issues_closed_not_planned": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            64,
+            65
+          ],
+          "parents_closed_after_children": {
+            "64": [
+              36,
+              38,
+              39
+            ],
+            "65": [
+              35,
+              40
+            ]
+          },
+          "features_claimed": false,
+          "issue_63": "remains open; order 59 then 54; module promise excluded under decision 15",
+          "open": 21,
+          "closed": 33,
+          "closed_implemented": 25,
+          "closed_not_planned": 8,
+          "new": 0,
+          "reopened": 0,
+          "decision_16_on_39": "neither accepts nor rejects the proposal; retained as not planned"
+        }
+      ],
+      "closed_issues": [
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        64,
+        65
+      ]
     },
     {
       "id": 3,
@@ -214,7 +261,7 @@
         103
       ],
       "owner": "lead",
-      "state": "waiting",
+      "state": "next after the Milestone 2 record publication",
       "expected_remaining": 16,
       "entry_scope": "Existing PR #106 after model closeout;103 separate PR if unrelated cause.",
       "exit_acceptance": "Measured inline/fullscreen fit, panel clearance, actual hosts and explained stable released-node geometry.",
@@ -347,9 +394,15 @@
   },
   "previous_candidate": "bdadd93d390d6a01384d8fcf677492f68a78028c",
   "records_closeout_gate": {
+    "status": "passed and published",
+    "candidate": "0109d39e845616afec0a17e0ec0c9f5df98fa752",
+    "exit": 0,
+    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-01/record-closeout-0109d39e/gate-result.json"
+  },
+  "milestone_2_records_gate": {
     "status": "pending",
-    "scope": "metadata-only updates to RepoDoc cards, STATUS, roadmap, delivery controls, manifest and sprint record",
-    "note": "Product gate passed on the reviewed product SHA. Do not claim that gate as a run on the post-merge records update; no push until the lead runs the mandatory closeout gate."
+    "scope": "metadata-only Milestone 2 disposition records: card 182, STATUS, roadmap, manifest and sprint record",
+    "note": "No gate has run on these records. The primary session runs the mandatory unmodified gate before any push and moves card 182 to done only after it."
   },
   "execution_policy": {
     "preferred_coordinator": "Claude Opus 5.5",

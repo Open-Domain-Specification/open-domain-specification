@@ -10,9 +10,9 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Current position (2026-10-03)
 
-PR #132 is merged and accepted. The issue census is 29 open / 25 closed / 0 new / 0 reopened from a baseline of 54 open. The exact product candidate `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` received OpenAI Astra low APPROVE; owner-authorized OpenAI-only exception applies, and no Claude approval is claimed. The merge commit is `5a6241288973fc3befdb2f46876e28174534126e`, whose tree `6efd1aa35bae524dfce9345210096caeafcef236` exactly matches the reviewed candidate tree. Product gate and actual-host evidence passed; no remote CI was run or required. Milestone 2, the eight recorded model proposals, is next.
+PR #132 is merged and accepted. After Milestone 2 dispositions the issue census is 21 open / 33 closed / 0 new / 0 reopened from a baseline of 54 open; the 33 closed are 25 implemented and 8 closed not planned. The exact product candidate `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` received OpenAI Astra low APPROVE; owner-authorized OpenAI-only exception applies, and no Claude approval is claimed. The merge commit is `5a6241288973fc3befdb2f46876e28174534126e`, whose tree `6efd1aa35bae524dfce9345210096caeafcef236` exactly matches the reviewed candidate tree. Product gate and actual-host evidence passed; no remote CI was run or required. Milestone 2, the eight recorded model proposals, has its dispositions complete and its record gate pending; Milestone 3 is next after the Milestone 2 record publication.
 
-The post-merge closeout metadata update is docs-only. Its mandatory repository gate is still pending; product gate evidence is not being represented as a check on these newer records.
+Model closeout records 0109d39e passed their own unmodified gate and landed on develop. The Milestone 2 records are docs-only; their mandatory repository gate has not run, and product or earlier record gate evidence is not represented as a check on them.
 
 
 **Binding reviewer policy:** Astra low is the one final complete-model quality gate, only after lead review and explicit readiness. It is never a default or per-change reviewer. After a BLOCK, correct and locally verify the complete defect class before the lead declares readiness again. Claude weekly quota exhaustion activates the owner-authorized OpenAI-only exception for this final gate; no Claude approval is claimed. Preserve the actual reviewed SHA and require product-tree equivalence at merge.
@@ -20,8 +20,8 @@ The post-merge closeout metadata update is docs-only. Its mandatory repository g
 | Milestone | Issues | Expected remaining | State |
 | --- | --- | ---: | --- |
 | 1. Finalise and land the model | #107, #108, #109, #110, #111, #112, #113, #114, #115, #116, #117, #118, #119, #120, #121, #122, #123, #124, #125, #126, #127, #128, #129, #130, #131 | 29 | complete: 25 individually accepted closures |
-| 2. Resolve the model proposals | #35, #36, #37, #38, #39, #40, #64, #65 | 21 | next |
-| 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | waiting |
+| 2. Resolve the model proposals | #35, #36, #37, #38, #39, #40, #64, #65 | 21 | disposition complete / record gate pending: 8 closed not planned, #63 reconciled and open |
+| 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | next, after Milestone 2 record publication |
 | 4. Readable tables | #105, #87, #88, #80 | 12 | waiting |
 | 5. Accessible reading | #78, #79, #83 | 9 | waiting |
 | 6. Location and return paths | #91, #77 | 7 | waiting |
@@ -37,6 +37,10 @@ The 54-open baseline became 29 open / 25 closed, with zero new and zero reopened
 The gate-before-review and exact-SHA controls were effective: the final review inspected the same product tree that passed the local gate and later merged. The bounded defect-class correction avoided treating an earlier green gate or diagnostic-free model as sufficient proof. Four-surface evidence includes generic real VS Code host coverage; it does not claim a dedicated NorthBank Money journey.
 
 An evidence-preparation retrospective outside the repository records that ignored generated outputs were mistaken for absent files and an old PR draft carried stale helper paths/ranges. Those errors were caught before publication. The control is to derive acceptance references from the current packet, verify paths in the actual checkout (separately recording ignored/generated provenance), and omit stale ranges unless freshly checked. That retrospective is retained at `/Users/jonathanturnock/.codex/ods-delivery/milestone-01/e5cda126/evidence-retrospective.md`.
+
+## Milestone 2 disposition retrospective (2026-10-03)
+
+Open issues went from 29 to 21 with zero new and zero reopened. Eight proposals (#35–#40, #64, #65) were closed as not planned, each with a published comment stating its retained cost and source-backed reopening condition; #64 and #65 closed after their children and no feature is claimed. #63 stays open, ordered #59 then #54, with its module promise excluded under decision 15. Decision 16 neither accepts nor rejects #39. Decision-backed exclusions reduced waiting work without delivering capability: they are not implemented features, and the closed count of 33 is 25 implemented plus 8 not planned. The ledger is `/Users/jonathanturnock/.codex/ods-delivery/milestone-02/disposition-execution/actions.jsonl`.
 
 ## Historical roadmap and retrospective records
 

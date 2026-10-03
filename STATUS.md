@@ -2,7 +2,7 @@
 
 ## Goal / health
 
-Clear the guarded ODS backlog. Milestone 1 is complete: PR #132 is merged and its 25 model stories were accepted and closed individually. The issue census is 29 open, 25 closed, zero new and zero reopened; the baseline was 54 open.
+Clear the guarded ODS backlog. Milestone 1 is complete: PR #132 is merged and its 25 model stories were accepted and closed individually. Milestone 2 dispositions are complete, with its record gate pending. The issue census is 21 open, 33 closed, zero new and zero reopened against the 54-open baseline. The 33 closed are 25 implemented (Milestone 1) and 8 closed not planned (Milestone 2); no new capability was implemented.
 
 ## Binding delegation policy — 2026-10-03
 
@@ -14,17 +14,17 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Now
 
-Milestone 2, resolve the eight model proposals (#35–#40, #64, #65), is next. Apply their existing decision records and reopen only on the recorded source-backed triggers. [Manifest](docs/bots/delivery/manifest.json) is the operative ledger; [delivery controls](docs/bots/delivery/CONTROLS.md) govern scope and review.
+Milestone 2, the eight model proposals, has its dispositions complete and its record gate pending. #35, #36, #37, #38, #39, #40, #64 and #65 are each closed as not planned with a published comment carrying retained cost, source-backed reopening condition and actual evidence; #64 and #65 closed after their children and deliver no feature. #63 stays open, ordered #59 then #54, with the module promise excluded under decision 15. Decision 16 neither accepts nor rejects #39. [Manifest](docs/bots/delivery/manifest.json) is the operative ledger; [delivery controls](docs/bots/delivery/CONTROLS.md) govern scope and review.
 
 Product evidence: OpenAI Astra low approved exact SHA `e5cda1260f09b5b69a41b0a4027bd63fd33b1899`; no Claude approval is claimed under the owner-authorized OpenAI-only exception. PR #132 merged as `5a6241288973fc3befdb2f46876e28174534126e`; merged tree `6efd1aa35bae524dfce9345210096caeafcef236` exactly matches the reviewed candidate tree. The unmodified local gate passed on that product candidate; actual VS Code host suites passed 16 with four documented optional screenshot skips, keyboard passed 23, and checker exited 0. No remote CI run was required or made.
 
 ## Next
 
-After the lead reviews and freezes this metadata-only closeout update, run the mandatory repository gate before any push. Do not treat the product gate above as a gate on the current record-only changes.
+Run the mandatory unmodified gate on the Milestone 2 records, then publish them; card 182 moves to done only after that gate. Milestone 3, diagrams and reliable drag checks (target: 16 open after it), is next after the Milestone 2 record publication. Model closeout records 0109d39e passed their own unmodified gate and landed on develop.
 
 ## Later
 
-Resume diagram work after Milestone 2. Remaining milestones and scope stay in the manifest and [roadmap](docs/bots/ROADMAP.md); no tooling or model-proposal implementation starts as part of this closeout.
+Resume diagram work (Milestone 3) after the Milestone 2 record publication. Remaining milestones and scope stay in the manifest and [roadmap](docs/bots/ROADMAP.md); no tooling or model-proposal implementation starts as part of this closeout.
 
 ## Outcomes / blockers
 
@@ -32,4 +32,4 @@ All 25 cards 157–181 are reconciled, marked done and non-live; the #108 parent
 
 ## Working state
 
-Updated: 2026-10-02T23:42:13Z. Worktree `/Users/jonathanturnock/.codex/worktrees/relationship-pages/open-domain-specification`; branch `codex/model-closeout-132`; checked product commit `5a6241288973fc3befdb2f46876e28174534126e`. Current partial changes are metadata-only: the 25 model cards, this status, roadmap, delivery controls, manifest and sprint 04. Mandatory closeout gate for these record changes is pending.
+Updated: 2026-10-03. Worktree `/Users/jonathanturnock/.codex/worktrees/relationship-pages/open-domain-specification`; branch `codex/decision-dispositions-2`; checked product commit `5a6241288973fc3befdb2f46876e28174534126e`. Current uncommitted changes are metadata-only: card 182, this status, roadmap, manifest and sprint 04. Card 182 is in review, not live; the mandatory records gate for these changes has not run.
