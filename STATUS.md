@@ -14,13 +14,13 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Now
 
-Milestone 3 has delivered #103. PR #106 product source, 168 actual-host cases and full product quality remain accepted. Initial39e2f334 local gate passed; necessary pre-merge CI failed one pre-drag space guard. The first test-only pan correction27e83b8f then failed the clean736b1395 local gate with held camera drift7.875 (484 browser cases passed,20 documented skips; units/coverage/schema/ESM/pins passed). The bounded Opus5.5/Sonnet5.5 assessment reproduced that exact drift10/10: the setup pan moved the grab into the left40px auto-pan zone. A replacement test-only setup waits for fitting geometry, uses real zoom controls and guards the entire pointer path. Thirty ordinary drag checks passed; the combined diagnostic invocation exited1 with20 diagnostic harness failures, so corrected gate-start acceptance is explicitly pending. Eight-principle delta review is accepted (no required changes); no further CI or publication yet. Twenty issues remain.
+Milestone 3 has delivered #103. PR #106 product source,168 actual-host cases and whole product quality remain accepted. Clean c299a433 passed the unmodified local gate (485 browser pass,20 documented skips; pages1084/100% and schema/ESM/pins passed). Required Linux CI37102120921 passed unit and real-vscode, but failed the initial cluster-containment setup poll before any zoom/drag (484 browser pass,1 failed,20 skips). Opus5.5/Sonnet5.5 read-only subsystem assessment proved the camera stayed at the sketch fit; switching Cards has no explicit fit trigger. The new test had assumed an automatic refit. Root now authorizes one test-only real Fit View setup correction, with controlled clipped-left/insufficient-right-room starting-pose proof before another gate/CI. The correction passed6 natural/controlled-bad-pose checks plus30 original drag checks. Both former bad geometry conditions are verified before the Fit View click; it normalizes to the same cards fit. The small test delta is complete; the final four-file outgoing quality review passed (no required changes). Root owns records. Twenty issues remain; no new/reopened tickets or merge/closure.
 
 Milestone 2 records a647c6e0 passed their final unmodified gate and landed on develop; card 182 is done. Model approval remains historical e5cda126, with no new Astra request for UI/tooling.
 
 ## Next
 
-Freeze one clean candidate and run unmodified Node26 verify-all once as the gate-start proof. Publish only on gate0 and clean exact head, then run necessary exact-head non-release pre/post CI. Retain all failed attempts; no unchanged-head CI reruns. Existing host geometry and keyboard evidence remains valid for unchanged product source.
+Freeze one clean candidate and run the unmodified local gate once, then required exact-head Linux CI. CI only follows a newly proven local candidate; never rerun an unchanged failed head. Existing host/keyboard proof is retained for unchanged product source. If real Fit View fails to contain the visible clusters, stop and assess actual failure before another correction.
 
 ## Later
 
@@ -32,4 +32,4 @@ All 25 cards 157–181 are reconciled, marked done and non-live; the #108 parent
 
 ## Working state
 
-Updated: 2026-10-03T06:04:12.703029+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/epic-102-diagram-fit`; product `8ac154c5`; failed local candidate `736b1395`; remote PR head `39e2f334`; base `f06b8484`. Only test setup and these delivery records are changing. Card156 doing;183 done. Durable CURRENT.json tracks the actual coordinator process; historical journals remain append-only.
+Updated: 2026-10-03T06:41:22.984008+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/epic-102-diagram-fit`; product8ac154c5; HEAD/remote c299a433, base f06b8484. Test setup and three delivery records are unfrozen for the bounded correction; no other source/config/model/pin changes authorized. Card156 doing;183 done. Durable CURRENT.json tracks session82151 and actual evidence; old green gates and failed candidates remain historical.

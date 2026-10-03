@@ -12,7 +12,7 @@
   "integration_batch": "epic-102-diagram-fit",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "PR106 product8ac/hosts/fullquality retained;39localgate0 butCIpre-dragroomfailure;736localgate1 heldcamera+7.875 from leftedgeauto-pan. Newtest-onlyzoom/pathsetupordinary30passed,diagnosticinvocation1/20harnessfailures; scoped full8 quality accepted; cleanmandatorygate pending. No newCI/publication.",
+  "candidate_state": "PR106 explicitrealFitView testcorrection accepted:6natural/controlledbad+30trackedcases, bodyidentity/rawrecords verified; finalfourfile8principlequality passed no requiredchanges. Newcleanmandatorygate next, thennecessaryexactheadLinuxCI; no merge/closure yet.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -490,6 +490,55 @@
             "claude-sonnet-5-5"
           ],
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-driver-quality/lead-acceptance.json",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T06:31:02.583311+00:00",
+          "scope": "PR106 Linux containment failure reassessed before further correction",
+          "candidate": "c299a4331d0b0581afeb38a239652b24971dabdf",
+          "local_gate_exit": 0,
+          "CI_run": 37102120921,
+          "CI": "test/real-vscode success,e2e484pass1fail20skip,publishskipped",
+          "actual_failure": "initialcontainmentpolltimeout beforezoom/drag",
+          "assessment_exit": 0,
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "cause": "no explicitfitonstyleswitch;camera remainedsketchfit,leftcluster28.30outside/rightroom66.7",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-linux-fit-assessment/lead-acceptance.json",
+          "next": "explicitrealFitViewaftermeasuredsettle;controlledbothbadgeometryconditions proof beforegate/CI",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T06:38:04.575614+00:00",
+          "scope": "PR106 explicit real Fit View correction correctness accepted",
+          "source_sha256": "ae36eafb1307a194ed26d12c8a16d9f7dbbceba692c4115aa58cb6bdf387e082",
+          "focused_passed": 30,
+          "diagnostic_passed": 6,
+          "controlled_bad_preconditions": "left123.2px outside andrightroom12.2 viarealzoomin, notidenticalLinuxpose",
+          "body_identity": true,
+          "original_thresholds_preserved": "cardsrelease0.5/siblingsPIXEL1",
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-explicit-fit-setup/lead-correctness-acceptance.json",
+          "next": "scopedfour-filefull8quality, cleanmandatorygate, necessaryLinuxCI",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T06:41:22.984008+00:00",
+          "scope": "PR106 final four-file delta quality accepted for freeze",
+          "source_sha256": "ae36eafb1307a194ed26d12c8a16d9f7dbbceba692c4115aa58cb6bdf387e082",
+          "principles": 8,
+          "introduced_blocking": 0,
+          "highest_score": 0.3,
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-fit-final-delta-quality/lead-acceptance.json",
           "landing_accepted": false
         }
       ],

@@ -296,19 +296,20 @@ test("in the cards style the cluster boxes follow a dragged node", async ({
 	page,
 }) => {
 	const { flow, id } = await openCards(page);
-	// The fit lands a moment after the style change, and a reader's first move keeps whatever view is on screen. Wait for the whole cluster to be on the canvas, then for the picture to hold still.
+	// Switching style does not refit the view, so the camera is whatever the last fit left. Ask for the fit the way a reader does, with the Fit View control. Clusters are drawn nodes in this style, so a requested fit contains the whole outer cluster. Wait for the cluster to be measured first, since a fit counts only measured nodes.
 	await expect
 		.poll(async () => {
 			const f = await snapOf(flow, id);
-			return (
-				f.cluster.x >= f.pane.x &&
-				f.cluster.y >= f.pane.y &&
-				right(f.cluster) <= right(f.pane) &&
-				bottom(f.cluster) <= bottom(f.pane)
-			);
+			return f.cluster.width > 0 && f.cluster.height > 0;
 		})
 		.toBe(true);
+	await settleOf(flow, id);
+	await flow.locator(".svelte-flow__controls-fitview").click();
 	let before = (await settleOf(flow, id)).at(-1)!;
+	expect(before.cluster.x).toBeGreaterThanOrEqual(before.pane.x);
+	expect(before.cluster.y).toBeGreaterThanOrEqual(before.pane.y);
+	expect(right(before.cluster)).toBeLessThanOrEqual(right(before.pane));
+	expect(bottom(before.cluster)).toBeLessThanOrEqual(bottom(before.pane));
 	// Real clicks on the zoom-out control give the target room beyond the cluster, and move every node towards the middle of the canvas, away from its auto-pan edges (a pan left would carry the grab into the left one).
 	const roomy = (f: Frame) =>
 		right(f.pane) - right(f.cluster) >= 160 &&
@@ -317,6 +318,7 @@ test("in the cards style the cluster boxes follow a dragged node", async ({
 		await flow.locator(".svelte-flow__controls-zoomout").click();
 		before = (await settleOf(flow, id)).at(-1)!;
 	}
+	expect(roomy(before)).toBe(true);
 	// The same node, grabbed where it is now, and the pointer really lands on it.
 	const grab = centreOf(before.node);
 	expect(
