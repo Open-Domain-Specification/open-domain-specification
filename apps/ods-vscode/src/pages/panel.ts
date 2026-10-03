@@ -18,6 +18,8 @@ export class DetailPanel implements vscode.Disposable {
 	private panel?: vscode.WebviewPanel;
 	private current?: Location;
 	private ready = false;
+	/** The file whose workspace the webview holds, so a different one restarts its history. */
+	private shown?: string;
 	private readonly subscriptions: vscode.Disposable[] = [];
 	private readonly opened = new vscode.EventEmitter<Location>();
 	/** Fires whenever a page is shown, so the tree can follow. */
@@ -74,6 +76,7 @@ export class DetailPanel implements vscode.Disposable {
 		this.panel.onDidDispose(() => {
 			this.panel = undefined;
 			this.ready = false;
+			this.shown = undefined;
 		});
 		this.panel.webview.onDidReceiveMessage((msg: WebviewMessage) => {
 			this.received.fire(msg);
@@ -81,6 +84,8 @@ export class DetailPanel implements vscode.Disposable {
 			switch (msg.type) {
 				case "ready":
 					this.ready = true;
+					// A webview that says ready has a fresh page and an empty history.
+					this.shown = undefined;
 					this.send();
 					break;
 				case "navigated":
@@ -116,10 +121,19 @@ export class DetailPanel implements vscode.Disposable {
 	private send(): void {
 		if (!this.panel || !this.current) return;
 		const { file, ref } = this.current;
-		const live = this.project.files.get(file.uri.toString());
+		const key = file.uri.toString();
+		// Another file, or a webview with no history yet, starts its history here.
+		const reset = this.shown !== key;
+		this.shown = key;
+		const live = this.project.files.get(key);
 		if (!live?.workspace) {
 			this.panel.title = "Unavailable";
-			this.post({ type: "model", workspaces: [], ref });
+			this.post({
+				type: "model",
+				workspaces: [],
+				ref,
+				...(reset && { reset }),
+			});
 			return;
 		}
 		this.panel.title = live.workspace.name;
@@ -133,6 +147,7 @@ export class DetailPanel implements vscode.Disposable {
 				},
 			],
 			ref,
+			...(reset && { reset }),
 		});
 		this.opened.fire(this.current);
 	}
@@ -168,6 +183,8 @@ export class DetailPanel implements vscode.Disposable {
 </head>
 <body>
 <div class="toolbar">
+	<button class="icon" data-action="back" title="Back" aria-label="Back" disabled><i class="codicon codicon-arrow-left"></i></button>
+	<button class="icon" data-action="forward" title="Forward" aria-label="Forward" disabled><i class="codicon codicon-arrow-right"></i></button>
 	<span class="spacer"></span>
 	<button class="icon" data-action="reveal" title="Reveal in JSON"><i class="codicon codicon-go-to-file"></i></button>
 </div>
@@ -175,8 +192,20 @@ export class DetailPanel implements vscode.Disposable {
 <script nonce="${nonce}">
 	// The app acquires the VS Code API itself; this shell only forwards the toolbar and says hello.
 	window.__ODS__ = { workspaces: [] };
-	document.querySelector('[data-action="reveal"]').addEventListener("click", () => {
-		window.postMessage({ type: "toolbar", action: "reveal" }, "*");
+	for (const button of document.querySelectorAll("[data-action]")) {
+		button.addEventListener("click", () => {
+			window.postMessage({ type: "toolbar", action: button.dataset.action }, "*");
+		});
+	}
+	// Back and Forward stay disabled until the app, which owns the history, says
+	// there is a page to go to. Only the app's own window posts these; the host's
+	// messages come from elsewhere.
+	const back = document.querySelector('[data-action="back"]');
+	const forward = document.querySelector('[data-action="forward"]');
+	window.addEventListener("message", (e) => {
+		if (e.source !== window || e.data?.type !== "history") return;
+		back.disabled = !e.data.canGoBack;
+		forward.disabled = !e.data.canGoForward;
 	});
 </script>
 <script type="module" nonce="${nonce}" src="${media(script)}"></script>

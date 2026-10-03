@@ -34,10 +34,22 @@ export type Bootstrap = {
 
 /** Messages from the VS Code extension to the webview. */
 export type HostMessage =
-	| { type: "model"; workspaces: WorkspacePayload[]; ref?: string }
+	| {
+			type: "model";
+			workspaces: WorkspacePayload[];
+			ref?: string;
+			/**
+			 * Set when the workspace is not the one the app already shows (another
+			 * file, or a webview that has just started). History starts over at
+			 * `ref`: that page is its first entry, which Back cannot pass, and
+			 * nothing of the earlier workspace can be reached from it. Left off
+			 * for a refresh of the same workspace, which keeps its history.
+			 */
+			reset?: boolean;
+	  }
 	| { type: "navigate"; ref: string }
 	/** Relayed by the webview shell when its toolbar is used. */
-	| { type: "toolbar"; action: "reveal" }
+	| { type: "toolbar"; action: ToolbarAction }
 	/**
 	 * Test seam for the real-host check (`apps/ods-vscode`, `test:vscode`): asks
 	 * the app what its rendered descriptions hold and, when `selectors` is given,
@@ -45,6 +57,20 @@ export type HostMessage =
 	 * use sends it.
 	 */
 	| { type: "probe"; selectors?: string[] };
+
+/** What the webview shell's toolbar can ask of the app. */
+export type ToolbarAction = "reveal" | "back" | "forward";
+
+/**
+ * Posted by the app to its own window for the webview shell, which owns the
+ * toolbar's buttons: whether the app's history has a page before and after
+ * the one shown. It never goes to the extension.
+ */
+export type ShellMessage = {
+	type: "history";
+	canGoBack: boolean;
+	canGoForward: boolean;
+};
 
 /** Messages from the webview back to the extension. */
 export type WebviewMessage =
