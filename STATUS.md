@@ -2,7 +2,7 @@
 
 ## Goal / health
 
-Clear the guarded ODS backlog. Milestone 1 is complete: PR #132 is merged and its 25 model stories were accepted and closed individually. Milestone 2 dispositions and record proof are complete: its unmodified gate passed on clean 4ccb76bb; final publication follows the final frozen-candidate gate. The issue census is 21 open, 33 closed, zero new and zero reopened against the 54-open baseline. The 33 closed are 25 implemented (Milestone 1) and 8 closed not planned (Milestone 2); no new capability was implemented.
+Clear the guarded ODS backlog. Milestones 1 and 2 are complete and their records published: 25 model issues delivered, eight proposals closed not planned, 21 issues remain from the 54-open baseline. Milestone 3 is active, starting with #103 before PR #106. No new capability is claimed for the proposal dispositions.
 
 ## Binding delegation policy — 2026-10-03
 
@@ -14,17 +14,17 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Now
 
-Milestone 2, the eight model proposals, has its dispositions complete and its clean 4ccb76bb record gate passed. #35, #36, #37, #38, #39, #40, #64 and #65 are each closed as not planned with a published comment carrying retained cost, source-backed reopening condition and actual evidence; #64 and #65 closed after their children and deliver no feature. #63 stays open, ordered #59 then #54, with the module promise excluded under decision 15. Decision 16 neither accepts nor rejects #39. [Manifest](docs/bots/delivery/manifest.json) is the operative ledger; [delivery controls](docs/bots/delivery/CONTROLS.md) govern scope and review.
+Milestone 3 is active, starting with #103 as a separate drag repair before PR #106 integration. Opus 5.5 coordinated Sonnet 5.5; both runtime identities are confirmed. The final free-map extent correction and drag-cache synchronisation passed 30 focused repeats, the four-test tracked suite and 13 actual viewer/export/VS Code cases. All eight quality principles are clear after a comment-only coupling recheck. Earlier measured-cache passes are historical; the earlier visible catch-up interpretation is superseded by the full state-contract evidence. The first clean landing gate found the new fixed-map guard lacked unit coverage. A non-vacuous real-drag test now preserves all fixed-map cluster styles and fails when that guard is removed; 1,058 pages tests pass with 100% coverage. Production and e2e files are unchanged by this correction. The corrected candidate requires the full landing gate. The backlog remains 21 open.
 
-Product evidence: OpenAI Astra low approved exact SHA `e5cda1260f09b5b69a41b0a4027bd63fd33b1899`; no Claude approval is claimed under the owner-authorized OpenAI-only exception. PR #132 merged as `5a6241288973fc3befdb2f46876e28174534126e`; merged tree `6efd1aa35bae524dfce9345210096caeafcef236` exactly matches the reviewed candidate tree. The unmodified local gate passed on that product candidate; actual VS Code host suites passed 16 with four documented optional screenshot skips, keyboard passed 23, and checker exited 0. No remote CI run was required or made.
+Milestone 2 records a647c6e0 passed their final unmodified gate and landed on develop; card 182 is done. Model approval remains historical e5cda126, with no new Astra request for UI/tooling.
 
 ## Next
 
-Card 182 is done after the actual clean 4ccb76bb gate. Run the final completion candidate’s mandatory unmodified gate, then publish its records. Milestone 3, diagrams and reliable drag checks (target: 16 open after it), is next after the Milestone 2 record publication. Model closeout records 0109d39e passed their own unmodified gate and landed on develop.
+Freeze the accepted #103 candidate, run the clean unmodified Node26 landing gate, then publish and merge its separate PR before closing the issue. Rebase PR #106 onto the accepted develop state; correct canonical route navigation and assert intended pages, then remeasure current NorthBank 19-context fits across viewer/export/VS Code. Serialize builds, browsers and real hosts. Necessary pre/post CI for #102 is conserved through one explicit non-release run per final head where branch checks permit.
 
 ## Later
 
-Resume diagram work (Milestone 3) after the Milestone 2 record publication. Remaining milestones and scope stay in the manifest and [roadmap](docs/bots/ROADMAP.md); no tooling or model-proposal implementation starts as part of this closeout.
+Finish diagram fitting after #103 lands, then follow the remaining milestone order. Remaining milestones and scope stay in the manifest and [roadmap](docs/bots/ROADMAP.md); no tooling or model-proposal implementation starts as part of this closeout.
 
 ## Outcomes / blockers
 
@@ -32,4 +32,4 @@ All 25 cards 157–181 are reconciled, marked done and non-live; the #108 parent
 
 ## Working state
 
-Updated: 2026-10-03T00:37:40.943212+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/relationship-pages/open-domain-specification`; branch `codex/decision-dispositions-2`; checked product commit `5a6241288973fc3befdb2f46876e28174534126e`. This record set is metadata-only: card 182, this status, roadmap, manifest and sprint 04. Card 182 is done and not live after the clean 4ccb76bb gate passed. The final publication candidate identity and mandatory gate result live in durable CURRENT.json; no earlier gate is claimed as a run on that later commit.
+Updated: 2026-10-03T03:05:41.463361+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/relationship-pages/open-domain-specification`; branch `codex/drag-check-103`; base `a647c6e056c676a3c88aca93dd1f45b58c5985ea`. Card 183, STATUS and manifest record the accepted source and quality evidence. No landing gate, merge or issue closure is claimed yet. Durable CURRENT.json records the completed coordinator and next action.

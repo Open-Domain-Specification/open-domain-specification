@@ -8,11 +8,11 @@
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
-  "active_milestone": 2,
-  "integration_batch": "milestone-02-decision-dispositions",
+  "active_milestone": 3,
+  "integration_batch": "issue-103-drag-check",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "PR132 merged and individually accepted; merged tree equals the Astra-reviewed product tree. Milestone 1 records 0109d39e passed their own gate and landed on develop. Milestone 2 disposition records are metadata-only, add no product change, and still require their own mandatory records gate.",
+  "candidate_state": "Historical final model approval e5cda126; PR132 merged with identical tree. M1 records0109d39e and M2 recordsa647c6e0 passed their own mandatory gates and landed. Active M3 issue103 source/tests are uncommitted partial work, not an approved/gated candidate.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -34,7 +34,7 @@
     "reviewed_tree_sha": "6efd1aa35bae524dfce9345210096caeafcef236",
     "tree_matches_reviewed_candidate": true
   },
-  "durable_checkpoint": "/Users/jonathanturnock/.codex/ods-delivery/milestone-01/e5cda126/checkpoint.json",
+  "durable_checkpoint": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/checkpoint.json",
   "milestones": [
     {
       "id": 1,
@@ -197,7 +197,7 @@
         65
       ],
       "owner": "lead",
-      "state": "complete dispositions and clean record proof; final publication follows frozen-candidate gate",
+      "state": "complete: eight not-planned dispositions and final record gate/publication verified",
       "expected_remaining": 21,
       "entry_scope": "Apply current decisions; reconcile63 module promise while retaining59/54.",
       "exit_acceptance": "Each not-planned disposition states retained cost, reopening condition and actual source evidence; parents reconciled last.",
@@ -261,12 +261,85 @@
         103
       ],
       "owner": "lead",
-      "state": "next after the Milestone 2 record publication",
+      "state": "active: #103 source, actual hosts and quality accepted; clean landing gate next; PR106 waits #103",
       "expected_remaining": 16,
       "entry_scope": "Existing PR #106 after model closeout;103 separate PR if unrelated cause.",
       "exit_acceptance": "Measured inline/fullscreen fit, panel clearance, actual hosts and explained stable released-node geometry.",
       "investigation_limit": "No geometry redesign, weakened assertions, blind sleeps or accepted rerun as flake repair.",
-      "evidence": [],
+      "evidence": [
+        {
+          "scope": "103 partial releasejump correction, not landing acceptance",
+          "runtime": "Node26 v26.8.1",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/product/coordinator-review.md",
+          "focused_passed": 60,
+          "original_failed": 2,
+          "no_follow_mutation_failed": 2,
+          "remaining": "Confirmed held-pointer auto-pan oscillation; moving inward before release does not cover it",
+          "landing_gate": "not run",
+          "accepted_for_landing": false
+        },
+        {
+          "scope": "103 sourceclass causal correction, not landing acceptance",
+          "runtime": "Node26 v26.8.1",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/autopan/coordinator-review.md",
+          "focused_passed": 60,
+          "original_failed": 2,
+          "partial_autopan_failed": 1,
+          "no_follow_mutation_failed": 2,
+          "remaining": "Directional/nested and actualhosts; eightprinciplequality; mandatory cleanfinalgate; merge/individualacceptance",
+          "accepted_for_validation": true,
+          "accepted_for_landing": false
+        },
+        {
+          "scope": "103 actualhost/directional validation blocked final acceptance",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/validation/coordinator-review.md",
+          "passed": "top-left/shared-member/sketch controls",
+          "failed": "actualVSCode and matchingbrowser sole-member right/down catch-up3-5px aftercamera stops whilepointerheld",
+          "quality_started": false,
+          "accepted_for_landing": false,
+          "retrospective": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/retrospective-validation.json",
+          "superseded_by": "Next state-contract record: 3\u20135px transient is unpainted; camera stops at pointer-up, not while held."
+        },
+        {
+          "scope": "103 state-contract correction to earlierclassification and selected directfix",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/state-contract/coordinator-review.md",
+          "earlier_validation_interpretation": "superseded:3-5px isunpaintedDOMtransient; camstopsatpointerup",
+          "actual_painted_jump": "originalsource; correctedbyrefitDrag alias synchronisation",
+          "c1_measured_variant_focused_passed": 90,
+          "c1_selected_for_landing": false,
+          "selected_design": "c2 free-map nestedclusterextentundefined; preservefixedconstraints andrefitDrag; removefitMeasured",
+          "decision": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/lead-direct-extent-decision.json",
+          "accepted_for_landing": false
+        },
+        {
+          "scope": "103 final C2 source and quality accepted; landing pending",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/direct-extent/validation-summary.md",
+          "runtime": "Node26 v26.8.1 runner; VS Code embeds Node20.18.1",
+          "focused_passed": 30,
+          "tracked_suite_passed": 4,
+          "actual_host_cases_passed": 13,
+          "max_release_displacement_px": 0,
+          "quality": "eight independent principles plus focused coupling recheck; no introduced finding >0.5",
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "landing_gate": "not run",
+          "accepted_for_landing": false
+        },
+        {
+          "scope": "103 landing gate coverage gap corrected, full gate pending",
+          "first_gate_candidate": "e93fc8c98fcffa9a556492ace9884b9d19becff6",
+          "first_gate_exit": 1,
+          "reason": "fixed-map drag guard branch uncovered",
+          "correction": "test-only fixed-map real drag; guard-removal mutation fails",
+          "pages_unit_tests": 1058,
+          "coverage_percent": 100,
+          "production_changed": false,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/coverage-fix/coordinator-acceptance.md",
+          "accepted_for_landing": false
+        }
+      ],
       "closed_issues": []
     },
     {
@@ -400,12 +473,10 @@
     "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-01/record-closeout-0109d39e/gate-result.json"
   },
   "milestone_2_records_gate": {
-    "status": "record proof passed; final publication requires its own frozen-candidate gate",
-    "proof_candidate": "4ccb76bbb38c74506f32fd5dfad785ef088867a6",
+    "status": "passed and published",
+    "candidate": "a647c6e056c676a3c88aca93dd1f45b58c5985ea",
     "exit": 0,
-    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-02/records-4ccb76bb/gate-result.json",
-    "final_publication_evidence": "/Users/jonathanturnock/.codex/ods-delivery/CURRENT.json",
-    "note": "Proof gate actually ran on clean 4ccb76bb. No claim of a gate on the later completion commit; primary verifies its actual gate before push."
+    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-02/closeout-a647c6e0/gate-result.json"
   },
   "execution_policy": {
     "preferred_coordinator": "Claude Opus 5.5",
