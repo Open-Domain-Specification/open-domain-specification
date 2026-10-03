@@ -16,9 +16,17 @@ While a candidate is frozen, journal running evidence outside its checkout. Afte
 
 On restart: read STATUS, manifest and active card; verify cwd/branch/SHA/dirty files/live agents/processes; inspect actual remote PR/issues/base/merge; reconcile evidence with current product; resume recorded next action. Never repeat external posts/merges/closures without checking actual state. Preserve unrelated main-checkout work.
 
+## Binding delegation policy — 2026-10-03
+
+Claude Opus 5.5 is the technical coordinator while Claude usage is available; it delegates bounded work to Sonnet 5.5. The primary OpenAI session owns concrete work management, goal management, acceptance and delivery. Coordinator effort defaults to medium and never exceeds high. Verify actual runtime models; do not silently substitute. On an actual Claude usage-limit response, immediately stop all Claude work and fall back to GPT-6 Luna for all lanes (coding, investigation and verification), archive the limit/reset and avoid repeated retries. The owner reports a 01:00 Europe/London reset; after reset, make one bounded attempt on the next useful task. If that single attempt fails, the Luna fallback is retained and the failure recorded, with no repeated retries.
+
+The coordinator alone may dispatch Sonnet workers within the assigned batch; workers may not dispatch further. The coordinator must not expand or create new scope. Shared limits remain two coding lanes plus one validation lane across both vendors, disjoint ownership and one integration batch. Publication, issue closure and final-review dispatch remain with the primary session. Preserve accepted work when switching vendors. Astra Low remains exclusively the final whole-model gate after primary lead readiness; the existing model approval is retained, with no retrospective Claude review.
+
+Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.md`, `FINAL-REVIEW-POLICY.md` and `CURRENT.json`. This paragraph supersedes older execution-model defaults, while preserving historical evidence.
+
 ## Assignment and investigation controls
 
-Lead owns design, integration, evidence acceptance, final reviewers, push/merge and closure. One integration batch at a time; at most two bounded coding assignments plus one validation assignment. Each brief names exact ownership, exclusions, acceptance commands and stopping point. Agents verify cwd/branch before mutation, preserve others and return evidence; no agent independently pushes, merges, closes issues, calls final reviewers or dispatches agents.
+Lead owns design, integration, evidence acceptance, final reviewers, push/merge and closure. One integration batch at a time; at most two bounded coding assignments plus one validation assignment. Each brief names exact ownership, exclusions, acceptance commands and stopping point. Agents verify cwd/branch before mutation, preserve others and return evidence; no agent independently pushes, merges, closes issues or calls final reviewers. The assigned Opus coordinator may dispatch Sonnet workers under the binding delegation policy; other agents may not dispatch.
 
 Each investigation starts with one question, a hypothesis and a falsifiable probe. After 30 active minutes without useful evidence, checkpoint and change the probe. After 60 active minutes without reproduction or justified conclusion, stop that approach: lead narrows it, delegates a specific question or records an external blocker. Running required gates/known productive implementation are not blind investigation time. Limits require reassessment, never ignoring a known defect or weakening acceptance.
 
@@ -30,9 +38,9 @@ Before final review: finite positive/negative source+JSON matrix complete, affec
 
 ### Binding final model review policy
 
-Astra low is only for final independent signoff of the complete model, after the lead has reviewed it and is happy that all model work is finished. It is never the default reviewer. Luna 6 owns heavy implementation, intermediate checks, bounded audits and correction work. Lead owns the overarching plan, evidence acceptance, integration and delivery decisions.
+Astra low is only for final independent signoff of the complete model, after the lead has reviewed it and is happy that all model work is finished. It is never the default reviewer. The binding delegation policy above governs technical execution: Opus 5.5 coordinates Sonnet 5.5 work while available, with Luna 6 as the usage-exhaustion fallback. The primary lead owns the overarching plan, evidence acceptance, integration and delivery decisions.
 
-Do not request Astra after individual commits, documentation/control edits, test-only corrections, stories, routine quality audits or UI/tooling milestones. A BLOCK does not trigger an automatic rerun: correct the whole defect class, broaden the missing acceptance axis, finish Luna/local checks, then lead must explicitly declare the whole model complete before any renewed final gate.
+Do not request Astra after individual commits, documentation/control edits, test-only corrections, stories, routine quality audits or UI/tooling milestones. A BLOCK does not trigger an automatic rerun: correct the whole defect class, broaden the missing acceptance axis, finish checks in the current execution lanes (Sonnet 5.5 via Opus 5.5, Luna fallback on exhaustion) plus local checks, then lead must explicitly declare the whole model complete before any renewed final gate.
 
 After approval, metadata/documentation/test-only changes do not trigger Astra again. Record the actual reviewed SHA and verified product equivalence, never claim approval of a SHA the reviewer did not review. Mandatory landing gates still apply. If metamodel semantics genuinely change later, finish that coherent model milestone and obtain lead readiness before proposing final signoff.
 

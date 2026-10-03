@@ -1,13 +1,11 @@
 ---
-column: review
+column: done
 labels: [model, bug]
 priority: high
 agent: claude
 live: false
-status: Integrated implementation and local audits complete; final clean-head gate, signoff and merge pending
-progress: 90
 clean-code-swept: true
-updatedAt: 2026-10-01T14:42:37Z
+updatedAt: 2026-10-02T23:42:13Z
 ---
 # The context page lists every user of a value object
 
@@ -26,8 +24,9 @@ Issue #112. On the second signoff head `771a44e0`, Claude Opus 5.5 high reproduc
 ## Gates
 
 - [x] Focused: core (1052 tests), doc (47), pages unit (1005), pages e2e for the NorthBank file, `svelte-check`, biome
-- [ ] `bash scripts/verify-all.sh` on the integrated head (the lead; not run here)
+- [x] `bash scripts/verify-all.sh` on the integrated head (the lead; not run here) — Passed unmodified on clean reviewed candidate `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` (exit 0); merged tree `6efd1aa35bae524dfce9345210096caeafcef236` matches the reviewed tree. This is product-candidate evidence, not a gate rerun on this metadata update.
 
+- [x] exact-head-landing — `bash scripts/verify-all.sh` passed unmodified on clean reviewed candidate `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` (exit 0): core 1,596, graphviz 50, doc 82, skill 154, Pages 1,056, docs 24, VS Code app 22, host-checker 31; browser 431 passed / 20 documented baseline skips; Pages coverage 100%; exact model pins held. Merged tree `6efd1aa35bae524dfce9345210096caeafcef236` exactly matches the reviewed candidate tree. This is product-candidate evidence, not a gate rerun on this metadata update (lead, 2026-10-02T23:42:13Z).
 ## Journal
 
 - **claude** (2026-10-01T00:30:00Z): Picked up from `771a44e0`. The page lie was a second, local copy of the holder rule in `ContextPage.svelte`; Markdown had its own in `packages/doc`. Both now call core. The first e2e draft asserted no "nothing" anywhere in Ledger's table, which was wrong: `CustomerLedgerAccount` and `NominalLedgerAccount` have no users. The test now asserts the two named rows and that `NominalLedgerAccount` still says it. To show the old page fails, I rebuilt with the `771a44e0` ContextPage and ran the file: both hosts failed on the AccountNumber link; with the new page all ten pass. No agents, reviewers, push, PR or full gate were run.
@@ -35,3 +34,5 @@ Issue #112. On the second signoff head `771a44e0`, Claude Opus 5.5 high reproduc
 - **lead** (2026-10-01): The fifth signoff round on exact head `efc19483a078bcf6af06ebe7035f034ef0a8b574` was BLOCK from both reviewers. Opus reproduced the reverse direction: Accounts declares Money and holds it, Cards is its conformist and declares Fee as a kind of Money, but Fee's Used by listed Accounts / Account through Money. Accounts cannot borrow Fee. Core now shares the validator's `mayBorrowFrom` predicate, allowing a parent-typed holder only in the kind's context or a context that may borrow it. The core test asserts the negative and a positive Accounts/Overdraft kind used by Cards; Markdown and the Svelte context page assert the displayed direction. These focused tests pass; the full gate and new reviews remain.
 
 - **Delivery flow checkpoint** (2026-10-01): Integrated implementation now awaits the model batch's final gate, signoff and landing, so the card is in `review`. This is a workflow-state correction, not an issue closure or claim of final approval.
+
+- **lead** (2026-10-02T23:42:13Z): Reconciled issue #112 (all value-object users on context page) after its individual acceptance comment was published and the issue closed. Reviewed product SHA `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` was APPROVED by OpenAI Astra low; PR #132 merged as `5a6241288973fc3befdb2f46876e28174534126e` and merged tree `6efd1aa35bae524dfce9345210096caeafcef236` equals the reviewed tree. Exact-head local gate passed; actual VS Code hosts passed 16 with four documented optional screenshot skips, keyboard passed 23, checker exit 0 (generic host coverage; no dedicated NorthBank Money assertion). Owner-authorized OpenAI-only exception applies; no Claude approval is claimed. Issue comment: https://github.com/Open-Domain-Specification/open-domain-specification/issues/112#issuecomment-5963168376.

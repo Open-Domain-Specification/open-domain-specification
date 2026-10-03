@@ -1,17 +1,26 @@
 # ODS backlog delivery roadmap
 
-## Current position (2026-10-02)
+## Binding delegation policy — 2026-10-03
 
-The owner accepted the guarded ten-milestone plan. The operative ledger is [delivery/manifest.json](delivery/manifest.json); entry/exit criteria, scope boundaries, investigation limits and restart/journal protocol are [delivery/CONTROLS.md](delivery/CONTROLS.md). Lead owns enforcement.
+Claude Opus 5.5 is the technical coordinator while Claude usage is available; it delegates bounded work to Sonnet 5.5. The primary OpenAI session owns concrete work management, goal management, acceptance and delivery. Coordinator effort defaults to medium and never exceeds high. Verify actual runtime models; do not silently substitute. On an actual Claude usage-limit response, immediately stop all Claude work and fall back to GPT-6 Luna for all lanes (coding, investigation and verification), archive the limit/reset and avoid repeated retries. The owner reports a 01:00 Europe/London reset; after reset, make one bounded attempt on the next useful task. If that single attempt fails, the Luna fallback is retained and the failure recorded, with no repeated retries.
 
-Current: 54 open, zero closures, milestone 1 / PR #132 active. Astra's final gate BLOCKED bdadd93d for construction-order-dependent empty refusal reasons; no approval or merge. Luna completed the bounded construction class and lead accepted local quality/core/reference evidence. Fresh frozen real-host and mandatory gates are next; no final review is queued. Later milestones wait for model landing.
+The coordinator alone may dispatch Sonnet workers within the assigned batch; workers may not dispatch further. The coordinator must not expand or create new scope. Shared limits remain two coding lanes plus one validation lane across both vendors, disjoint ownership and one integration batch. Publication, issue closure and final-review dispatch remain with the primary session. Preserve accepted work when switching vendors. Astra Low remains exclusively the final whole-model gate after primary lead readiness; the existing model approval is retained, with no retrospective Claude review.
 
-**Binding reviewer policy:** Astra low is only the final complete-model quality gate after lead review and explicit readiness. It is not a default reviewer and never runs after each small change. Luna 6 owns intermediate checks and heavy work; a BLOCK requires full-class correction/local proof and a new lead readiness decision, not an automatic Astra rerun. Read delivery controls and this policy after context compaction.
+Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.md`, `FINAL-REVIEW-POLICY.md` and `CURRENT.json`. This paragraph supersedes older execution-model defaults, while preserving historical evidence.
+
+## Current position (2026-10-03)
+
+PR #132 is merged and accepted. The issue census is 29 open / 25 closed / 0 new / 0 reopened from a baseline of 54 open. The exact product candidate `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` received OpenAI Astra low APPROVE; owner-authorized OpenAI-only exception applies, and no Claude approval is claimed. The merge commit is `5a6241288973fc3befdb2f46876e28174534126e`, whose tree `6efd1aa35bae524dfce9345210096caeafcef236` exactly matches the reviewed candidate tree. Product gate and actual-host evidence passed; no remote CI was run or required. Milestone 2, the eight recorded model proposals, is next.
+
+The post-merge closeout metadata update is docs-only. Its mandatory repository gate is still pending; product gate evidence is not being represented as a check on these newer records.
+
+
+**Binding reviewer policy:** Astra low is the one final complete-model quality gate, only after lead review and explicit readiness. It is never a default or per-change reviewer. After a BLOCK, correct and locally verify the complete defect class before the lead declares readiness again. Claude weekly quota exhaustion activates the owner-authorized OpenAI-only exception for this final gate; no Claude approval is claimed. Preserve the actual reviewed SHA and require product-tree equivalence at merge.
 
 | Milestone | Issues | Expected remaining | State |
 | --- | --- | ---: | --- |
-| 1. Finalise and land the model | #107, #108, #109, #110, #111, #112, #113, #114, #115, #116, #117, #118, #119, #120, #121, #122, #123, #124, #125, #126, #127, #128, #129, #130, #131 | 29 | active: approval/landing |
-| 2. Resolve the model proposals | #35, #36, #37, #38, #39, #40, #64, #65 | 21 | waiting |
+| 1. Finalise and land the model | #107, #108, #109, #110, #111, #112, #113, #114, #115, #116, #117, #118, #119, #120, #121, #122, #123, #124, #125, #126, #127, #128, #129, #130, #131 | 29 | complete: 25 individually accepted closures |
+| 2. Resolve the model proposals | #35, #36, #37, #38, #39, #40, #64, #65 | 21 | next |
 | 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | waiting |
 | 4. Readable tables | #105, #87, #88, #80 | 12 | waiting |
 | 5. Accessible reading | #78, #79, #83 | 9 | waiting |
@@ -21,6 +30,14 @@ Current: 54 open, zero closures, milestone 1 / PR #132 active. Astra's final gat
 | 9. Team-owned model files | #59 | 2 | waiting |
 | 10. Informed forms and authoring epic | #54, #63 | 0 | waiting |
 
+## Milestone 1 delivery retrospective (2026-10-02)
+
+The 54-open baseline became 29 open / 25 closed, with zero new and zero reopened issues. One bounded construction-order refusal correction followed the prior BLOCK; focused source/JSON proof and the clean exact-head gate preceded one final Astra low APPROVE. The team then verified the merged tree against the reviewed tree and closed all 25 stories individually, with #108 last. No remote CI run was needed or made.
+
+The gate-before-review and exact-SHA controls were effective: the final review inspected the same product tree that passed the local gate and later merged. The bounded defect-class correction avoided treating an earlier green gate or diagnostic-free model as sufficient proof. Four-surface evidence includes generic real VS Code host coverage; it does not claim a dedicated NorthBank Money journey.
+
+An evidence-preparation retrospective outside the repository records that ignored generated outputs were mistaken for absent files and an old PR draft carried stale helper paths/ranges. Those errors were caught before publication. The control is to derive acceptance references from the current packet, verify paths in the actual checkout (separately recording ignored/generated provenance), and omit stale ranges unless freshly checked. That retrospective is retained at `/Users/jonathanturnock/.codex/ods-delivery/milestone-01/e5cda126/evidence-retrospective.md`.
+
 ## Historical roadmap and retrospective records
 
 The following dated snapshots are retained as history; the current ledger above supersedes their readiness/count claims.
@@ -29,7 +46,7 @@ The following dated snapshots are retained as history; the current ledger above 
 
 Kept by the lead. Milestones in order, with why. Work items are RepoDoc cards under `boards/`; engineering decisions are records under `decisions/` (the repo's existing ADR stream, not a second one here).
 
-## Current delivery sequence (2026-10-01)
+## Historical delivery sequence (2026-10-01)
 
 Epics #96, #100 and #98 landed in sprint 03. The owner now puts model finality and independent signoff ahead of tooling. [Sprint 04](sprints/2026-10-01-sprint-04.md) integrates the model corrections on `codex/model-fidelity-northbank`, proves the validator's timing and causal reach across all four readers, runs the full local gate and requests one final exact-head Astra low review followed by Claude Opus 5.5 high only after local readiness. The model PR then lands on `develop` and closes its covered stories. Parked diagram PR #106 resumes only after that signoff and landing. The identity and reference-heavy capability epics #63 to #65 remain later and must not run together.
 
@@ -41,7 +58,7 @@ Comments and dispositions on strategic intents; relationship pages; health repor
 
 Every page follows the VS Code UX guidelines; v1 removed; modal relationship detail; Playwright gates CI.
 
-## 3. The metamodel survives external review (current; sprint 04)
+## 3. The metamodel survives external review (sprint 04)
 
 Goal set by the human on 2026-09-06: the model gives a correct, clean and detailed account of software systems the DDD way. Sprint 02 established the decisions and five reference models. Sprint 04 closes the accumulated model corrections as one locally verified batch, then seeks independent approval on one exact head and lands it. Review blockers return to a bounded local causal audit before another final review. Why: the model and its four readers must agree, and deliberate omissions must read as decisions with testable reopening conditions.
 

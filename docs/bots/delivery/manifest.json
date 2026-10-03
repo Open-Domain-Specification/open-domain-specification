@@ -2,18 +2,37 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 54,
-  "closed": 0,
+  "current_open": 29,
+  "closed": 25,
   "new": 0,
   "reopened": 0,
-  "active_milestone": 1,
+  "active_milestone": 2,
   "integration_batch": "PR132",
   "owner": "lead",
-  "candidate": null,
-  "candidate_state": "Construction class integrated and locally verified; frozen candidate SHA/host/full-gate results are recorded via durable CURRENT.json. No final review queued.",
-  "approval": null,
-  "merged": null,
-  "durable_checkpoint": "/Users/jonathanturnock/.codex/ods-delivery/milestone-01/bdadd93d/checkpoint.json",
+  "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
+  "candidate_state": "PR132 merged and individually accepted; merged tree equals the Astra-reviewed product tree. A new metadata-only record update is in progress and still requires its own mandatory closeout gate.",
+  "approval": {
+    "reviewer": "OpenAI Astra",
+    "model": "gpt-6-astra",
+    "effort": "low",
+    "verdict": "APPROVE",
+    "reviewed_sha": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
+    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-01/e5cda126/final-review.md",
+    "claude_approval": "not claimed; owner-authorized OpenAI-only exception"
+  },
+  "merged": {
+    "pr": 132,
+    "merged_at": "2026-10-02T23:33:43Z",
+    "merge_sha": "5a6241288973fc3befdb2f46876e28174534126e",
+    "parents": [
+      "a0e88e9729e152e5ec273d41613f37c0c15eb342",
+      "e5cda1260f09b5b69a41b0a4027bd63fd33b1899"
+    ],
+    "tree_sha": "6efd1aa35bae524dfce9345210096caeafcef236",
+    "reviewed_tree_sha": "6efd1aa35bae524dfce9345210096caeafcef236",
+    "tree_matches_reviewed_candidate": true
+  },
+  "durable_checkpoint": "/Users/jonathanturnock/.codex/ods-delivery/milestone-01/e5cda126/checkpoint.json",
   "milestones": [
     {
       "id": 1,
@@ -46,10 +65,10 @@
         131
       ],
       "owner": "lead",
-      "state": "active: integrated correction ready for frozen host and mandatory gate",
+      "state": "complete: PR132 merged; all 25 covered stories individually accepted and closed",
       "expected_remaining": 29,
       "entry_scope": "Existing PR #132 only; model semantics and faithful four readers. No tooling or speculative expansion.",
-      "exit_acceptance": "Explicit Astra low APPROVE, exact-head required gates, verified merged tree and individual25 story/card reconciliation.",
+      "exit_acceptance": "Satisfied on exact reviewed product SHA e5cda1260f09b5b69a41b0a4027bd63fd33b1899: Astra low APPROVE; unmodified full gate and actual hosts passed; merged tree equals reviewed tree; 25 issue/card reconciliations complete.",
       "investigation_limit": "Each blocker needs a defect-class matrix and local proof before another final review.",
       "evidence": [
         {
@@ -66,9 +85,101 @@
           "host": "prepared; not run",
           "full_gate": "not run",
           "source_diff_sha256": "d1405bacb415de1ae131cd4f3c6a489523be6397672c84b5a2f2d22ef32ae24e"
+        },
+        {
+          "scope": "merged milestone closeout",
+          "reviewed_sha": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
+          "review": "OpenAI Astra low APPROVE; no Claude approval claimed under owner-authorized exception",
+          "merge_sha": "5a6241288973fc3befdb2f46876e28174534126e",
+          "merged_tree_sha": "6efd1aa35bae524dfce9345210096caeafcef236",
+          "tree_matches_reviewed_candidate": true,
+          "full_gate": "unmodified bash scripts/verify-all.sh passed exit 0 on clean reviewed SHA",
+          "gate_counts": {
+            "core": 1596,
+            "graphviz": 50,
+            "doc": 82,
+            "skill": 154,
+            "pages": 1056,
+            "apps_docs": 24,
+            "apps_ods_vscode": 22,
+            "host_checker": 31,
+            "browser_passed": 431,
+            "browser_documented_skips": 20
+          },
+          "pages_coverage_percent": 100,
+          "hosts": {
+            "vscode_passed": 16,
+            "optional_screenshot_skips": 4,
+            "keyboard_passed": 23,
+            "checker_exit": 0,
+            "scope": "generic actual-host verification; no dedicated NorthBank Money assertion"
+          },
+          "pins": {
+            "northbank": 3,
+            "petstore": 0,
+            "rivermart": 2,
+            "streamline": 4,
+            "clinic": 0
+          },
+          "issues_individually_closed": [
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127,
+            128,
+            129,
+            130,
+            131
+          ],
+          "new": 0,
+          "reopened": 0,
+          "remote_ci": "none required or run"
         }
       ],
-      "closed_issues": []
+      "closed_issues": [
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131
+      ]
     },
     {
       "id": 2,
@@ -84,7 +195,7 @@
         65
       ],
       "owner": "lead",
-      "state": "waiting",
+      "state": "next: reconcile and resolve the eight model proposals under recorded decision triggers",
       "expected_remaining": 21,
       "entry_scope": "Apply current decisions; reconcile63 module promise while retaining59/54.",
       "exit_acceptance": "Each not-planned disposition states retained cost, reopening condition and actual source evidence; parents reconciled last.",
@@ -228,11 +339,26 @@
   ],
   "review_policy": {
     "astra": "Final complete-model signoff only after lead review and explicit readiness; never default or per-change",
-    "heavy_work": "gpt-6-luna",
+    "heavy_work": "Sonnet 5.5 via Opus 5.5 coordinator; GPT-6 Luna fallback on Claude usage exhaustion",
     "lead": "Overarching plan, scope, evidence acceptance and delivery",
-    "after_block": "Full defect-class correction and Luna/local checks before lead re-declares wholemodel complete",
+    "after_block": "Full defect-class correction and checks in the current execution lanes (Sonnet 5.5 via Opus 5.5, Luna fallback on exhaustion) plus local checks before lead re-declares wholemodel complete",
     "after_small_changes": "No Astra rerun; retain true reviewedSHA and productequivalence",
-    "authority": "Owner latest instruction 2026-10-02; survives context compaction"
+    "authority": "Owner-authorized OpenAI-only final signoff applies while Claude weekly quota is unavailable; no Claude approval is implied. Preserve exact reviewed SHA and product-tree equivalence."
   },
-  "previous_candidate": "bdadd93d390d6a01384d8fcf677492f68a78028c"
+  "previous_candidate": "bdadd93d390d6a01384d8fcf677492f68a78028c",
+  "records_closeout_gate": {
+    "status": "pending",
+    "scope": "metadata-only updates to RepoDoc cards, STATUS, roadmap, delivery controls, manifest and sprint record",
+    "note": "Product gate passed on the reviewed product SHA. Do not claim that gate as a run on the post-merge records update; no push until the lead runs the mandatory closeout gate."
+  },
+  "execution_policy": {
+    "preferred_coordinator": "Claude Opus 5.5",
+    "workers": "Claude Sonnet 5.5",
+    "fallback": "GPT-6 Luna subagents",
+    "primary_role": "Concrete work management, goal management, acceptance and delivery",
+    "state": "runtime-confirmed",
+    "reset": "01:00 Europe/London per owner",
+    "durable_policy": "/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.md",
+    "updated": "2026-10-03T00:03:44.296855+00:00"
+  }
 }

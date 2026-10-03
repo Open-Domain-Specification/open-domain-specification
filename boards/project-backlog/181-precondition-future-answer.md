@@ -1,13 +1,11 @@
 ---
-column: review
+column: done
 labels: [core, model, bug]
 priority: high
 agent: lead
 live: false
-status: Uniform local-fetch rule and 96-case matrix passing; clean committed gate and final signoff pending
-progress: 94
 clean-code-swept: true
-updatedAt: 2026-10-01T11:48:00Z
+updatedAt: 2026-10-02T23:42:13Z
 ---
 # Timed invariants read facts each guarded call can reach
 
@@ -28,8 +26,12 @@ Issue #131. Astra's fourteenth review found that a front consuming a guarded ope
 - [x] Align schema, hand-written skill and tactical guide; regenerate reference outputs and pin their drift checks
 - [x] Append decision 19 note and record the exact review result
 - [x] Clean-code review of the expanded correction
-- [ ] Full local landing gate on the clean committed head
-- [ ] Exact-head independent signoff
+- [x] Full local landing gate on the clean committed head — Passed unmodified on clean reviewed candidate `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` (exit 0); merged tree `6efd1aa35bae524dfce9345210096caeafcef236` matches the reviewed tree. This is product-candidate evidence, not a gate rerun on this metadata update.
+- [x] Exact-head independent signoff — OpenAI Astra low APPROVED exact reviewed candidate `e5cda1260f09b5b69a41b0a4027bd63fd33b1899`; owner-authorized OpenAI-only exception applies; no Claude approval is claimed.
+
+## Gates
+
+- [x] exact-head-landing — `bash scripts/verify-all.sh` passed unmodified on clean reviewed candidate `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` (exit 0): core 1,596, graphviz 50, doc 82, skill 154, Pages 1,056, docs 24, VS Code app 22, host-checker 31; browser 431 passed / 20 documented baseline skips; Pages coverage 100%; exact model pins held. Merged tree `6efd1aa35bae524dfce9345210096caeafcef236` exactly matches the reviewed candidate tree. This is product-candidate evidence, not a gate rerun on this metadata update (lead, 2026-10-02T23:42:13Z).
 
 ## Journal
 
@@ -55,3 +57,5 @@ Issue #131. Astra's fourteenth review found that a front consuming a guarded ope
 - **lead and bounded audit** (2026-10-01): On exact clean `635bcc7e`, Astra APPROVED and Opus BLOCKED a named queried operation's completed answer removed from another guard. The reproduced defect overrides the approval. The proposed caller-only remedy was challenged locally and found too narrow because the current guard itself may fetch the query under decision 19's existing convention. The lead rules that each guard's held facts are independent of other names; only its reverse caller route excludes future answers, then all guards are intersected. Claude owns both current-guard and front-fetch positive twins, uninformed named-query negatives and retained true future cases. The prior claim returns to active correction under #131, with a fresh clean-code sweep/gate/signoff pending and no new issue.
 
 - **Integrated readiness checkpoint** (2026-10-01): Claude removed the obsolete named-operation dependency from locallyFetched/heldByGuard entirely. New96cases include20failing-before positives and cover current/one-front/two-front, explicit/inferred, one/both named, independently informed/uninformed query, unknown caller and true future cases, both scopes/directJSON. Core1402, skill154 and allfive model suites pass, TypeScript/Biome clean. The semantic/clean-code and guidance audits are clear; existing current invocation wording already matches, so no generated prose change is necessary. Card returns to review with clean-code exit true; final clean-head gate/signoff and landing remain.
+
+- **lead** (2026-10-02T23:42:13Z): Reconciled issue #131 (Future facts versus already-held facts) after its individual acceptance comment was published and the issue closed. Reviewed product SHA `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` was APPROVED by OpenAI Astra low; PR #132 merged as `5a6241288973fc3befdb2f46876e28174534126e` and merged tree `6efd1aa35bae524dfce9345210096caeafcef236` equals the reviewed tree. Exact-head local gate passed; actual VS Code hosts passed 16 with four documented optional screenshot skips, keyboard passed 23, checker exit 0 (generic host coverage; no dedicated NorthBank Money assertion). Owner-authorized OpenAI-only exception applies; no Claude approval is claimed. Issue comment: https://github.com/Open-Domain-Specification/open-domain-specification/issues/131#issuecomment-5963177511.
