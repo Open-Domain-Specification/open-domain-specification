@@ -32,8 +32,8 @@ const {
 </script>
 
 <span class={`lockup ${size}`}>
-	<i class={`codicon codicon-${kindIcon(kind)}`} style:color={iconColor(kind)} aria-hidden="true"></i>
-	{#if ref}<Ref {ref} label={name} {current} />{:else}<span class="name">{name}</span>{/if}
+	<span class="mark"><i class={`codicon codicon-${kindIcon(kind)}`} style:color={iconColor(kind)} aria-hidden="true"></i>
+	{#if ref}<Ref {ref} label={name} {current} />{:else}<span class="name">{name}</span>{/if}</span>
 	{#if id}<code class="id">{id}</code>{/if}
 	{#if detail}<span class="detail">{detail}</span>{/if}
 </span>
@@ -42,6 +42,15 @@ const {
 	/* One token: a narrow table cell may break between a lockup and what
 	   follows it, never between the icon and the name or inside the name. */
 	.lockup {
+		display: inline-flex;
+		align-items: baseline;
+		gap: 6px;
+		min-width: 0;
+		white-space: nowrap;
+	}
+	/* The icon and the name are one piece: a title that has to wrap moves the
+	   id and the detail, never the name away from its icon. */
+	.mark {
 		display: inline-flex;
 		align-items: baseline;
 		gap: 6px;
@@ -71,7 +80,8 @@ const {
 	.title {
 		font-size: 1.5em;
 		font-weight: 600;
-		gap: 10px;
+		gap: 0 10px;
+		flex-wrap: wrap;
 	}
 	.title .id,
 	.title .detail {
