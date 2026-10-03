@@ -109,11 +109,42 @@ describe("flowNodes", () => {
 			free: true,
 		});
 		expect(nodes[0].hidden).toBe(true);
-		// Clusters still keep to their parents; only the nodes roam.
-		expect(nodes[1].extent).toBe("parent");
+		// In a free map the fit owns cluster geometry: clusters stay nested but carry no extent.
+		expect(nodes[1].parentId).toBe("g:ws");
+		expect(nodes[1].extent).toBeUndefined();
 		expect(nodes[2].parentId).toBe("g:dom");
 		expect(nodes[2].extent).toBeUndefined();
 		expect(nodes[2].data).toMatchObject({ floating: true, sketch: true });
+	});
+	it("drops the nested cluster extent in every free map and keeps it in fixed ones, nesting unchanged", () => {
+		for (const sketch of [false, true]) {
+			const free = flowNodes(positioned, {
+				floating: false,
+				sketch,
+				free: true,
+			});
+			const fixed = flowNodes(positioned, {
+				floating: false,
+				sketch,
+				free: false,
+			});
+			for (const nodes of [free, fixed]) {
+				expect(nodes.map((n) => n.id)).toEqual([
+					"g:ws",
+					"g:dom",
+					"#/a",
+					"#/b",
+					"#/c",
+					"#/d",
+				]);
+				expect(nodes[0].parentId).toBeUndefined();
+				expect(nodes[1].parentId).toBe("g:ws");
+				expect(nodes[2].parentId).toBe("g:dom");
+				expect(nodes[0].extent).toBeUndefined();
+			}
+			expect(free[1].extent).toBeUndefined();
+			expect(fixed[1].extent).toBe("parent");
+		}
 	});
 	it("names each node '<name>, <kind>' and announces one that opens a page as a link", () => {
 		const nodes = flowNodes(positioned, opts);

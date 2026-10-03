@@ -121,7 +121,36 @@ const onKeydown = (event: KeyboardEvent) => {
 	event.preventDefault();
 	open(target.dataset.id);
 };
-/** Free maps refit their cluster boxes round the nodes as one is dragged. */
+/**
+ * Svelte Flow decides whether a drag event moved a node by comparing the position it works
+ * out (the pointer, less the parent's absolute origin) with the one it kept from the last
+ * event. `fitClusters` moves a cluster's origin with the node dragged out of it, which
+ * changes that relative position under Svelte Flow's feet: at a steady pace, as when the
+ * canvas auto-pans under a held pointer, the next position equals the stale one, the event
+ * is dropped and the node stalls a frame. Each event's `nodes` carry the live position
+ * object Svelte Flow keeps, so the fitted position is written into it; the release then
+ * writes back the fitted position too, where the stale one used to jump the node a step.
+ *
+ * That alias is undocumented. In `@xyflow/system` 0.0.82 (reached through `@xyflow/svelte`
+ * 1.6.6, which pins it exactly), `getEventHandlerParams` builds each event node's
+ * `position` as a reference to the drag's private `dragItem.position`, so writing the
+ * fitted position into `m.position` updates that cache. No documented API reaches it:
+ * `updateNode` writes the store node, which the drag stop then overwrites. The guard on an
+ * upgrade is the two regressions in `e2e/diagrams-sketch.spec.ts`, "on a context map the
+ * canvas auto-pans a node dragged to its edge and the boxes stay with it" (held edge) and
+ * "on a context map a node that is alone in its cluster stays under a held pointer in the
+ * bottom-right corner and does not move when the pointer is let go" (sole member, corner).
+ * An upgrade that breaks the alias makes them fail rather than silently no-op.
+ */
+const refitDrag = ({ nodes: moved }: { nodes: Node[] }) => {
+	if (kind !== "context") return;
+	nodes = fitClusters(nodes);
+	for (const m of moved) {
+		const fitted = nodes.find((n) => n.id === m.id);
+		if (fitted) Object.assign(m.position, fitted.position);
+	}
+};
+/** Free maps (context maps) refit their cluster boxes once more when a dragged node is released. */
 const refit = () => {
 	if (kind === "context") nodes = fitClusters(nodes);
 };
@@ -130,7 +159,7 @@ const refit = () => {
 <!-- `data-fit` names the step of relief the fit had to take; the e2e reads it. -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="interactive" onkeydown={onKeydown} class:fullscreen={fullscreen.active} data-fit={fit.step} bind:this={container}>
-	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} zoomOnDoubleClick={!motion.reduced} edgesFocusable={false} onnodeclick={({ node }) => open(node.id)} ariaLabelConfig={NODE_KEYS} onnodedrag={refit} onnodedragstop={refit}>
+	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} zoomOnDoubleClick={!motion.reduced} edgesFocusable={false} onnodeclick={({ node }) => open(node.id)} ariaLabelConfig={NODE_KEYS} onnodedrag={refitDrag} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
 		<Controls showLock={false} />

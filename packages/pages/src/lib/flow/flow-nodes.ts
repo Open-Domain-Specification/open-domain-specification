@@ -80,8 +80,9 @@ const relativeTo = (positioned: Positioned, id: string, parent?: string) => {
 /**
  * The Svelte Flow nodes for a laid-out graph: the cluster regions first,
  * parents before children as Svelte Flow resolves `parentId` in array order,
- * then the nodes, each nested in its deepest group. A node keeps to its
- * parent's extent unless the map is `free`.
+ * then the nodes, each nested in its deepest group. In a fixed map both nodes
+ * and nested clusters keep to their parent's extent; in a `free` map neither
+ * does, and `fitClusters` owns the cluster geometry.
  */
 export function flowNodes(
 	positioned: Positioned,
@@ -95,7 +96,9 @@ export function flowNodes(
 			type: "cluster",
 			position: relativeTo(positioned, g.id, g.parent),
 			parentId: g.parent,
-			extent: g.parent ? "parent" : undefined,
+			// In a free map fitClusters owns cluster geometry, so the parent extent is dropped: the
+			// library would clamp the cluster against its parent's stale measured size.
+			extent: g.parent && !free ? "parent" : undefined,
 			width: box.width,
 			height: box.height,
 			data: { label: g.label, depth: depthOf(positioned, g.id) - 1 },

@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { openInteractiveDiagram } from "./helpers";
+import { expect, type Locator, type Page, test } from "@playwright/test";
+import { openInteractiveDiagram, serveModel } from "./helpers";
 
 /** The sketch style on the workspace context map, the default: ellipse nodes over a Voronoi backdrop. */
 
@@ -109,9 +109,132 @@ test("the sketch style is the default, cards can be chosen, and sketch comes bac
 	await expect(flow.locator(".cluster-node").first()).toBeVisible();
 });
 
-test("in the cards style the cluster boxes follow a dragged node", async ({
-	page,
-}) => {
+type Rect = { x: number; y: number; width: number; height: number };
+type Frame = {
+	tx: number;
+	ty: number;
+	scale: number;
+	pane: Rect;
+	node: Rect;
+	/** The node wrapper's own translate: its position in flow units, which the library paints. */
+	flow: { x: number; y: number };
+	cluster: Rect;
+};
+
+/**
+ * Installed in the page: `snap` reads the viewport transform, the dragged node's wrapper (by its
+ * stable data-id) and the outermost cluster box from one frame, and `watch` records one snapshot
+ * per animation frame until three in a row are identical, bounded by a frame count, never a sleep.
+ */
+const installProbe = (root: Element) => {
+	const snap = (id: string): Frame => {
+		const viewport = root.querySelector<HTMLElement>(".svelte-flow__viewport");
+		const m = viewport?.style.transform.match(
+			/translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)\s*scale\(([-\d.e]+)\)/,
+		);
+		const rect = (e: Element | null | undefined): Rect => {
+			const r = e?.getBoundingClientRect();
+			if (!r) throw new Error("diagram element missing");
+			return { x: r.x, y: r.y, width: r.width, height: r.height };
+		};
+		const node = root.querySelector(
+			`.svelte-flow__node[data-id="${CSS.escape(id)}"]`,
+		);
+		const t = node instanceof HTMLElement ? node.style.transform : "";
+		const at = t.match(/translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)/);
+		return {
+			flow: { x: Number(at?.[1]), y: Number(at?.[2]) },
+			tx: Number(m?.[1]),
+			ty: Number(m?.[2]),
+			scale: Number(m?.[3]),
+			pane: rect(root),
+			node: rect(node),
+			cluster: rect(root.querySelector('.cluster-node[data-depth="0"]')),
+		};
+	};
+	const w = window as unknown as {
+		__dragProbe: {
+			snap: typeof snap;
+			watch: (id: string, bound: number) => Promise<Frame[]>;
+			record: (id: string) => void;
+			recorded: () => number;
+			stop: () => Frame[];
+		};
+	};
+	let recording: Frame[] = [];
+	let running = false;
+	w.__dragProbe = {
+		snap,
+		watch: (id, bound) =>
+			new Promise((resolve, reject) => {
+				const frames: Frame[] = [];
+				let same = 0;
+				const tick = () => {
+					const f = snap(id);
+					if (frames.length)
+						same =
+							JSON.stringify(f) === JSON.stringify(frames[frames.length - 1])
+								? same + 1
+								: 0;
+					frames.push(f);
+					if (same >= 3) return resolve(frames);
+					if (frames.length > bound)
+						return reject(new Error(`no settle in ${bound} frames`));
+					requestAnimationFrame(tick);
+				};
+				requestAnimationFrame(tick);
+			}),
+		record: (id) => {
+			recording = [];
+			running = true;
+			const tick = () => {
+				if (!running) return;
+				recording.push(snap(id));
+				requestAnimationFrame(tick);
+			};
+			requestAnimationFrame(tick);
+		},
+		recorded: () => recording.length,
+		stop: () => {
+			running = false;
+			return recording;
+		},
+	};
+};
+
+const SETTLE_FRAMES = 150;
+const right = (r: Rect) => r.x + r.width;
+const bottom = (r: Rect) => r.y + r.height;
+/** The cluster's own padding round its members, in flow units (cluster-fit.ts PAD). */
+const PAD_SIDE = 16;
+const PAD_BOTTOM = 16;
+
+/** The cluster box contains the node on all four edges and keeps its padding on the sides the node was dragged towards. */
+const expectContains = (f: Frame) => {
+	expect(f.node.x).toBeGreaterThan(f.cluster.x);
+	expect(f.node.y).toBeGreaterThan(f.cluster.y);
+	expect(right(f.cluster) - right(f.node)).toBeGreaterThanOrEqual(
+		PAD_SIDE * f.scale - 1,
+	);
+	expect(bottom(f.cluster) - bottom(f.node)).toBeGreaterThanOrEqual(
+		PAD_BOTTOM * f.scale - 1,
+	);
+};
+
+/** Two frames are the same picture: nothing moved by more than half a pixel. */
+const expectSame = (a: Frame, b: Frame) => {
+	for (const k of ["node", "cluster"] as const)
+		for (const d of ["x", "y", "width", "height"] as const)
+			expect(
+				Math.abs(a[k][d] - b[k][d]),
+				`${k}.${d} moved after release`,
+			).toBeLessThanOrEqual(0.5);
+	expect(b.tx).toBe(a.tx);
+	expect(b.ty).toBe(a.ty);
+	expect(b.scale).toBe(a.scale);
+};
+
+const openCards = async (page: Page) => {
 	const flow = await openInteractiveDiagram(page, "Context map");
 	await page.setViewportSize({ width: 1600, height: 1200 });
 	await flow
@@ -119,41 +242,292 @@ test("in the cards style the cluster boxes follow a dragged node", async ({
 		.getByLabel("Diagram style")
 		.selectOption("cards");
 	await expect(flow.locator(".cluster-node").first()).toBeVisible();
-	// The outermost cluster wraps every node; drag one far beyond its right edge.
-	const workspace = flow.locator('.cluster-node[data-depth="0"]');
-	const before = (await workspace.boundingBox())!;
+	await flow.evaluate(installProbe);
 	const legend = (await flow.locator(".diagram-legend").boundingBox())!;
-	let box: { x: number; y: number; width: number; height: number } | undefined;
+	// The legend overlays the top left, so drag a node that sits clear of it, tracked by its data-id.
 	for (const n of await flow.locator(".context-node").all()) {
 		const b = (await n.boundingBox())!;
 		if (b.x > legend.x + legend.width || b.y > legend.y + legend.height) {
-			box = b;
-			break;
+			const id = await n.evaluate(
+				(e) => e.closest(".svelte-flow__node")!.getAttribute("data-id")!,
+			);
+			return {
+				flow,
+				id,
+				grab: { x: b.x + b.width / 2, y: b.y + b.height / 2 },
+			};
 		}
 	}
-	if (!box) throw new Error("every node sits under the legend");
-	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-	await page.mouse.down();
-	// Aimed at a point past the cluster's own corner rather than a fixed
-	// distance: the default fit leaves room for the panels, so how many
-	// pixels "far beyond the right edge" is depends on the zoom.
-	await page.mouse.move(
-		before.x + before.width + 250,
-		before.y + before.height + 150,
-		{ steps: 8 },
+	throw new Error("every node sits under the legend");
+};
+
+const snapOf = (flow: Locator, id: string) =>
+	flow.evaluate(
+		(_, i) =>
+			(
+				window as unknown as {
+					__dragProbe: { snap: (id: string) => Frame };
+				}
+			).__dragProbe.snap(i),
+		id,
 	);
-	// The box grows during the drag, not only after it.
-	await expect
-		.poll(async () => (await workspace.boundingBox())!.width)
-		.toBeGreaterThan(before.width);
+const settleOf = (flow: Locator, id: string) =>
+	flow.evaluate(
+		(_, [i, n]) =>
+			(
+				window as unknown as {
+					__dragProbe: {
+						watch: (id: string, bound: number) => Promise<Frame[]>;
+					};
+				}
+			).__dragProbe.watch(i as string, n as number),
+		[id, SETTLE_FRAMES],
+	);
+
+test("in the cards style the cluster boxes follow a dragged node", async ({
+	page,
+}) => {
+	const { flow, id, grab } = await openCards(page);
+	const before = await snapOf(flow, id);
+	// Aimed inside the canvas (clear of its 40px auto-pan edge) and meaningfully beyond the old cluster, so the viewport stays put.
+	const target = {
+		x: right(before.pane) - 60,
+		y: Math.min(bottom(before.cluster) + 150, bottom(before.pane) - 60),
+	};
+	expect(target.x).toBeGreaterThan(right(before.cluster) + 60);
+	expect(target.y).toBeGreaterThan(grab.y);
+
+	await page.mouse.move(grab.x, grab.y);
+	await page.mouse.down();
+	await flow.evaluate((_, i) => {
+		(
+			window as unknown as { __dragProbe: { record: (id: string) => void } }
+		).__dragProbe.record(i);
+	}, id);
+	// A real pointer starts a drag with a small move; the library anchors the node there.
+	await page.mouse.move(grab.x + 4, grab.y + 4);
+	await page.mouse.move(target.x, target.y, { steps: 8 });
+	const held = (await settleOf(flow, id)).at(-1)!;
+
+	// While the button is held: no auto-pan, the node tracks the pointer (no one-step lag), and the cluster follows it.
+	expect(held.tx).toBe(before.tx);
+	expect(held.ty).toBe(before.ty);
+	expect(held.scale).toBe(before.scale);
+	expect(Math.abs(held.node.x + held.node.width / 2 - target.x)).toBeLessThan(
+		8,
+	);
+	expect(Math.abs(held.node.y + held.node.height / 2 - target.y)).toBeLessThan(
+		8,
+	);
+	expect(right(held.node)).toBeGreaterThan(right(before.cluster));
+	expectContains(held);
+	// The box grew with the node, by at least the distance it was dragged past the old edge.
+	expect(right(held.cluster)).toBeGreaterThan(right(before.cluster));
+	expect(held.cluster.width).toBeGreaterThan(before.cluster.width);
+
 	await page.mouse.up();
-	const after = (await workspace.boundingBox())!;
-	expect(after.width).toBeGreaterThan(before.width + 200);
-	expect(after.height).toBeGreaterThan(before.height + 100);
-	// The node stays inside the refitted box.
-	const dragged = flow.locator(".svelte-flow__node", {
-		has: page.locator(".context-node"),
-	});
-	const moved = (await dragged.first().boundingBox())!;
-	expect(moved.x + moved.width).toBeLessThanOrEqual(after.x + after.width + 1);
+	const released = await settleOf(flow, id);
+	// Releasing changes nothing: every frame after it is the held picture, so no post-release jump and no reverse jump.
+	for (const f of released) expectSame(held, f);
+	const trail = await flow.evaluate(() =>
+		(
+			window as unknown as { __dragProbe: { stop: () => Frame[] } }
+		).__dragProbe.stop(),
+	);
+	// Across the whole gesture the node only ever moves forward, and no painted frame has it outside the box.
+	for (let i = 1; i < trail.length; i++)
+		expect(right(trail[i].node)).toBeGreaterThanOrEqual(
+			right(trail[i - 1].node) - 0.5,
+		);
+	for (const f of trail) {
+		expect(f.node.x).toBeGreaterThanOrEqual(f.cluster.x - 1);
+		expect(f.node.y).toBeGreaterThanOrEqual(f.cluster.y - 1);
+		expect(right(f.node)).toBeLessThanOrEqual(right(f.cluster) + 1);
+		expect(bottom(f.node)).toBeLessThanOrEqual(bottom(f.cluster) + 1);
+	}
+	expectContains(released.at(-1)!);
+});
+
+/** What a painted frame may differ by and still be the same picture: sub-pixel rounding, never a pan step (15px). */
+const PIXEL = 1;
+
+test("on a context map the canvas auto-pans a node dragged to its edge and the boxes stay with it", async ({
+	page,
+}) => {
+	const { flow, id, grab } = await openCards(page);
+	const before = await snapOf(flow, id);
+	// Inside the pane's 40px auto-pan zone, and held there for the whole gesture.
+	const edge = { x: right(before.pane) - 20, y: grab.y + 150 };
+
+	await page.mouse.move(grab.x, grab.y);
+	await page.mouse.down();
+	await page.mouse.move(grab.x + 4, grab.y + 4);
+	await page.mouse.move(edge.x, edge.y, { steps: 8 });
+	// The pan is measured, not guessed: it has begun once the canvas has moved under the pointer.
+	await expect
+		.poll(async () => before.tx - (await snapOf(flow, id)).tx)
+		.toBeGreaterThan(45);
+	await flow.evaluate((_, i) => {
+		(
+			window as unknown as { __dragProbe: { record: (id: string) => void } }
+		).__dragProbe.record(i);
+	}, id);
+	// The pointer does not move. Every frame of the next stretch is a frame of the canvas panning under it.
+	await expect
+		.poll(() =>
+			flow.evaluate(() =>
+				(
+					window as unknown as { __dragProbe: { recorded: () => number } }
+				).__dragProbe.recorded(),
+			),
+		)
+		.toBeGreaterThanOrEqual(40);
+	const held = await snapOf(flow, id);
+
+	// Let go with the pointer still in the edge zone.
+	await page.mouse.up();
+	const released = await settleOf(flow, id);
+	const trail = await flow.evaluate(() =>
+		(
+			window as unknown as { __dragProbe: { stop: () => Frame[] } }
+		).__dragProbe.stop(),
+	);
+
+	// The canvas really was panning, steadily, under the held pointer.
+	const first = trail[0];
+	expect(first.tx - held.tx).toBeGreaterThan(100);
+	for (let i = 1; i < trail.length; i++)
+		expect(trail[i].tx).toBeLessThanOrEqual(trail[i - 1].tx);
+	for (const f of trail) {
+		expect(f.scale).toBe(first.scale);
+		expect(f.ty).toBe(first.ty);
+	}
+
+	// A held pointer holds the node still on screen, frame after frame: no step back, no alternation, no stall.
+	const panning = trail.filter((f) => f.tx > held.tx);
+	for (const [n, f] of panning.entries())
+		for (const k of ["x", "y"] as const)
+			expect(
+				Math.abs(f.node[k] - first.node[k]),
+				`frame ${n}: node.${k} left the pointer`,
+			).toBeLessThanOrEqual(PIXEL);
+	// The world moved under it: flow displacement is the screen displacement plus the pan, as painted.
+	for (const [n, f] of trail.entries()) {
+		const world = (f.flow.x - first.flow.x) * f.scale;
+		const screen = f.node.x - first.node.x + (first.tx - f.tx);
+		expect(
+			Math.abs(world - screen),
+			`frame ${n}: world vs screen`,
+		).toBeLessThanOrEqual(PIXEL);
+	}
+	// The box keeps its side of the node, and holds it on all four edges in every frame.
+	for (const f of trail) {
+		expectContains(f);
+		expect(
+			Math.abs(right(f.cluster) - right(first.cluster)),
+		).toBeLessThanOrEqual(PIXEL);
+		expect(
+			Math.abs(bottom(f.cluster) - bottom(first.cluster)),
+		).toBeLessThanOrEqual(PIXEL);
+	}
+
+	// Letting go moves nothing forward or back and the box does not snap back.
+	const settled = released.at(-1)!;
+	const last = panning.at(-1)!;
+	for (const k of ["x", "y"] as const)
+		expect(Math.abs(settled.node[k] - last.node[k])).toBeLessThanOrEqual(PIXEL);
+	expect(
+		Math.abs(right(settled.cluster) - right(last.cluster)),
+	).toBeLessThanOrEqual(PIXEL);
+	expect(
+		Math.abs(bottom(settled.cluster) - bottom(last.cluster)),
+	).toBeLessThanOrEqual(PIXEL);
+	expectContains(settled);
+});
+
+test("on a context map a node that is alone in its cluster stays under a held pointer in the bottom-right corner and does not move when the pointer is let go", async ({
+	page,
+}) => {
+	// northbank at this size is zoomed out far enough (a pan step is more than the 16px cluster padding in flow units)
+	// for a parent's stale measurement to hold a cluster, and the one node in it, behind the pointer.
+	// The probe records after auto-pan's frame callback, so this fails when a stale parent measurement holds the
+	// drag state back (store and DOM state read before the resize observer runs), even though the paint is correct.
+	await page.setViewportSize({ width: 1600, height: 1200 });
+	const url = await serveModel(page, "northbank");
+	await page.goto(`/?url=${encodeURIComponent(url)}`);
+	const figure = page.locator("figure.diagram", { hasText: "Context map" });
+	await figure.scrollIntoViewIfNeeded();
+	const flow = figure.locator(".svelte-flow");
+	const style = figure.getByLabel("Diagram style");
+	if (!(await style.isVisible()))
+		await figure.getByRole("button", { name: "Options" }).click();
+	await style.selectOption("cards");
+	await expect(flow.locator(".cluster-node").first()).toBeVisible();
+	await flow.evaluate(installProbe);
+	// Alone in its subdomain cluster, so the cluster's origin follows it.
+	const id = "#/boundedcontexts/payments_hub";
+	const before = (await settleOf(flow, id)).at(-1)!;
+	const grab = {
+		x: before.node.x + before.node.width / 2,
+		y: before.node.y + before.node.height / 2,
+	};
+	const corner = { x: right(before.pane) - 20, y: bottom(before.pane) - 20 };
+
+	await page.mouse.move(grab.x, grab.y);
+	await page.mouse.down();
+	await page.mouse.move(grab.x + 4, grab.y + 4);
+	await page.mouse.move(corner.x, corner.y, { steps: 8 });
+	await expect
+		.poll(async () => {
+			const f = await snapOf(flow, id);
+			return Math.min(before.tx - f.tx, before.ty - f.ty);
+		})
+		.toBeGreaterThan(45);
+	await flow.evaluate((_, i) => {
+		(
+			window as unknown as { __dragProbe: { record: (id: string) => void } }
+		).__dragProbe.record(i);
+	}, id);
+	await expect
+		.poll(() =>
+			flow.evaluate(() =>
+				(
+					window as unknown as { __dragProbe: { recorded: () => number } }
+				).__dragProbe.recorded(),
+			),
+		)
+		.toBeGreaterThanOrEqual(40);
+	const held = await snapOf(flow, id);
+	await page.mouse.up();
+	const released = await settleOf(flow, id);
+	const trail = await flow.evaluate(() =>
+		(
+			window as unknown as { __dragProbe: { stop: () => Frame[] } }
+		).__dragProbe.stop(),
+	);
+
+	// The canvas panned on both axes under the held pointer.
+	const first = trail[0];
+	expect(first.tx - held.tx).toBeGreaterThan(100);
+	expect(first.ty - held.ty).toBeGreaterThan(100);
+	const panning = trail.filter((f) => f.tx > held.tx && f.ty > held.ty);
+	expect(panning.length).toBeGreaterThanOrEqual(30);
+	// Held still on screen, frame after frame, and the boxes keep their side of it.
+	for (const [n, f] of panning.entries()) {
+		for (const k of ["x", "y"] as const)
+			expect(
+				Math.abs(f.node[k] - first.node[k]),
+				`frame ${n}: node.${k} left the pointer`,
+			).toBeLessThanOrEqual(PIXEL);
+		expectContains(f);
+	}
+	// Letting go moves nothing: the node was already where the pointer holds it in the last frame the canvas panned.
+	const settled = released.at(-1)!;
+	const last = panning.at(-1)!;
+	for (const k of ["x", "y"] as const)
+		expect(
+			Math.abs(settled.node[k] - last.node[k]),
+			`node.${k} moved on release`,
+		).toBeLessThanOrEqual(PIXEL);
+	expectContains(settled);
 });
