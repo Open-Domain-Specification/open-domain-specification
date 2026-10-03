@@ -59,4 +59,25 @@ describe("Lockup", () => {
 			"codicon-undefined",
 		);
 	});
+
+	it("keeps the icon, the name and a trailing detail in one lockup element, the icon hidden from assistive technology", () => {
+		const { container } = render(Lockup, {
+			kind: "event",
+			name: "OrderDelivered",
+			detail: "Event",
+			size: "title",
+		});
+		const lockups = container.querySelectorAll(".lockup");
+		expect(lockups).toHaveLength(1);
+		const lockup = lockups[0] as HTMLElement;
+		expect(lockup.querySelector("i.codicon")).toHaveAttribute(
+			"aria-hidden",
+			"true",
+		);
+		expect(lockup.querySelector(".name")).toHaveTextContent("OrderDelivered");
+		expect(lockup.querySelector(".detail")).toHaveTextContent("Event");
+		expect(lockup.textContent?.replace(/\s+/g, " ").trim()).toBe(
+			"OrderDelivered Event",
+		);
+	});
 });

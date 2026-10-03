@@ -9,6 +9,7 @@ import {
 	edgeCaseModel,
 	petstoreModel,
 	petstoreSales,
+	referenceModels,
 	rivermartModel,
 } from "../fixtures";
 import { installXyflowTestEnv } from "../xyflow-test-env";
@@ -373,5 +374,80 @@ describe("ContextPage", () => {
 		const keyword = container.querySelector(".meta .keyword") as HTMLElement;
 		expect(keyword).toHaveTextContent("boundary only");
 		expect(keyword).not.toHaveClass("warn");
+	});
+
+	describe("glossary columns", () => {
+		const headersOf = (language: HTMLElement) =>
+			[...language.querySelectorAll("thead th")].map((th) => ({
+				text: th.textContent?.trim(),
+				grow: th.classList.contains("grow"),
+			}));
+		const expectDefinitionGrows = (container: HTMLElement) => {
+			const language = container.querySelector("#language") as HTMLElement;
+			// Exactly one column grows, and it is the prose: Definition.
+			expect(headersOf(language)).toEqual([
+				{ text: "Term", grow: false },
+				{ text: "Definition", grow: true },
+				{ text: "Also", grow: false },
+				{ text: "Embodied by", grow: false },
+			]);
+			const rows = [...language.querySelectorAll("tbody tr")];
+			expect(rows.length).toBeGreaterThan(0);
+			for (const row of rows)
+				expect(
+					[...row.querySelectorAll("td")].map((td) =>
+						td.classList.contains("grow"),
+					),
+				).toEqual([false, true, false, false]);
+			expect(language.querySelectorAll("th.grow")).toHaveLength(1);
+		};
+
+		it("gives the width to Definition, not Embodied by, in the petstore's sales context", () => {
+			const { model, context } = petstoreSales();
+			const { container } = page(model, context);
+			expectDefinitionGrows(container);
+		});
+
+		it("gives the width to Definition, not Embodied by, in northbank's Customer & KYC", () => {
+			const northbank = referenceModels().find(
+				(m) => m.workspace.name === "NorthBank",
+			) as ReturnType<typeof referenceModels>[number];
+			const context = northbank.workspace.boundedcontexts.get(
+				"customer_&_kyc",
+			) as BoundedContext;
+			const { container } = page(northbank, context);
+			expectDefinitionGrows(container);
+			const language = container.querySelector("#language") as HTMLElement;
+			expect(language).toHaveTextContent("A verified person");
+		});
+	});
+
+	describe("Serves fact", () => {
+		it("lists each subdomain as one item holding its lockup and its classification, with no comma authored in the markup", () => {
+			const northbank = referenceModels().find(
+				(m) => m.workspace.name === "NorthBank",
+			) as ReturnType<typeof referenceModels>[number];
+			const context = northbank.workspace.boundedcontexts.get(
+				"customer_&_kyc",
+			) as BoundedContext;
+			const { container } = page(northbank, context);
+			const joined = container.querySelector(
+				"header dd .joined",
+			) as HTMLElement;
+			const items = [...joined.children] as HTMLElement[];
+			expect(items).toHaveLength(context.subdomains.size);
+			expect(items.length).toBeGreaterThan(1);
+			for (const [i, subdomain] of [...context.subdomains].entries()) {
+				const item = items[i];
+				expect(item).toHaveClass("serves");
+				// A lockup and its classification keyword travel together.
+				expect(item.querySelectorAll(".lockup")).toHaveLength(1);
+				expect(item.querySelector(".lockup")).toHaveTextContent(subdomain.name);
+				expect(item.querySelector(".keyword")).toHaveTextContent(
+					subdomain.type,
+				);
+				expect(item.textContent).not.toContain(",");
+			}
+		});
 	});
 });

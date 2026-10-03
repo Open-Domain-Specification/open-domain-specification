@@ -14,13 +14,13 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-Milestone 3 is delivered. #103 landed separately in PR #133; PR #106 delivered #86, #89, #90 and #102, closed individually with the parent last. Candidate `2f4fb124` passed the unmodified Node 26 gate (485 browser cases, 20 documented skips; 1,084 pages tests with 100% coverage, schema/ESM/reference checks). PR #106 merged as `d87ba634`; its tree exactly matches the gated candidate. Required pre-merge CI 37104242808 and post-merge CI 37104707314 passed test/e2e/real-vscode, with release disabled. Card 156 is done; card 183 remains done.
+Milestone 4 is active: epic #105 and children #87, #88 and #80. Root accepted final host proof: 16 configurations × 11 routes, 17,342 rule checks, zero rule or harness failures; all extra operation/font/fixture axes pass. Actual VS Code standard 16, keyboard 24 and strict checker pass, with four documented optional screenshot skips. Canonical foreground Opus/Sonnet models are verified; no quota response. The standalone screenshot retries exceeded their guardrail and are recorded as a process violation; final captures came from the working matrix harness. The eight-principle audit is complete; its sortable empty-header correctness finding was repaired and independently reviewed. Focused tests pass (14 DataTable, 28 AttributeTable; DataTable coverage 100%). Integrated quality is accepted. The first clean-head gate failed on new regression callback typing after 1,156 unit tests and 100% coverage; the one-line test-only correction now passes focused tests, formatting and the package typecheck (970 files, zero errors/warnings). A new clean-head gate is required. Card 184 is doing; no milestone acceptance, merge or closure yet. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-D-final-hosts/lead-host-acceptance.json.
 
-The earlier pan and automatic-fit test setup failures are retained in the journals. The final setup uses the real Fit View control before the drag baseline and passed six natural/controlled-bad-pose checks plus 30 original drag checks with every original tolerance unchanged. The controlled start proves left clipping and insufficient right room before recovery; Linux acceptance passed afterward. The model's Astra approval remains on `e5cda126`, no new approval is claimed.
+Milestone 3 closeout commit `000f5a7f` passed its own unmodified Node 26 gate and is published on `develop`: 485 browser tests passed, 20 documented skips, pages coverage 100%, schema/ESM checks and exact reference diagnostic pins unchanged. Its product tree is unchanged from accepted PR #106. The actual GitHub census remains 16 open / 38 closed.
 
 ## Next
 
-Publish these closeout records only after their own clean unmodified gate. Then activate Milestone 4, epic #105 and children #87, #88 and #80: glossary prose width, intact attribute type alternatives, and a named but visually empty icon header. Read-only current caller/type-format inventory and root decisions are prepared; no baseline or implementation is claimed yet. Reproduce before source changes, prove all AttributeTable caller families and actual hosts, then the required quality/local gate/CI. Target 12 open after that batch.
+Freeze the complete table candidate and run the unmodified local landing gate. Necessary exact-head pre/post-merge CI and one independently reviewed PR precede child closures followed by #105. Target: 12 open. No Astra UI review or release.
 
 ## Later
 
@@ -28,8 +28,8 @@ Follow the remaining [roadmap](docs/bots/ROADMAP.md): accessibility, navigation,
 
 ## Outcomes / blockers
 
-No external blocker. Post-merge acceptance and the actual GitHub census prove Milestone 3 closures. Repository closeout publication remains pending its mandatory gate. Milestones 1 and 2 record commits `0109d39e` and `a647c6e0` are already gate-green and published. Eight proposal dispositions remain not-planned decisions, not delivered features.
+No external blocker. Milestones 1–3 are delivered and their records are gate-green and published. The eight not-planned proposal dispositions are decisions rather than delivered features. No new or reopened tickets. Model approval remains historical on `e5cda126`; no Astra UI review.
 
 ## Working state
 
-Updated: 2026-10-03T07:14:12.040037+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/m3-diagram-closeout`, base `d87ba634`. Only six delivery records change; product source equals the accepted PR #106 tree. All technical actors are terminal. Durable CURRENT.json tracks this record freeze/gate and subsequent Milestone 4 activation. Main-checkout biome/promo work is preserved.
+Updated: 2026-10-03T11:54:38.202794+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/epic-105-readable-tables`, base `000f5a7f7b4410c0a58260565785a3641595640e`. M4 source/tests and five root delivery records are committed; the final integrated gate, PR, CI and closures remain. Main-checkout biome/promo work is preserved. Durable CURRENT.json records the coordinator state and evidence.

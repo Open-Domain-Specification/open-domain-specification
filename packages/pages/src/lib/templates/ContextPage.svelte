@@ -189,7 +189,7 @@ const processColumns: Column[] = [
 ];
 const termColumns: Column[] = [
 	{ key: "name", label: "Term" },
-	{ key: "definition", label: "Definition" },
+	{ key: "definition", label: "Definition", grow: true },
 	{ key: "aliases", label: "Also" },
 	{ key: "embodied", label: "Embodied by" },
 ];
@@ -205,11 +205,11 @@ const termColumns: Column[] = [
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Serves">
-				<Joined>{#each [...bc.subdomains] as s (s.ref)}<span class="serves"><Lockup
+				<Joined>{#each [...bc.subdomains] as s (s.ref)}<span class="serves"><span class="pair"><Lockup
 								kind="subdomain"
 								name={s.name}
 								ref={s.ref}
-							/> <Keyword text={s.type} title={SUBDOMAIN_TYPE[s.type]} /></span>{:else}<Keyword text="no subdomain" />{/each}</Joined>
+							/> <Keyword text={s.type} title={SUBDOMAIN_TYPE[s.type]} /></span></span>{:else}<Keyword text="no subdomain" />{/each}</Joined>
 			</Definition>
 			<Definition term="Owned by">{#if bc.external}Nobody here; the enterprise integrates with it and does not run it{:else}<TeamLockup team={bc.team} />{/if}</Definition>
 		</DefinitionList>
@@ -459,8 +459,9 @@ const termColumns: Column[] = [
 		color: var(--vscode-descriptionForeground);
 	}
 	/* A subdomain and its classification are one item in the list, so they
-	   break together and take one separator between them. */
-	.serves {
+	   stay together; the list breaks between items, after the comma that
+	   `Joined` ends each one with. */
+	.pair {
 		white-space: nowrap;
 	}
 	.description {

@@ -8,11 +8,11 @@
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
-  "active_milestone": 3,
-  "integration_batch": "milestone-03-record-closeout",
+  "active_milestone": 4,
+  "integration_batch": "milestone-04-readable-tables",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M3 delivered. PR #106 candidate 2f4fb124 passed the local gate; merge d87ba634 has the same tree. Pre-merge CI 37104242808 and post-merge CI 37104707314 passed. #86, #89 and #90 closed individually, then #102; #103 already closed through PR #133. Live 16 open. Record-only quality corrections, gate and publication pending. M4 prepared, not started.",
+  "candidate_state": "M4 integrated quality accepted; firstgate20a5e3da failed new test callback typing, corrected with focused14tests/Biome/pagescheck970files0errors. Final clean-head gate and PR/pre/postCI remain;16open.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -261,7 +261,7 @@
         103
       ],
       "owner": "lead",
-      "state": "complete: five issues accepted and closed; record publication pending",
+      "state": "complete: five individually accepted closures; records 000f5a7f gate-green and published",
       "expected_remaining": 16,
       "entry_scope": "Existing PR #106 after model closeout;103 separate PR if unrelated cause.",
       "exit_acceptance": "Measured inline/fullscreen fit, panel clearance, actual hosts and explained stable released-node geometry.",
@@ -615,13 +615,62 @@
         80
       ],
       "owner": "lead",
-      "state": "next: current callers and implementation decisions prepared; no baseline/implementation yet",
+      "state": "active: final hosts and integrated quality accepted; landing next",
       "expected_remaining": 12,
       "entry_scope": "Only prose sizing, intact type tokens and accessible identity-column name.",
       "exit_acceptance": "Actual before/after geometry across table callers/hosts;24ch glossary, token integrity and accessible associations.",
       "investigation_limit": "No general redesign, phone navigation, contrast or unrelated copy.",
-      "evidence": [],
-      "closed_issues": []
+      "evidence": [
+        {
+          "scope": "phase B actual host validation and root rejection",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-B-validation",
+          "correction_authorization": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-C-corrections/lead-correction-authorization.json",
+          "tracked_browser_passed": 13,
+          "tracked_browser_failed": 20,
+          "final_acceptance": false
+        },
+        {
+          "scope": "Phase C focused repair preflight",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-C-corrections/lead-preflight-acceptance.json",
+          "unit_passed": 1154,
+          "coverage_percent": 100,
+          "browser_passed": 61,
+          "milestone_acceptance": false
+        },
+        {
+          "scope": "Final actual-host verification",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-D-final-hosts/lead-host-acceptance.json",
+          "matrix_configurations": 16,
+          "route_captures": 176,
+          "rule_checks": 17342,
+          "failed": 0,
+          "standard_passed": 16,
+          "keyboard_passed": 24,
+          "checker_exit": 0,
+          "milestone_acceptance": false
+        },
+        {
+          "scope": "integrated quality and R1 correction",
+          "audit": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-E-quality/aggregate.md",
+          "acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-F-sortable-name/lead-acceptance.json",
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "quota_response": false,
+          "closure_claimed": false
+        },
+        {
+          "scope": "failed local gate and test-only correction",
+          "failed_gate": "20a5e3da59f62c4916c73549efc28b0c9ce04bfc",
+          "gate_exit": 1,
+          "reason": "regression callback type",
+          "correction_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-H-test-type/lead-acceptance.json",
+          "product_source_unchanged": true
+        }
+      ],
+      "closed_issues": [],
+      "card": "boards/project-backlog/184-model-tables-read-as-prose-and-intact-types.md"
     },
     {
       "id": 5,

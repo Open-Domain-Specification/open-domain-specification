@@ -15,11 +15,16 @@ describe("AttributesSection", () => {
 			[...container.querySelectorAll("thead th")].map((th) =>
 				th.textContent?.trim(),
 			),
-		).toEqual(["", "Attribute", "Type", "Description"]);
+		).toEqual(["Kind", "Attribute", "Type", "Description"]);
 		// The key column is 16px, so the name column starts where the eye expects.
 		expect(
 			(container.querySelectorAll("thead th")[0] as HTMLElement).style.width,
 		).toBe("16px");
+		// The first header has a name for assistive technology, as content.
+		const kind = screen.getByRole("columnheader", { name: "Kind" });
+		expect(kind).toBe(container.querySelectorAll("thead th")[0]);
+		expect(kind).not.toHaveAttribute("aria-label");
+		expect(kind.textContent?.trim()).toBe("Kind");
 	});
 
 	it("marks only the identity attribute with the key codicon", () => {
