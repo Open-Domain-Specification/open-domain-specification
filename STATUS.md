@@ -2,7 +2,7 @@
 
 ## Goal / health
 
-Clear the guarded ODS backlog. Milestones 1 and 2 are complete and their records published: 25 model issues delivered, eight proposals closed not planned, 21 issues remain from the 54-open baseline. Milestone 3 is active, starting with #103 before PR #106. No new capability is claimed for the proposal dispositions.
+Clear the guarded ODS backlog. Milestones 1 and 2 are complete and their records published: 25 model issues delivered, eight proposals closed not planned, 20 issues remain from the 54-open baseline. Milestone 3 has delivered #103; PR #106 is next. No new capability is claimed for the proposal dispositions.
 
 ## Binding delegation policy — 2026-10-03
 
@@ -14,13 +14,13 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Now
 
-Milestone 3 is active, starting with #103 as a separate drag repair before PR #106 integration. Opus 5.5 coordinated Sonnet 5.5; both runtime identities are confirmed. The final free-map extent correction and drag-cache synchronisation passed 30 focused repeats, the four-test tracked suite and 13 actual viewer/export/VS Code cases. All eight quality principles are clear after a comment-only coupling recheck. Earlier measured-cache passes are historical; the earlier visible catch-up interpretation is superseded by the full state-contract evidence. The first clean landing gate found the new fixed-map guard lacked unit coverage. A non-vacuous real-drag test now preserves all fixed-map cluster styles and fails when that guard is removed; 1,058 pages tests pass with 100% coverage. Production and e2e files are unchanged by this correction. The corrected candidate requires the full landing gate. The backlog remains 21 open.
+Milestone 3 delivered #103 through PR #133, merged as fe0df346. Its tree exactly equals gated candidate 88261767. The unmodified Node26 gate passed with 433 browser tests, 20 existing documented capture skips, 1,058 pages tests at 100% coverage, every other suite, exact model pins, schema and ESM checks. Thirty focused repeats and thirteen actual reader-host cases demonstrated stable released geometry. The first coverage gap was corrected with a mutation-sensitive fixed-map regression; source and host proof were retained. The live backlog is 20 open: 26 delivered and eight not-planned closures. Closeout records require their own clean gate before publication.
 
 Milestone 2 records a647c6e0 passed their final unmodified gate and landed on develop; card 182 is done. Model approval remains historical e5cda126, with no new Astra request for UI/tooling.
 
 ## Next
 
-Freeze the accepted #103 candidate, run the clean unmodified Node26 landing gate, then publish and merge its separate PR before closing the issue. Rebase PR #106 onto the accepted develop state; correct canonical route navigation and assert intended pages, then remeasure current NorthBank 19-context fits across viewer/export/VS Code. Serialize builds, browsers and real hosts. Necessary pre/post CI for #102 is conserved through one explicit non-release run per final head where branch checks permit.
+Publish the verified #103 records, then rebase PR #106 onto that develop state. Preserve the drag fix and canonical model routing, assert intended pages, and remeasure current NorthBank 19-context fits across viewer/export/VS Code. Opus 5.5 coordinates Sonnet 5.5; builds, browsers and real hosts are serialized. Required #102 pre/post CI uses one explicit non-release run per final head where checks permit.
 
 ## Later
 
@@ -32,4 +32,4 @@ All 25 cards 157–181 are reconciled, marked done and non-live; the #108 parent
 
 ## Working state
 
-Updated: 2026-10-03T03:05:41.463361+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/relationship-pages/open-domain-specification`; branch `codex/drag-check-103`; base `a647c6e056c676a3c88aca93dd1f45b58c5985ea`. Card 183, STATUS and manifest record the accepted source and quality evidence. No landing gate, merge or issue closure is claimed yet. Durable CURRENT.json records the completed coordinator and next action.
+Updated: 2026-10-03T03:18:02.575285+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/relationship-pages/open-domain-specification`; branch `codex/drag-check-103`; accepted merge `fe0df346d13afa7e5a69c66012ef9b0fe2023cb3`. Card 183 is done following actual gate, merge and issue closure. Closeout records are pending their clean gate and publication. PR #106 remains parked at `071ff573` in the cross-surface-fixture worktree. Durable CURRENT.json holds the current process and next assignment.

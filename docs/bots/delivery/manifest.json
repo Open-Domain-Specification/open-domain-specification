@@ -2,17 +2,17 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 21,
-  "closed": 33,
-  "closed_implemented": 25,
+  "current_open": 20,
+  "closed": 34,
+  "closed_implemented": 26,
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
   "active_milestone": 3,
-  "integration_batch": "issue-103-drag-check",
+  "integration_batch": "issue-103-record-closeout",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "Historical final model approval e5cda126; PR132 merged with identical tree. M1 records0109d39e and M2 recordsa647c6e0 passed their own mandatory gates and landed. Active M3 issue103 source/tests are uncommitted partial work, not an approved/gated candidate.",
+  "candidate_state": "Historical final model approval e5cda126 retained with identical PR132 merge tree. M1 records 0109d39e and M2 records a647c6e0 passed their gates and landed. M3 issue #103 passed the full gate on 88261767, merged with identical tree as fe0df346 through PR133, and is individually closed. Closeout records gate/publication pending; PR106 next.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -261,7 +261,7 @@
         103
       ],
       "owner": "lead",
-      "state": "active: #103 source, actual hosts and quality accepted; clean landing gate next; PR106 waits #103",
+      "state": "active: #103 merged and individually closed; PR106 integration next",
       "expected_remaining": 16,
       "entry_scope": "Existing PR #106 after model closeout;103 separate PR if unrelated cause.",
       "exit_acceptance": "Measured inline/fullscreen fit, panel clearance, actual hosts and explained stable released-node geometry.",
@@ -338,9 +338,39 @@
           "production_changed": false,
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/coverage-fix/coordinator-acceptance.md",
           "accepted_for_landing": false
+        },
+        {
+          "scope": "103 delivered and closure verified",
+          "pr": "https://github.com/Open-Domain-Specification/open-domain-specification/pull/133",
+          "candidate": "882617673630c8eadf1ff8973190d8d0e32816a0",
+          "merge": "fe0df346d13afa7e5a69c66012ef9b0fe2023cb3",
+          "merge_tree_equals_candidate": true,
+          "gate_exit": 0,
+          "pages_tests": 1058,
+          "pages_coverage_percent": 100,
+          "browser_passed": 433,
+          "browser_documented_skips": 20,
+          "pins": {
+            "petstore": 0,
+            "rivermart": 2,
+            "streamline": 4,
+            "northbank": 3,
+            "clinic": 0
+          },
+          "issue_closed_at": "2026-10-03T03:16:41Z",
+          "open": 20,
+          "closed": 34,
+          "implemented": 26,
+          "not_planned": 8,
+          "new": 0,
+          "reopened": 0,
+          "remote_ci": "none required or run",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/merge-verification.json"
         }
       ],
-      "closed_issues": []
+      "closed_issues": [
+        103
+      ]
     },
     {
       "id": 4,
