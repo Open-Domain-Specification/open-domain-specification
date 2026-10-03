@@ -7,7 +7,7 @@ live: true
 status: Source and reader quality complete; final landing gate
 progress: 80
 clean-code-swept: true
-updatedAt: 2026-10-03T17:35:18.533790+00:00
+updatedAt: 2026-10-03T17:51:52.326716+00:00
 ---
 # Words, links and keyboard bypasses
 
@@ -47,3 +47,5 @@ Milestone 5, issues #78, #79 and #83. Readers can see flagged text in both theme
 - **lead** (2026-10-03T17:25:40.837752+00:00): Native correction at apps/ods-vscode/e2e-keyboard/journeys.spec.ts:496 preserves full on-screen/centre/corner predicates and polls settled painting;107ms measured. Actual focused/full keyboard25/25,0flaky/skip; root reran unmodified resultcheckerexit0 with byte-identical accepted main-native16pass/4optionalpending. Only newtestchanged, productbundleunchanged. Source and actual-reader evidence accepted; authorize one proportional eight-principle Sonnet quality pass through Opus, no Astra. Quality, clean-head landing gate, exact-head necessary pre/post CI, merge and closures remain.
 
 - **lead** (2026-10-03T17:35:18.533790+00:00): Eight independent Sonnet quality lenses returned actualDONE through Opus; rawmodels/foregroundpairs verified, highestintroducedscore0.3,noblockers. Root preserved missing BOUNDARY/PANIC reports from completedtranscripts. Existing PageHeader.svelte:54 marker is unchanged/outside outgoingdiff under the skill’s explicit scope; no waiver or extra ticket. Candidate freeze for one unmodified exact-head gate follows. Source/host/quality accepted, gate/publication/closures notyetclaimed.
+
+- **lead** (2026-10-03T17:51:52.326716+00:00): First unmodified clean-head gate `1e35ce1e` exited1: all package checks/pins/schema/ESM passed, browser613pass/1fail/20documented skips. One stale shared-kernel test expected warning rim==text despite deliberate #78 contrast split. Accepted bounded Sonnet test-only correction under Opus: token-specific paints, unmarked distinction and evidence interactions preserved; focused4pass,lint0,strict ad hoc tsc0. Root corrected comment attribution to issue#78, reviewed delta with no blocking clean-code finding, and preserved all accepted product/native/reader/quality proof. Failed root PATH launch and first missing-dom.iterable tsc are counted. New frozen clean candidate and unchanged full gate precede publication; no closure or release claimed.
