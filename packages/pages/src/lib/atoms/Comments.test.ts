@@ -49,4 +49,20 @@ describe("Comments", () => {
 		render(Comments, { comments: [], empty: "Nothing written down yet." });
 		expect(screen.getByText("Nothing written down yet.")).toBeInTheDocument();
 	});
+
+	it("marks the citation as the end of the comment's sentence, so colour is not its only cue (#79)", () => {
+		render(Comments, {
+			comments: [
+				{
+					text: "Why it is so.",
+					link: {
+						kind: "adr",
+						url: "https://example.com/adr-2",
+						label: "ADR 2",
+					},
+				},
+			],
+		});
+		expect(screen.getByRole("link", { name: "ADR 2" })).toHaveClass("prose");
+	});
 });

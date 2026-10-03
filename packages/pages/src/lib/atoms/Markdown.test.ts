@@ -1,4 +1,6 @@
+import { readFileSync } from "node:fs";
 import { render } from "@testing-library/svelte";
+import { compile } from "svelte/compiler";
 import { describe, expect, it } from "vitest";
 import Markdown from "./Markdown.svelte";
 
@@ -149,5 +151,50 @@ describe("Markdown links", () => {
 			);
 			expect(img?.getAttribute("src")).toBe("https://example.com/a.png");
 		});
+	});
+});
+
+describe("links in running text (#79)", () => {
+	const css = compile(readFileSync(`${__dirname}/Markdown.svelte`, "utf8"), {
+		filename: "Markdown.svelte",
+		css: "external",
+	}).css?.code as string;
+
+	it("underlines the marked link at rest, and only the marked link", () => {
+		expect(css).toMatch(
+			/\.md\.svelte-\w+\s+a\.prose\s*\{[^}]*text-decoration:\s*underline/,
+		);
+		expect(css).not.toMatch(/p a\s*\{/);
+		expect(css).not.toMatch(/\.md\.svelte-\w+\s+a\s*\{/);
+	});
+
+	const ADR = "https://example.com/adr";
+	it.each([
+		["a paragraph", `Read the [ADR](${ADR}) first.`],
+		[
+			"a paragraph led by a quote marker (no blockquote is rendered)",
+			`> Read the [ADR](${ADR}) first.`,
+		],
+		["a loose list", `- Read the [ADR](${ADR}) first.\n\n- Other.`],
+		["a tight list sentence", `- Read the [ADR](${ADR}) first\n- Other`],
+		[
+			"a table cell sentence",
+			`| a | b |\n| - | - |\n| Read the [ADR](${ADR}) first | x |`,
+		],
+	])("marks a link in %s", (_name, text) => {
+		expect(html(text).querySelector("a")?.matches("a.prose")).toBe(true);
+	});
+
+	it.each([
+		["a lone link paragraph", `[ADR](${ADR})`],
+		["a tight list of links", `- [one](${ADR})\n- [two](${ADR})`],
+		["a loose list of links", `- [one](${ADR})\n\n- [two](${ADR})`],
+		["a delimited run", `[one](${ADR}) \u00b7 [two](${ADR})`],
+		["a link-only table cell", `| a |\n| - |\n| [one](${ADR}) |`],
+		["a heading", `## About [the ADR](${ADR})`],
+	])("leaves %s alone", (_name, text) => {
+		const links = [...html(text).querySelectorAll("a")];
+		expect(links.length).toBeGreaterThan(0);
+		for (const a of links) expect(a.matches(".prose")).toBe(false);
 	});
 });

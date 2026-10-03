@@ -1,7 +1,11 @@
+import { readFileSync } from "node:fs";
 import { Workspace } from "@open-domain-specification/core";
 import { render } from "@testing-library/svelte";
+import { compile } from "svelte/compiler";
 import { describe, expect, it } from "vitest";
+import { petstoreModel } from "../fixtures";
 import Harness from "../Page.harness.svelte";
+import { PETSTORE_REFS } from "./petstore.harness";
 
 describe("ConsumablePage rejection rows", () => {
 	it("renders a duplicate-declaration problem and retains repeated schema and reason rows", () => {
@@ -61,5 +65,26 @@ describe("ConsumablePage rejection rows", () => {
 				[...container.querySelectorAll("#rejects h3")].map((node) => node.id),
 			).size,
 		).toBe(2);
+	});
+});
+
+describe("ConsumablePage reached-events sentence (#79)", () => {
+	it("underlines the links inside the sentence, not the lists of links beside it", () => {
+		const css = compile(
+			readFileSync(`${__dirname}/ConsumablePage.svelte`, "utf8"),
+			{ filename: "ConsumablePage.svelte", css: "external" },
+		).css?.code as string;
+		expect(css).toMatch(
+			/\.reached\.svelte-\w+ a\.ref\s*\{[^}]*text-decoration:\s*underline/,
+		);
+		const { container } = render(Harness, {
+			model: petstoreModel(),
+			ref: PETSTORE_REFS.operation,
+		});
+		const inSentence = container.querySelectorAll("p.reached a.ref");
+		expect(inSentence.length).toBeGreaterThan(0);
+		// A delimited list is not a sentence: its links are not under `.reached`.
+		const lists = container.querySelectorAll("p.refs a.ref");
+		for (const a of lists) expect(a.closest(".reached")).toBeNull();
 	});
 });

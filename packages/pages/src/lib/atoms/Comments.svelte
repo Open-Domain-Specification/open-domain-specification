@@ -37,6 +37,7 @@ const LINK_ICON: Record<CommentLinkKind, string> = {
 							icon={LINK_ICON[comment.link.kind]}
 							title={LINK_KIND_LABELS[comment.link.kind]}
 							external
+							prose
 						/>{/if}</span>
 			</li>
 		{/each}

@@ -350,4 +350,10 @@ const processColumns: Column[] = [
 		line-height: 1.5;
 		color: var(--vscode-descriptionForeground);
 	}
+	/* The links sit inside that sentence, so colour is not their only cue (#79). */
+	.reached :global(a.ref) {
+		text-decoration: underline;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 2px;
+	}
 </style>

@@ -18,7 +18,7 @@ const { problems }: { problems: Diagnostic[] } = $props();
 		{#each problems as d (`${d.rule}:${d.ref}:${d.message}`)}
 			<li>
 				<i class={`codicon codicon-${d.severity} ${d.severity}`} aria-hidden="true"></i>
-				<span><Keyword text={d.rule} mono /> <span class="message">{d.message}</span> <Ref ref={d.ref} label="go to" /></span>
+				<span><Keyword text={d.rule} mono /> <span class="message">{d.message}</span> <Ref ref={d.ref} label="go to" prose /></span>
 			</li>
 		{/each}
 	</ul>
