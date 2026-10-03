@@ -16,4 +16,16 @@ describe("Joined", () => {
 		expect(joined.textContent).toBe("Catalog");
 		expect(joined.children).toHaveLength(1);
 	});
+
+	it("keeps an item whole and authors no comma of its own, whatever draws the separator", () => {
+		const { container } = render(Joined, {
+			children: createRawSnippet(() => ({
+				render: () => "<span><b>Catalog</b> <i>core</i></span>",
+			})),
+		});
+		const joined = container.querySelector(".joined") as HTMLElement;
+		expect(joined.children).toHaveLength(1);
+		expect(joined.textContent).not.toContain(",");
+		expect(joined.children[0].textContent).toBe("Catalog core");
+	});
 });
