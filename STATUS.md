@@ -14,13 +14,15 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-Milestone 4 product delivery is complete. PR #134 merged as `42ae867d676f2c7c2c093b65d6417f2fc14367b1` on 2026-10-03T12:10:53Z; its tree exactly matches gated `ddbd01d1ea5494b9143e31b46243c1e31675ae12`. Required pre-merge CI 37121515458 and post-merge CI 37122052999 passed test/e2e/real-vscode; publish was skipped. Children #87, #88 and #80 were individually accepted and closed, then #105 last; actual GitHub remaining count is 12. Final local gate: 546 browser passes/20 documented baseline skips, 1,156 pages tests/100% coverage, package check 970 files with zero errors/warnings, unchanged exact model pins and schema/ESM. Actual CI VS Code standard 16/keyboard24/checker PASS, with four optional screenshot pending. Card 184 is done. Closing records still require their own clean-head gate and publication. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-04/closures/closures.json.
+Milestone 5 is active for #78, #79 and #83: readable text contrast, links distinguishable beyond colour, and keyboard bypasses. Opus 5.5 coordinates Sonnet verification of the frozen candidate’s whole landing gate after root accepted source, actual-reader evidence and proportional quality. Card 185 is doing. The published base is `96939eac134b5140754f81579ca04f81400d6105`; Final reader matrix and native suites passed:31 contrast classes/98 cells,232 static cases,32 native bypass cases and native keyboard25/25. Root checker passed; the measured asynchronous paint assertion correction preserved its complete predicates. Proportional quality is accepted; the exact-head landing gate and publication remain pending. Entry count is 12; target is 9 after three accepted closures.
+
+Milestone 4 is complete. PR #134 merged as `42ae867d` with the exact gated `ddbd01d1` tree. Required pre/post CI 37121515458/37122052999 passed all three jobs; publish was skipped. #87, #88 and #80 closed individually, #105 last. Closing records `96939eac134b5140754f81579ca04f81400d6105` passed their own unmodified gate (546 browser passes, 20 documented baseline skips, 1,156 pages tests and 100% coverage) and are published on `develop`. Exact model pins, schema and ESM remain correct.
 
 Milestone 3 closeout commit `000f5a7f` passed its own unmodified Node 26 gate and is published on `develop`: 485 browser tests passed, 20 documented skips, pages coverage 100%, schema/ESM checks and exact reference diagnostic pins unchanged. Its product tree is unchanged from accepted PR #106. Those are historical M3 results; the current guarded census is 12 remaining / 42 closed.
 
 ## Next
 
-Review and gate the M4 closing records on a clean commit, then publish them to `develop`. After that, activate accessibility #78/#79/#83 with baseline-only authorization before implementation. Target after that batch: 9 remaining. No Astra UI review or release.
+Run the unmodified landing gate on the exact frozen clean commit; then one PR to develop and required exact-head pre/post CI with release disabled. Preserve all passing host evidence and 1,244-test full-coverage proof. Keep the whole landing gate, required CI and closures ahead; no Astra UI review or release.
 
 ## Later
 
@@ -28,8 +30,8 @@ Follow the remaining [roadmap](docs/bots/ROADMAP.md): accessibility, navigation,
 
 ## Outcomes / blockers
 
-No external blocker. Milestones 1–3 records are gate-green and published; M4 product is delivered and its closing records are being verified. The eight not-planned proposal dispositions are decisions rather than delivered features. No new or reopened tickets. Model approval remains historical on `e5cda126`; no Astra UI review.
+No external blocker. Milestones 1–4 and their closing records are delivered, gate-green and published. The eight not-planned proposal dispositions are decisions rather than delivered features. No new or reopened tickets. Model approval remains historical on `e5cda126`; no Astra UI review.
 
 ## Working state
 
-Updated: 2026-10-03T12:24:23.173452+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/m4-table-closeout`, base `42ae867d676f2c7c2c093b65d6417f2fc14367b1`. Six record-only paths are uncommitted; product code is unchanged. Main-checkout biome/promo work is preserved. Durable CURRENT.json identifies the closing-record phase and evidence.
+Updated: 2026-10-03T17:35:18.533790+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/m5-accessible-reading`, base `96939eac134b5140754f81579ca04f81400d6105`. M5 records and the dated prose-link design amendment are uncommitted. Source, actual-reader and proportional quality evidence is accepted; the exact-head landing gate and publication remain. No feature closure is claimed. Main-checkout biome/promo work is preserved. Durable CURRENT.json identifies the completed baseline, root scope rulings and source assignment.
