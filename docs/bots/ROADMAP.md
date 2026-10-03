@@ -10,9 +10,9 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Current position (2026-10-03)
 
-PR #132 is merged and accepted. After Milestone 2 dispositions the issue census is 21 open / 33 closed / 0 new / 0 reopened from a baseline of 54 open; the 33 closed are 25 implemented and 8 closed not planned. The exact product candidate `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` received OpenAI Astra low APPROVE; owner-authorized OpenAI-only exception applies, and no Claude approval is claimed. The merge commit is `5a6241288973fc3befdb2f46876e28174534126e`, whose tree `6efd1aa35bae524dfce9345210096caeafcef236` exactly matches the reviewed candidate tree. Product gate and actual-host evidence passed; no remote CI was run or required. Milestone 2, the eight recorded model proposals, has its dispositions complete and its record gate pending; Milestone 3 is next after the Milestone 2 record publication.
+PR #132 is merged and accepted. After Milestone 2 dispositions the issue census is 21 open / 33 closed / 0 new / 0 reopened from a baseline of 54 open; the 33 closed are 25 implemented and 8 closed not planned. The exact product candidate `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` received OpenAI Astra low APPROVE; owner-authorized OpenAI-only exception applies, and no Claude approval is claimed. The merge commit is `5a6241288973fc3befdb2f46876e28174534126e`, whose tree `6efd1aa35bae524dfce9345210096caeafcef236` exactly matches the reviewed candidate tree. Product gate and actual-host evidence passed; no remote CI was run or required. Milestone 2, the eight recorded model proposals, has its dispositions complete and its clean 4ccb76bb record gate passed; Milestone 3 is next after the Milestone 2 record publication.
 
-Model closeout records 0109d39e passed their own unmodified gate and landed on develop. The Milestone 2 records are docs-only; their mandatory repository gate has not run, and product or earlier record gate evidence is not represented as a check on them.
+Model closeout records 0109d39e passed their own unmodified gate and landed on develop. The Milestone 2 records are docs-only; their mandatory gate passed on clean 4ccb76bb. The final completion entry needs its own frozen-candidate landing gate before publication; actual identity/result are kept through durable CURRENT.json, with no gate claimed on an untested SHA.
 
 
 **Binding reviewer policy:** Astra low is the one final complete-model quality gate, only after lead review and explicit readiness. It is never a default or per-change reviewer. After a BLOCK, correct and locally verify the complete defect class before the lead declares readiness again. Claude weekly quota exhaustion activates the owner-authorized OpenAI-only exception for this final gate; no Claude approval is claimed. Preserve the actual reviewed SHA and require product-tree equivalence at merge.
@@ -20,7 +20,7 @@ Model closeout records 0109d39e passed their own unmodified gate and landed on d
 | Milestone | Issues | Expected remaining | State |
 | --- | --- | ---: | --- |
 | 1. Finalise and land the model | #107, #108, #109, #110, #111, #112, #113, #114, #115, #116, #117, #118, #119, #120, #121, #122, #123, #124, #125, #126, #127, #128, #129, #130, #131 | 29 | complete: 25 individually accepted closures |
-| 2. Resolve the model proposals | #35, #36, #37, #38, #39, #40, #64, #65 | 21 | disposition complete / record gate pending: 8 closed not planned, #63 reconciled and open |
+| 2. Resolve the model proposals | #35, #36, #37, #38, #39, #40, #64, #65 | 21 | dispositions complete / record proof passed; publish after final candidate gate: 8 closed not planned, #63 reconciled and open |
 | 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | next, after Milestone 2 record publication |
 | 4. Readable tables | #105, #87, #88, #80 | 12 | waiting |
 | 5. Accessible reading | #78, #79, #83 | 9 | waiting |

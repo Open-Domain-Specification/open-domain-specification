@@ -197,7 +197,7 @@
         65
       ],
       "owner": "lead",
-      "state": "disposition complete / record gate pending: eight not-planned closures with #63 reconciled and open; no capability implemented",
+      "state": "complete dispositions and clean record proof; final publication follows frozen-candidate gate",
       "expected_remaining": 21,
       "entry_scope": "Apply current decisions; reconcile63 module promise while retaining59/54.",
       "exit_acceptance": "Each not-planned disposition states retained cost, reopening condition and actual source evidence; parents reconciled last.",
@@ -400,9 +400,12 @@
     "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-01/record-closeout-0109d39e/gate-result.json"
   },
   "milestone_2_records_gate": {
-    "status": "pending",
-    "scope": "metadata-only Milestone 2 disposition records: card 182, STATUS, roadmap, manifest and sprint record",
-    "note": "No gate has run on these records. The primary session runs the mandatory unmodified gate before any push and moves card 182 to done only after it."
+    "status": "record proof passed; final publication requires its own frozen-candidate gate",
+    "proof_candidate": "4ccb76bbb38c74506f32fd5dfad785ef088867a6",
+    "exit": 0,
+    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-02/records-4ccb76bb/gate-result.json",
+    "final_publication_evidence": "/Users/jonathanturnock/.codex/ods-delivery/CURRENT.json",
+    "note": "Proof gate actually ran on clean 4ccb76bb. No claim of a gate on the later completion commit; primary verifies its actual gate before push."
   },
   "execution_policy": {
     "preferred_coordinator": "Claude Opus 5.5",

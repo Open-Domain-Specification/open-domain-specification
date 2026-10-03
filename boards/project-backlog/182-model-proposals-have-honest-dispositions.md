@@ -1,11 +1,11 @@
 ---
-column: review
+column: done
 labels: [docs, ddd]
 priority: high
 agent: lead
 live: false
 clean-code-swept: true
-updatedAt: 2026-10-03T00:22:02Z
+updatedAt: 2026-10-03T00:37:40.943212+00:00
 ---
 # Model proposals have honest dispositions
 
@@ -26,7 +26,7 @@ Issues #35, #36, #37, #38, #39, #40, #64 and #65. Resolve each existing proposal
 
 ## Gates
 
-- [ ] Metadata quality check and unmodified scripts/verify-all.sh before record publication. Pending: no gate has run on these records. The primary session owns the gate, landing and moving this card to done after an actual gate.
+- [x] Metadata quality check and unmodified scripts/verify-all.sh: eight Sonnet 5.5 lenses found no introduced finding above 0.5; full gate passed on clean record candidate `4ccb76bbb38c74506f32fd5dfad785ef088867a6` (exit 0), all exact pins, schema and ESM checks, 431 browser passes / 20 baseline skips. Final record publication still requires its own frozen-candidate gate; actual identity/result are recorded via durable CURRENT.json.
 
 ## Comments
 
@@ -40,3 +40,5 @@ Issues #35, #36, #37, #38, #39, #40, #64 and #65. Resolve each existing proposal
 ## Retrospective
 
 Open issues fell from 29 to 21 with nothing new or reopened. Eight proposals were closed as not planned because current decisions 15 to 18 and the reference sources do not meet their recorded reopening conditions. Decision-backed exclusions reduce waiting work without claiming features: no capability was delivered, and the 33 closed count keeps 25 implemented and 8 not planned apart. The cost of each exclusion and a source-backed reopening condition stay on its issue comment, so a later source model can reopen it individually.
+
+- **lead** (2026-10-03T00:37:40.943212+00:00): Accepted the eight completed quality lenses and independently verified the actual gate exit/log hash, clean unchanged candidate and all 21 remaining issues. Moved card to done after the real 4ccb76bb gate. This completion entry is a metadata delta; its final publication candidate must also pass the mandatory gate, with actual evidence kept outside the checkout. No new feature, review, issue post or closure is claimed.
