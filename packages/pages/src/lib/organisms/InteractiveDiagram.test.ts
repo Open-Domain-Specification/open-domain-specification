@@ -20,6 +20,26 @@ beforeAll(() => diagramOptions.set({ style: "cards" }));
 const sales = workspace.boundedcontexts.get("sales_bc")!;
 const order = sales.aggregates.get("order")!;
 
+/**
+ * A real pointer for d3-drag, which reads the window off the event and listens there for the
+ * rest of the gesture. jsdom rejects `view` in the init, so it is defined after.
+ */
+const pointer = (node: Element) => {
+	const win = node.ownerDocument.defaultView as Window & typeof globalThis;
+	const mouse = (target: EventTarget, type: string, x: number, y: number) => {
+		const e = new win.MouseEvent(type, {
+			bubbles: true,
+			cancelable: true,
+			button: 0,
+			clientX: x,
+			clientY: y,
+		});
+		Object.defineProperty(e, "view", { value: win });
+		target.dispatchEvent(e);
+	};
+	return { win, mouse };
+};
+
 describe("InteractiveDiagram", () => {
 	it("draws the context map with context nodes, nested clusters and context edges, and navigates on click", async () => {
 		location.hash = "";
@@ -415,20 +435,7 @@ describe("dragging a node in the cards style", () => {
 		const node = container.querySelector(
 			'.svelte-flow__node[data-id^="#/"]',
 		) as HTMLElement;
-		// d3-drag reads the window off the event and listens there for the rest of the gesture.
-		const win = node.ownerDocument.defaultView as Window & typeof globalThis;
-		// jsdom rejects `view` in the init, yet d3-drag reads the window off the event; define it after.
-		const mouse = (target: EventTarget, type: string, x: number, y: number) => {
-			const e = new win.MouseEvent(type, {
-				bubbles: true,
-				cancelable: true,
-				button: 0,
-				clientX: x,
-				clientY: y,
-			});
-			Object.defineProperty(e, "view", { value: win });
-			target.dispatchEvent(e);
-		};
+		const { win, mouse } = pointer(node);
 		mouse(node, "mousedown", 10, 10);
 		mouse(win, "mousemove", 600, 400);
 		mouse(win, "mousemove", 900, 700);
@@ -436,6 +443,37 @@ describe("dragging a node in the cards style", () => {
 		await waitFor(() => {
 			expect(cluster.getAttribute("style")).not.toBe(before);
 		});
+	});
+
+	it("leaves a fixed map's cluster boxes where the layout put them as a node moves", async () => {
+		diagramOptions.set({ style: "cards" });
+		const graph = consumableGraph(ODSConsumableMap.fromBoundedContext(sales));
+		const { container } = render(InteractiveDiagram, { graph });
+		await waitFor(() => {
+			expect(container.querySelector(".consumable-node")).toBeTruthy();
+		});
+		// Only the context map is free; this one is laid out and its boxes stay as laid out.
+		const clusters = [
+			...container.querySelectorAll<HTMLElement>(
+				'.svelte-flow__node[data-id^="cluster:"]',
+			),
+		];
+		expect(clusters.length).toBeGreaterThan(0);
+		const before = clusters.map((c) => c.getAttribute("style"));
+		const node = container.querySelector(
+			'.svelte-flow__node:not([data-id^="cluster:"])',
+		) as HTMLElement;
+		const nodeBefore = node.getAttribute("style");
+		const { win, mouse } = pointer(node);
+		mouse(node, "mousedown", 10, 10);
+		mouse(win, "mousemove", 600, 400);
+		mouse(win, "mousemove", 900, 700);
+		mouse(win, "mouseup", 900, 700);
+		// The node itself followed the pointer, so the unmoved boxes are not a drag that never was.
+		await waitFor(() => {
+			expect(node.getAttribute("style")).not.toBe(nodeBefore);
+		});
+		expect(clusters.map((c) => c.getAttribute("style"))).toEqual(before);
 	});
 });
 

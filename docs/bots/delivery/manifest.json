@@ -326,6 +326,18 @@
           ],
           "landing_gate": "not run",
           "accepted_for_landing": false
+        },
+        {
+          "scope": "103 landing gate coverage gap corrected, full gate pending",
+          "first_gate_candidate": "e93fc8c98fcffa9a556492ace9884b9d19becff6",
+          "first_gate_exit": 1,
+          "reason": "fixed-map drag guard branch uncovered",
+          "correction": "test-only fixed-map real drag; guard-removal mutation fails",
+          "pages_unit_tests": 1058,
+          "coverage_percent": 100,
+          "production_changed": false,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/coverage-fix/coordinator-acceptance.md",
+          "accepted_for_landing": false
         }
       ],
       "closed_issues": []

@@ -4,6 +4,7 @@ labels: [bug, frontend]
 priority: high
 agent: opus-coordinator
 live: true
+clean-code-swept: true
 status: Source, actual hosts and quality accepted; clean landing gate next
 progress: 80
 updatedAt: 2026-10-03T03:05:41.463361+00:00
@@ -38,3 +39,5 @@ Issue #103. As a maintainer, I need the same committed browser check to give a r
 - **lead** (2026-10-03T02:35:47.112798+00:00): State-contract proof supersedes the earlier visible-catch-up/camera-stop interpretation: the3–5px reading is a stale-parent-measurement clamp corrected by ResizeObserver in the same frame before paint; camera stops at pointer-up. Original source separately paints a real release jump, corrected by retained refitDrag cache synchronisation. A measured-cache helper passed90 focused cases but primary selects the proved direct c2 correction: free-map nested clusters have no parent extent, fixed-map constraints remain. Source ownership extends to flow-nodes.ts and its tests; remove the measured helper. Active65000 then actualviewer/exportHTTP-file/VSCode and finaleightprinciplequality. No Astra/CI/landing/closure. Evidence: state-contract/ and lead-direct-extent-decision.json.
 
 - **lead** (2026-10-03T03:05:41.463361+00:00): Final direct C2 source accepted: 30 focused repeats, four tracked tests and 13 actual viewer/export HTTP/file/VS Code cases pass on the Node26 runner, with zero measured release displacement. Eight independent Sonnet quality reports plus the comment-only focused recheck leave no introduced score above 0.5. Canonical Opus/Sonnet 5.5 runtime IDs verified, coordinator exit 0. Prior camera-stop/visible-catch-up interpretation is superseded; removed measured-cache variant is not current proof. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/direct-extent/validation-summary.md and quality-close/report.md. Landing gate, PR, merge and issue closure remain pending.
+
+- **lead** (2026-10-03T03:12:24.997560+00:00): First clean gate e93fc8c9 exited 1 at pages branch coverage 99.96%, before browser stage. The uncovered fixed-map guard in packages/pages/src/lib/organisms/InteractiveDiagram.svelte:146 is now covered by a real-drag regression in packages/pages/src/lib/organisms/InteractiveDiagram.test.ts:448: node moves, all cluster styles stay unchanged, and removing the guard makes it fail. Sonnet and Opus verify 1,058 tests and 100% coverage under Node26; test-only delta reviewed against all eight principles, no introduced score above 0.5. Source/e2e/thresholds unchanged. Full corrected-candidate gate next; no merge or closure yet. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/coverage-fix/coordinator-acceptance.md.
