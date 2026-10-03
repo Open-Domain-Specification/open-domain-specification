@@ -2,9 +2,9 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 9,
-  "closed": 45,
-  "closed_implemented": 37,
+  "current_open": 7,
+  "closed": 47,
+  "closed_implemented": 39,
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
@@ -12,7 +12,7 @@
   "integration_batch": "milestone-06-location-return-paths",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M5published; M6baseline/design accepted, source/test work authorized,9actualopen.",
+  "candidate_state": "M6 delivered (PR137 merged edbbbd7f, #91/#77 closed); 7 actual open; closing records unpublished, own clean-head gate pending; M7 baseline waits for publication.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -874,7 +874,7 @@
         77
       ],
       "owner": "lead",
-      "state": "active: source/host/quality accepted; freeze and gate next",
+      "state": "complete: PR137 corrective landing merged edbbbd7f, two individually accepted closures; closing records pending own gate and publication",
       "expected_remaining": 7,
       "entry_scope": "Active tree row visibility and extension Back/Forward only.",
       "exit_acceptance": "Deep-link/load/route/reduced-motion visibility; pointer/key history states and heading focus.",
@@ -980,9 +980,184 @@
           "highest_score": 0.4,
           "blocking_findings": 0,
           "gate_passed": false
+        },
+        {
+          "scope": "final hosts and native completion",
+          "at": "2026-10-03T20:19:43.261271+00:00",
+          "static_cells": 36,
+          "history_witnesses": 6,
+          "bypass_witnesses": 6,
+          "native_main_passed": 16,
+          "native_optional_capture_skips": 4,
+          "native_keyboard_passed": 32,
+          "native_keyboard_failed": 0,
+          "native_keyboard_skipped": 0,
+          "checker_exit": 0,
+          "stock_theme_witnesses": "N6, observed separately"
+        },
+        {
+          "scope": "original landing, PR136",
+          "candidate": "b757fd2e59715fcc82c5cd304ba40f460a09ccb7",
+          "gate_exit": 0,
+          "gate_seconds": 183,
+          "browser_passed": 652,
+          "documented_baseline_skips": 20,
+          "pages_unit_passed": 1283,
+          "pages_coverage_percent": 100,
+          "svelte_check_files": 975,
+          "premerge_ci": 37152204246,
+          "premerge_conclusion": "success",
+          "pr": 136,
+          "merge": "5bfdb71378f576df1b90c26f482addbaab376e77",
+          "merged_at": "2026-10-03T20:47:48Z",
+          "tree_equals_gated_candidate": true,
+          "postmerge_ci": 37152866652,
+          "postmerge_conclusion": "failure",
+          "postmerge_jobs": {
+            "test": "failure",
+            "e2e": "success",
+            "real-vscode": "success",
+            "publish": "skipped"
+          },
+          "failed_test": "App embedded history ends (packages/pages/src/app/App.test.ts:493)",
+          "closures_held": [
+            77,
+            91
+          ],
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/landing/b757fd2e59715fcc82c5cd304ba40f460a09ccb7"
+        },
+        {
+          "scope": "postmerge diagnosis",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/history-test-proof/root-acceptance.json",
+          "cause": "A controlled 1100 ms stall reproduces the symptom: deadline-straddle mechanism is sufficient; the actual CI occurrence remains unproven",
+          "invocations_unique": 13,
+          "limits": [
+            "first diagnosis allowed one probe and ran two plus an aborted macOS timeout (exit 127)",
+            "other probed hypotheses are not claimed refuted in general",
+            "root heading assertion first failed on leading whitespace; trimmed, 27 pass"
+          ],
+          "production_changed": false
+        },
+        {
+          "scope": "corrective landing, PR137",
+          "at": "2026-10-03T21:36:28.424601+00:00",
+          "candidate": "c83ec6efc663cdc8714be371477a3f7e022990ce",
+          "changed": "packages/pages/src/app/App.test.ts plus two records",
+          "gate_exit": 0,
+          "gate_seconds": 183,
+          "browser_passed": 652,
+          "documented_baseline_skips": 20,
+          "browser_flaky": 0,
+          "pages_unit_passed": 1283,
+          "pages_coverage_percent": 100,
+          "premerge_ci": 37154961207,
+          "premerge_jobs": {
+            "real-vscode": "success",
+            "e2e": "success",
+            "test": "success",
+            "publish": "skipped"
+          },
+          "pr": 137,
+          "merge": "edbbbd7f475b8dc65e814ad2fe617bbc6abde3e0",
+          "merged_at": "2026-10-03T21:36:26Z",
+          "merge_tree": "8cb13115d9f09c623693372c3ce7a4ac7046dc28",
+          "gated_tree": "8cb13115d9f09c623693372c3ce7a4ac7046dc28",
+          "tree_equals_gated_candidate": true,
+          "postmerge_ci": 37155696421,
+          "postmerge_jobs": {
+            "test": "success",
+            "e2e": "success",
+            "real-vscode": "success",
+            "publish": "skipped"
+          },
+          "release_input": false,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/corrective-landing/c83ec6efc663cdc8714be371477a3f7e022990ce"
+        },
+        {
+          "scope": "M6 closures and census",
+          "at": "2026-10-03T21:47:27.667452+00:00",
+          "closures": [
+            {
+              "number": 91,
+              "state": "CLOSED",
+              "closedAt": "2026-10-03T21:46:24Z",
+              "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/91"
+            },
+            {
+              "number": 77,
+              "state": "CLOSED",
+              "closedAt": "2026-10-03T21:46:28Z",
+              "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/77"
+            }
+          ],
+          "actual_remaining": 7,
+          "remaining": [
+            94,
+            93,
+            92,
+            82,
+            63,
+            59,
+            54
+          ],
+          "closed_total": 47,
+          "implemented": 39,
+          "not_planned": 8,
+          "new": 0,
+          "reopened": 0,
+          "census_method": "REST; first GraphQL list request returned HTTP 504, no closure repeated",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/corrective-landing/c83ec6efc663cdc8714be371477a3f7e022990ce/actual-closures-census.json"
+        },
+        {
+          "scope": "M6 delivery accounting",
+          "local_source_gates_successful": 2,
+          "necessary_ci_runs": 4,
+          "ci_runs": [
+            {
+              "id": 37152204246,
+              "role": "original pre",
+              "conclusion": "success"
+            },
+            {
+              "id": 37152866652,
+              "role": "original post",
+              "conclusion": "failure (test job)"
+            },
+            {
+              "id": 37154961207,
+              "role": "corrective pre",
+              "conclusion": "success"
+            },
+            {
+              "id": 37155696421,
+              "role": "corrective post",
+              "conclusion": "success"
+            }
+          ],
+          "duplicate_automatic_runs": 0,
+          "releases": 0,
+          "quota_events": 0,
+          "quality_lenses": 8,
+          "quality_highest_score": 0.4,
+          "model_approval": "unchanged: Astra e5cda126, merge 5a624128; no Astra review or Claude retrospective approval claimed",
+          "process_errors": [
+            "root heading test failed once on leading whitespace, trimmed, 27 pass",
+            "monitor print syntax error fixed once, no CI action",
+            "handoff preparation syntax error; runner aborted on a missing prompt, no Claude launched; static prompt and dependency check adopted"
+          ],
+          "retrospective": "docs/bots/sprints/2026-10-03-retro-07.md"
+        },
+        {
+          "scope": "closing-record gate and publication",
+          "status": "pending",
+          "note": "Own clean-head unmodified gate and push have not run on this record candidate; active_milestone stays 6 until published",
+          "base": "edbbbd7f475b8dc65e814ad2fe617bbc6abde3e0"
         }
       ],
-      "closed_issues": []
+      "closed_issues": [
+        91,
+        77
+      ]
     },
     {
       "id": 7,
@@ -991,7 +1166,7 @@
         82
       ],
       "owner": "lead",
-      "state": "waiting",
+      "state": "waiting: next after closing-records publication; baseline not started",
       "expected_remaining": 6,
       "entry_scope": "Page-first phone layout and accessible tree access.",
       "exit_acceptance": "All9reported families fit 390\u00d7844 without page-level horizontal overflow; desktop preserved.",
@@ -1081,71 +1256,52 @@
   },
   "active_delivery": {
     "milestone": 6,
-    "base": "8606b282ff52b4e0638f37e6172f3b7e1bff3b47",
-    "branch": "codex/m6-location-return-paths",
-    "state": "source/host/quality accepted; freeze and gate next",
+    "base": "edbbbd7f475b8dc65e814ad2fe617bbc6abde3e0",
+    "branch": "codex/m6-closeout-records",
+    "state": "M6 complete; closing records review, own clean-head gate and publication pending",
     "source_changes_authorized": false,
-    "feature_accepted": false,
+    "feature_accepted": true,
     "expected_remaining": 7,
-    "source_readiness_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/implementation/root-source-acceptance.json",
-    "partial_host_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/final-hosts/root-partial-acceptance.json",
-    "source_host_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/native-real-key-path/root-acceptance.json",
-    "root_integrated_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/quality/root-integrated-acceptance.json"
+    "record_candidate": "uncommitted six-path record edit; no gate run on it",
+    "next": "Milestone 7 baseline only after records publication"
   },
   "previous_delivery": {
-    "scope": "M5 merged accepted closeout",
-    "at": "2026-10-03T18:20:24.875208+00:00",
-    "candidate": "f3ff556d509788b09462ae76ab670da5ad94d482",
-    "merge": "f2069a3464b5375fea00913b48bb2a3e766c7f71",
-    "merged_at": "2026-10-03T18:05:48Z",
+    "scope": "M6 merged accepted closeout",
+    "at": "2026-10-03T21:51:45+00:00",
+    "candidate": "c83ec6efc663cdc8714be371477a3f7e022990ce",
+    "merge": "edbbbd7f475b8dc65e814ad2fe617bbc6abde3e0",
+    "merged_at": "2026-10-03T21:36:26Z",
     "tree_equals_gated_candidate": true,
-    "pr": 135,
+    "pr": 137,
+    "original_pr": 136,
     "local_gate_exit": 0,
-    "browser_passed": 614,
+    "browser_passed": 652,
     "documented_baseline_skips": 20,
-    "pages_unit_passed": 1244,
+    "pages_unit_passed": 1283,
     "pages_coverage_percent": 100,
-    "svelte_check_files": 974,
-    "svelte_check_errors": 0,
-    "svelte_check_warnings": 0,
-    "exact_pins_schema_esm_passed": true,
-    "premerge_ci": 37142462656,
-    "postmerge_ci": 37142959185,
+    "premerge_ci": 37154961207,
+    "postmerge_ci": 37155696421,
     "required_jobs": "test/e2e/real-vscode success on exact respective heads",
     "release_input": false,
     "publish": "skipped",
     "closures": [
       {
-        "closedAt": "2026-10-03T18:17:46Z",
-        "number": 78,
+        "number": 91,
         "state": "CLOSED",
-        "title": "Some secondary text is too faint to read against its background",
-        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/78"
+        "closedAt": "2026-10-03T21:46:24Z",
+        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/91"
       },
       {
-        "closedAt": "2026-10-03T18:17:51Z",
-        "number": 79,
+        "number": 77,
         "state": "CLOSED",
-        "title": "A link inside a sentence is told apart only by its colour",
-        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/79"
-      },
-      {
-        "closedAt": "2026-10-03T18:17:54Z",
-        "number": 83,
-        "state": "CLOSED",
-        "title": "A keyboard reader has no way to skip the tree and the diagrams",
-        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/83"
+        "closedAt": "2026-10-03T21:46:28Z",
+        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/77"
       }
     ],
-    "actual_remaining": 9,
+    "actual_remaining": 7,
     "new": 0,
     "reopened": 0,
-    "record_closeout": {
-      "candidate": "8606b282ff52b4e0638f37e6172f3b7e1bff3b47",
-      "gate_exit": 0,
-      "remote_develop_verified": true
-    },
-    "root_review": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/landing/f3ff556d509788b09462ae76ab670da5ad94d482/root-integrated-review.json",
-    "retrospective": "docs/bots/sprints/2026-10-03-retro-06.md"
+    "record_closeout": "own clean-head unmodified gate/publication pending",
+    "retrospective": "docs/bots/sprints/2026-10-03-retro-07.md"
   }
 }

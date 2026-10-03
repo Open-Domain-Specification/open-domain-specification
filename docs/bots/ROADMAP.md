@@ -10,9 +10,11 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Current position — 2026-10-03
 
-Actual9open/45closed from54:37implemented,8notplanned,0new/reopened. Milestones1–5 delivered; exact original model approval unchanged. M5 PR135 mergef2069a34 matches gatedf3ff556d tree, pre/postCI37142462656/37142959185 all3jobs green,publishskipped, threeindividualclosures. Closing-record head8606b282 passed its own unchanged gate(614browser/20baseline skips,1244pages/100%coverage,974-file check0/0,pins/schema/ESM) and is published/remoteverified.
+Actual 7 open / 47 closed from 54: 39 implemented, 8 not planned, 0 new/reopened. Milestones 1–6 delivered; exact original model approval (Astra e5cda126, merged 5a624128) unchanged. M5 PR135 merge f2069a34 matches gated f3ff556d tree, pre/postCI 37142462656/37142959185 all 3 jobs green, publish skipped, three individual closures; closing-record head 8606b282 passed its own unchanged gate and is published/remote verified.
 
-M6 #91/#77 is active from8606b282; source/focused readiness accepted with1283pages/100%,170browser/0/0/0,33extension and verified canonical Opus/Sonnet foreground DONE. Card186doing; complete source/host readiness accepted with36staticcells, stocktheme nativejourneys, final32keyboard and unchangedchecker0. One fullqualityaudit accepted (highest0.4/no blockers), root integratedreview satisfied; cleanhead whole gate next. No feature acceptance/CI/finalreview claimed. Retrospective06 controls bind; no phone/history redesign outside the two stories.
+M6 #91/#77 is delivered. Original PR136 (merge 5bfdb713, gated b757fd2e) passed the local gate and preCI 37152204246, but postCI 37152866652 failed its `test` job (one new App history-availability unit assertion; browser and native jobs green), so the issues stayed open. Corrective PR137 (one test, two records; gated c83ec6ef, local gate exit 0: 652 browser/20 baseline skips/0 flaky, 1283 pages tests/100% coverage) passed preCI 37154961207 and postCI 37155696421, all 3 jobs each, publish skipped; merge edbbbd7f (2026-10-03T21:36:26Z) has a tree identical to the gated head. #91 closed 21:46:24Z and #77 closed 21:46:28Z individually. Four necessary CI runs, two successful local source gates, no duplicate runs, no release, no quota response. Native 32 keyboard/0 failed/0 skips/checker 0; static 36, history 6, bypass 6; quality highest 0.4. The failure cause is a sufficient deadline-straddle mechanism reproduced under a controlled stall; the actual CI occurrence is unproven. Card186 done; see [retrospective 07](sprints/2026-10-03-retro-07.md).
+
+**Closing records pending:** these six record paths still need review, their own clean-head unmodified gate and publication; none has run on this record candidate. `active_milestone` stays 6 until published. Then M7 (#82 phone reading) starts with a baseline only; it is waiting/next, not activated, with no card yet.
 
 **Binding reviewer policy:** Astra low is the one final complete-model quality gate, only after lead review and explicit readiness. It is never a default or per-change reviewer. After a BLOCK, correct and locally verify the complete defect class before the lead declares readiness again. Claude weekly quota exhaustion activates the owner-authorized OpenAI-only exception for this final gate; no Claude approval is claimed. Preserve the actual reviewed SHA and require product-tree equivalence at merge.
 
@@ -23,8 +25,8 @@ M6 #91/#77 is active from8606b282; source/focused readiness accepted with1283pag
 | 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | complete: all five individually accepted closures; records 000f5a7f gate-green and published |
 | 4. Readable tables | #105, #87, #88, #80 | 12 | complete: four closures and gate-green published records |
 | 5. Accessible reading | #78, #79, #83 | 9 | complete: three closures; own-gated closing records8606b282 published |
-| 6. Location and return paths | #91, #77 | 7 | active: source/host/quality accepted; freeze and gate next |
-| 7. Phone reading | #82 | 6 | waiting |
+| 6. Location and return paths | #91, #77 | 7 | complete: PR137 merged edbbbd7f, two individual closures; closing records pending own gate and publication |
+| 7. Phone reading | #82 | 6 | waiting: next after closing-records publication; baseline not started |
 | 8. Import and copy finish | #92, #93, #94 | 3 | waiting |
 | 9. Team-owned model files | #59 | 2 | waiting |
 | 10. Informed forms and authoring epic | #54, #63 | 0 | waiting |
@@ -48,6 +50,10 @@ Open issues went from 21 to 16 with five implemented closures, no new/reopened i
 The main delay was test readiness. The first CI failed target room before dragging; pan correction then entered the left auto-pan zone. A geometry wait assumed style selection would request a refit, which the source and Linux trace disproved. Two bounded subsystem assessments changed the acceptance axis: one real Fit View request, after geometry settles, followed by explicit containment/room/path checks, tested from natural and controlled-bad starting poses with the same scenario body and original tolerances. Final Linux pre/post CI passed, verifying that control for this environment without claiming a universal fault rate.
 
 The [full retrospective](delivery/retrospectives/2026-10-03-milestone-03.md) records the actual gate/CI attempts and the guardrail for M4. No extra Astra review, model reopening or new ticket substituted for delivery.
+
+## Milestone 6 delivery retrospective (2026-10-03)
+
+Open issues went from 9 to 7 with two implemented closures (#91, #77), no new/reopened issues. The original merged PR failed one new unit assertion post-merge while browser and real-VS-Code jobs passed; closures were held and a corrective test-only PR137 was gated, merged with an identical tree, verified by pre/post CI, and only then were the issues closed. The failure mechanism is reproduced under a controlled stall; its actual CI occurrence is unproven. The [full retrospective](sprints/2026-10-03-retro-07.md) records actual failures, process errors and limits. No Astra review, Claude retrospective approval, release or new ticket.
 
 ## Historical roadmap and retrospective records
 

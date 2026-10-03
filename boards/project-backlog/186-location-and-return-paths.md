@@ -1,17 +1,17 @@
 ---
-column: review
+column: done
 labels: [frontend, bug]
 priority: high
 agent: opus-coordinator
-live: true
-status: Postmerge unit failure corrected; preparing clean corrective gate
-progress: 85
+live: false
+status: Delivered after corrective exact-head gate, pre/post CI and two individual closures
+progress: 100
 clean-code-swept: true
-updatedAt: 2026-10-03T21:16:04.332806+00:00
+updatedAt: 2026-10-03T21:51:45+00:00
 ---
 # See where you are and return to the previous page
 
-Milestone6, existing GitHub #91/#77. Current tree row is visible on load and route changes; extension page-view offers Back/Forward by keyboard and pointer with restored heading focus. Entry9open, target7. PR136 merged; a corrective PR is needed for its failed postmerge unit check. No new epic issue.
+Milestone6, existing GitHub #91/#77. Current tree row is visible on load and route changes; extension page-view offers Back/Forward by keyboard and pointer with restored heading focus. Entry9open, exit7. PR136 merged but its postmerge unit check failed; corrective PR137 (test-only) landed and both issues closed. No new epic issue.
 
 ## Checklist
 
@@ -21,16 +21,16 @@ Milestone6, existing GitHub #91/#77. Current tree row is visible on load and rou
 - [x] Root accepts baseline and bounded design before source work
 - [x] #91 current row visible on load and route change, reduced motion honored
 - [x] #77 actual keyboard/pointer Back/Forward with correct restored heading focus
-- [ ] Preserve M5 bypasses, all four readers, model pins and generated integrity
+- [x] Preserve M5 bypasses, all four readers, model pins and generated integrity
 
 ## Gates
 
 - [x] Meaningful focused regressions, owning typecheck and unchanged coverage
 - [x] Actual affected-host candidate acceptance
 - [x] Proportional quality and root integrated acceptance
-- [ ] Unmodified whole gate on exact clean final commit
-- [ ] Necessary exact-head pre/postCI releasefalse and identical merge tree
-- [ ] Two individual issue closures after required postmergeverification
+- [x] Unmodified whole gate on exact clean final commit (original `b757fd2e` and corrective `c83ec6ef`, each exit 0, 183 s)
+- [x] Necessary exact-head pre/postCI releasefalse and identical merge tree (PR137 pre 37154961207, post 37155696421, merge `edbbbd7f` tree equals gated `c83ec6ef`)
+- [x] Two individual issue closures after required postmergeverification (#91 21:46:24Z, #77 21:46:28Z)
 
 ## Comments
 
@@ -49,3 +49,5 @@ Milestone6, existing GitHub #91/#77. Current tree row is visible on load and rou
 - **lead** (2026-10-03T21:16:04.332806+00:00): Original clean candidate b757fd2e passed unmodified gate; PR136 merged5bfdb713 with identical tree and preCI37152204246 allthreepassed. PostCI37152866652 browser/nativepassed but App.test.ts:493 failed, so #77/#91 stay open9. Foreground canonical Opus/Sonnet diagnosis/proof archived; controlled event-loop delay reproduces the symptom, but actual CI interleaving is unproven. packages/pages/src/app/App.test.ts:483/:496 now waits for page commit before separately observing the shell message and asserts allthree exactmessages. Root tightened page-name assertions; no product changes. Meaningful red/green, delayedmessage rejection and two restored router mutations preserved. Oneprobe diagnosis allowance was exceeded by two probes plus timeout127; rootassessment records it. Threepath proportional review and finalclean correctivegate precede a correctivePR, exacthead requiredCI and eventualclosures; no Astra/release/newticket.
 
 - **lead** (2026-10-03T21:16:45.064762+00:00): Root precise-heading assertion first failed because rendered heading text begins with whitespace (26pass/1fail). App.test.ts:474/:486/:496 now trims that observed text before anchored identity matching. This is one root test-edit correction; raw command output is in the original tool result, with truncated display and no standalone first-run log. Source semantics unchanged.
+
+- **lead** (2026-10-03T21:51:45+00:00): Closeout. Corrective `c83ec6ef` (one test, two records) passed the unmodified gate once: exit 0, 183 s, 652 browser passes, 20 baseline capture skips, 0 flaky, 1283 pages tests/100% coverage. PR137 pre CI 37154961207 and post CI 37155696421 each passed test/e2e/real-vscode with publish skipped (release=false); merge `edbbbd7f` at 2026-10-03T21:36:26Z has a tree identical to the gated head. #91 closed 21:46:24Z and #77 closed 21:46:28Z after the post-merge CI. REST census: 7 open (#94, #93, #92, #82, #63, #59, #54), 47 closed = 39 implemented + 8 not planned, 0 new/reopened; the first GraphQL list request returned HTTP 504 and no closure was repeated. Four necessary CI runs (original pre pass, original post `test` failure, corrective pre pass, corrective post pass); no duplicate runs, no release. Native 32 keyboard/0 failed/0 skips/checker 0; quality highest 0.4. Cause of the original post-merge failure: a controlled stall reproduces the symptom (sufficient mechanism); the actual CI occurrence remains unproven. clean-code-swept stays true; column moved to done on the gates above. The closing records (this card, STATUS, roadmap, manifest, sprint-07, retro-07) still need their own mandatory clean-head gate and publication; neither has run on this record candidate. Model approval unchanged (Astra e5cda126, merge 5a624128); no Astra or Claude retrospective review. Retrospective: docs/bots/sprints/2026-10-03-retro-07.md.
