@@ -12,7 +12,7 @@
   "integration_batch": "epic-102-diagram-fit",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "Historicalmodel approval retained; PR1068ac154c5 hosts and full8quality accepted, no introduced>.5. CleanNode26gate then requiredCI/merge/closure remain.",
+  "candidate_state": "PR106 reviewed8acproduct retained;39e2 gate0 butCIe2e failedpre-dragsetup. Test-only27e83b8f acceptedafter30focused+3forcedbadroom checks; newcleanfinalgate/necessaryCI/merge pending.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -261,7 +261,7 @@
         103
       ],
       "owner": "lead",
-      "state": "active: #103 delivered; PR106 hosts and full8quality accepted, finalgate next",
+      "state": "active: #103 delivered; PR106 test-only CIsetup correction accepted, newcleanfinalgate next",
       "expected_remaining": 16,
       "entry_scope": "Existing PR #106 after model closeout;103 separate PR if unrelated cause.",
       "exit_acceptance": "Measured inline/fullscreen fit, panel clearance, actual hosts and explained stable released-node geometry.",
@@ -444,6 +444,22 @@
           ],
           "source_unchanged": true,
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-whole-quality/lead-acceptance.json",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T05:28:39.898302+00:00",
+          "scope": "PR106 bounded CIsetup correction accepted",
+          "failed_head": "39e2f334",
+          "failed_run": 37098194910,
+          "CI": "test/real-vscode success; e2e484passed1failed20skips",
+          "failure": "pre-mousedown insufficient targetroom, not release regression",
+          "test_commit": "27e83b8f",
+          "focused_passed": 30,
+          "controlled_badroom_passed": 3,
+          "repair_pan_px": 93,
+          "production_unchanged": true,
+          "quality": "whole8retained, smallonefiledelta inline8 accepted",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-ci-setup-badspace/lead-acceptance.json",
           "landing_accepted": false
         }
       ],

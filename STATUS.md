@@ -14,13 +14,13 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Now
 
-Milestone 3 has delivered #103 and published its gated records f06b8484. Frozen PR #106 source 8ac154c5 preserves that correction. Its current NorthBank diagram matrix passed 168 host cases across actual VS Code, viewer and HTTP/file exports; keyboard 24 and focused real-webview drag passed. Standard candidate VS Code invocation 7 failed four ready/navigation assertions in one launch. Baseline standard passed 16; diagnostic candidate petstore passed nine, neither reproducing the failure. Cause remains unproven. Invocation11 passed all 16 standard tests with four allowed capture skips using CI profile isolation; combined checker exit0 retains unchanged-source keyboard24. Root accepts host evidence and the completed eight independent Sonnet 5.5 principles under Opus 5.5 coordination; no introduced finding exceeds 0.5 (highest 0.4). Source stays frozen. Clean final landing gate and necessary CI remain outstanding. Twenty issues remain.
+Milestone 3 has delivered #103. PR #106 product source and 168 actual-host cases, standard16/keyboard24/checker0 and full8 quality remain accepted. Clean39e2f334 passed unmodified Node26 gate (pages1084, browser485+20 documented skips). Its necessary pre-merge CI passed unit and real-vscode, but one browser test failed a screen-space setup guard before any drag (484 passed). Test-only27e83b8f pans the camera via real pointer input before grabbing the same node, preserving all original growth/release/containment assertions. Thirty focused checks and three controlled67px-room cases passed, proving the93px correction. Root accepted the small delta after inline8 review; no product/model/pin change. Twenty issues remain; new clean final gate then necessary exact-head CI are next.
 
 Milestone 2 records a647c6e0 passed their final unmodified gate and landed on develop; card 182 is done. Model approval remains historical e5cda126, with no new Astra request for UI/tooling.
 
 ## Next
 
-Run unmodified Node26 verify-all on the clean quality-accepted candidate, then publish its exact head for required pre-merge CI. Required pre/post test/e2e/real-vscode CI stays limited to one explicit non-release run per final head. Existing host geometry and keyboard evidence remains valid for unchanged source.
+Run unmodified Node26 verify-all on the new clean test-corrected candidate, then publish that exact head for necessary pre-merge CI. The first failed CI is preserved; do not rerun unchanged heads. Required pre/post test/e2e/real-vscode CI stays limited to one explicit non-release run per final head. Existing host geometry and keyboard evidence remains valid for unchanged source.
 
 ## Later
 
@@ -32,4 +32,4 @@ All 25 cards 157–181 are reconciled, marked done and non-live; the #108 parent
 
 ## Working state
 
-Updated: 2026-10-03T04:46:01.610709+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/epic-102-diagram-fit`; rebased head `8ac154c5405d9804288149c9b0f948b936e1a2e7`; base `f06b8484`. Card 156 is doing for current integrated acceptance; historical proof remains in its append-only journal. Card 183 is done. The source is frozen for validation; records are not yet a landing candidate. Durable CURRENT.json tracks the actual coordination process and scope.
+Updated: 2026-10-03T05:28:39.898302+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/epic-102-diagram-fit`; product head `8ac154c5`, test-only correction `27e83b8f`; base `f06b8484`. Card 156 is doing for current integrated acceptance; historical proof remains in its append-only journal. Card 183 is done. The source is frozen for validation; records are not yet a landing candidate. Durable CURRENT.json tracks the actual coordination process and scope.

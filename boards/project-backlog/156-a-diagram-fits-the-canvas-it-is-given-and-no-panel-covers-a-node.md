@@ -4,10 +4,10 @@ labels: [pages, diagrams, bug]
 priority: medium
 agent: opus-coordinator
 live: true
-status: Hosts and full quality accepted; clean landing gate next
+status: CI setup correction proved; new clean landing gate next
 progress: 80
 clean-code-swept: true
-updatedAt: 2026-10-03T04:46:01.610709+00:00
+updatedAt: 2026-10-03T05:28:39.898302+00:00
 ---
 # A diagram fits the canvas it is given, and no panel covers a node
 
@@ -78,3 +78,5 @@ Epic #102, issues #89, #90 and #86. A reader opening an inline or fullscreen dia
 - **lead** (2026-10-03T04:35:19.454805+00:00): Unchanged source standard invocation11 passed16 with4 allowed optionalcapture skips, combined checker0 using prior same-source keyboard24; fresh empty short profile via existing CI environment. No assertion/source change, no diagnostic flags. Inv7 remains recorded and unexplained; this is acceptance under isolated conditions, not a repaired fault-rate claim. Root accepts fullhost evidence and authorizes one whole8principle quality sweep, then clean landing gate/necessary CI. Evidence pr106-standard-isolated/lead-acceptance.json; production packages/pages/src/lib/organisms/InteractiveDiagram.svelte:161 unchanged.
 
 - **lead** (2026-10-03T04:46:01.610709+00:00): Accepted complete independent eight-principle Sonnet5.5 sweep under Opus5.5; no introduced>.5, highest.4. Low-severity suggestions retained; no scope expansion. Correct NAMING reference packages/pages/src/lib/flow/fit.svelte.ts:91, source unchanged. Hosts/baseline prove child diagram outcomes; finalclean gate and requiredpre/postCI remain. Quality evidence /Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-whole-quality/lead-acceptance.json.
+
+- **lead** (2026-10-03T05:28:39.898302+00:00): Initial39e2f334 unmodifiedgate0 (pages1084/browser485+20documentedskips); necessaryCI37098194910 unit/nativehostpassed butbrowser484+1 failedbeforeanydrag at packages/pages/e2e/diagrams-sketch.spec.ts:297. Test-only27e83b8f establishes camera room throughrealpan before grabbing sameid, retaining all geometricassertions. Thirtyfocusedchecks plus3controlled67pxroom cases passed; actual93px repairpan, sameidentity/growth/PIXEL1release/no-reverse/containment proved. Full8productreview retained andsmalldelta inline8 accepted; newcleanfinalgate/necessaryCI remain. Evidence /Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-ci-setup-badspace/lead-acceptance.json; no scope/new/reopenedissues.
