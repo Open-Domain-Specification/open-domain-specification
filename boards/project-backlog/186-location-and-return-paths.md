@@ -4,14 +4,14 @@ labels: [frontend, bug]
 priority: high
 agent: opus-coordinator
 live: true
-status: Whole batch reviewed; freezing clean candidate for landing gate
+status: Postmerge unit failure corrected; preparing clean corrective gate
 progress: 85
 clean-code-swept: true
-updatedAt: 2026-10-03T20:28:01.834027+00:00
+updatedAt: 2026-10-03T21:16:04.332806+00:00
 ---
 # See where you are and return to the previous page
 
-Milestone6, existing GitHub #91/#77. Current tree row is visible on load and route changes; extension page-view offers Back/Forward by keyboard and pointer with restored heading focus. Entry9open, target7. One delivery PR; no new epic issue.
+Milestone6, existing GitHub #91/#77. Current tree row is visible on load and route changes; extension page-view offers Back/Forward by keyboard and pointer with restored heading focus. Entry9open, target7. PR136 merged; a corrective PR is needed for its failed postmerge unit check. No new epic issue.
 
 ## Checklist
 
@@ -45,3 +45,7 @@ Milestone6, existing GitHub #91/#77. Current tree row is visible on load and rou
 - **lead** (2026-10-03T20:19:43.261271+00:00): Complete source/host readiness accepted at `/Users/jonathanturnock/.codex/ods-delivery/milestone-06/native-real-key-path/root-acceptance.json`. Canonical actualOpus/Sonnet terminal verified;11protectedsource/5records and candidatebundle unchanged. journeys.spec.ts:1438 removes syntheticfocus and proves realTabfromBODY; final32keyboard/0failed/0skips and checker0, stocktheme/mainnative/staticproof retained. Initial timeout127 aborted before launch, prior diagnosticlogcollision/missingreports honestlimits preserved; root archived actual terminalauthors instead of replay. Root happy with whole M6 outcome and authorizes one full eight-lens Sonnetqualitybatch throughOpus(max2foregroundreaders), noAstra/CI/closure yet.
 
 - **lead** (2026-10-03T20:28:01.834027+00:00): Eight independent actualSonnet principle terminals/16reports throughOpus verified, max2foreground, source12/root5 hashes intact; highest0.4/no blockers. Root integrated source/test/actualhost acceptance at `/Users/jonathanturnock/.codex/ods-delivery/milestone-06/quality/root-integrated-acceptance.json` covers suppliedancestor/firstentry/timing/burst/isolation axes. Existingoutside-diff markerexcluded per skill; no newrefactors/tickets. clean-code-swept true satisfies doingexit, move review; finalcleancommittedhead wholegate next before anypush/CI/merge/closures.
+
+- **lead** (2026-10-03T21:16:04.332806+00:00): Original clean candidate b757fd2e passed unmodified gate; PR136 merged5bfdb713 with identical tree and preCI37152204246 allthreepassed. PostCI37152866652 browser/nativepassed but App.test.ts:493 failed, so #77/#91 stay open9. Foreground canonical Opus/Sonnet diagnosis/proof archived; controlled event-loop delay reproduces the symptom, but actual CI interleaving is unproven. packages/pages/src/app/App.test.ts:483/:496 now waits for page commit before separately observing the shell message and asserts allthree exactmessages. Root tightened page-name assertions; no product changes. Meaningful red/green, delayedmessage rejection and two restored router mutations preserved. Oneprobe diagnosis allowance was exceeded by two probes plus timeout127; rootassessment records it. Threepath proportional review and finalclean correctivegate precede a correctivePR, exacthead requiredCI and eventualclosures; no Astra/release/newticket.
+
+- **lead** (2026-10-03T21:16:45.064762+00:00): Root precise-heading assertion first failed because rendered heading text begins with whitespace (26pass/1fail). App.test.ts:474/:486/:496 now trims that observed text before anchored identity matching. This is one root test-edit correction; raw command output is in the original tool result, with truncated display and no standalone first-run log. Source semantics unchanged.

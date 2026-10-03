@@ -471,7 +471,7 @@ describe("App (embedded in VS Code)", () => {
 			expect(api.postMessage).toHaveBeenCalledWith({ type: "ready" }),
 		);
 		post({ type: "model", workspaces: [payload()], ref: CATALOG, reset: true });
-		await waitFor(() => expect(heading()).toContain("Catalog BC"));
+		await waitFor(() => expect(heading().trim()).toMatch(/^Catalog BC\b/));
 		await waitFor(() =>
 			expect(told.at(-1)).toEqual({
 				type: "history",
@@ -480,6 +480,10 @@ describe("App (embedded in VS Code)", () => {
 			}),
 		);
 		post({ type: "navigate", ref: PET });
+		// The page is committed first and the shell told in a later task (the
+		// effect posts through `window.postMessage`), so each gets its own wait:
+		// one wait spanning both can expire between the two on a slow runner.
+		await waitFor(() => expect(heading().trim()).toMatch(/^Pet\b/));
 		await waitFor(() =>
 			expect(told.at(-1)).toEqual({
 				type: "history",
@@ -489,6 +493,7 @@ describe("App (embedded in VS Code)", () => {
 		);
 		await settle();
 		post({ type: "toolbar", action: "back" });
+		await waitFor(() => expect(heading().trim()).toMatch(/^Catalog BC\b/));
 		await waitFor(() =>
 			expect(told.at(-1)).toEqual({
 				type: "history",
@@ -496,6 +501,13 @@ describe("App (embedded in VS Code)", () => {
 				canGoForward: true,
 			}),
 		);
+		// Exactly what the shell was told, with no message dropped, repeated or
+		// out of order.
+		expect(told).toEqual([
+			{ type: "history", canGoBack: false, canGoForward: false },
+			{ type: "history", canGoBack: true, canGoForward: false },
+			{ type: "history", canGoBack: false, canGoForward: true },
+		]);
 	});
 
 	it("starts the first page the host shows as the boundary Back cannot pass, even when it is not the workspace", async () => {
