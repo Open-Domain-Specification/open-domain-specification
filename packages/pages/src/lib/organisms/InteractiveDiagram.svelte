@@ -8,7 +8,7 @@ import {
 	SvelteFlow,
 } from "@xyflow/svelte";
 import "@xyflow/svelte/dist/style.css";
-import { onDestroy } from "svelte";
+import { onDestroy, tick } from "svelte";
 import { fitClusters } from "../flow/cluster-fit";
 import DiagramOptionsPanel from "../flow/DiagramOptionsPanel.svelte";
 import DoubleClickZoom from "../flow/DoubleClickZoom.svelte";
@@ -30,10 +30,10 @@ import { minimapNodeClass } from "../flow/minimap";
 import { diagramOptions } from "../flow/options.svelte";
 import PanelFit from "../flow/PanelFit.svelte";
 import { PANEL_GUTTER } from "../flow/panel-fit";
-
 import { edgeTypes, nodeTypes } from "../flow/registry";
 import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 import { hostColorMode } from "../flow/theme.svelte";
+import { focusArrival } from "../focus";
 import { createReducedMotion } from "../motion.svelte";
 import { modelRefToHash } from "../ref-transport";
 import DisclosureCard from "./DisclosureCard.svelte";
@@ -63,8 +63,16 @@ const NODE_KEYS = {
  * cluster, the backdrop (or, in the cards style, the cluster boxes)
  * following it.
  */
-let { graph, direction = "LR" }: { graph: Graph; direction?: "LR" | "TB" } =
-	$props();
+let {
+	graph,
+	direction = "LR",
+	caption,
+}: {
+	graph: Graph;
+	direction?: "LR" | "TB";
+	/** The figure's caption, which names the bypass. A diagram outside a figure has no caption and no bypass. */
+	caption?: string;
+} = $props();
 const positioned = $derived(layout(graph, direction));
 const kind = $derived(diagramKind(graph));
 const sketch = $derived(sketchApplies(kind, diagramOptions.style));
@@ -108,6 +116,22 @@ const open = (id: string) => {
 	if (!opensPage(id)) return;
 	fullscreen.exit();
 	location.hash = modelRefToHash(id);
+};
+/**
+ * The bypass: every node, badge and control on the map is a Tab stop, so the
+ * first stop inside the diagram is a button that leaves it. It focuses the
+ * figure's caption, which is the last thing in the figure and not a stop of
+ * its own, so the next Tab is the first control after the diagram. In
+ * fullscreen the page behind is covered, so one activation leaves the overlay
+ * first and focuses the caption once it is gone and visible.
+ */
+const skipDiagram = async (event: MouseEvent) => {
+	const button = event.currentTarget as HTMLElement;
+	const figure = button.closest("figure");
+	fullscreen.exit();
+	await tick();
+	const target = figure?.querySelector<HTMLElement>("figcaption");
+	if (target) focusArrival(target);
 };
 /**
  * Svelte Flow selects a node on Enter and Space, and this diagram has nothing
@@ -161,6 +185,7 @@ const refit = () => {
 <!-- `data-fit` names the step of relief the fit had to take; the e2e reads it. -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="interactive" onkeydown={onKeydown} class:fullscreen={fullscreen.active} data-fit={fit.step} bind:this={container}>
+	{#if caption}<button type="button" class="bypass" onclick={skipDiagram}>Skip diagram: {caption}</button>{/if}
 	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: `${PANEL_GUTTER}px` }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} zoomOnDoubleClick={!motion.reduced} edgesFocusable={false} onnodeclick={({ node }) => open(node.id)} ariaLabelConfig={NODE_KEYS} onnodedrag={refitDrag} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
@@ -175,7 +200,31 @@ const refit = () => {
 </div>
 
 <style>
-	.interactive { height: 60vh; min-height: 320px; }
+	.interactive { position: relative; height: 60vh; min-height: 320px; }
+	/* Hidden until it has focus, then drawn over the map's top-left corner. */
+	.bypass:not(:focus) {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+	.bypass:focus {
+		position: absolute;
+		top: 8px;
+		left: 8px;
+		z-index: 20;
+		padding: 4px 12px;
+		line-height: 22px;
+		color: var(--vscode-foreground);
+		background: var(--vscode-editor-background);
+		border: 1px solid var(--vscode-focusBorder);
+		border-radius: 2px;
+		outline: 1px solid var(--vscode-focusBorder);
+		outline-offset: -1px;
+		cursor: pointer;
+	}
 	/* A webview iframe is not granted the Fullscreen API, so the overlay is drawn, not requested.
 	   `inset: 0` alone sizes it to the viewport a reader sees: `100vw` counts a classic
 	   scrollbar's width too, and the fit drew nodes behind it (#86, Linux webview). */

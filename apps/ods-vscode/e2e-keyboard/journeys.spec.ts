@@ -37,6 +37,7 @@ const active = (frame: Frame) =>
 			label: el?.getAttribute("aria-label") ?? null,
 			inMain: !!el?.closest("main"),
 			inFlow: !!el?.closest(".svelte-flow"),
+			inDiagram: !!el?.closest(".interactive"),
 			inToc: !!el?.closest("nav.toc"),
 			isH1: el?.matches("main h1") ?? false,
 			tabindex: el?.getAttribute("tabindex") ?? null,
@@ -433,13 +434,20 @@ test.describe("diagram nodes and evidence", () => {
 			frame.getByRole("link", { name: "Orders, bounded context" }),
 		).toHaveCount(1);
 
-		// Tab from the top of the page into the diagram, then through it.
-		await pressUntil(host, frame, (s) => s.inFlow, "the diagram");
-		const stops = [await active(frame)];
+		// Tab from the top of the page into the diagram, then through it. The
+		// first stop inside it is the bypass (#83), which is not part of the map.
+		const entry = await pressUntil(
+			host,
+			frame,
+			(s) => s.inDiagram,
+			"the diagram",
+		);
+		expect(entry.text).toMatch(/^Skip diagram: /);
+		const stops: Stop[] = [];
 		for (let i = 0; i < 40; i++) {
 			await host.window.keyboard.press("Tab");
 			const now = await active(frame);
-			if (!now.inFlow) break;
+			if (!now.inDiagram) break;
 			stops.push(now);
 		}
 		const labels = stops.map((s) => s.label);
@@ -458,6 +466,46 @@ test.describe("diagram nodes and evidence", () => {
 				];
 			}),
 		).toEqual([true, "solid"]);
+	});
+
+	test("#83 the first stop inside a diagram is its bypass, and activating it lands beyond the diagram", async () => {
+		for (const key of ["Enter", " "]) {
+			const frame = await openOrders(host);
+			const entry = await pressUntil(
+				host,
+				frame,
+				(s) => s.inDiagram,
+				"the diagram",
+			);
+			// A native button, named for the figure, ahead of every badge, node and control.
+			expect(entry.tag).toBe("BUTTON");
+			expect(entry.text).toMatch(/^Skip diagram: .+/);
+			const first = await frame.evaluate(() => {
+				const box = document.activeElement?.closest(".interactive");
+				return (
+					box?.querySelector("a[href], button, select, [tabindex='0']") ===
+					document.activeElement
+				);
+			});
+			expect(first).toBe(true);
+
+			await host.window.keyboard.press(key);
+			const landed = await active(frame);
+			expect(landed.tag).toBe("FIGCAPTION");
+			expect(landed.inDiagram).toBe(false);
+			// The Tab stop before the bypass may have opened its explanation; that
+			// layer closes on the ordinary blur lifecycle, so the settled state is
+			// asserted: the focused caption, unchanged predicate, polled until painted.
+			await expect(async () => {
+				await expectOnScreen(frame, "figcaption:focus", "the caption");
+			}).toPass({ timeout: 5000 });
+
+			// The next Tab is the first stop beyond every stop of the diagram.
+			await host.window.keyboard.press("Tab");
+			const next = await active(frame);
+			expect(next.inDiagram).toBe(false);
+			expect(next.tag).not.toBe("FIGCAPTION");
+		}
 	});
 
 	test("#47 Enter opens the page of the focused node", async () => {

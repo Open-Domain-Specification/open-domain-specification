@@ -27,7 +27,7 @@ const {
 	<EmptyState text={emptyText} />
 {:else}
 	<figure class="diagram">
-		<div class="canvas"><InteractiveDiagram {graph} {direction} /></div>
+		<div class="canvas"><InteractiveDiagram {graph} {direction} {caption} /></div>
 		<figcaption>{caption}</figcaption>
 	</figure>
 {/if}
@@ -47,5 +47,10 @@ const {
 		padding: 0 8px;
 		line-height: 22px;
 		color: var(--vscode-descriptionForeground);
+	}
+	/* The diagram's bypass lands here (tabindex -1, set when it is focused). */
+	figcaption:focus-visible {
+		outline: 1px solid var(--vscode-focusBorder);
+		outline-offset: -1px;
 	}
 </style>

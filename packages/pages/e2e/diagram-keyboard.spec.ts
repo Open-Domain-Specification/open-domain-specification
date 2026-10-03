@@ -85,14 +85,16 @@ for (const host of ["viewer", "export"] as const) {
 		}) => {
 			const flow = await openDiagram(page, host, "Context map", "");
 			await arriveAt(flow);
-			const stops: { label: string | null; said: string }[] = [];
+			const stops: { bypass: boolean; label: string | null; said: string }[] =
+				[];
 			for (let i = 0; i < 40; i++) {
 				await page.keyboard.press("Tab");
 				const stop = await page.evaluate(() => {
 					const el = document.activeElement as HTMLElement;
 					const id = el.getAttribute("aria-describedby");
 					return {
-						inside: !!el.closest(".svelte-flow"),
+						inside: !!el.closest(".interactive"),
+						bypass: el.matches("button.bypass"),
 						label: el.getAttribute("aria-label"),
 						said: id ? (document.getElementById(id)?.textContent ?? "") : "",
 					};
@@ -100,6 +102,10 @@ for (const host of ["viewer", "export"] as const) {
 				if (!stop.inside) break;
 				stops.push(stop);
 			}
+			// The first stop inside a diagram is its bypass (#83); the stops that
+			// follow are the map's own, which are what this test is about.
+			expect(stops[0].bypass).toBe(true);
+			stops.shift();
 			expect(stops.length).toBeGreaterThan(5);
 			// Nothing here is an edge stop, and nothing says "select" or "delete".
 			expect(stops.filter((s) => /^Edge from/.test(s.label ?? ""))).toEqual([]);
