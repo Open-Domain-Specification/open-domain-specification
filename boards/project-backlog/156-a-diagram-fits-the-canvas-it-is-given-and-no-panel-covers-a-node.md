@@ -1,11 +1,13 @@
 ---
-column: review
+column: doing
 labels: [pages, diagrams, bug]
 priority: medium
-agent: lead
+agent: opus-coordinator
 live: true
+status: Hosts and full quality accepted; clean landing gate next
+progress: 80
 clean-code-swept: true
-updatedAt: 2026-09-30T20:34:00Z
+updatedAt: 2026-10-03T04:46:01.610709+00:00
 ---
 # A diagram fits the canvas it is given, and no panel covers a node
 
@@ -18,9 +20,9 @@ Epic #102, issues #89, #90 and #86. A reader opening an inline or fullscreen dia
 - [x] #90: the fit reserves the minimap and the controls; a panel opened or closed by the reader refits while the fit owns the view; Fit View is the panel-aware fit
 - [x] #89: the fit keeps only the gutter inset; the air step leaves the relief order, with a dated amendment to `flow-diagram-panels.md`
 - [x] #86: entering and leaving fullscreen refit once Svelte Flow has measured the new canvas
-- [x] #103: inspect for a shared fit or layout cause; report the evidence
+- [x] #103 delivered separately in PR133; actual drag correction retained after rebase
 - [x] Independent issue-level and integrated review
-- [x] STATUS.md and sprint 03
+- [ ] STATUS.md and sprint 03
 
 ## Gates
 
@@ -68,3 +70,11 @@ Epic #102, issues #89, #90 and #86. A reader opening an inline or fullscreen dia
 
   An independent Sonnet review of the corrections found no blocker; its two should-fixes are in `1f2cf802`. On the corrected code, `npm run test:vscode:keyboard` passed 24 of 24 and `npm run test:vscode` 9, 1 and 5 passing with 4 pending. The #103 evidence is posted on that issue as separate tracking: #89's removal of the air puts the drag's target 101px past the canvas edge instead of 49px, so auto-pan timing decides more of it. The test is not changed here.
 
+
+- **lead** (2026-10-03T03:29:55.405402+00:00): Current integration accepted for validation at 8ac154c5 on develop f06b8484; prior checkmarks reset because historical 70d/071 proof does not cover the current 19-context model. In packages/pages/src/lib/organisms/InteractiveDiagram.svelte:164, refitDrag and modelRefToHash survive the merge alongside panel/fullscreen behavior. Canonical modelHash plus intended-page checks in packages/pages/e2e/diagram-panel-fit.spec.ts:119, diagram-fullscreen-fit.spec.ts:39 and diagram-fullscreen-scrollbar.spec.ts:28 passed one focused56-case run. Pages1084tests100%coverage; no model/core/pin change. Currentbaseline/actualhosts, finalquality, cleanfullgate and requiredpre/postCI still pending. Root-authored acceptance matrix: /Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-rebase/next-acceptance-matrix.md. No Astra/CI/publication/closure yet.
+
+- **lead** (2026-10-03T04:30:05.499230+00:00): Accepted 168 candidate host cases and 336 individual identity checks; baseline identity checks are 84/84 independent of failing geometry. Standard invocation7 failed four boot/navigation assertions in one launch, baseline16 and diagnosticcandidate9 passed. Cause unproven; retain failures and authorize one CI-isolated fresh-profile standard run via existing environment, no tracked tooling correction. Geometry/keyboard proof retained; whole quality and gates withheld. Source packages/pages/src/lib/organisms/InteractiveDiagram.svelte:161 unchanged. External evidence pr106-host-probe/report.md and lead-next-disposition.json.
+
+- **lead** (2026-10-03T04:35:19.454805+00:00): Unchanged source standard invocation11 passed16 with4 allowed optionalcapture skips, combined checker0 using prior same-source keyboard24; fresh empty short profile via existing CI environment. No assertion/source change, no diagnostic flags. Inv7 remains recorded and unexplained; this is acceptance under isolated conditions, not a repaired fault-rate claim. Root accepts fullhost evidence and authorizes one whole8principle quality sweep, then clean landing gate/necessary CI. Evidence pr106-standard-isolated/lead-acceptance.json; production packages/pages/src/lib/organisms/InteractiveDiagram.svelte:161 unchanged.
+
+- **lead** (2026-10-03T04:46:01.610709+00:00): Accepted complete independent eight-principle Sonnet5.5 sweep under Opus5.5; no introduced>.5, highest.4. Low-severity suggestions retained; no scope expansion. Correct NAMING reference packages/pages/src/lib/flow/fit.svelte.ts:91, source unchanged. Hosts/baseline prove child diagram outcomes; finalclean gate and requiredpre/postCI remain. Quality evidence /Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-whole-quality/lead-acceptance.json.

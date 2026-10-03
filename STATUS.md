@@ -14,17 +14,17 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Now
 
-Milestone 3 delivered #103 through PR #133, merged as fe0df346. Its tree exactly equals gated candidate 88261767. The unmodified Node26 gate passed with 433 browser tests, 20 existing documented capture skips, 1,058 pages tests at 100% coverage, every other suite, exact model pins, schema and ESM checks. Thirty focused repeats and thirteen actual reader-host cases demonstrated stable released geometry. The first coverage gap was corrected with a mutation-sensitive fixed-map regression; source and host proof were retained. The live backlog is 20 open: 26 delivered and eight not-planned closures. Closeout records require their own clean gate before publication.
+Milestone 3 has delivered #103 and published its gated records f06b8484. Frozen PR #106 source 8ac154c5 preserves that correction. Its current NorthBank diagram matrix passed 168 host cases across actual VS Code, viewer and HTTP/file exports; keyboard 24 and focused real-webview drag passed. Standard candidate VS Code invocation 7 failed four ready/navigation assertions in one launch. Baseline standard passed 16; diagnostic candidate petstore passed nine, neither reproducing the failure. Cause remains unproven. Invocation11 passed all 16 standard tests with four allowed capture skips using CI profile isolation; combined checker exit0 retains unchanged-source keyboard24. Root accepts host evidence and the completed eight independent Sonnet 5.5 principles under Opus 5.5 coordination; no introduced finding exceeds 0.5 (highest 0.4). Source stays frozen. Clean final landing gate and necessary CI remain outstanding. Twenty issues remain.
 
 Milestone 2 records a647c6e0 passed their final unmodified gate and landed on develop; card 182 is done. Model approval remains historical e5cda126, with no new Astra request for UI/tooling.
 
 ## Next
 
-Publish the verified #103 records, then rebase PR #106 onto that develop state. Preserve the drag fix and canonical model routing, assert intended pages, and remeasure current NorthBank 19-context fits across viewer/export/VS Code. Opus 5.5 coordinates Sonnet 5.5; builds, browsers and real hosts are serialized. Required #102 pre/post CI uses one explicit non-release run per final head where checks permit.
+Run unmodified Node26 verify-all on the clean quality-accepted candidate, then publish its exact head for required pre-merge CI. Required pre/post test/e2e/real-vscode CI stays limited to one explicit non-release run per final head. Existing host geometry and keyboard evidence remains valid for unchanged source.
 
 ## Later
 
-Finish diagram fitting after #103 lands, then follow the remaining milestone order. Remaining milestones and scope stay in the manifest and [roadmap](docs/bots/ROADMAP.md); no tooling or model-proposal implementation starts as part of this closeout.
+Finish PR #106 diagram fitting, then follow the remaining milestone order. Remaining milestones and scope stay in the manifest and [roadmap](docs/bots/ROADMAP.md); no tooling or model-proposal implementation starts as part of this closeout.
 
 ## Outcomes / blockers
 
@@ -32,4 +32,4 @@ All 25 cards 157–181 are reconciled, marked done and non-live; the #108 parent
 
 ## Working state
 
-Updated: 2026-10-03T03:18:02.575285+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/relationship-pages/open-domain-specification`; branch `codex/drag-check-103`; accepted merge `fe0df346d13afa7e5a69c66012ef9b0fe2023cb3`. Card 183 is done following actual gate, merge and issue closure. Closeout records are pending their clean gate and publication. PR #106 remains parked at `071ff573` in the cross-surface-fixture worktree. Durable CURRENT.json holds the current process and next assignment.
+Updated: 2026-10-03T04:46:01.610709+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/epic-102-diagram-fit`; rebased head `8ac154c5405d9804288149c9b0f948b936e1a2e7`; base `f06b8484`. Card 156 is doing for current integrated acceptance; historical proof remains in its append-only journal. Card 183 is done. The source is frozen for validation; records are not yet a landing candidate. Durable CURRENT.json tracks the actual coordination process and scope.
