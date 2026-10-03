@@ -456,3 +456,8 @@ every story id in `storybook-static/index.json` with Playwright, once with
 `colorScheme: "light"` and once with `"dark"`, `viewport 1000x700`,
 `deviceScaleFactor 1`, `fullPage: true`. The `V2/` stories carry their theme in
 the story itself and do not need the emulation.
+
+
+## 2026-10-03 amendment: links inside prose
+
+Principle 6 now distinguishes context: links inside running sentences have an underline at rest, including diagnostic destinations, comment citations, reached-event sentences and Markdown prose. Standalone links in lists, tables, lockups and navigation retain their existing appearance. Hover behaviour and the keyboard focus ring remain. This is the accepted direction for milestone 5; its implementation and rendered acceptance are recorded with card 185.

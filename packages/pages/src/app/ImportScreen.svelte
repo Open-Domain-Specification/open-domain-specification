@@ -177,6 +177,6 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 	.examples { gap: 10px; }
 	.example { --tint: var(--accent); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; margin: 0; padding: 12px 14px; border-left: 3px solid var(--tint); cursor: pointer; }
 	.example:hover:not(:disabled) { border-color: var(--tint); }
-	.example .card-head { color: var(--tint); }
+	.example .card-head { color: var(--fg); }
 	.example:disabled { cursor: default; opacity: 0.6; }
 </style>

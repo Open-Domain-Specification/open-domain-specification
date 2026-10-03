@@ -171,9 +171,25 @@ test("the shared kernel the model wants refactored is marked on the workspace ma
 	const kernel = flow.locator(".port.stereotype.refactor");
 	await expect(kernel).toHaveText("SK");
 	const [color, rim] = await kernel.evaluate(paint);
-	// The warning treatment is text and rim in one colour, and it is not the
-	// colour an unmarked badge is drawn in.
-	expect(rim).toBe(color);
+	// Issue #78: the warning mark is split on purpose. The rim is the warning
+	// token itself (a shape cue, held to the non-text contrast bar) while the
+	// text is the accessible warning token (held to the text bar), so the two
+	// are not one colour. Each token is resolved by the browser on a probe in
+	// the badge's own scope and read back through the same property, so the
+	// comparison is between like serializations, with no colour written here.
+	const [warn, warnText] = await kernel.evaluate((el) => {
+		const probe = document.createElement("span");
+		el.appendChild(probe);
+		probe.style.color = "var(--warn-text)";
+		probe.style.borderTopColor = "var(--warn)";
+		const s = getComputedStyle(probe);
+		const resolved = [s.borderTopColor, s.color];
+		probe.remove();
+		return resolved;
+	});
+	expect(rim).toBe(warn);
+	expect(color).toBe(warnText);
+	// It is not the colour an unmarked badge is drawn in.
 	const [plainColor] = await flow
 		.locator(".port.stereotype:not(.refactor):not(.tolerated)")
 		.first()

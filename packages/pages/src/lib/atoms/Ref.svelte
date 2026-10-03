@@ -23,6 +23,7 @@ const {
 	external = false,
 	title,
 	current,
+	prose = false,
 }: {
 	ref: string;
 	label: string;
@@ -32,11 +33,18 @@ const {
 	title?: string;
 	/** `aria-current="page"` for the one link to the page being read. */
 	current?: "page";
+	/**
+	 * The link ends or sits inside a sentence, so colour alone must not be the
+	 * only thing that marks it (#79): it is underlined at rest. A link that is
+	 * a list item, a cell or navigation is a standalone control and leaves this off.
+	 */
+	prose?: boolean;
 } = $props();
 </script>
 
 <a
 	class="ref"
+	class:prose
 	href={external ? ref : modelRefToHash(ref)}
 	data-ref={external ? undefined : ref}
 	rel={external ? "external noreferrer" : undefined}
@@ -54,6 +62,11 @@ const {
 	   link itself (`Joined`'s comma) is still somewhere a cell can wrap. */
 	.ref-lockup {
 		white-space: nowrap;
+	}
+	.ref.prose {
+		text-decoration: underline;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 2px;
 	}
 	.ref:hover {
 		color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground));

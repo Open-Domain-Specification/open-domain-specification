@@ -34,7 +34,7 @@ const {
 		font-size: 0.92em;
 	}
 	.warn {
-		color: var(--vscode-editorWarning-foreground);
+		color: var(--warn-text, var(--vscode-editorWarning-foreground));
 	}
 	.error {
 		color: var(--vscode-editorError-foreground);

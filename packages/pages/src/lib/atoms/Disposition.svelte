@@ -36,7 +36,7 @@ const { disposition }: { disposition?: Disposition } = $props();
 		color: var(--vscode-descriptionForeground);
 	}
 	.refactor {
-		color: var(--vscode-editorWarning-foreground);
+		color: var(--warn-text, var(--vscode-editorWarning-foreground));
 	}
 	.codicon {
 		font-size: 1em;

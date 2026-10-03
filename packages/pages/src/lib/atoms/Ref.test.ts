@@ -82,3 +82,15 @@ describe("Ref", () => {
 		).toBeInTheDocument();
 	});
 });
+
+describe("Ref in running text (#79)", () => {
+	it("is marked as prose only when the caller opts in, so a standalone link keeps its look", () => {
+		const { unmount } = render(Ref, { ref: "#/x", label: "Plain" });
+		expect(screen.getByRole("link", { name: "Plain" })).not.toHaveClass(
+			"prose",
+		);
+		unmount();
+		render(Ref, { ref: "#/x", label: "Sentence", prose: true });
+		expect(screen.getByRole("link", { name: "Sentence" })).toHaveClass("prose");
+	});
+});

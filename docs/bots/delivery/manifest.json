@@ -8,11 +8,11 @@
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
-  "active_milestone": 4,
-  "integration_batch": "milestone-04-record-closeout",
+  "active_milestone": 5,
+  "integration_batch": "milestone-05-accessible-reading",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M4 product complete: PR134 tree-equal regularmerge, pre/postCI all3success and four verified closures; closing records gate/publication pending.12remaining.",
+  "candidate_state": "M5 source, actual-reader acceptance and proportional quality complete; exact clean-head landing gate is the next required step. 12 remaining.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -615,7 +615,7 @@
         80
       ],
       "owner": "lead",
-      "state": "complete product: four individually verified closures; record gate/publication pending",
+      "state": "complete: product, four closures and closing records published",
       "expected_remaining": 12,
       "entry_scope": "Only prose sizing, intact type tokens and accessible identity-column name.",
       "exit_acceptance": "Actual before/after geometry across table callers/hosts;24ch glossary, token integrity and accessible associations.",
@@ -698,6 +698,15 @@
           "remaining_open": 12,
           "ledger": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/closures/actions.jsonl",
           "records_gate": "pending"
+        },
+        {
+          "scope": "closing records publication",
+          "candidate": "96939eac134b5140754f81579ca04f81400d6105",
+          "gate_exit": 0,
+          "product_unchanged": true,
+          "remote_develop_verified": "96939eac134b5140754f81579ca04f81400d6105",
+          "gate_evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/record-gate/96939eac134b5140754f81579ca04f81400d6105/lead-acceptance.json",
+          "quality": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/record-quality/lead-acceptance.json"
         }
       ],
       "closed_issues": [
@@ -717,12 +726,77 @@
         83
       ],
       "owner": "lead",
-      "state": "waiting",
+      "state": "M5 source, actual-reader acceptance and proportional quality complete; exact clean-head landing gate is the next required step.",
       "expected_remaining": 9,
       "entry_scope": "Named contrast failures, prose links and keyboard skip paths.",
       "exit_acceptance": "Both-theme measured contrast; underlined prose links; first-stop content skip and one-step diagram bypass with real keys.",
       "investigation_limit": "No visual redesign outside failing tokens and specified interactions.",
-      "evidence": [],
+      "evidence": [
+        {
+          "scope": "activation, not baseline acceptance",
+          "base": "96939eac134b5140754f81579ca04f81400d6105",
+          "current_issues": "78, 79, 83 open and freshly read",
+          "baseline_evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/baseline",
+          "implementation_authorized": false
+        },
+        {
+          "scope": "Corrected baseline accepted; not product acceptance",
+          "at": "2026-10-03T15:37:59.361398+00:00",
+          "baseline_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/baseline/root-acceptance.json",
+          "source_authorization": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/implementation/lead-authorization.json",
+          "classes": 31,
+          "measured_cells": 98,
+          "baseline_failing_cells": 25,
+          "prose_contexts": 4,
+          "coordinator_exit": 0,
+          "canonical_models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "quota_response": false,
+          "implementation_authorized": true,
+          "feature_accepted": false,
+          "closed": 0
+        },
+        {
+          "scope": "G1 source readiness",
+          "at": "2026-10-03T16:35:47.684792+00:00",
+          "acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/implementation/markdown-context/root-acceptance.json",
+          "unit_passed": 1244,
+          "coverage_percent": 100,
+          "rendered_markdown": 46,
+          "final_hosts": "authorized, not accepted"
+        },
+        {
+          "scope": "final-host partial acceptance",
+          "at": "2026-10-03T17:17:53.239627+00:00",
+          "acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/final-hosts/root-partial-acceptance.json",
+          "contrast_classes": 31,
+          "contrast_cells": 98,
+          "static_cases": 232,
+          "native_bypass_cases": 32,
+          "native_keyboard_failed": 1,
+          "whole_product_acceptance": false
+        },
+        {
+          "scope": "Complete source and host readiness, before quality/landing",
+          "at": "2026-10-03T17:25:40.837752+00:00",
+          "native_correction_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/native83-paint/correction-1/root-acceptance.json",
+          "native_keyboard_passed": 25,
+          "root_checker_exit": 0,
+          "product_bundle_unchanged": true,
+          "closures": false
+        },
+        {
+          "scope": "Proportional quality accepted",
+          "at": "2026-10-03T17:35:18.533790+00:00",
+          "acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/quality/root-acceptance.json",
+          "lenses": 8,
+          "highest_introduced_score": 0.3,
+          "blocking_findings": 0,
+          "landing_gate": "pending exact cleanhead"
+        }
+      ],
       "closed_issues": []
     },
     {

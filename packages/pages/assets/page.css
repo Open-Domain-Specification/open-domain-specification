@@ -13,6 +13,10 @@
 	--accent: var(--vscode-textLink-foreground);
 	--core: var(--vscode-charts-purple, #b180d7);
 	--warn: var(--vscode-editorWarning-foreground, #cca700);
+	/* The warning colour is a marker, not a text colour: on a light theme it
+	   is about 3:1 on white. Text that carries the warning takes this mix,
+	   which stays recognisably amber and reaches 4.5:1 on every surface. */
+	--warn-text: color-mix(in srgb, var(--warn) 55%, var(--fg));
 	--error: var(--vscode-editorError-foreground, #f14c4c);
 	--bg: var(--vscode-editor-background);
 	--fg: var(--vscode-foreground);
@@ -321,7 +325,7 @@ h1 {
 }
 .svelte-flow .svelte-flow__edge-label.port.refactor {
 	border-color: var(--warn);
-	color: var(--warn);
+	color: var(--warn-text);
 }
 .svelte-flow .svelte-flow__edge-label.port.intent {
 	pointer-events: all;

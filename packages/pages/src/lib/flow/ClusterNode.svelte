@@ -33,7 +33,7 @@ const style = $derived(
 		top: 4px;
 		left: 8px;
 		font-size: 10px;
-		color: var(--muted);
+		color: var(--fg);
 		white-space: nowrap;
 	}
 </style>

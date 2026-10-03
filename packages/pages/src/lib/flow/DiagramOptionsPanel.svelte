@@ -102,14 +102,11 @@ const controls = `diagram-options-${uid}`;
 		gap: 10px;
 		align-items: center;
 		padding: 4px 8px;
-		background: var(--card);
+		/* Translucent background only; see LegendPanel for the 95% bound. */
+		background: color-mix(in srgb, var(--card) 95%, transparent);
 		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		font-size: 11px;
-		opacity: 0.85;
-	}
-	:global(.diagram-options:hover) {
-		opacity: 1;
 	}
 	.options-header {
 		display: flex;

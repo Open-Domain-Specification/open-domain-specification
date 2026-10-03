@@ -78,6 +78,23 @@ describe("App (standalone host)", () => {
 		expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
 	});
 
+	it("puts a skip link first in the Tab order, to the route being read, and leaves the route alone when used", async () => {
+		history.replaceState(null, "", "/#/boundedcontexts/sales_bc");
+		const initial: Bootstrap = { workspaces: [payload()] };
+		render(App, { initial });
+		await waitFor(() =>
+			expect(document.querySelector("nav.tree")).toBeInTheDocument(),
+		);
+		const skip = screen.getByRole("link", { name: "Skip to content" });
+		const stops = document.querySelectorAll<HTMLElement>("a[href], button");
+		expect(stops[0]).toBe(skip);
+		expect(skip).toHaveAttribute("href", "#/boundedcontexts/sales_bc");
+		skip.focus();
+		await fireEvent.click(skip);
+		expect(document.activeElement).toBe(document.querySelector("main h1"));
+		expect(location.hash).toBe("#/boundedcontexts/sales_bc");
+	});
+
 	it("shows a workspace picker for more than one workspace, and switches to it on pick", async () => {
 		const initial: Bootstrap = {
 			workspaces: [payload("a.json"), payload("b.json")],
@@ -169,6 +186,10 @@ describe("App (embedded in VS Code)", () => {
 			expect(document.querySelector(".site")).toHaveClass("embedded"),
 		);
 		expect(document.querySelector("nav.tree")).not.toBeInTheDocument();
+		// The webview has no tree to skip, so its first stop stays the host's toolbar.
+		expect(
+			screen.queryByRole("link", { name: "Skip to content" }),
+		).not.toBeInTheDocument();
 		await waitFor(() =>
 			expect(api.postMessage).toHaveBeenCalledWith({
 				type: "navigated",

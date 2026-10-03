@@ -2,11 +2,13 @@
 import { Workspace } from "@open-domain-specification/core";
 import { onMount, tick, untrack } from "svelte";
 import EmptyState from "../lib/atoms/EmptyState.svelte";
+import SkipLink from "../lib/atoms/SkipLink.svelte";
 import { focusArrival } from "../lib/focus";
 import ModelProvider from "../lib/ModelProvider.svelte";
 import type { Model } from "../lib/model";
 import Sidebar from "../lib/organisms/Sidebar.svelte";
 import Page from "../lib/Page.svelte";
+import { modelRefToHash } from "../lib/ref-transport";
 import { createRouter } from "../lib/router.svelte";
 import {
 	type Bootstrap,
@@ -99,6 +101,7 @@ $effect(() => {
 	{#key model}
 		<ModelProvider {model}>
 			<div class="site" class:embedded={embedded}>
+				{#if !embedded}<SkipLink href={modelRefToHash(router.ref)} />{/if}
 				{#if !embedded}<div class="site-nav"><Sidebar current={router.ref} /></div>{/if}
 				<div class="site-page"><Page ref={router.ref} arrivals={router.arrivals} /></div>
 			</div>

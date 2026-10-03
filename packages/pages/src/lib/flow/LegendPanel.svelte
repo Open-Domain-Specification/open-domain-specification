@@ -56,14 +56,16 @@ const terms = `legend-terms-${uid}`;
 		max-height: calc(100% - 140px);
 		overflow: auto;
 		padding: 4px 8px;
-		background: var(--card);
+		/* Translucent background only: opacity on the panel would fade its text
+		   too. 95% keeps the muted text at 4.5:1 or better over the tested static
+		   theme tokens' worst backdrops, black under light and white under dark
+		   included; it is not a promise for an arbitrary host theme. */
+		background: color-mix(in srgb, var(--card) 95%, transparent);
 		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		font-size: 10px;
 		color: var(--muted);
-		opacity: 0.85;
 	}
-	:global(.diagram-legend:hover) { opacity: 1; }
 	/* Collapsed, the panel is its one row: no scroller and no room to claim. */
 	:global(.diagram-legend:has(.legend-terms[hidden])) { overflow: visible; }
 	.legend-header {

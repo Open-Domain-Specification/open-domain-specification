@@ -4,6 +4,7 @@ import {
 	ODSRelationMap,
 } from "@open-domain-specification/core";
 import { fireEvent, render, waitFor } from "@testing-library/svelte";
+import { tick } from "svelte";
 import { beforeAll, describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
 import { consumableGraph, contextGraph, relationGraph } from "../flow/graph";
@@ -531,5 +532,26 @@ describe("fullscreen", () => {
 		await waitFor(() =>
 			expect(box().classList.contains("fullscreen")).toBe(false),
 		);
+	});
+});
+
+describe("the bypass outside a figure (#83)", () => {
+	it("is not drawn when the diagram has no caption to name it", () => {
+		const { container } = render(InteractiveDiagram, {
+			graph: contextGraph(ODSContextMap.fromWorkspace(workspace)),
+		});
+		expect(container.querySelector("button.bypass")).toBeNull();
+	});
+
+	it("has nowhere to send focus when no figure holds the diagram, and leaves it where it is", async () => {
+		const { container } = render(InteractiveDiagram, {
+			graph: contextGraph(ODSContextMap.fromWorkspace(workspace)),
+			caption: "Orphan",
+		});
+		const bypass = container.querySelector("button.bypass") as HTMLElement;
+		bypass.focus();
+		await fireEvent.click(bypass);
+		await tick();
+		expect(document.activeElement).toBe(bypass);
 	});
 });

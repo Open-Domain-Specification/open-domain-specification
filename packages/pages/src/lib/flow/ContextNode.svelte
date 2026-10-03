@@ -53,7 +53,7 @@ const band = $derived(
 		border-top-style: dashed;
 		border-color: #8d6e63;
 		border-radius: 0;
-		background: color-mix(in srgb, #d7ccc8 40%, var(--card));
+		background: color-mix(in srgb, #d7ccc8 10%, var(--card));
 		clip-path: polygon(20% 0, 80% 0, 100% 30%, 100% 70%, 80% 100%, 20% 100%, 0 70%, 0 30%);
 		padding: 10px 28px;
 	}

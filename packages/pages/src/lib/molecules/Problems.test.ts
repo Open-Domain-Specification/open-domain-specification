@@ -35,4 +35,18 @@ describe("Problems", () => {
 			"#/boundedcontexts/catalog_bc",
 		);
 	});
+
+	it("marks the go-to link as part of the diagnostic's sentence, so colour is not its only cue (#79)", () => {
+		render(Problems, {
+			problems: [
+				{
+					severity: "error",
+					rule: "aggregate-root",
+					message: "Pet has no root entity.",
+					ref: "#/boundedcontexts/catalog_bc",
+				},
+			],
+		});
+		expect(screen.getByRole("link", { name: "go to" })).toHaveClass("prose");
+	});
 });

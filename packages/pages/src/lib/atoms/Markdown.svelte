@@ -11,3 +11,14 @@ const html = $derived(text ? renderMarkdown(text) : "");
 </script>
 
 {#if html}<div class="md">{@html html}</div>{/if}
+
+<style>
+	/* A link inside running text is marked by the renderer (`prose`, see markdown.ts) and
+	   colour is not its only cue (#79). A link that is the whole of its paragraph, list item
+	   or table cell, or sits only among delimiters, is standalone and is not marked. */
+	.md :global(a.prose) {
+		text-decoration: underline;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 2px;
+	}
+</style>
