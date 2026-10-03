@@ -12,7 +12,7 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 Milestones 1–3 are complete in their delivered outcomes. The actual live census is 16 open / 38 closed from 54: 30 implemented, 8 not planned, 0 new or reopened. Model candidate `e5cda126` retained Astra Low APPROVE; merge commit `5a624128` has the same tree; the owner-authorized OpenAI-only exception applies, no retrospective Claude approval is claimed. M1/M2 record commits `0109d39e` and `a647c6e0` are gate-green and published.
 
-M3 delivered #103 in PR #133 and #86/#89/#90/#102 in PR #106. Final candidate `2f4fb124` passed the unmodified Node 26 gate; merge commit `d87ba634` has the same tree. Required pre/post CI 37104242808 and 37104707314 passed test/e2e/real-vscode. Children closed individually, with #102 last; no release. M3 closeout records await their own mandatory gate before publication. M4 caller inventory and decisions are prepared, but baseline and implementation have not started.
+M3 delivered #103 in PR #133 and #86/#89/#90/#102 in PR #106. Final candidate `2f4fb124` passed the unmodified Node 26 gate; merge commit `d87ba634` has the same tree. Required pre/post CI 37104242808 and 37104707314 passed test/e2e/real-vscode. Children closed individually, with #102 last; no release. M3 closeout records `000f5a7f` passed their own mandatory gate and are published. M4 is active with accepted caller inventory and decisions. Its immutable baseline and phase B actual-host measurements are complete. The four measured reader defects now pass focused preflight (1,154 unit tests, 100% coverage, 61 browser cases). Final actual-host proof is accepted (176 route captures; standard 16, keyboard 24 and checker pass). Whole-batch quality and landing checks remain pending.
 
 **Binding reviewer policy:** Astra low is the one final complete-model quality gate, only after lead review and explicit readiness. It is never a default or per-change reviewer. After a BLOCK, correct and locally verify the complete defect class before the lead declares readiness again. Claude weekly quota exhaustion activates the owner-authorized OpenAI-only exception for this final gate; no Claude approval is claimed. Preserve the actual reviewed SHA and require product-tree equivalence at merge.
 
@@ -20,8 +20,8 @@ M3 delivered #103 in PR #133 and #86/#89/#90/#102 in PR #106. Final candidate `2
 | --- | --- | ---: | --- |
 | 1. Finalise and land the model | #107, #108, #109, #110, #111, #112, #113, #114, #115, #116, #117, #118, #119, #120, #121, #122, #123, #124, #125, #126, #127, #128, #129, #130, #131 | 29 | complete: 25 individually accepted closures |
 | 2. Resolve the model proposals | #35, #36, #37, #38, #39, #40, #64, #65 | 21 | complete: 8 not planned, records a647c6e0 published; #63 reconciled and open |
-| 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | complete: all five individually accepted closures; records pending publication |
-| 4. Readable tables | #105, #87, #88, #80 | 12 | next: read-only inventory ready; baseline/implementation not started |
+| 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | complete: all five individually accepted closures; records 000f5a7f gate-green and published |
+| 4. Readable tables | #105, #87, #88, #80 | 12 | active: final hosts and integrated quality accepted; landing gate next |
 | 5. Accessible reading | #78, #79, #83 | 9 | waiting |
 | 6. Location and return paths | #91, #77 | 7 | waiting |
 | 7. Phone reading | #82 | 6 | waiting |

@@ -205,4 +205,123 @@ describe("DataTable", () => {
 		const grouped = render(Demo, { empty: true, grouped: true });
 		expect(grouped.container.querySelector("table")).toBeNull();
 	});
+
+	it("names a column with no visible label by native visually hidden text, not by an aria-label on an empty header", () => {
+		const cell = createRawSnippet(() => ({ render: () => "<span>x</span>" }));
+		const { container } = render(DataTable, {
+			columns: [
+				{ key: "mark", label: "", ariaLabel: "Kind" },
+				{ key: "name", label: "Name" },
+			],
+			rows: [{ name: "Pet" }],
+			cell,
+		});
+		const [mark, name] = [...container.querySelectorAll("thead th")];
+		// axe's empty-table-header looks at the header's content, so the name
+		// is content: text a screen reader reads and nothing a sighted reader sees.
+		expect(screen.getByRole("columnheader", { name: "Kind" })).toBe(mark);
+		expect(mark.textContent?.trim()).toBe("Kind");
+		expect(mark).not.toHaveAttribute("aria-label");
+		const text = [...mark.querySelectorAll("*")].find(
+			(el) => el.textContent?.trim() === "Kind" && el.children.length === 0,
+		) as HTMLElement | undefined;
+		expect(text, "the Kind text sits in an element of its own").toBeDefined();
+		// Hidden from the eye only: never from the accessibility tree.
+		for (
+			let el: HTMLElement | null = text as HTMLElement;
+			el;
+			el = el === mark ? null : el.parentElement
+		) {
+			expect(el).not.toHaveAttribute("aria-hidden");
+			expect(el).not.toHaveAttribute("hidden");
+			expect(el.style.display).not.toBe("none");
+			expect(el.style.visibility).not.toBe("hidden");
+		}
+		// A visible label is left to name its column, with no hidden duplicate.
+		expect(name).not.toHaveAttribute("aria-label");
+		expect(name.textContent?.trim()).toBe("Name");
+		expect(screen.getByRole("columnheader", { name: "Name" })).toBe(name);
+		expect(name.querySelectorAll("*")).toHaveLength(0);
+	});
+
+	it("names a sortable column with no visible label by hidden text inside its sort button, and still sorts", async () => {
+		const cell = createRawSnippet((row: () => unknown) => ({
+			render: () => `<span>${(row() as { k: string }).k}</span>`,
+		}));
+		const { container } = render(DataTable, {
+			columns: [{ key: "k", label: "", sortable: true, ariaLabel: "Kind" }],
+			rows: [{ k: "b" }, { k: "a" }, { k: "c" }],
+			// Keyed rows move with their data; a raw snippet renders once per row.
+			rowId: (row: { k: string }) => row.k,
+			cell,
+		});
+		const header = screen.getByRole("columnheader", { name: "Kind" });
+		const button = screen.getByRole("button", { name: "Kind" });
+		expect(button.closest("th")).toBe(header);
+		// Native content, not an aria-label stand-in.
+		expect(button).not.toHaveAttribute("aria-label");
+		const hidden = button.querySelector(".hidden");
+		expect(hidden).toHaveTextContent("Kind");
+		// The header shows nothing: every visible character is the hidden span's.
+		expect(
+			button.textContent?.replace(hidden?.textContent ?? "", "").trim(),
+		).toBe("");
+		const column = () =>
+			[...container.querySelectorAll("tbody td")].map((td) =>
+				td.textContent?.trim(),
+			);
+		expect(column()).toEqual(["b", "a", "c"]);
+
+		await fireEvent.click(button);
+		expect(header).toHaveAttribute("aria-sort", "ascending");
+		expect(column()).toEqual(["a", "b", "c"]);
+		expect(screen.getByRole("button", { name: "Kind" })).toBe(button);
+		expect(container.querySelector(".codicon-arrow-small-up")).toHaveAttribute(
+			"aria-hidden",
+			"true",
+		);
+
+		await fireEvent.click(button);
+		expect(header).toHaveAttribute("aria-sort", "descending");
+		expect(column()).toEqual(["c", "b", "a"]);
+		expect(screen.getByRole("button", { name: "Kind" })).toBe(button);
+	});
+
+	it("lets a sortable column's visible label name its button, with no hidden duplicate", () => {
+		const cell = createRawSnippet(() => ({ render: () => "<span>x</span>" }));
+		const { container } = render(DataTable, {
+			columns: [
+				{ key: "name", label: "Name", sortable: true, ariaLabel: "Ignored" },
+			],
+			rows: [{ name: "Pet" }],
+			cell,
+		});
+		const button = screen.getByRole("button", { name: "Name" });
+		expect(button.querySelector(".hidden")).toBeNull();
+		expect(container.querySelectorAll(".hidden")).toHaveLength(0);
+		expect(container.textContent).not.toContain("Ignored");
+	});
+
+	it("writes the hidden name only for a column that has no visible label and a name to give", () => {
+		const cell = createRawSnippet(() => ({ render: () => "<span>x</span>" }));
+		const { container } = render(DataTable, {
+			columns: [
+				{ key: "named", label: "", ariaLabel: "Kind" },
+				{ key: "labelled", label: "Name", ariaLabel: "Never written" },
+				{ key: "bare", label: "" },
+			],
+			rows: [{}],
+			cell,
+		});
+		const [named, labelled, bare] = [...container.querySelectorAll("thead th")];
+		// Empty label with an ariaLabel: the hidden text, and only that.
+		expect(named.querySelectorAll(".hidden")).toHaveLength(1);
+		expect(named.textContent?.trim()).toBe("Kind");
+		// A visible label wins: nothing hidden is written beside it.
+		expect(labelled.querySelectorAll(".hidden")).toHaveLength(0);
+		expect(labelled.textContent?.trim()).toBe("Name");
+		// No ariaLabel, no label: an empty header, with nothing invented.
+		expect(bare.querySelectorAll("*")).toHaveLength(0);
+		expect(bare.textContent?.trim()).toBe("");
+	});
 });

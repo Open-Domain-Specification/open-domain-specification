@@ -7,6 +7,14 @@ export type Column = {
 	numeric?: boolean;
 	width?: string;
 	/**
+	 * The column's accessible name when its header shows nothing, as the
+	 * identity column's does: drawn as visually hidden text inside the `<th>`,
+	 * or inside its sort button when the column sorts
+	 * (native content, so the header is never empty), and only when `label`
+	 * is empty. The visible header stays `label`.
+	 */
+	ariaLabel?: string;
+	/**
 	 * The column that takes the width the others do not need, and the only one
 	 * whose cells wrap as prose. Every other column sits at its content width,
 	 * so a prose column that is not the growing one collapses to its longest
@@ -55,7 +63,9 @@ import EmptyState from "./EmptyState.svelte";
  * still reads as prose; when stacked tokens cannot give it that, the table
  * scrolls sideways inside its own frame and the page never does, as the
  * Extensions detail page does with a wide contributions table. Stack first,
- * scroll last.
+ * scroll last. A cell may claim more than its tokens' stack by sizing
+ * itself (the attribute type does, holding its own width until the prose is
+ * at its floor); the table keeps no flag for it.
  */
 const {
 	columns,
@@ -134,13 +144,13 @@ const ariaSort = (key: string) =>
 					>
 						{#if col.sortable}
 							<button type="button" onclick={() => toggle(col.key)}>
-								{col.label}
+								{col.label}{#if col.ariaLabel && !col.label}<span class="hidden">{col.ariaLabel}</span>{/if}
 								{#if sort?.key === col.key}
 									<i class={sort.dir === "asc" ? "codicon codicon-arrow-small-up" : "codicon codicon-arrow-small-down"} aria-hidden="true"></i>
 								{/if}
 							</button>
 						{:else}
-							{col.label}
+							{col.label}{#if col.ariaLabel && !col.label}<span class="hidden">{col.ariaLabel}</span>{/if}
 						{/if}
 					</th>
 				{/each}
@@ -240,6 +250,21 @@ const ariaSort = (key: string) =>
 	thead th button:focus-visible {
 		outline: 1px solid var(--vscode-focusBorder);
 		outline-offset: 1px;
+	}
+	/* Text for assistive technology and the accessibility tree only: out of
+	   the layout and the paint, never removed from either (`display: none` and
+	   `aria-hidden` would remove the name). The column stays visually empty. */
+	.hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		clip-path: inset(50%);
+		white-space: nowrap;
+		border: 0;
 	}
 	thead th .codicon {
 		font-size: 0.9em;
