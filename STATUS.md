@@ -14,13 +14,15 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-Milestone6 #91/#77 source and actual-host readiness are accepted.36staticcells/6browser-history/6M5bypass witnesses pass across viewer/HTTP/file exports and both themes. Actual stock Light/Dark Modern native enabled Back/Forward identity/focus, boundaries, branch, repeat and workspace isolation pass. Final full keyboard32pass/0failed/0skipped and unchanged checker0; mainnative16executed with four documented optional screenshot skips retained. Native tests now prove rapid valid heading-focus arrivals and actual Tab from BODY, with synthetic workspace heading-focus shortcut removed. Product/bundle unchanged. One complete eight-lens Sonnet audit through Opus is accepted, highest0.4/no blockers; root integrated source/evidence review is satisfied. Candidate freeze and unchanged clean-head gate are next; nine issues remain open.
+Milestone6 #91/#77 source, actual hosts and complete quality are accepted. Candidate `b757fd2e` passed the unmodified local gate (652 browser passes, 20 baseline capture skips, 1283 pages tests/100% coverage). PR136 merged as `5bfdb713` with an identical tree; preCI37152204246 passed all three jobs. PostCI37152866652 passed browser and real VS Code but failed one new App history-availability unit assertion. Both issues remain open; nine actual issues remain.
+
+Opus/Sonnet diagnosed a sufficient test deadline mechanism, with the exact CI interleaving still unproven. A controlled 1100 ms traversal stall reproduced Catalog heading plus stale availability; separate heading/message waits passed the same stall while retained last-message/exact-sequence assertions still rejected delayed messages and two router mutations. Only packages/pages/src/app/App.test.ts changes; production/hosts/model approval remain preserved. Root tightened page-name assertions and is preparing the clean corrective candidate and mandatory gate.
 
 M5 is complete: PR135 merged `f2069a34` with identical gated `f3ff556d` tree; required pre/postCI37142462656/37142959185 all3jobs green,publish skipped. #78/#79/#83 closed individually18:17:46/51/54Z. Six closing-record paths in `8606b282` passed their own unchanged Node26 gate(614browser/20baseline skips,1244pages/100%coverage,974-file check0/0,pins/schema/ESM) and are verified on remote develop. Product unchanged. Card185done and retrospective06 preserve actual failures/controls. The model's exact AstraLow approval remains unchanged.
 
 ## Next
 
-Commit the two issue slices and current delivery records, then delegate the unmodified whole landing gate on the exact clean head. Gate success precedes one PR to develop and necessary manual pre/post CI(releasefalse), identical merge tree, individual closures and own-gated closing records. No Astra UI review or release.
+Run the unmodified landing gate on the clean corrective commit, then deliver a corrective PR against develop with only required exact-head pre/post CI (release=false). PR136 is already merged and cannot receive a correction; this repair remains within #77/#91, without a new issue or epic. Close the two issues only after successful corrective postmerge verification, then own-gate and publish closing records.
 
 ## Later
 
@@ -28,8 +30,8 @@ Follow the remaining [roadmap](docs/bots/ROADMAP.md): navigation, phone reading,
 
 ## Outcomes / blockers
 
-No external blocker. M1–5 and M5 closing records delivered,9actual open/45closed. M6 source/hosts/one quality pass and root integrated acceptance complete; whole gate/publication pending. Foreground DONE, canonical-model checks, two-correction stop,30minute changed probe/60minute approach stop, owned cleanup and serialized hosts/builds remain binding. Actual Claude limit triggers Luna fallback; none occurred.
+M6 closeout is held by the failed postmerge unit check, with an evidence-backed test-only correction now ready. No quota response occurred. Diagnosis exceeded its one-probe allowance; two local probes and a timeout127 attempt are preserved. The later deterministic proof distinguishes sufficient mechanism from unproven CI cause. No speculative production recovery, new scope or repeated final-model review is authorized.
 
 ## Working state
 
-Updated 2026-10-03T20:28:01.834027+00:00. Branch `codex/m6-location-return-paths`, checked base `8606b282ff52b4e0638f37e6172f3b7e1bff3b47`. Prepared candidate comprises12 source/test paths and five root records; issue commits and clean-head freeze follow this snapshot. Exact candidate/gate identity will be recorded externally in `/Users/jonathanturnock/.codex/ods-delivery/CURRENT.json`. No gate/CI/closure claim.
+Updated 2026-10-03T21:16:04.332806+00:00. Branch `codex/m6-history-evidence-correction`, checked base `5bfdb71378f576df1b90c26f482addbaab376e77`. Correction: one test plus STATUS and card186; no production changes. Exact candidate/gate identity and failed CI evidence remain in `/Users/jonathanturnock/.codex/ods-delivery/CURRENT.json`. No corrective gate/CI/closure success claimed.
