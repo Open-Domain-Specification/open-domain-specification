@@ -8,7 +8,7 @@ import {
 	sizeOf,
 } from "./diagram-fit";
 import { openPage } from "./diagram-hosts";
-import { serveModel } from "./helpers";
+import { modelHash, serveModel, WORKSPACE_NAME } from "./helpers";
 
 /**
  * Fullscreen fills the screen (#86). The overlay is a fixed box the size of
@@ -27,26 +27,28 @@ import { serveModel } from "./helpers";
 const SCREEN = { width: 1300, height: 900 };
 
 const CASES = [
-	// Dense: fifteen contexts, fitted at the floor inline.
-	["NorthBank's workspace map", "northbank", "#", "Context map"],
+	// Dense: nineteen contexts, fitted at the floor inline.
+	["NorthBank's workspace map", "northbank", "#", "Context map", "NorthBank"],
 	// Sparse and wide: the map the inline report was about.
 	[
 		"OnboardingApp's consumable map",
 		"northbank",
 		"#/boundedcontexts/customer_&_kyc/services/onboarding_app",
 		"consumable map",
+		"OnboardingApp",
 	],
 ] as const;
 
 for (const colorScheme of ["light", "dark"] as const) {
 	test.describe(`fullscreen in the viewer, ${colorScheme}`, () => {
 		test.use({ colorScheme, viewport: SCREEN });
-		for (const [name, model, ref, caption] of CASES) {
+		for (const [name, model, ref, caption, title] of CASES) {
 			test(`${name} fills the screen, and fits its canvas again on leaving`, async ({
 				page,
 			}) => {
 				const url = await serveModel(page, model);
-				await page.goto(`/?url=${encodeURIComponent(url)}${ref}`);
+				await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(ref)}`);
+				await expect(page.locator("main h1")).toContainText(title);
 				const figure = page.locator("figure.diagram", { hasText: caption });
 				await figure.first().scrollIntoViewIfNeeded();
 				const flow = figure.first().locator(".svelte-flow");
@@ -75,6 +77,7 @@ for (const host of ["viewer", "export"] as const) {
 			page,
 		}) => {
 			await openPage(page, host, "#");
+			await expect(page.locator("main h1")).toContainText(WORKSPACE_NAME);
 			const figure = page.locator("figure.diagram", { hasText: "Context map" });
 			await figure.scrollIntoViewIfNeeded();
 			const flow = figure.locator(".svelte-flow");
@@ -101,6 +104,7 @@ test.describe("fullscreen after the reader has moved the map", () => {
 	}) => {
 		const url = await serveModel(page, "northbank");
 		await page.goto(`/?url=${encodeURIComponent(url)}`);
+		await expect(page.locator("main h1")).toContainText("NorthBank");
 		const figure = page.locator("figure.diagram", { hasText: "Context map" });
 		await figure.scrollIntoViewIfNeeded();
 		const flow = figure.locator(".svelte-flow");
@@ -118,8 +122,9 @@ test.describe("fullscreen after the reader has moved the map", () => {
 	}) => {
 		const url = await serveModel(page, "northbank");
 		await page.goto(
-			`/?url=${encodeURIComponent(url)}#/boundedcontexts/customer_&_kyc/services/onboarding_app`,
+			`/?url=${encodeURIComponent(url)}${modelHash("#/boundedcontexts/customer_&_kyc/services/onboarding_app")}`,
 		);
+		await expect(page.locator("main h1")).toContainText("OnboardingApp");
 		const figure = page.locator("figure.diagram", {
 			hasText: "consumable map",
 		});

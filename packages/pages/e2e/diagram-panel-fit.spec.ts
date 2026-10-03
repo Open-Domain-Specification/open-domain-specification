@@ -1,7 +1,12 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { expectClear, expectFilled, settledFit } from "./diagram-fit";
 import { openPage } from "./diagram-hosts";
-import { REFERENCE_MODELS, serveModel } from "./helpers";
+import {
+	modelHash,
+	REFERENCE_MODELS,
+	serveModel,
+	WORKSPACE_NAME,
+} from "./helpers";
 
 /**
  * The guarantee the fit makes: the whole map is on the canvas and no node is
@@ -26,15 +31,32 @@ import { REFERENCE_MODELS, serveModel } from "./helpers";
 
 /** The NorthBank pages the reports were written about, sparse to dense. */
 const NORTHBANK = [
-	["the workspace", "#"],
-	["the Customer domain", "#/domains/customer"],
-	["the Ledger subdomain", "#/domains/banking_products/subdomains/ledger"],
-	["the Customer & KYC context", "#/boundedcontexts/customer_&_kyc"],
+	["the workspace", "#", "NorthBank"],
+	["the Customer domain", "#/domains/customer", "Customer"],
+	[
+		"the Ledger subdomain",
+		"#/domains/banking_products/subdomains/ledger",
+		"Ledger",
+	],
+	[
+		"the Customer & KYC context",
+		"#/boundedcontexts/customer_&_kyc",
+		"Customer & KYC",
+	],
 	[
 		"the OnboardingApp service",
 		"#/boundedcontexts/customer_&_kyc/services/onboarding_app",
+		"OnboardingApp",
 	],
 ] as const;
+
+/** The workspace names of the reference models, which the workspace page's heading carries. */
+const WORKSPACE_NAMES = {
+	petstore: WORKSPACE_NAME,
+	rivermart: "RiverMart",
+	streamline: "StreamLine",
+	northbank: "NorthBank",
+} as const;
 
 /**
  * A reader's window, an editor split the size of a VS Code tab, and one a
@@ -72,6 +94,7 @@ for (const model of REFERENCE_MODELS) {
 	}) => {
 		const url = await serveModel(page, model);
 		await page.goto(`/?url=${encodeURIComponent(url)}`);
+		await expect(page.locator("main h1")).toContainText(WORKSPACE_NAMES[model]);
 		const figure = page.locator("figure.diagram", { hasText: "Context map" });
 		await figure.scrollIntoViewIfNeeded();
 		expectClear(
@@ -86,12 +109,13 @@ for (const colorScheme of ["light", "dark"] as const) {
 		const at = `${size.width}x${size.height}, ${colorScheme}`;
 		test.describe(`NorthBank at ${at}`, () => {
 			test.use({ colorScheme, viewport: size });
-			for (const [name, ref] of NORTHBANK) {
+			for (const [name, ref, title] of NORTHBANK) {
 				test(`every diagram on ${name} fills its canvas clear of every panel`, async ({
 					page,
 				}) => {
 					const url = await serveModel(page, "northbank");
-					await page.goto(`/?url=${encodeURIComponent(url)}${ref}`);
+					await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(ref)}`);
+					await expect(page.locator("main h1")).toContainText(title);
 					const count = await eachDiagram(page, async (flow, caption) => {
 						const fit = await settledFit(flow);
 						expectClear(fit, `${caption} at ${at}`);
@@ -112,8 +136,9 @@ test.describe("the map #89 was reported on", () => {
 	}) => {
 		const url = await serveModel(page, "northbank");
 		await page.goto(
-			`/?url=${encodeURIComponent(url)}#/boundedcontexts/customer_&_kyc/services/onboarding_app`,
+			`/?url=${encodeURIComponent(url)}${modelHash("#/boundedcontexts/customer_&_kyc/services/onboarding_app")}`,
 		);
+		await expect(page.locator("main h1")).toContainText("OnboardingApp");
 		const figure = page.locator("figure.diagram", {
 			hasText: "consumable map",
 		});
@@ -133,11 +158,15 @@ for (const host of ["viewer", "export"] as const) {
 	for (const colorScheme of ["light", "dark"] as const) {
 		test.describe(`the petstore in the ${host}, ${colorScheme}`, () => {
 			test.use({ colorScheme, viewport: { width: 1300, height: 900 } });
-			for (const ref of ["#", "#/boundedcontexts/sales_bc"]) {
+			for (const [ref, title] of [
+				["#", WORKSPACE_NAME],
+				["#/boundedcontexts/sales_bc", "Sales BC"],
+			] as const) {
 				test(`every diagram at ${ref} fills its canvas clear of every panel`, async ({
 					page,
 				}) => {
 					await openPage(page, host, ref);
+					await expect(page.locator("main h1")).toContainText(title);
 					const count = await eachDiagram(page, async (flow, caption) => {
 						const fit = await settledFit(flow);
 						expectClear(fit, `${caption} in the ${host}`);
@@ -151,9 +180,14 @@ for (const host of ["viewer", "export"] as const) {
 }
 
 /** The context map on a NorthBank page, scrolled to. */
-async function contextMap(page: Page, ref: string): Promise<Locator> {
+async function contextMap(
+	page: Page,
+	ref: string,
+	title: string,
+): Promise<Locator> {
 	const url = await serveModel(page, "northbank");
-	await page.goto(`/?url=${encodeURIComponent(url)}${ref}`);
+	await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(ref)}`);
+	await expect(page.locator("main h1")).toContainText(title);
 	const figure = page.locator("figure.diagram", { hasText: "ontext map" });
 	await figure.first().scrollIntoViewIfNeeded();
 	return figure.first().locator(".svelte-flow");
@@ -168,14 +202,14 @@ test.describe("a panel the reader opens or closes", () => {
 	// Ledger opens with both panels open; the workspace map opens with the
 	// fit having closed both, so the reader's first click opens a deep legend
 	// over where the map was drawn.
-	for (const [name, ref] of [
-		["Ledger", LEDGER],
-		["the workspace", "#"],
+	for (const [name, ref, title] of [
+		["Ledger", LEDGER, "Ledger"],
+		["the workspace", "#", "NorthBank"],
 	] as const) {
 		test(`refits ${name}'s map round it, so it never lands on a node`, async ({
 			page,
 		}) => {
-			const flow = await contextMap(page, ref);
+			const flow = await contextMap(page, ref, title);
 			const header = flow.getByRole("button", { name: "Legend" });
 			const options = flow.getByRole("button", { name: "Options" });
 			expectClear(await settledFit(flow), `${name} as it opens`);
@@ -192,7 +226,7 @@ test.describe("a panel the reader opens or closes", () => {
 	}
 
 	test("leaves the reader's own zoom where they put it", async ({ page }) => {
-		const flow = await contextMap(page, LEDGER);
+		const flow = await contextMap(page, LEDGER, "Ledger");
 		await settledFit(flow);
 		await flow.getByRole("button", { name: "Zoom In" }).click();
 		const zoomed = await settledFit(flow);
@@ -205,7 +239,7 @@ test.describe("a panel the reader opens or closes", () => {
 	test("Fit View fits clear of every panel, and hands the view back to the fit", async ({
 		page,
 	}) => {
-		const flow = await contextMap(page, LEDGER);
+		const flow = await contextMap(page, LEDGER, "Ledger");
 		const fitted = await settledFit(flow);
 		await flow.getByRole("button", { name: "Zoom In" }).click();
 		await flow.getByRole("button", { name: "Zoom In" }).click();

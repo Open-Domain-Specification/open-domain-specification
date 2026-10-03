@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { drive, expectOverlay, settledFit } from "./diagram-fit";
-import { serveModel } from "./helpers";
+import { modelHash, serveModel } from "./helpers";
 
 /**
  * Fullscreen beside a classic scrollbar (#86). Playwright hides scrollbars by
@@ -23,8 +23,9 @@ test("the overlay is the visible viewport, and the node nearest the scrollbar is
 }) => {
 	const url = await serveModel(page, "northbank");
 	await page.goto(
-		`/?url=${encodeURIComponent(url)}#/boundedcontexts/customer_&_kyc/services/onboarding_app`,
+		`/?url=${encodeURIComponent(url)}${modelHash("#/boundedcontexts/customer_&_kyc/services/onboarding_app")}`,
 	);
+	await expect(page.locator("main h1")).toContainText("OnboardingApp");
 	const figure = page.locator("figure.diagram", {
 		hasText: "consumable map",
 	});
