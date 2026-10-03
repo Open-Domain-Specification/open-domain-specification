@@ -10,19 +10,18 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Current position (2026-10-03)
 
-PR #132 is merged and accepted. After Milestone 2 dispositions the issue census is 21 open / 33 closed / 0 new / 0 reopened from a baseline of 54 open; the 33 closed are 25 implemented and 8 closed not planned. The exact product candidate `e5cda1260f09b5b69a41b0a4027bd63fd33b1899` received OpenAI Astra low APPROVE; owner-authorized OpenAI-only exception applies, and no Claude approval is claimed. The merge commit is `5a6241288973fc3befdb2f46876e28174534126e`, whose tree `6efd1aa35bae524dfce9345210096caeafcef236` exactly matches the reviewed candidate tree. Product gate and actual-host evidence passed; no remote CI was run or required. Milestone 2, the eight recorded model proposals, has its dispositions complete and its clean 4ccb76bb record gate passed; Milestone 3 is next after the Milestone 2 record publication.
+Milestones 1–3 are complete in their delivered outcomes. The actual live census is 16 open / 38 closed from 54: 30 implemented, 8 not planned, 0 new or reopened. Model candidate `e5cda126` retained Astra Low APPROVE; merge commit `5a624128` has the same tree; the owner-authorized OpenAI-only exception applies, no retrospective Claude approval is claimed. M1/M2 record commits `0109d39e` and `a647c6e0` are gate-green and published.
 
-Model closeout records 0109d39e passed their own unmodified gate and landed on develop. The Milestone 2 records are docs-only; their mandatory gate passed on clean 4ccb76bb. The final completion entry needs its own frozen-candidate landing gate before publication; actual identity/result are kept through durable CURRENT.json, with no gate claimed on an untested SHA.
-
+M3 delivered #103 in PR #133 and #86/#89/#90/#102 in PR #106. Final candidate `2f4fb124` passed the unmodified Node 26 gate; merge commit `d87ba634` has the same tree. Required pre/post CI 37104242808 and 37104707314 passed test/e2e/real-vscode. Children closed individually, with #102 last; no release. M3 closeout records await their own mandatory gate before publication. M4 caller inventory and decisions are prepared, but baseline and implementation have not started.
 
 **Binding reviewer policy:** Astra low is the one final complete-model quality gate, only after lead review and explicit readiness. It is never a default or per-change reviewer. After a BLOCK, correct and locally verify the complete defect class before the lead declares readiness again. Claude weekly quota exhaustion activates the owner-authorized OpenAI-only exception for this final gate; no Claude approval is claimed. Preserve the actual reviewed SHA and require product-tree equivalence at merge.
 
 | Milestone | Issues | Expected remaining | State |
 | --- | --- | ---: | --- |
 | 1. Finalise and land the model | #107, #108, #109, #110, #111, #112, #113, #114, #115, #116, #117, #118, #119, #120, #121, #122, #123, #124, #125, #126, #127, #128, #129, #130, #131 | 29 | complete: 25 individually accepted closures |
-| 2. Resolve the model proposals | #35, #36, #37, #38, #39, #40, #64, #65 | 21 | dispositions complete / record proof passed; publish after final candidate gate: 8 closed not planned, #63 reconciled and open |
-| 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | next, after Milestone 2 record publication |
-| 4. Readable tables | #105, #87, #88, #80 | 12 | waiting |
+| 2. Resolve the model proposals | #35, #36, #37, #38, #39, #40, #64, #65 | 21 | complete: 8 not planned, records a647c6e0 published; #63 reconciled and open |
+| 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | complete: all five individually accepted closures; records pending publication |
+| 4. Readable tables | #105, #87, #88, #80 | 12 | next: read-only inventory ready; baseline/implementation not started |
 | 5. Accessible reading | #78, #79, #83 | 9 | waiting |
 | 6. Location and return paths | #91, #77 | 7 | waiting |
 | 7. Phone reading | #82 | 6 | waiting |
@@ -41,6 +40,14 @@ An evidence-preparation retrospective outside the repository records that ignore
 ## Milestone 2 disposition retrospective (2026-10-03)
 
 Open issues went from 29 to 21 with zero new and zero reopened. Eight proposals (#35–#40, #64, #65) were closed as not planned, each with a published comment stating its retained cost and source-backed reopening condition; #64 and #65 closed after their children and no feature is claimed. #63 stays open, ordered #59 then #54, with its module promise excluded under decision 15. Decision 16 neither accepts nor rejects #39. Decision-backed exclusions reduced waiting work without delivering capability: they are not implemented features, and the closed count of 33 is 25 implemented plus 8 not planned. The ledger is `/Users/jonathanturnock/.codex/ods-delivery/milestone-02/disposition-execution/actions.jsonl`.
+
+## Milestone 3 delivery retrospective (2026-10-03)
+
+Open issues went from 21 to 16 with five implemented closures, no new/reopened issues. #103's production drag correction landed separately; PR #106 delivered the three fit children and parent #102. Exact final local gate, current host evidence, independent quality, pre/post CI and merged-tree equality preceded the individual closures.
+
+The main delay was test readiness. The first CI failed target room before dragging; pan correction then entered the left auto-pan zone. A geometry wait assumed style selection would request a refit, which the source and Linux trace disproved. Two bounded subsystem assessments changed the acceptance axis: one real Fit View request, after geometry settles, followed by explicit containment/room/path checks, tested from natural and controlled-bad starting poses with the same scenario body and original tolerances. Final Linux pre/post CI passed, verifying that control for this environment without claiming a universal fault rate.
+
+The [full retrospective](delivery/retrospectives/2026-10-03-milestone-03.md) records the actual gate/CI attempts and the guardrail for M4. No extra Astra review, model reopening or new ticket substituted for delivery.
 
 ## Historical roadmap and retrospective records
 

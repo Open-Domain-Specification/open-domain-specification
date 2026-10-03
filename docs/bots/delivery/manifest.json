@@ -2,17 +2,17 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 20,
-  "closed": 34,
-  "closed_implemented": 26,
+  "current_open": 16,
+  "closed": 38,
+  "closed_implemented": 30,
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
   "active_milestone": 3,
-  "integration_batch": "epic-102-diagram-fit",
+  "integration_batch": "milestone-03-record-closeout",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "PR106 explicitrealFitView testcorrection accepted:6natural/controlledbad+30trackedcases, bodyidentity/rawrecords verified; finalfourfile8principlequality passed no requiredchanges. Newcleanmandatorygate next, thennecessaryexactheadLinuxCI; no merge/closure yet.",
+  "candidate_state": "M3 delivered. PR #106 candidate 2f4fb124 passed the local gate; merge d87ba634 has the same tree. Pre-merge CI 37104242808 and post-merge CI 37104707314 passed. #86, #89 and #90 closed individually, then #102; #103 already closed through PR #133. Live 16 open. Record-only quality corrections, gate and publication pending. M4 prepared, not started.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -261,7 +261,7 @@
         103
       ],
       "owner": "lead",
-      "state": "active: #103 delivered; PR106 test-only CIsetup correction accepted, newcleanfinalgate next",
+      "state": "complete: five issues accepted and closed; record publication pending",
       "expected_remaining": 16,
       "entry_scope": "Existing PR #106 after model closeout;103 separate PR if unrelated cause.",
       "exit_acceptance": "Measured inline/fullscreen fit, panel clearance, actual hosts and explained stable released-node geometry.",
@@ -540,10 +540,69 @@
           ],
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-fit-final-delta-quality/lead-acceptance.json",
           "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T07:14:12.040037+00:00",
+          "scope": "M3 actual integrated closeout",
+          "pr": 106,
+          "candidate": "2f4fb1242135cc57525727d83cc0ea242c5ae90d",
+          "merge": "d87ba63475b868c7d6f930d0c14941b4c54b6c37",
+          "tree": "0d5fbfde9ac92d35b1004e3b8e38da51384e109a",
+          "merge_tree_equals_candidate": true,
+          "gate_exit": 0,
+          "premerge_CI": 37104242808,
+          "postmerge_CI": 37104707314,
+          "required_jobs": "test/e2e/real-vscode success; publish skipped",
+          "browser_passed": 485,
+          "browser_documented_skips": 20,
+          "keyboard_passed": 24,
+          "actual_closures": [
+            {
+              "closedAt": "2026-10-03T07:08:07Z",
+              "number": 86,
+              "state": "CLOSED",
+              "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/86",
+              "comment": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/86#issuecomment-5966627057"
+            },
+            {
+              "closedAt": "2026-10-03T07:08:10Z",
+              "number": 89,
+              "state": "CLOSED",
+              "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/89",
+              "comment": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/89#issuecomment-5966627579"
+            },
+            {
+              "closedAt": "2026-10-03T07:08:14Z",
+              "number": 90,
+              "state": "CLOSED",
+              "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/90",
+              "comment": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/90#issuecomment-5966628008"
+            },
+            {
+              "closedAt": "2026-10-03T07:08:19Z",
+              "number": 102,
+              "state": "CLOSED",
+              "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/102",
+              "comment": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/102#issuecomment-5966628594"
+            }
+          ],
+          "counts": {
+            "open": 16,
+            "closed": 38,
+            "implemented": 30,
+            "not_planned": 8,
+            "new": 0,
+            "reopened": 0
+          },
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-closeout/closures.json"
         }
       ],
       "closed_issues": [
-        103
+        103,
+        86,
+        89,
+        90,
+        102
       ]
     },
     {
@@ -556,7 +615,7 @@
         80
       ],
       "owner": "lead",
-      "state": "waiting",
+      "state": "next: current callers and implementation decisions prepared; no baseline/implementation yet",
       "expected_remaining": 12,
       "entry_scope": "Only prose sizing, intact type tokens and accessible identity-column name.",
       "exit_acceptance": "Actual before/after geometry across table callers/hosts;24ch glossary, token integrity and accessible associations.",

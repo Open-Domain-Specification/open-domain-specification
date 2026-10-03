@@ -1,13 +1,11 @@
 ---
-column: doing
+column: done
 labels: [pages, diagrams, bug]
 priority: medium
 agent: opus-coordinator
-live: true
-status: Fit View setup and outgoing quality accepted; clean gate next
-progress: 80
+live: false
 clean-code-swept: true
-updatedAt: 2026-10-03T06:31:02.583311+00:00
+updatedAt: 2026-10-03T07:14:12.040037+00:00
 ---
 # A diagram fits the canvas it is given, and no panel covers a node
 
@@ -22,15 +20,15 @@ Epic #102, issues #89, #90 and #86. A reader opening an inline or fullscreen dia
 - [x] #86: entering and leaving fullscreen refit once Svelte Flow has measured the new canvas
 - [x] #103 delivered separately in PR133; actual drag correction retained after rebase
 - [x] Independent issue-level and integrated review
-- [ ] STATUS.md and sprint 03
+- [x] STATUS.md and sprint 03
 
 ## Gates
 
 - [x] Focused: pages unit; Playwright fit specs on the viewer and the static export, both themes, inline and fullscreen, dense and sparse maps; each new regression fails on the code before its fix
 - [x] Real VS Code: `npm run test:vscode` and `npm run test:vscode:keyboard` where the webview's fit or fullscreen changes
 - [x] Clean-code sweep
-- [ ] `bash scripts/verify-all.sh` green on the final integrated head under Node 26, with no `NODE_OPTIONS`
-- [ ] One PR to `develop` for epic #102; CI `test`, `e2e` and `real-vscode` green
+- [x] `bash scripts/verify-all.sh` green on clean integrated `2f4fb124` under Node 26 with no `NODE_OPTIONS`; 485 browser cases/20 documented skips, 1,084 pages tests with 100% coverage, schema/ESM/pins passed
+- [x] PR #106 merged to `develop` as `d87ba634`, tree identical to `2f4fb124`; required pre-merge CI 37104242808 and post-merge CI 37104707314 test/e2e/real-vscode all green, release disabled
 
 ## Comments
 
@@ -90,3 +88,5 @@ Epic #102, issues #89, #90 and #86. A reader opening an inline or fullscreen dia
 - **lead** (2026-10-03T06:38:04.575614+00:00): packages/pages/e2e/diagrams-sketch.spec.ts:299 now waits for visible non-empty/settled geometry, clicks the real Fit View control once, asserts the resulting cluster containment and then the existing roomy/path guards. Six natural/controlled-bad checks and30 original drag checks passed with two browser invocations/retries0. Controlled start left123.2px clipped/rightroom12.2 (2 real zoom-in clicks) satisfies both previous failing prerequisites; one Fit View normalizes to the same natural cards camera0.56378. It is not the identical Linux pose. Body hashes prove the diagnostic executes the corrected tracked scenario, preserving release0.5/siblingsPIXEL1. Root checked all6 raw records, canonical models and source hash. Workspace import identity has an intentionally empty page ref, current fixture/bundle hashes and target catalog node; Context map is the caption, not a page heading. Final four-file delta quality (mandatory proportionality gate) then new clean full gate/necessary LinuxCI pending; no extra diagnostic or CI rerun. Evidence /Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-explicit-fit-setup/lead-correctness-acceptance.json.
 
 - **lead** (2026-10-03T06:41:22.984008+00:00): Accepted final scoped four-file eight-principle Sonnet5.5 sweep under Opus5.5; no required changes, highest0.3 optional. packages/pages/e2e/diagrams-sketch.spec.ts:299 source hash matches completed6+30 proof. Last factual quality/status records rechecked inline; clean-code-swept restoredtrue. Newclean committed mandatory gate then necessary exact-head LinuxCI remain; no Astra, extra diagnostic or publication yet. Evidence /Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-fit-final-delta-quality/lead-acceptance.json.
+
+- **lead** (2026-10-03T07:14:12.040037+00:00): Final packages/pages/e2e/diagrams-sketch.spec.ts:299 setup and all original drag checks passed the exact clean `2f4fb124` unmodified gate and Linux pre/post CI. PR #106 merged as `d87ba634` with identical tree. Closed #86, #89, #90 individually and #102 last; #103 already delivered separately in PR #133. Each closure comment states its own criteria and current proof; ledger /Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-closeout/closures.json. Live issues fell from 20 to 16 after #103; totals are 38 closed (30 implemented / 8 not planned), 0 new or reopened. Card exits doing with clean-code-swept true and becomes done/non-live; historical comments retained. STATUS.md:5, docs/bots/delivery/manifest.json:5 and docs/bots/sprints/2026-09-30-sprint-03.md:5 reconcile the outcome. The record-only closeout has its own gate/publication pending; no product or model change.

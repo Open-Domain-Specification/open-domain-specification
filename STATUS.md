@@ -2,34 +2,34 @@
 
 ## Goal / health
 
-Clear the guarded ODS backlog. Milestones 1 and 2 are complete and their records published: 25 model issues delivered, eight proposals closed not planned, 20 issues remain from the 54-open baseline. Milestone 3 has delivered #103; PR #106 is next. No new capability is claimed for the proposal dispositions.
+Clear the guarded ODS backlog. Milestones 1–3 have delivered their accepted outcomes. The live census is **16 open / 38 closed**, from 54 open: 30 implemented and eight not planned, with no new or reopened issues. No release is claimed.
 
 ## Binding delegation policy — 2026-10-03
 
-Claude Opus 5.5 is the technical coordinator while Claude usage is available; it delegates bounded work to Sonnet 5.5. The primary OpenAI session owns concrete work management, goal management, acceptance and delivery. Coordinator effort defaults to medium and never exceeds high. Verify actual runtime models; do not silently substitute. On an actual Claude usage-limit response, immediately stop all Claude work and fall back to GPT-6 Luna for all lanes (coding, investigation and verification), archive the limit/reset and avoid repeated retries. The owner reports a 01:00 Europe/London reset; after reset, make one bounded attempt on the next useful task. If that single attempt fails, the Luna fallback is retained and the failure recorded, with no repeated retries.
+Claude Opus 5.5 is the technical coordinator while usage is available and delegates bounded work to Sonnet 5.5. The primary OpenAI session owns concrete work management, the goal, scope, acceptance, publication and closures. Coordinator effort defaults to medium, never above high; verify canonical runtime models. On an actual Claude usage-limit response, archive it and immediately use GPT-6 Luna for coding, investigation and verification, without repeated retries. The owner reports a 01:00 Europe/London reset; after reset, try once on the next useful assignment. Preserve accepted work when switching vendors.
 
-The coordinator alone may dispatch Sonnet workers within the assigned batch; workers may not dispatch further. The coordinator must not expand or create new scope. Shared limits remain two coding lanes plus one validation lane across both vendors, disjoint ownership and one integration batch. Publication, issue closure and final-review dispatch remain with the primary session. Preserve accepted work when switching vendors. Astra Low remains exclusively the final whole-model gate after primary lead readiness; the existing model approval is retained, with no retrospective Claude review.
+At most two coding lanes plus one validation lane, one integration batch, disjoint ownership and serial builds/hosts. Workers do not delegate. The coordinator alone may dispatch Sonnet within the assigned batch and may not expand scope or publish. Astra Low is exclusively the final whole-model gate after complete work and primary readiness; retain the existing model approval and do not request it for UI/tooling or metadata.
 
-Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.md`, `FINAL-REVIEW-POLICY.md` and `CURRENT.json`. This paragraph supersedes older execution-model defaults, while preserving historical evidence.
+Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.md`, `FINAL-REVIEW-POLICY.md` and `CURRENT.json`.
 
 ## Now
 
-Milestone 3 has delivered #103. PR #106 product source,168 actual-host cases and whole product quality remain accepted. Clean c299a433 passed the unmodified local gate (485 browser pass,20 documented skips; pages1084/100% and schema/ESM/pins passed). Required Linux CI37102120921 passed unit and real-vscode, but failed the initial cluster-containment setup poll before any zoom/drag (484 browser pass,1 failed,20 skips). Opus5.5/Sonnet5.5 read-only subsystem assessment proved the camera stayed at the sketch fit; switching Cards has no explicit fit trigger. The new test had assumed an automatic refit. Root now authorizes one test-only real Fit View setup correction, with controlled clipped-left/insufficient-right-room starting-pose proof before another gate/CI. The correction passed6 natural/controlled-bad-pose checks plus30 original drag checks. Both former bad geometry conditions are verified before the Fit View click; it normalizes to the same cards fit. The small test delta is complete; the final four-file outgoing quality review passed (no required changes). Root owns records. Twenty issues remain; no new/reopened tickets or merge/closure.
+Milestone 3 is delivered. #103 landed separately in PR #133; PR #106 delivered #86, #89, #90 and #102, closed individually with the parent last. Candidate `2f4fb124` passed the unmodified Node 26 gate (485 browser cases, 20 documented skips; 1,084 pages tests with 100% coverage, schema/ESM/reference checks). PR #106 merged as `d87ba634`; its tree exactly matches the gated candidate. Required pre-merge CI 37104242808 and post-merge CI 37104707314 passed test/e2e/real-vscode, with release disabled. Card 156 is done; card 183 remains done.
 
-Milestone 2 records a647c6e0 passed their final unmodified gate and landed on develop; card 182 is done. Model approval remains historical e5cda126, with no new Astra request for UI/tooling.
+The earlier pan and automatic-fit test setup failures are retained in the journals. The final setup uses the real Fit View control before the drag baseline and passed six natural/controlled-bad-pose checks plus 30 original drag checks with every original tolerance unchanged. The controlled start proves left clipping and insufficient right room before recovery; Linux acceptance passed afterward. The model's Astra approval remains on `e5cda126`, no new approval is claimed.
 
 ## Next
 
-Freeze one clean candidate and run the unmodified local gate once, then required exact-head Linux CI. CI only follows a newly proven local candidate; never rerun an unchanged failed head. Existing host/keyboard proof is retained for unchanged product source. If real Fit View fails to contain the visible clusters, stop and assess actual failure before another correction.
+Publish these closeout records only after their own clean unmodified gate. Then activate Milestone 4, epic #105 and children #87, #88 and #80: glossary prose width, intact attribute type alternatives, and a named but visually empty icon header. Read-only current caller/type-format inventory and root decisions are prepared; no baseline or implementation is claimed yet. Reproduce before source changes, prove all AttributeTable caller families and actual hosts, then the required quality/local gate/CI. Target 12 open after that batch.
 
 ## Later
 
-Finish PR #106 diagram fitting, then follow the remaining milestone order. Remaining milestones and scope stay in the manifest and [roadmap](docs/bots/ROADMAP.md); no tooling or model-proposal implementation starts as part of this closeout.
+Follow the remaining [roadmap](docs/bots/ROADMAP.md): accessibility, navigation, phone reading, import/copy, multi-file #59, then forms #54 and parent #63 last. Preserve all four readers, reference diagnostic pins and generated integrity. No tooling expansion, optional redesign or new tickets as substitutes for delivery.
 
 ## Outcomes / blockers
 
-All 25 cards 157–181 are reconciled, marked done and non-live; the #108 parent was closed last after its child stories. Per-card journals cite the individual issue comments and merge/review evidence. The sprint retrospective records measured delivery results and the evidence-preparation lesson.
+No external blocker. Post-merge acceptance and the actual GitHub census prove Milestone 3 closures. Repository closeout publication remains pending its mandatory gate. Milestones 1 and 2 record commits `0109d39e` and `a647c6e0` are already gate-green and published. Eight proposal dispositions remain not-planned decisions, not delivered features.
 
 ## Working state
 
-Updated: 2026-10-03T06:41:22.984008+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/epic-102-diagram-fit`; product8ac154c5; HEAD/remote c299a433, base f06b8484. Test setup and three delivery records are unfrozen for the bounded correction; no other source/config/model/pin changes authorized. Card156 doing;183 done. Durable CURRENT.json tracks session82151 and actual evidence; old green gates and failed candidates remain historical.
+Updated: 2026-10-03T07:14:12.040037+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/m3-diagram-closeout`, base `d87ba634`. Only six delivery records change; product source equals the accepted PR #106 tree. All technical actors are terminal. Durable CURRENT.json tracks this record freeze/gate and subsequent Milestone 4 activation. Main-checkout biome/promo work is preserved.
