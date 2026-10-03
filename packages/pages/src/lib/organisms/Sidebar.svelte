@@ -3,8 +3,10 @@ import type { Kind } from "../atoms/kinds";
 import Lockup from "../atoms/Lockup.svelte";
 import Logo from "../atoms/Logo.svelte";
 import { useModel } from "../model";
+import { scrollBehavior } from "../motion.svelte";
 import { modelRefToHash } from "../ref-transport";
 import { resolvePage } from "../resolve";
+import { currentRow, revealRow, scrollContainer } from "../tree-scroll";
 
 /**
  * The static site's navigation, standing in for the extension's tree view.
@@ -62,6 +64,19 @@ const onTheWay = (ref: string) =>
  * page with no row leaves every row unmarked.
  */
 const here = $derived(resolvePage(workspace, current).pageRef);
+let tree: HTMLElement;
+/*
+ * The tree is longer than the window. On arrival, and on every route change,
+ * the sidebar scrolls the least it takes to show the current row, or the
+ * deepest row on its path when the page has none. Only the sidebar's own
+ * container moves; nothing here takes focus or scrolls the document.
+ */
+$effect(() => {
+	void current;
+	const row = currentRow(tree);
+	const container = scrollContainer(tree);
+	if (row && container) revealRow(container, row, scrollBehavior());
+});
 /*
  * Two separate facts. The wash (`.active`) is drawn on the page's row and on
  * the rows above it, so the reader sees the path. `aria-current="page"` is
@@ -83,7 +98,7 @@ const here = $derived(resolvePage(workspace, current).pageRef);
 	</ul>
 {/snippet}
 
-<nav class="tree" aria-label="Workspace elements">
+<nav class="tree" aria-label="Workspace elements" bind:this={tree}>
 	<p class="brand"><Logo size={16} /><a href={modelRefToHash("#")}>{workspace.name}</a></p>
 	{@render list(items)}
 </nav>
