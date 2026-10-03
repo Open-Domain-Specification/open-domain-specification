@@ -12,7 +12,7 @@
   "integration_batch": "milestone-04-readable-tables",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M4 final host proof and integrated quality accepted; bounded sortable-header correction reviewed. Final clean candidate gate, necessary pre/post-merge CI and one PR pending; 16 open.",
+  "candidate_state": "M4 integrated quality accepted; firstgate20a5e3da failed new test callback typing, corrected with focused14tests/Biome/pagescheck970files0errors. Final clean-head gate and PR/pre/postCI remain;16open.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -659,6 +659,14 @@
           ],
           "quota_response": false,
           "closure_claimed": false
+        },
+        {
+          "scope": "failed local gate and test-only correction",
+          "failed_gate": "20a5e3da59f62c4916c73549efc28b0c9ce04bfc",
+          "gate_exit": 1,
+          "reason": "regression callback type",
+          "correction_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-H-test-type/lead-acceptance.json",
+          "product_source_unchanged": true
         }
       ],
       "closed_issues": [],

@@ -7,7 +7,7 @@ live: true
 status: Integrated quality accepted; clean candidate landing gate next
 progress: 85
 clean-code-swept: true
-updatedAt: 2026-10-03T11:46:18.831003+00:00
+updatedAt: 2026-10-03T11:54:38.202794+00:00
 ---
 # Model tables read as prose and intact types
 
@@ -46,3 +46,5 @@ Epic #105, children #87, #88 and #80. Readers can scan glossary definitions, kee
 - **lead** (2026-10-03T11:16:10.556002+00:00): STATUS.md:17 and docs/bots/delivery/manifest.json:15 record accepted required final host proof: 176 route captures across 16 configurations, 17,342 checks, zero failures; standard 16 and keyboard 24 pass with checker exit 0. Four optional standard screenshot skips are documented. Models regenerate without drift and exact pins remain 0/2/4/3/0. The raw ledger has 68 starts/ends, overriding the report's 67. Standalone theme captures exceeded two-failure control; final captures use the working matrix harness and the deviation is preserved. Root authorizes one whole-batch Sonnet quality pass. No Astra UI review, CI, merge or closures yet; 16 open.
 
 - **lead** (2026-10-03T11:46:18.831003+00:00): Eight foreground principles completed on the frozen batch; canonical Opus/Sonnet models verified. R1 was a correctness gap despite its 0.4 score: a sortable empty-visible-label header ignored its accessible name. Sonnet repaired it with red/green regression, 14 DataTable tests and 100% scoped coverage, plus 28 AttributeTable tests; independent delta review passes, maximum 0.2. Root applied formatter-only assertion wrapping. Source ownership stayed two files; historical host bundles are unaffected-branch proof, not the final candidate. Quality accepted; unmodified clean-head gate next, then necessary pre/post-merge CI. No Astra, merge or closures; 16 open. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-F-sortable-name/lead-acceptance.json.
+
+- **lead** (2026-10-03T11:54:38.202794+00:00): The first unmodified candidate gate on `20a5e3da` failed at pages check: a new test callback narrowed the generic row parameter. Before failure, 1,156 pages tests and 100% coverage, model pins, schema and ESM passed; browser stage was not reached. Sonnet corrected one test line; 14 focused tests, Biome and pages check (970 files, zero errors/warnings) pass. Product source is unchanged and proportional review preserves prior quality evidence. Root records the failed gate and type-readiness five whys; a new clean-head gate follows. No CI or closures. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-H-test-type/lead-acceptance.json.

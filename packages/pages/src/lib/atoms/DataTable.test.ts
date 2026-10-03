@@ -252,7 +252,7 @@ describe("DataTable", () => {
 			columns: [{ key: "k", label: "", sortable: true, ariaLabel: "Kind" }],
 			rows: [{ k: "b" }, { k: "a" }, { k: "c" }],
 			// Keyed rows move with their data; a raw snippet renders once per row.
-			rowId: (row: { k: string }) => row.k,
+			rowId: (row: unknown) => (row as { k: string }).k,
 			cell,
 		});
 		const header = screen.getByRole("columnheader", { name: "Kind" });
