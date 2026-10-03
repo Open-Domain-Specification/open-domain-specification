@@ -9,10 +9,10 @@
   "new": 0,
   "reopened": 0,
   "active_milestone": 3,
-  "integration_batch": "issue-103-record-closeout",
+  "integration_batch": "epic-102-diagram-fit",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "Historical final model approval e5cda126 retained with identical PR132 merge tree. M1 records 0109d39e and M2 records a647c6e0 passed their gates and landed. M3 issue #103 passed the full gate on 88261767, merged with identical tree as fe0df346 through PR133, and is individually closed. Closeout records gate/publication pending; PR106 next.",
+  "candidate_state": "PR106 explicitrealFitView testcorrection accepted:6natural/controlledbad+30trackedcases, bodyidentity/rawrecords verified; finalfourfile8principlequality passed no requiredchanges. Newcleanmandatorygate next, thennecessaryexactheadLinuxCI; no merge/closure yet.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -34,7 +34,7 @@
     "reviewed_tree_sha": "6efd1aa35bae524dfce9345210096caeafcef236",
     "tree_matches_reviewed_candidate": true
   },
-  "durable_checkpoint": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/checkpoint.json",
+  "durable_checkpoint": "/Users/jonathanturnock/.codex/ods-delivery/CURRENT.json",
   "milestones": [
     {
       "id": 1,
@@ -261,7 +261,7 @@
         103
       ],
       "owner": "lead",
-      "state": "active: #103 merged and individually closed; PR106 integration next",
+      "state": "active: #103 delivered; PR106 test-only CIsetup correction accepted, newcleanfinalgate next",
       "expected_remaining": 16,
       "entry_scope": "Existing PR #106 after model closeout;103 separate PR if unrelated cause.",
       "exit_acceptance": "Measured inline/fullscreen fit, panel clearance, actual hosts and explained stable released-node geometry.",
@@ -366,6 +366,180 @@
           "reopened": 0,
           "remote_ci": "none required or run",
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/drag-103/merge-verification.json"
+        },
+        {
+          "at": "2026-10-03T03:29:55.405402+00:00",
+          "status": "accepted integration/nav for final validation, not landing",
+          "head": "8ac154c5405d9804288149c9b0f948b936e1a2e7",
+          "base": "f06b8484edac797b88d713968207ddb01e8ec4f4",
+          "actual_exit": 0,
+          "is_error": false,
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "preserved": [
+            "modelRefToHash",
+            "refitDrag exact correction",
+            "flowNodes fixed/free extents",
+            "model/core/pins unchanged"
+          ],
+          "current_northbank_contexts": 19,
+          "focused_fit_tests": 56,
+          "pages_unit_tests": 1084,
+          "pages_coverage_percent": 100,
+          "limits": [
+            "h1 Customer assertion is substring; canonical URL and workspace-fallback exclusion established",
+            "current baseline before/after and actual finalhosts still needed",
+            "no full gate/quality/CI/merge acceptance yet"
+          ],
+          "ownership_note": "checkpoint and next-acceptance-matrix were written by root; coordinator correctly left them alone"
+        },
+        {
+          "at": "2026-10-03T04:30:05.499230+00:00",
+          "scope": "PR106 frozen host acceptance and bounded boot probe",
+          "candidate": "8ac154c5",
+          "candidate_host_cases": 168,
+          "candidate_identity_checks_passed": 336,
+          "baseline_identity_checks_passed": 84,
+          "keyboard_passed": 24,
+          "current_H3_drag_exit": 0,
+          "standard_inv7_exit": 1,
+          "baseline_inv9_exit": 0,
+          "diagnostic_petstore_inv10_exit": 0,
+          "cause": "unproven; deterministic fit cause unsupported; no faulty-launch CDP",
+          "quality_started": false,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-host-probe/report.md",
+          "next_disposition": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-host-probe/lead-next-disposition.json"
+        },
+        {
+          "at": "2026-10-03T04:35:19.454805+00:00",
+          "source": "8ac154c5405d9804288149c9b0f948b936e1a2e7",
+          "standard_exit": 0,
+          "checker_exit": 0,
+          "standard_passed": 16,
+          "optional_skips": 4,
+          "keyboard_passed": 24,
+          "keyboard_provenance": "unchanged-source prior invocation6; not rerun",
+          "condition": "fresh existing ODS_VSCODE_USER_DATA empty-before-launch; unchanged standard config/source, no diagnostic flags",
+          "limits": "Inv7 retained, cause unproven; not a rate bound or proved fault repair",
+          "accepted": "complete host acceptance for outgoing same-source quality; landing still requires quality/gate/necessary CI",
+          "scope": "PR106 same-source standard isolated host accepted",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-standard-isolated/report.md",
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ]
+        },
+        {
+          "at": "2026-10-03T04:46:01.610709+00:00",
+          "scope": "PR106 complete quality accepted",
+          "source": "8ac154c5",
+          "principles": 8,
+          "blocking_introduced": 0,
+          "highest_severity": 0.4,
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "source_unchanged": true,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-whole-quality/lead-acceptance.json",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T05:28:39.898302+00:00",
+          "scope": "PR106 bounded CIsetup correction accepted",
+          "failed_head": "39e2f334",
+          "failed_run": 37098194910,
+          "CI": "test/real-vscode success; e2e484passed1failed20skips",
+          "failure": "pre-mousedown insufficient targetroom, not release regression",
+          "test_commit": "27e83b8f",
+          "focused_passed": 30,
+          "controlled_badroom_passed": 3,
+          "repair_pan_px": 93,
+          "production_unchanged": true,
+          "quality": "whole8retained, smallonefiledelta inline8 accepted",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-ci-setup-badspace/lead-acceptance.json",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T06:01:47.332112+00:00",
+          "scope": "PR106 left auto-pan cause proved; replacement test setup pending quality/gate",
+          "failed_candidate": "736b1395",
+          "gate_exit": 1,
+          "gate_browser_passed": 484,
+          "gate_browser_failed": 1,
+          "gate_skips": 20,
+          "drift_px": 7.875,
+          "cause_reproduced": 10,
+          "ordinary_drag_checks_passed": 30,
+          "diagnostic_verification_exit": 1,
+          "diagnostic_harness_failures": 20,
+          "corrected_gate_start_proven": false,
+          "production_unchanged": true,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-drag-driver-assessment/report.md",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T06:04:12.703029+00:00",
+          "scope": "PR106 test delta full8 quality accepted for mandatory gate",
+          "source_sha256": "3377382f92a40410993ebd060b814f43d847eb914870e57bd9f21496fe22944f",
+          "blocking_findings": 0,
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-driver-quality/lead-acceptance.json",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T06:31:02.583311+00:00",
+          "scope": "PR106 Linux containment failure reassessed before further correction",
+          "candidate": "c299a4331d0b0581afeb38a239652b24971dabdf",
+          "local_gate_exit": 0,
+          "CI_run": 37102120921,
+          "CI": "test/real-vscode success,e2e484pass1fail20skip,publishskipped",
+          "actual_failure": "initialcontainmentpolltimeout beforezoom/drag",
+          "assessment_exit": 0,
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "cause": "no explicitfitonstyleswitch;camera remainedsketchfit,leftcluster28.30outside/rightroom66.7",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-linux-fit-assessment/lead-acceptance.json",
+          "next": "explicitrealFitViewaftermeasuredsettle;controlledbothbadgeometryconditions proof beforegate/CI",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T06:38:04.575614+00:00",
+          "scope": "PR106 explicit real Fit View correction correctness accepted",
+          "source_sha256": "ae36eafb1307a194ed26d12c8a16d9f7dbbceba692c4115aa58cb6bdf387e082",
+          "focused_passed": 30,
+          "diagnostic_passed": 6,
+          "controlled_bad_preconditions": "left123.2px outside andrightroom12.2 viarealzoomin, notidenticalLinuxpose",
+          "body_identity": true,
+          "original_thresholds_preserved": "cardsrelease0.5/siblingsPIXEL1",
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-explicit-fit-setup/lead-correctness-acceptance.json",
+          "next": "scopedfour-filefull8quality, cleanmandatorygate, necessaryLinuxCI",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T06:41:22.984008+00:00",
+          "scope": "PR106 final four-file delta quality accepted for freeze",
+          "source_sha256": "ae36eafb1307a194ed26d12c8a16d9f7dbbceba692c4115aa58cb6bdf387e082",
+          "principles": 8,
+          "introduced_blocking": 0,
+          "highest_score": 0.3,
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-fit-final-delta-quality/lead-acceptance.json",
+          "landing_accepted": false
         }
       ],
       "closed_issues": [

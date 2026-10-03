@@ -13,6 +13,7 @@ import { fitClusters } from "../flow/cluster-fit";
 import DiagramOptionsPanel from "../flow/DiagramOptionsPanel.svelte";
 import DoubleClickZoom from "../flow/DoubleClickZoom.svelte";
 import { createDisclosure, withDisclosure } from "../flow/disclosure.svelte";
+import FitViewButton from "../flow/FitViewButton.svelte";
 import { createDiagramFit } from "../flow/fit.svelte";
 import {
 	flowEdges,
@@ -28,6 +29,7 @@ import { layout } from "../flow/layout";
 import { minimapNodeClass } from "../flow/minimap";
 import { diagramOptions } from "../flow/options.svelte";
 import PanelFit from "../flow/PanelFit.svelte";
+import { PANEL_GUTTER } from "../flow/panel-fit";
 
 import { edgeTypes, nodeTypes } from "../flow/registry";
 import SketchBackdrop from "../flow/SketchBackdrop.svelte";
@@ -83,7 +85,7 @@ $effect(() => {
 });
 const fullscreen = createFullscreen();
 /**
- * The panels, the air and the zoom floor this diagram fits with. The fit can
+ * The panels and the zoom floor this diagram fits with. The fit can
  * close a panel to keep the map readable; the reader can open it again.
  */
 const fit = createDiagramFit();
@@ -159,14 +161,14 @@ const refit = () => {
 <!-- `data-fit` names the step of relief the fit had to take; the e2e reads it. -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="interactive" onkeydown={onKeydown} class:fullscreen={fullscreen.active} data-fit={fit.step} bind:this={container}>
-	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} zoomOnDoubleClick={!motion.reduced} edgesFocusable={false} onnodeclick={({ node }) => open(node.id)} ariaLabelConfig={NODE_KEYS} onnodedrag={refitDrag} onnodedragstop={refit}>
+	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: `${PANEL_GUTTER}px` }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} zoomOnDoubleClick={!motion.reduced} edgesFocusable={false} onnodeclick={({ node }) => open(node.id)} ariaLabelConfig={NODE_KEYS} onnodedrag={refitDrag} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
-		<Controls showLock={false} />
+		<Controls showLock={false} showFitView={false}><FitViewButton {container} {fit} /></Controls>
 		<MiniMap pannable zoomable width={120} height={80} nodeClass={minimapNodeClass} />
-		<DiagramOptionsPanel {kind} {fullscreen} {container} panel={fit.options} />
+		<DiagramOptionsPanel {kind} {fullscreen} panel={fit.options} />
 		<LegendPanel {graph} {kind} legend={fit.legend} />
-		<PanelFit {container} {fit} />
+		<PanelFit {container} {fit} fullscreen={fullscreen.active} />
 		<DoubleClickZoom {container} reduced={motion.reduced} minZoom={fit.minZoom} maxZoom={MAX_ZOOM} />
 		<DisclosureCard {disclosure} />
 	</SvelteFlow>
@@ -174,12 +176,13 @@ const refit = () => {
 
 <style>
 	.interactive { height: 60vh; min-height: 320px; }
-	/* A webview iframe is not granted the Fullscreen API, so the overlay is drawn, not requested. */
+	/* A webview iframe is not granted the Fullscreen API, so the overlay is drawn, not requested.
+	   `inset: 0` alone sizes it to the viewport a reader sees: `100vw` counts a classic
+	   scrollbar's width too, and the fit drew nodes behind it (#86, Linux webview). */
 	.interactive.fullscreen {
 		position: fixed;
 		inset: 0;
-		width: 100vw;
-		height: 100vh;
+		height: auto;
 		z-index: 1000;
 		background: var(--bg);
 	}

@@ -14,17 +14,17 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Now
 
-Milestone 3 delivered #103 through PR #133, merged as fe0df346. Its tree exactly equals gated candidate 88261767. The unmodified Node26 gate passed with 433 browser tests, 20 existing documented capture skips, 1,058 pages tests at 100% coverage, every other suite, exact model pins, schema and ESM checks. Thirty focused repeats and thirteen actual reader-host cases demonstrated stable released geometry. The first coverage gap was corrected with a mutation-sensitive fixed-map regression; source and host proof were retained. The live backlog is 20 open: 26 delivered and eight not-planned closures. Closeout records require their own clean gate before publication.
+Milestone 3 has delivered #103. PR #106 product source,168 actual-host cases and whole product quality remain accepted. Clean c299a433 passed the unmodified local gate (485 browser pass,20 documented skips; pages1084/100% and schema/ESM/pins passed). Required Linux CI37102120921 passed unit and real-vscode, but failed the initial cluster-containment setup poll before any zoom/drag (484 browser pass,1 failed,20 skips). Opus5.5/Sonnet5.5 read-only subsystem assessment proved the camera stayed at the sketch fit; switching Cards has no explicit fit trigger. The new test had assumed an automatic refit. Root now authorizes one test-only real Fit View setup correction, with controlled clipped-left/insufficient-right-room starting-pose proof before another gate/CI. The correction passed6 natural/controlled-bad-pose checks plus30 original drag checks. Both former bad geometry conditions are verified before the Fit View click; it normalizes to the same cards fit. The small test delta is complete; the final four-file outgoing quality review passed (no required changes). Root owns records. Twenty issues remain; no new/reopened tickets or merge/closure.
 
 Milestone 2 records a647c6e0 passed their final unmodified gate and landed on develop; card 182 is done. Model approval remains historical e5cda126, with no new Astra request for UI/tooling.
 
 ## Next
 
-Publish the verified #103 records, then rebase PR #106 onto that develop state. Preserve the drag fix and canonical model routing, assert intended pages, and remeasure current NorthBank 19-context fits across viewer/export/VS Code. Opus 5.5 coordinates Sonnet 5.5; builds, browsers and real hosts are serialized. Required #102 pre/post CI uses one explicit non-release run per final head where checks permit.
+Freeze one clean candidate and run the unmodified local gate once, then required exact-head Linux CI. CI only follows a newly proven local candidate; never rerun an unchanged failed head. Existing host/keyboard proof is retained for unchanged product source. If real Fit View fails to contain the visible clusters, stop and assess actual failure before another correction.
 
 ## Later
 
-Finish diagram fitting after #103 lands, then follow the remaining milestone order. Remaining milestones and scope stay in the manifest and [roadmap](docs/bots/ROADMAP.md); no tooling or model-proposal implementation starts as part of this closeout.
+Finish PR #106 diagram fitting, then follow the remaining milestone order. Remaining milestones and scope stay in the manifest and [roadmap](docs/bots/ROADMAP.md); no tooling or model-proposal implementation starts as part of this closeout.
 
 ## Outcomes / blockers
 
@@ -32,4 +32,4 @@ All 25 cards 157–181 are reconciled, marked done and non-live; the #108 parent
 
 ## Working state
 
-Updated: 2026-10-03T03:18:02.575285+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/relationship-pages/open-domain-specification`; branch `codex/drag-check-103`; accepted merge `fe0df346d13afa7e5a69c66012ef9b0fe2023cb3`. Card 183 is done following actual gate, merge and issue closure. Closeout records are pending their clean gate and publication. PR #106 remains parked at `071ff573` in the cross-surface-fixture worktree. Durable CURRENT.json holds the current process and next assignment.
+Updated: 2026-10-03T06:41:22.984008+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/epic-102-diagram-fit`; product8ac154c5; HEAD/remote c299a433, base f06b8484. Test setup and three delivery records are unfrozen for the bounded correction; no other source/config/model/pin changes authorized. Card156 doing;183 done. Durable CURRENT.json tracks session82151 and actual evidence; old green gates and failed candidates remain historical.

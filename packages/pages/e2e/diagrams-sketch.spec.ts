@@ -284,11 +284,53 @@ const settleOf = (flow: Locator, id: string) =>
 		[id, SETTLE_FRAMES],
 	);
 
+/** Svelte Flow pans the canvas while the pointer is within this many pixels of its edge. */
+const AUTO_PAN_EDGE = 40;
+/** How far a point sits outside the auto-pan zone of `pane`, the nearest of its four sides; negative is inside it. */
+const clearOfAutoPan = (pane: Rect, p: { x: number; y: number }) =>
+	Math.min(p.x - pane.x, right(pane) - p.x, p.y - pane.y, bottom(pane) - p.y) -
+	AUTO_PAN_EDGE;
+const centreOf = (r: Rect) => ({ x: r.x + r.width / 2, y: r.y + r.height / 2 });
+
 test("in the cards style the cluster boxes follow a dragged node", async ({
 	page,
 }) => {
-	const { flow, id, grab } = await openCards(page);
-	const before = await snapOf(flow, id);
+	const { flow, id } = await openCards(page);
+	// Switching style does not refit the view, so the camera is whatever the last fit left. Ask for the fit the way a reader does, with the Fit View control. Clusters are drawn nodes in this style, so a requested fit contains the whole outer cluster. Wait for the cluster to be measured first, since a fit counts only measured nodes.
+	await expect
+		.poll(async () => {
+			const f = await snapOf(flow, id);
+			return f.cluster.width > 0 && f.cluster.height > 0;
+		})
+		.toBe(true);
+	await settleOf(flow, id);
+	await flow.locator(".svelte-flow__controls-fitview").click();
+	let before = (await settleOf(flow, id)).at(-1)!;
+	expect(before.cluster.x).toBeGreaterThanOrEqual(before.pane.x);
+	expect(before.cluster.y).toBeGreaterThanOrEqual(before.pane.y);
+	expect(right(before.cluster)).toBeLessThanOrEqual(right(before.pane));
+	expect(bottom(before.cluster)).toBeLessThanOrEqual(bottom(before.pane));
+	// Real clicks on the zoom-out control give the target room beyond the cluster, and move every node towards the middle of the canvas, away from its auto-pan edges (a pan left would carry the grab into the left one).
+	const roomy = (f: Frame) =>
+		right(f.pane) - right(f.cluster) >= 160 &&
+		clearOfAutoPan(f.pane, centreOf(f.node)) >= 60;
+	for (let i = 0; i < 4 && !roomy(before); i++) {
+		await flow.locator(".svelte-flow__controls-zoomout").click();
+		before = (await settleOf(flow, id)).at(-1)!;
+	}
+	expect(roomy(before)).toBe(true);
+	// The same node, grabbed where it is now, and the pointer really lands on it.
+	const grab = centreOf(before.node);
+	expect(
+		await page.evaluate(
+			([x, y]) =>
+				document
+					.elementFromPoint(x, y)
+					?.closest(".svelte-flow__node")
+					?.getAttribute("data-id"),
+			[grab.x, grab.y],
+		),
+	).toBe(id);
 	// Aimed inside the canvas (clear of its 40px auto-pan edge) and meaningfully beyond the old cluster, so the viewport stays put.
 	const target = {
 		x: right(before.pane) - 60,
@@ -296,6 +338,9 @@ test("in the cards style the cluster boxes follow a dragged node", async ({
 	};
 	expect(target.x).toBeGreaterThan(right(before.cluster) + 60);
 	expect(target.y).toBeGreaterThan(grab.y);
+	// The whole pointer path (grab, first step, target: a straight line between clear points) stays clear of the auto-pan edge on all four sides.
+	for (const p of [grab, { x: grab.x + 4, y: grab.y + 4 }, target])
+		expect(clearOfAutoPan(before.pane, p)).toBeGreaterThanOrEqual(15);
 
 	await page.mouse.move(grab.x, grab.y);
 	await page.mouse.down();
