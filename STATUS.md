@@ -2,7 +2,7 @@
 
 ## Goal / health
 
-Clear the guarded ODS backlog. Milestones 1–3 have delivered their accepted outcomes. The live census is **16 open / 38 closed**, from 54 open: 30 implemented and eight not planned, with no new or reopened issues. No release is claimed.
+Clear the guarded ODS backlog. Milestones 1–4 have delivered their accepted outcomes. The guarded baseline census is **12 remaining / 42 closed**, from 54 open: 34 implemented and eight not planned, with no new or reopened issues. No release is claimed.
 
 ## Binding delegation policy — 2026-10-03
 
@@ -14,13 +14,13 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-Milestone 4 is active: epic #105 and children #87, #88 and #80. Root accepted final host proof: 16 configurations × 11 routes, 17,342 rule checks, zero rule or harness failures; all extra operation/font/fixture axes pass. Actual VS Code standard 16, keyboard 24 and strict checker pass, with four documented optional screenshot skips. Canonical foreground Opus/Sonnet models are verified; no quota response. The standalone screenshot retries exceeded their guardrail and are recorded as a process violation; final captures came from the working matrix harness. The eight-principle audit is complete; its sortable empty-header correctness finding was repaired and independently reviewed. Focused tests pass (14 DataTable, 28 AttributeTable; DataTable coverage 100%). Integrated quality is accepted. The first clean-head gate failed on new regression callback typing after 1,156 unit tests and 100% coverage; the one-line test-only correction now passes focused tests, formatting and the package typecheck (970 files, zero errors/warnings). A new clean-head gate is required. Card 184 is doing; no milestone acceptance, merge or closure yet. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-D-final-hosts/lead-host-acceptance.json.
+Milestone 4 product delivery is complete. PR #134 merged as `42ae867d676f2c7c2c093b65d6417f2fc14367b1` on 2026-10-03T12:10:53Z; its tree exactly matches gated `ddbd01d1ea5494b9143e31b46243c1e31675ae12`. Required pre-merge CI 37121515458 and post-merge CI 37122052999 passed test/e2e/real-vscode; publish was skipped. Children #87, #88 and #80 were individually accepted and closed, then #105 last; actual GitHub remaining count is 12. Final local gate: 546 browser passes/20 documented baseline skips, 1,156 pages tests/100% coverage, package check 970 files with zero errors/warnings, unchanged exact model pins and schema/ESM. Actual CI VS Code standard 16/keyboard24/checker PASS, with four optional screenshot pending. Card 184 is done. Closing records still require their own clean-head gate and publication. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-04/closures/closures.json.
 
-Milestone 3 closeout commit `000f5a7f` passed its own unmodified Node 26 gate and is published on `develop`: 485 browser tests passed, 20 documented skips, pages coverage 100%, schema/ESM checks and exact reference diagnostic pins unchanged. Its product tree is unchanged from accepted PR #106. The actual GitHub census remains 16 open / 38 closed.
+Milestone 3 closeout commit `000f5a7f` passed its own unmodified Node 26 gate and is published on `develop`: 485 browser tests passed, 20 documented skips, pages coverage 100%, schema/ESM checks and exact reference diagnostic pins unchanged. Its product tree is unchanged from accepted PR #106. Those are historical M3 results; the current guarded census is 12 remaining / 42 closed.
 
 ## Next
 
-Freeze the complete table candidate and run the unmodified local landing gate. Necessary exact-head pre/post-merge CI and one independently reviewed PR precede child closures followed by #105. Target: 12 open. No Astra UI review or release.
+Review and gate the M4 closing records on a clean commit, then publish them to `develop`. After that, activate accessibility #78/#79/#83 with baseline-only authorization before implementation. Target after that batch: 9 remaining. No Astra UI review or release.
 
 ## Later
 
@@ -28,8 +28,8 @@ Follow the remaining [roadmap](docs/bots/ROADMAP.md): accessibility, navigation,
 
 ## Outcomes / blockers
 
-No external blocker. Milestones 1–3 are delivered and their records are gate-green and published. The eight not-planned proposal dispositions are decisions rather than delivered features. No new or reopened tickets. Model approval remains historical on `e5cda126`; no Astra UI review.
+No external blocker. Milestones 1–3 records are gate-green and published; M4 product is delivered and its closing records are being verified. The eight not-planned proposal dispositions are decisions rather than delivered features. No new or reopened tickets. Model approval remains historical on `e5cda126`; no Astra UI review.
 
 ## Working state
 
-Updated: 2026-10-03T11:54:38.202794+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/epic-105-readable-tables`, base `000f5a7f7b4410c0a58260565785a3641595640e`. M4 source/tests and five root delivery records are committed; the final integrated gate, PR, CI and closures remain. Main-checkout biome/promo work is preserved. Durable CURRENT.json records the coordinator state and evidence.
+Updated: 2026-10-03T12:24:23.173452+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/m4-table-closeout`, base `42ae867d676f2c7c2c093b65d6417f2fc14367b1`. Six record-only paths are uncommitted; product code is unchanged. Main-checkout biome/promo work is preserved. Durable CURRENT.json identifies the closing-record phase and evidence.

@@ -2,17 +2,17 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 16,
-  "closed": 38,
-  "closed_implemented": 30,
+  "current_open": 12,
+  "closed": 42,
+  "closed_implemented": 34,
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
   "active_milestone": 4,
-  "integration_batch": "milestone-04-readable-tables",
+  "integration_batch": "milestone-04-record-closeout",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M4 integrated quality accepted; firstgate20a5e3da failed new test callback typing, corrected with focused14tests/Biome/pagescheck970files0errors. Final clean-head gate and PR/pre/postCI remain;16open.",
+  "candidate_state": "M4 product complete: PR134 tree-equal regularmerge, pre/postCI all3success and four verified closures; closing records gate/publication pending.12remaining.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -615,7 +615,7 @@
         80
       ],
       "owner": "lead",
-      "state": "active: final hosts and integrated quality accepted; landing next",
+      "state": "complete product: four individually verified closures; record gate/publication pending",
       "expected_remaining": 12,
       "entry_scope": "Only prose sizing, intact type tokens and accessible identity-column name.",
       "exit_acceptance": "Actual before/after geometry across table callers/hosts;24ch glossary, token integrity and accessible associations.",
@@ -667,9 +667,45 @@
           "reason": "regression callback type",
           "correction_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-H-test-type/lead-acceptance.json",
           "product_source_unchanged": true
+        },
+        {
+          "scope": "merged table delivery and verified closures",
+          "candidate": "ddbd01d1ea5494b9143e31b46243c1e31675ae12",
+          "merge": "42ae867d676f2c7c2c093b65d6417f2fc14367b1",
+          "merged_at": "2026-10-03T12:10:53Z",
+          "tree": "9184bdd196c6313e91c917f7573e0fa7e59f57f9",
+          "tree_equals_gated_candidate": true,
+          "premerge_ci": 37121515458,
+          "postmerge_ci": 37122052999,
+          "jobs": "test/e2e/real-vscode allsuccess, publishskipped",
+          "gate": "unmodified cleanhead exit0",
+          "browser_passed": 546,
+          "browser_documented_skip": 20,
+          "pages_tests": 1156,
+          "pages_coverage_percent": 100,
+          "actual_host": {
+            "standard_passed": 16,
+            "optional_screenshot_pending": 4,
+            "keyboard_passed": 24,
+            "checker": "PASS"
+          },
+          "closed_in_order": [
+            87,
+            88,
+            80,
+            105
+          ],
+          "remaining_open": 12,
+          "ledger": "/Users/jonathanturnock/.codex/ods-delivery/milestone-04/closures/actions.jsonl",
+          "records_gate": "pending"
         }
       ],
-      "closed_issues": [],
+      "closed_issues": [
+        87,
+        88,
+        80,
+        105
+      ],
       "card": "boards/project-backlog/184-model-tables-read-as-prose-and-intact-types.md"
     },
     {

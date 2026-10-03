@@ -1,13 +1,13 @@
 ---
-column: doing
+column: done
 labels: [frontend, bug]
 priority: high
 agent: opus-coordinator
-live: true
-status: Integrated quality accepted; clean candidate landing gate next
-progress: 85
+live: false
+status: Delivered in PR134; four verified closures
+progress: 100
 clean-code-swept: true
-updatedAt: 2026-10-03T11:54:38.202794+00:00
+updatedAt: 2026-10-03T12:24:23.173452+00:00
 ---
 # Model tables read as prose and intact types
 
@@ -29,9 +29,9 @@ Epic #105, children #87, #88 and #80. Readers can scan glossary definitions, kee
 - [x] Meaningful focused regression and owning-package 100% coverage, without lowering thresholds
 - [x] Actual host proof, standard/keyboard VS Code suites and results checker
 - [x] Complete scoped eight-principle Sonnet quality review under Opus, with no introduced score above 0.5
-- [ ] Unmodified `bash scripts/verify-all.sh` on the clean final integrated candidate
-- [ ] One independently reviewed PR to `develop`; necessary exact-head `test`, `e2e` and `real-vscode` CI, release disabled
-- [ ] Children #87, #88 and #80 closed individually after acceptance and merge, then parent #105
+- [x] Unmodified `bash scripts/verify-all.sh` on the clean final integrated candidate
+- [x] One independently reviewed PR to `develop`; necessary exact-head `test`, `e2e` and `real-vscode` CI, release disabled
+- [x] Children #87, #88 and #80 closed individually after acceptance and merge, then parent #105
 
 ## Comments
 
@@ -48,3 +48,5 @@ Epic #105, children #87, #88 and #80. Readers can scan glossary definitions, kee
 - **lead** (2026-10-03T11:46:18.831003+00:00): Eight foreground principles completed on the frozen batch; canonical Opus/Sonnet models verified. R1 was a correctness gap despite its 0.4 score: a sortable empty-visible-label header ignored its accessible name. Sonnet repaired it with red/green regression, 14 DataTable tests and 100% scoped coverage, plus 28 AttributeTable tests; independent delta review passes, maximum 0.2. Root applied formatter-only assertion wrapping. Source ownership stayed two files; historical host bundles are unaffected-branch proof, not the final candidate. Quality accepted; unmodified clean-head gate next, then necessary pre/post-merge CI. No Astra, merge or closures; 16 open. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-F-sortable-name/lead-acceptance.json.
 
 - **lead** (2026-10-03T11:54:38.202794+00:00): The first unmodified candidate gate on `20a5e3da` failed at pages check: a new test callback narrowed the generic row parameter. Before failure, 1,156 pages tests and 100% coverage, model pins, schema and ESM passed; browser stage was not reached. Sonnet corrected one test line; 14 focused tests, Biome and pages check (970 files, zero errors/warnings) pass. Product source is unchanged and proportional review preserves prior quality evidence. Root records the failed gate and type-readiness five whys; a new clean-head gate follows. No CI or closures. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-04/table-delivery/phase-H-test-type/lead-acceptance.json.
+
+- **lead** (2026-10-03T12:24:23.173452+00:00): Product delivered: PR134 merged `42ae867d676f2c7c2c093b65d6417f2fc14367b1` at 2026-10-03T12:10:53Z, tree equal to gated `ddbd01d1ea5494b9143e31b46243c1e31675ae12`. Pre CI37121515458 and post CI37122052999 all required jobs succeeded; publish skipped. Child closures verified in order87 (12:22:16Z),88 (12:22:20Z),80 (12:22:23Z), then #105 last (2026-10-03T12:22:29Z). Live remaining count12, guarded baseline42closed=34implemented+8notplanned; no new/reopened issues. Final gate546browser/20baseline skips,1156pages/100coverage/check970files0errors, exact pins/schema/ESM; CIstandard16/4optionalpending+keyboard24/checkerPASS. Card done and not live. Closing records await their own mandatory clean-head gate/publication. STATUS.md:17 and docs/bots/delivery/manifest.json:15 identify this stopping point. Retrospective: docs/bots/sprints/2026-10-03-retro-05.md; evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-04/closures/closures.json.
