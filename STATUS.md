@@ -14,15 +14,13 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-Milestone 5 delivered #78, #79 and #83 in PR #135. Gated candidate `f3ff556d509788b09462ae76ab670da5ad94d482` passed the unchanged Node26 whole gate:614 browser passes,20 documented baseline skips,1,244 pages tests at100% coverage,974-file svelte-check0/0, exact reference pins/schema/ESM passed. Merge `f2069a3464b5375fea00913b48bb2a3e766c7f71` at2026-10-03T18:05:48Z has the identical tree. Required pre/post CI37142462656/37142959185 passed test/e2e/real-vscode; publish skipped with release=false. All three issues closed individually at18:17:46/51/54Z. Card185 is done. This record-only closeout still requires its own unchanged clean-head gate and publication; no product changes remain.
+Milestone6 #91/#77 source and actual-host readiness are accepted.36staticcells/6browser-history/6M5bypass witnesses pass across viewer/HTTP/file exports and both themes. Actual stock Light/Dark Modern native enabled Back/Forward identity/focus, boundaries, branch, repeat and workspace isolation pass. Final full keyboard32pass/0failed/0skipped and unchanged checker0; mainnative16executed with four documented optional screenshot skips retained. Native tests now prove rapid valid heading-focus arrivals and actual Tab from BODY, with synthetic workspace heading-focus shortcut removed. Product/bundle unchanged. One complete eight-lens Sonnet audit through Opus is accepted, highest0.4/no blockers; root integrated source/evidence review is satisfied. Candidate freeze and unchanged clean-head gate are next; nine issues remain open.
 
-Actual four-reader proof:31 contrast classes/98 cells meet4.5:1;232 static cases,32 native bypass cases; actual native keyboard25/25 and checker0. Source and proportional quality accepted. First product gate `1e35ce1e` failed one stale border/text equality; the bounded test-only correction pins intentional marker and readable-text tokens separately. Accepted product/host/quality evidence was retained. Failed and aborted harness invocations remain archived, not passes.
-
-Milestone4 and closing records `96939eac` are delivered and published. The final model approval remains the original exact AstraLow approval; M5 changes no metamodel rule or diagnostic pin.
+M5 is complete: PR135 merged `f2069a34` with identical gated `f3ff556d` tree; required pre/postCI37142462656/37142959185 all3jobs green,publish skipped. #78/#79/#83 closed individually18:17:46/51/54Z. Six closing-record paths in `8606b282` passed their own unchanged Node26 gate(614browser/20baseline skips,1244pages/100%coverage,974-file check0/0,pins/schema/ESM) and are verified on remote develop. Product unchanged. Card185done and retrospective06 preserve actual failures/controls. The model's exact AstraLow approval remains unchanged.
 
 ## Next
 
-Gate and publish these M5 closing records, then activate navigation #91/#77 from that actual published head. Capture a bounded baseline before source dispatch: visible current tree row on deep-link load and route changes, and actual extension page-view back/forward. Prepared handoff is held until closeout publication. Root owns acceptance; Opus5.5 coordinates Sonnet5.5. No Astra UI review or release.
+Commit the two issue slices and current delivery records, then delegate the unmodified whole landing gate on the exact clean head. Gate success precedes one PR to develop and necessary manual pre/post CI(releasefalse), identical merge tree, individual closures and own-gated closing records. No Astra UI review or release.
 
 ## Later
 
@@ -30,4 +28,8 @@ Follow the remaining [roadmap](docs/bots/ROADMAP.md): navigation, phone reading,
 
 ## Outcomes / blockers
 
-No external blocker. Actual backlog is9; required M5 pre/post CI and individual closures are complete. Closing-record gate/publication is next. Keep baseline-first sequencing, foreground DONE, canonical-model checks and all saved stall/retry/resource controls. Switch to GPT-6 Luna only on an actual Claude quota response; none has occurred.
+No external blocker. M1–5 and M5 closing records delivered,9actual open/45closed. M6 source/hosts/one quality pass and root integrated acceptance complete; whole gate/publication pending. Foreground DONE, canonical-model checks, two-correction stop,30minute changed probe/60minute approach stop, owned cleanup and serialized hosts/builds remain binding. Actual Claude limit triggers Luna fallback; none occurred.
+
+## Working state
+
+Updated 2026-10-03T20:28:01.834027+00:00. Branch `codex/m6-location-return-paths`, checked base `8606b282ff52b4e0638f37e6172f3b7e1bff3b47`. Prepared candidate comprises12 source/test paths and five root records; issue commits and clean-head freeze follow this snapshot. Exact candidate/gate identity will be recorded externally in `/Users/jonathanturnock/.codex/ods-delivery/CURRENT.json`. No gate/CI/closure claim.

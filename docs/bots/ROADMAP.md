@@ -10,9 +10,9 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Current position — 2026-10-03
 
-Actual backlog9open/45closed from54:37implemented,8notplanned,0new/reopened. Milestones1–5 delivered; existing model approval remains unchanged. M5 PR135 merged `f2069a34` at2026-10-03T18:05:48Z with the exact `f3ff556d` gated tree. Unchanged local gate passed614browser/20documented skips,1,244pages tests/100%coverage,974-file check0/0,pins/schema/ESM. Required pre/postCI37142462656/37142959185 passed all3jobs;publish skipped. #78/#79/#83 closed individually at18:17:46/51/54Z. These closing records await their own required gate/publication. Then activate #91/#77 with bounded baseline-only authorization; no M6 source work started.
+Actual9open/45closed from54:37implemented,8notplanned,0new/reopened. Milestones1–5 delivered; exact original model approval unchanged. M5 PR135 mergef2069a34 matches gatedf3ff556d tree, pre/postCI37142462656/37142959185 all3jobs green,publishskipped, threeindividualclosures. Closing-record head8606b282 passed its own unchanged gate(614browser/20baseline skips,1244pages/100%coverage,974-file check0/0,pins/schema/ESM) and is published/remoteverified.
 
-M5 actual four-reader evidence includes31contrast classes/98cells,232static cases,32native bypass cases,nativekeyboard25/25/checker0. The first product gate failed one stale warning border/text equality; bounded test-only correction preserved the accepted readable-text split and prior evidence. Retrospective06 records the failed harnesses and guards against replay or optional scope expansion. M4 closing records96939eac remain published.
+M6 #91/#77 is active from8606b282; source/focused readiness accepted with1283pages/100%,170browser/0/0/0,33extension and verified canonical Opus/Sonnet foreground DONE. Card186doing; complete source/host readiness accepted with36staticcells, stocktheme nativejourneys, final32keyboard and unchangedchecker0. One fullqualityaudit accepted (highest0.4/no blockers), root integratedreview satisfied; cleanhead whole gate next. No feature acceptance/CI/finalreview claimed. Retrospective06 controls bind; no phone/history redesign outside the two stories.
 
 **Binding reviewer policy:** Astra low is the one final complete-model quality gate, only after lead review and explicit readiness. It is never a default or per-change reviewer. After a BLOCK, correct and locally verify the complete defect class before the lead declares readiness again. Claude weekly quota exhaustion activates the owner-authorized OpenAI-only exception for this final gate; no Claude approval is claimed. Preserve the actual reviewed SHA and require product-tree equivalence at merge.
 
@@ -22,8 +22,8 @@ M5 actual four-reader evidence includes31contrast classes/98cells,232static case
 | 2. Resolve the model proposals | #35, #36, #37, #38, #39, #40, #64, #65 | 21 | complete: 8 not planned, records a647c6e0 published; #63 reconciled and open |
 | 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | complete: all five individually accepted closures; records 000f5a7f gate-green and published |
 | 4. Readable tables | #105, #87, #88, #80 | 12 | complete: four closures and gate-green published records |
-| 5. Accessible reading | #78, #79, #83 | 9 | complete: three accepted closures; closing-record gate/publication next |
-| 6. Location and return paths | #91, #77 | 7 | waiting |
+| 5. Accessible reading | #78, #79, #83 | 9 | complete: three closures; own-gated closing records8606b282 published |
+| 6. Location and return paths | #91, #77 | 7 | active: source/host/quality accepted; freeze and gate next |
 | 7. Phone reading | #82 | 6 | waiting |
 | 8. Import and copy finish | #92, #93, #94 | 3 | waiting |
 | 9. Team-owned model files | #59 | 2 | waiting |

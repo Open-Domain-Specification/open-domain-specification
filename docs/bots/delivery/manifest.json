@@ -8,11 +8,11 @@
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
-  "active_milestone": 5,
-  "integration_batch": "milestone-05-record-closeout",
+  "active_milestone": 6,
+  "integration_batch": "milestone-06-location-return-paths",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "Model approval preserved on e5cda126; M5 delivered three closures with9actualopen. Closing-record gate/publication pending; M6 held.",
+  "candidate_state": "M5published; M6baseline/design accepted, source/test work authorized,9actualopen.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -726,7 +726,7 @@
         83
       ],
       "owner": "lead",
-      "state": "complete: PR135 identical gated tree, required pre/postCI green, all three issues individually accepted and closed; closing-record gate/publication pending",
+      "state": "complete: three accepted closures and own-gated closingrecords8606b282 published",
       "expected_remaining": 9,
       "entry_scope": "Named contrast failures, prose links and keyboard skip paths.",
       "exit_acceptance": "Both-theme measured contrast; underlined prose links; first-stop content skip and one-step diagram bypass with real keys.",
@@ -847,6 +847,17 @@
           "record_closeout": "own clean-head unmodified gate/publication pending",
           "root_review": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/landing/f3ff556d509788b09462ae76ab670da5ad94d482/root-integrated-review.json",
           "retrospective": "docs/bots/sprints/2026-10-03-retro-06.md"
+        },
+        {
+          "scope": "closing-record gate and publication",
+          "at": "2026-10-03T18:29:05.346373+00:00",
+          "candidate": "8606b282ff52b4e0638f37e6172f3b7e1bff3b47",
+          "gate_exit": 0,
+          "browser_passed": 614,
+          "documented_baseline_skips": 20,
+          "pages_coverage_percent": 100,
+          "remote_develop_verified": true,
+          "product_changed": false
         }
       ],
       "closed_issues": [
@@ -863,12 +874,114 @@
         77
       ],
       "owner": "lead",
-      "state": "waiting",
+      "state": "active: source/host/quality accepted; freeze and gate next",
       "expected_remaining": 7,
       "entry_scope": "Active tree row visibility and extension Back/Forward only.",
       "exit_acceptance": "Deep-link/load/route/reduced-motion visibility; pointer/key history states and heading focus.",
       "investigation_limit": "No routing rewrite unless existing behavior concretely prevents acceptance.",
-      "evidence": [],
+      "evidence": [
+        {
+          "scope": "baseline-only activation",
+          "at": "2026-10-03T18:29:05.346373+00:00",
+          "base": "8606b282ff52b4e0638f37e6172f3b7e1bff3b47",
+          "issues": [
+            91,
+            77
+          ],
+          "current_open": 9,
+          "source_changes_authorized": false,
+          "acceptance_outline": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/preparation/acceptance-outline.md"
+        },
+        {
+          "scope": "baseline/design acceptance; notfeatureacceptance",
+          "at": "2026-10-03T18:50:19.180422+00:00",
+          "acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/baseline/root-acceptance.json",
+          "static_cells": 24,
+          "static_product_failures": 24,
+          "harness_errors": 0,
+          "source_changes_authorized": true,
+          "native_first_entry_defect": true,
+          "toolbar_design": "existing HTMLpageviewtoolbar BackForward, no globalchord/newmenus"
+        },
+        {
+          "at": "2026-10-03T19:41:52.900949+00:00",
+          "scope": "M6 source and focused readiness only",
+          "accepted": true,
+          "feature_accepted": false,
+          "source_diff_sha256": "2a2a98634c752e0bff1edc3c260c08cda4aa1d17daa1afb6abc090c1a370b992",
+          "coordinator_exit": 0,
+          "is_error": false,
+          "canonical_models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "foreground_worker_calls": 7,
+          "actual_worker_DONE": 7,
+          "root_records_preserved": 5,
+          "source_hashes_verified": 12,
+          "pages_tests": 1283,
+          "coverage_percent": 100,
+          "browser_passed": 170,
+          "browser_failed": 0,
+          "browser_skipped": 0,
+          "browser_flaky": 0,
+          "extension_unit_passed": 33,
+          "pending_reset_hold": "Reproduced in router/App/real Chromium; fixed; final run3 accepted",
+          "corrections": [
+            {
+              "class": "synchronous popstate inside hash assignment",
+              "attempts": 1
+            },
+            {
+              "class": "reset during pending traversal",
+              "attempts": 1
+            }
+          ],
+          "native_hosts": "not yet run",
+          "whole_gate": "not yet run",
+          "ci": "not dispatched",
+          "quota_event": false,
+          "limits": [
+            "Focused threshold-zero invocation is diagnostic only; unchanged full coverage run3 is readiness evidence.",
+            "Historical baseline router shim failures are not product failures.",
+            "Direct hash route changes in focused browser tests do not prove actual route clicks on final hosts.",
+            "Earlier failure trace was removed by validator; raw failure and reproduction logs remain.",
+            "panel unit tests use jsdom declared by the pages workspace and hoisted by the monorepo installation; no production dependency change warranted."
+          ]
+        },
+        {
+          "at": "2026-10-03T20:06:59.790785+00:00",
+          "scope": "partial host acceptance, native test correction required",
+          "acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/final-hosts/root-partial-acceptance.json",
+          "static_cells": 36,
+          "native_keyboard_passed": 30,
+          "native_keyboard_failed": 2,
+          "checker_exit": 1,
+          "feature_accepted": false
+        },
+        {
+          "at": "2026-10-03T20:19:43.261271+00:00",
+          "scope": "complete source and actualhost readiness",
+          "acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/native-real-key-path/root-acceptance.json",
+          "static_cells": 36,
+          "final_native_keyboard_passed": 32,
+          "failed": 0,
+          "skipped": 0,
+          "checker_exit": 0,
+          "root_whole_batch_ready": true,
+          "product_changed_by_test_corrections": false,
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T20:28:01.834027+00:00",
+          "scope": "fullquality and root integrated acceptance before gate",
+          "acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/quality/root-integrated-acceptance.json",
+          "actual_reviewers": 8,
+          "highest_score": 0.4,
+          "blocking_findings": 0,
+          "gate_passed": false
+        }
+      ],
       "closed_issues": []
     },
     {
@@ -961,12 +1074,25 @@
     "workers": "Claude Sonnet 5.5",
     "fallback": "GPT-6 Luna subagents",
     "primary_role": "Concrete work management, goal management, acceptance and delivery",
-    "state": "runtime-confirmed",
+    "state": "runtime-confirmed Opus/Sonnet; owner policy reaffirmed",
     "reset": "01:00 Europe/London per owner",
     "durable_policy": "/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.md",
-    "updated": "2026-10-03T00:03:44.296855+00:00"
+    "updated": "2026-10-03T19:41:52.900949+00:00"
   },
   "active_delivery": {
+    "milestone": 6,
+    "base": "8606b282ff52b4e0638f37e6172f3b7e1bff3b47",
+    "branch": "codex/m6-location-return-paths",
+    "state": "source/host/quality accepted; freeze and gate next",
+    "source_changes_authorized": false,
+    "feature_accepted": false,
+    "expected_remaining": 7,
+    "source_readiness_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/implementation/root-source-acceptance.json",
+    "partial_host_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/final-hosts/root-partial-acceptance.json",
+    "source_host_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/native-real-key-path/root-acceptance.json",
+    "root_integrated_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/quality/root-integrated-acceptance.json"
+  },
+  "previous_delivery": {
     "scope": "M5 merged accepted closeout",
     "at": "2026-10-03T18:20:24.875208+00:00",
     "candidate": "f3ff556d509788b09462ae76ab670da5ad94d482",
@@ -1014,7 +1140,11 @@
     "actual_remaining": 9,
     "new": 0,
     "reopened": 0,
-    "record_closeout": "own clean-head unmodified gate/publication pending",
+    "record_closeout": {
+      "candidate": "8606b282ff52b4e0638f37e6172f3b7e1bff3b47",
+      "gate_exit": 0,
+      "remote_develop_verified": true
+    },
     "root_review": "/Users/jonathanturnock/.codex/ods-delivery/milestone-05/landing/f3ff556d509788b09462ae76ab670da5ad94d482/root-integrated-review.json",
     "retrospective": "docs/bots/sprints/2026-10-03-retro-06.md"
   }
