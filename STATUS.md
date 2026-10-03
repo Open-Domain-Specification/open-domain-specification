@@ -14,13 +14,13 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Now
 
-Milestone 3 has delivered #103. PR #106 product source and 168 actual-host cases, standard16/keyboard24/checker0 and full8 quality remain accepted. Clean39e2f334 passed unmodified Node26 gate (pages1084, browser485+20 documented skips). Its necessary pre-merge CI passed unit and real-vscode, but one browser test failed a screen-space setup guard before any drag (484 passed). Test-only27e83b8f pans the camera via real pointer input before grabbing the same node, preserving all original growth/release/containment assertions. Thirty focused checks and three controlled67px-room cases passed, proving the93px correction. Root accepted the small delta after inline8 review; no product/model/pin change. Twenty issues remain; new clean final gate then necessary exact-head CI are next.
+Milestone 3 has delivered #103. PR #106 product source, 168 actual-host cases and full product quality remain accepted. Initial39e2f334 local gate passed; necessary pre-merge CI failed one pre-drag space guard. The first test-only pan correction27e83b8f then failed the clean736b1395 local gate with held camera drift7.875 (484 browser cases passed,20 documented skips; units/coverage/schema/ESM/pins passed). The bounded Opus5.5/Sonnet5.5 assessment reproduced that exact drift10/10: the setup pan moved the grab into the left40px auto-pan zone. A replacement test-only setup waits for fitting geometry, uses real zoom controls and guards the entire pointer path. Thirty ordinary drag checks passed; the combined diagnostic invocation exited1 with20 diagnostic harness failures, so corrected gate-start acceptance is explicitly pending. Eight-principle delta review is accepted (no required changes); no further CI or publication yet. Twenty issues remain.
 
 Milestone 2 records a647c6e0 passed their final unmodified gate and landed on develop; card 182 is done. Model approval remains historical e5cda126, with no new Astra request for UI/tooling.
 
 ## Next
 
-Run unmodified Node26 verify-all on the new clean test-corrected candidate, then publish that exact head for necessary pre-merge CI. The first failed CI is preserved; do not rerun unchanged heads. Required pre/post test/e2e/real-vscode CI stays limited to one explicit non-release run per final head. Existing host geometry and keyboard evidence remains valid for unchanged source.
+Freeze one clean candidate and run unmodified Node26 verify-all once as the gate-start proof. Publish only on gate0 and clean exact head, then run necessary exact-head non-release pre/post CI. Retain all failed attempts; no unchanged-head CI reruns. Existing host geometry and keyboard evidence remains valid for unchanged product source.
 
 ## Later
 
@@ -32,4 +32,4 @@ All 25 cards 157–181 are reconciled, marked done and non-live; the #108 parent
 
 ## Working state
 
-Updated: 2026-10-03T05:28:39.898302+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/epic-102-diagram-fit`; product head `8ac154c5`, test-only correction `27e83b8f`; base `f06b8484`. Card 156 is doing for current integrated acceptance; historical proof remains in its append-only journal. Card 183 is done. The source is frozen for validation; records are not yet a landing candidate. Durable CURRENT.json tracks the actual coordination process and scope.
+Updated: 2026-10-03T06:04:12.703029+00:00. Worktree `/Users/jonathanturnock/.codex/worktrees/cross-surface-fixture/open-domain-specification`; branch `codex/epic-102-diagram-fit`; product `8ac154c5`; failed local candidate `736b1395`; remote PR head `39e2f334`; base `f06b8484`. Only test setup and these delivery records are changing. Card156 doing;183 done. Durable CURRENT.json tracks the actual coordinator process; historical journals remain append-only.

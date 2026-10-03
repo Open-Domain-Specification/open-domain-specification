@@ -12,7 +12,7 @@
   "integration_batch": "epic-102-diagram-fit",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "PR106 reviewed8acproduct retained;39e2 gate0 butCIe2e failedpre-dragsetup. Test-only27e83b8f acceptedafter30focused+3forcedbadroom checks; newcleanfinalgate/necessaryCI/merge pending.",
+  "candidate_state": "PR106 product8ac/hosts/fullquality retained;39localgate0 butCIpre-dragroomfailure;736localgate1 heldcamera+7.875 from leftedgeauto-pan. Newtest-onlyzoom/pathsetupordinary30passed,diagnosticinvocation1/20harnessfailures; scoped full8 quality accepted; cleanmandatorygate pending. No newCI/publication.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -460,6 +460,36 @@
           "production_unchanged": true,
           "quality": "whole8retained, smallonefiledelta inline8 accepted",
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-ci-setup-badspace/lead-acceptance.json",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T06:01:47.332112+00:00",
+          "scope": "PR106 left auto-pan cause proved; replacement test setup pending quality/gate",
+          "failed_candidate": "736b1395",
+          "gate_exit": 1,
+          "gate_browser_passed": 484,
+          "gate_browser_failed": 1,
+          "gate_skips": 20,
+          "drift_px": 7.875,
+          "cause_reproduced": 10,
+          "ordinary_drag_checks_passed": 30,
+          "diagnostic_verification_exit": 1,
+          "diagnostic_harness_failures": 20,
+          "corrected_gate_start_proven": false,
+          "production_unchanged": true,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-drag-driver-assessment/report.md",
+          "landing_accepted": false
+        },
+        {
+          "at": "2026-10-03T06:04:12.703029+00:00",
+          "scope": "PR106 test delta full8 quality accepted for mandatory gate",
+          "source_sha256": "3377382f92a40410993ebd060b814f43d847eb914870e57bd9f21496fe22944f",
+          "blocking_findings": 0,
+          "models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-driver-quality/lead-acceptance.json",
           "landing_accepted": false
         }
       ],

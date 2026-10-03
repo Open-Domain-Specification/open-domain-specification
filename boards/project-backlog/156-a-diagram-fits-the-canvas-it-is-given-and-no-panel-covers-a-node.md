@@ -4,10 +4,10 @@ labels: [pages, diagrams, bug]
 priority: medium
 agent: opus-coordinator
 live: true
-status: CI setup correction proved; new clean landing gate next
+status: Test-only driver quality accepted; clean final gate pending
 progress: 80
 clean-code-swept: true
-updatedAt: 2026-10-03T05:28:39.898302+00:00
+updatedAt: 2026-10-03T06:01:47.332112+00:00
 ---
 # A diagram fits the canvas it is given, and no panel covers a node
 
@@ -80,3 +80,7 @@ Epic #102, issues #89, #90 and #86. A reader opening an inline or fullscreen dia
 - **lead** (2026-10-03T04:46:01.610709+00:00): Accepted complete independent eight-principle Sonnet5.5 sweep under Opus5.5; no introduced>.5, highest.4. Low-severity suggestions retained; no scope expansion. Correct NAMING reference packages/pages/src/lib/flow/fit.svelte.ts:91, source unchanged. Hosts/baseline prove child diagram outcomes; finalclean gate and requiredpre/postCI remain. Quality evidence /Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-whole-quality/lead-acceptance.json.
 
 - **lead** (2026-10-03T05:28:39.898302+00:00): Initial39e2f334 unmodifiedgate0 (pages1084/browser485+20documentedskips); necessaryCI37098194910 unit/nativehostpassed butbrowser484+1 failedbeforeanydrag at packages/pages/e2e/diagrams-sketch.spec.ts:297. Test-only27e83b8f establishes camera room throughrealpan before grabbing sameid, retaining all geometricassertions. Thirtyfocusedchecks plus3controlled67pxroom cases passed; actual93px repairpan, sameidentity/growth/PIXEL1release/no-reverse/containment proved. Full8productreview retained andsmalldelta inline8 accepted; newcleanfinalgate/necessaryCI remain. Evidence /Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-ci-setup-badspace/lead-acceptance.json; no scope/new/reopenedissues.
+
+- **lead** (2026-10-03T06:01:47.332112+00:00): The first setup correction27e83b8f failed clean736b1395 gate with held camera+7.875; browser484passed1failed20skips, all unit/coverage/schema/ESM/reference checks passed. Opus5.5/Sonnet5.5 bounded assessment reproduced the exact drift10/10: pan-left put the grab inside xyflow's40px left auto-pan zone. In packages/pages/e2e/diagrams-sketch.spec.ts:287 the proposed setup waits for contained/fitted geometry, uses real zoom-out controls and guards grab/first-step/target clearance. Held camera, tracking8px, growth, releasePIXEL1, no-reverse and containment assertions remain. Thirty ordinary drag checks passed; combined diagnostic invocation failed20 harness checks, explicitly not accepted as all-pass or proof of the gate start. Scoped full8 quality and new clean mandatory gate pending; no new CI/product/model/pin edit. Assessment evidence /Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-drag-driver-assessment/report.md.
+
+- **lead** (2026-10-03T06:04:12.703029+00:00): Completed eight independent Sonnet5.5 principles under Opus5.5 for packages/pages/e2e/diagrams-sketch.spec.ts:287. No required changes or assertion weakening; optional low-severity nits retained. Three delivery records rechecked inline across all8 principles. Canonical runtime models verified from terminal modelUsage, allworkersDONE/exit0. Freeze candidate for one unmodified mandatory local gate as gate-start proof; no diagnostic or CI rerun. Evidence /Users/jonathanturnock/.codex/ods-delivery/milestone-03/pr106-driver-quality/lead-acceptance.json.
