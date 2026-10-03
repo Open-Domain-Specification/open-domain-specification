@@ -287,8 +287,49 @@ const settleOf = (flow: Locator, id: string) =>
 test("in the cards style the cluster boxes follow a dragged node", async ({
 	page,
 }) => {
-	const { flow, id, grab } = await openCards(page);
-	const before = await snapOf(flow, id);
+	const { flow, id } = await openCards(page);
+	let before = await snapOf(flow, id);
+	// The fit can leave the cluster close to the pane's right edge. Pan the canvas left with real drags on empty background (bounded, remeasured each time) until the target has room beyond it.
+	const ROOM = 160;
+	for (
+		let i = 0;
+		i < 3 && right(before.pane) - right(before.cluster) < ROOM;
+		i++
+	) {
+		const deficit = ROOM - (right(before.pane) - right(before.cluster));
+		const bg = await flow.evaluate((root) => {
+			const r = root.getBoundingClientRect();
+			for (let x = r.right - 80; x > r.left + 200; x -= 20)
+				for (let y = r.bottom - 120; y > r.top + 80; y -= 20)
+					if (
+						document
+							.elementFromPoint(x, y)
+							?.classList.contains("svelte-flow__pane")
+					)
+						return { x, y };
+			throw new Error("no empty background to pan from");
+		});
+		await page.mouse.move(bg.x, bg.y);
+		await page.mouse.down();
+		await page.mouse.move(bg.x - deficit, bg.y, { steps: 8 });
+		await page.mouse.up();
+		before = await snapOf(flow, id);
+	}
+	// The same node, grabbed where it is now, and the pointer really lands on it.
+	const grab = {
+		x: before.node.x + before.node.width / 2,
+		y: before.node.y + before.node.height / 2,
+	};
+	expect(
+		await page.evaluate(
+			([x, y]) =>
+				document
+					.elementFromPoint(x, y)
+					?.closest(".svelte-flow__node")
+					?.getAttribute("data-id"),
+			[grab.x, grab.y],
+		),
+	).toBe(id);
 	// Aimed inside the canvas (clear of its 40px auto-pan edge) and meaningfully beyond the old cluster, so the viewport stays put.
 	const target = {
 		x: right(before.pane) - 60,
