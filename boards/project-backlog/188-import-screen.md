@@ -1,17 +1,17 @@
 ---
-column: review
+column: done
 labels: [frontend, bug]
 priority: high
 agent: opus-coordinator
-live: true
-status: Reader and quality accepted; exact local gate next
-progress: 75
+live: false
+status: Delivered after exact merged-head postCI
+progress: 100
 clean-code-swept: true
-updatedAt: 2026-10-04T02:15:22.719636+00:00
+updatedAt: 2026-10-04T02:59:46.402406+00:00
 ---
 # Choose a file and recognise an import failure
 
-Milestone8 importer slice, existing GitHub #92 and #93. The file picker uses editor button colours/font with its native input still the focus target and a secondary filename; failures show the error codicon in its gutter with foreground message/plain URL. #94 copy is separate.
+Milestone8 importer slice, existing GitHub #92 and #93. The file picker uses editor button colours and interface font with its native input still the focus target and a secondary filename; failures show the error codicon in its gutter with foreground message/plain URL. #94 copy is separate.
 
 ## Checklist
 
@@ -20,16 +20,16 @@ Milestone8 importer slice, existing GitHub #92 and #93. The file picker uses edi
 - [x] Themed picker, native pointer/keyboard focus, cancellation/reselection/filename and actual load (native event/reset-state automation, no OS-dialog claim)
 - [x] Error icon, foreground message, plain URL, alert semantics and responsive fit
 - [x] Existing import announcements/focus/phone/nav behavior preserved (127 prior focused pass; final affected24 rerun)
-- [ ] Four readers, model pins and generated integrity preserved
+- [x] Four readers, model pins and generated integrity preserved
 
 ## Gates
 
 - [x] Meaningful red/green, owning coverage/typecheck and focused regressions (1323unit100/check0/0/current24browser/root24)
 - [x] Actual candidate acceptance matrix, source/bundle identity and cleanup (four actual cells/captures)
 - [x] Complete proportional quality once root ready (all8canonicalterminal; highest0.3/no blocker)
-- [ ] Unmodified whole gate on exact clean commit
-- [ ] Necessary exact-head pre/postCI, releasefalse and identical merged tree
-- [ ] #92/#93 individual closure after verified merge
+- [x] Unmodified whole gate on exact clean commit
+- [x] Necessary exact-head pre/postCI, releasefalse and identical merged tree
+- [x] #92/#93 individual closure after verified merge
 
 ## Comments
 
@@ -40,3 +40,5 @@ Milestone8 importer slice, existing GitHub #92 and #93. The file picker uses edi
 - **lead** (2026-10-04T02:06:21.647656+00:00): Native overlay/control/file-state and localtoken/errorrow outcome reviewed; root returned one captionfont mismatch against docs/design/design-language-v2.md:117. Correction meaningful1unit/4browser red→green; 1323unit100/check0/0/current24browser and rootindependent24green; four actualviewer cells, collective fourcapture inspections. Caption now matches URL/Load interfacefont. Prior127focusedpass retained with103unaffected notrerun. TrueOScancel/samefilededupe notclaimed; nativefilechooserevent/resetstate proof explicit. Complete10pathquality next; no gate/CI/merge/closure yet. Source packages/pages/src/app/ImportScreen.svelte:102 and packages/pages/src/app/ImportScreen.svelte:153.
 
 - **lead** (2026-10-04T02:15:22.719636+00:00): Complete8lens actualcanonical8endturn/terminal/10hashes accepted, highest0.3/nointroducedblock. Local smallProblems-row duplication retained byscope; no extraction/newissue. Actualdiffread/skilllocation/reportlimitations recorded; no fullunchangedmetadatahistory-read claim. Rootreaderreview/root24actualbrowser and recordtruth accepted. Doing-exitclean-code-swept true; exactcleancommit+wholegate/CI/merge/individualclosures pending.
+
+- **lead** (2026-10-04T02:54:19.462022+00:00): Unmodified gate on23c281af, identical mergeaf913078, exact pre/postCI37170929768/37171695891 accepted; native actual suites/Judge green, publish skipped. #92/#93 individually closed02:50:38Z/02:50:41Z. Four open remain. packages/pages/src/app/ImportScreen.svelte:102 and packages/pages/src/app/ImportScreen.svelte:153 delivered; automation limits retained.

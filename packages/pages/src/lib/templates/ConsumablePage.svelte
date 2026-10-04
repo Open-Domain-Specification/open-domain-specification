@@ -16,7 +16,7 @@ export const sectionsFor = (c: Consumable) => {
 			? { id: "raised", label: "Raised by" }
 			: { id: "raises", label: "Raises" },
 		{ id: "invariants", label: "Invariants" },
-		{ id: "policies", label: isEvent ? "Reacted to by" : "Issued by" },
+		{ id: "policies", label: isEvent ? "Reacted to by" : "Issued by policies" },
 		{ id: "processes", label: isEvent ? "Part of" : "Issued by processes" },
 		{ id: "consumers", label: "Consumed by" },
 		{ id: "comments", label: "Comments" },
