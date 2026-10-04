@@ -16,6 +16,7 @@ import {
 import { getDebug } from "./debug";
 import { graphIdentifier } from "./identifier";
 import { STEREOTYPES } from "./role-labels";
+import { spansWorkspaces } from "./spans-workspaces";
 import {
 	escapeHtml,
 	FONT,
@@ -90,9 +91,19 @@ function aggregateOf(node: ODSRelationMapNode) {
 	return node.namespace[node.namespace.length - 1];
 }
 
-function clusterLabel(node: ODSRelationMapNode): string {
-	const [, ...path] = node.namespace;
-	return path.map((it) => it.name).join(" / ");
+/**
+ * The context path of an aggregate, led by its workspace's name when the map
+ * draws aggregates of several: two files may both have a `Bank / Core / Ledger
+ * / Account`, and the workspace is the only thing that tells the clusters apart.
+ */
+function clusterLabel(
+	node: ODSRelationMapNode,
+	withWorkspace: boolean,
+): string {
+	const [workspace, ...path] = node.namespace;
+	return (withWorkspace ? [workspace, ...path] : path)
+		.map((it) => it.name)
+		.join(" / ");
 }
 
 function attributeRow(attribute: ODSRelationMapNode["attributes"][number]) {
@@ -150,10 +161,11 @@ function plantUmlEdge(edge: ODSRelationMapEdge): string {
 /** PlantUML class diagram source for the map, one package per aggregate. */
 export function relationMapToPlantUML(relationMap: ODSRelationMap): string {
 	const packages = new Map<string, { label: string; classes: string[] }>();
+	const withWorkspace = spansWorkspaces(relationMap.nodes.values());
 	for (const node of relationMap.nodes.values()) {
 		const aggregate = aggregateOf(node);
 		const group = packages.get(aggregate.id) ?? {
-			label: clusterLabel(node),
+			label: clusterLabel(node, withWorkspace),
 			classes: [],
 		};
 		group.classes.push(plantUmlClass(node));
@@ -188,13 +200,14 @@ export function relationMapToDigraph(relationMap: ODSRelationMap): {
 		stylesheet: STYLESHEET_ATTRIBUTE,
 	});
 
+	const withWorkspace = spansWorkspaces(relationMap.nodes.values());
 	for (const [id, node] of relationMap.nodes) {
 		const aggregate = aggregateOf(node);
 		let cluster = clusters.get(aggregate.id);
 		if (!cluster) {
 			cluster = new Subgraph(
 				graphIdentifier(aggregate.id),
-				namespaceCluster(clusterLabel(node)),
+				namespaceCluster(clusterLabel(node, withWorkspace)),
 			);
 			clusters.set(aggregate.id, cluster);
 			g.addSubgraph(cluster);

@@ -9,6 +9,7 @@ import { Workspace } from "@open-domain-specification/core";
 import type { Page } from "@playwright/test";
 import { exportSite } from "../dist/site.js";
 import { modelHash, serveModel } from "./helpers";
+import { northbankQuery, northbankSet, serveNorthbank } from "./northbank-set";
 
 /**
  * The three hosts a reader meets outside VS Code, for the specs that need a
@@ -27,7 +28,15 @@ export const READING_HOSTS: ReadingHost[] = [
 	"export-file",
 ];
 
+/**
+ * What an export holds: `monolith` is the frozen single-file original of
+ * NorthBank as one workspace (the baseline the one-workspace pages are held
+ * to), `set` is NorthBank as it ships, twelve files exported as one set.
+ */
+export type NorthbankKind = "monolith" | "set";
+
 export type NorthbankExport = {
+	kind: NorthbankKind;
 	dir: string;
 	origin: string;
 	stop: () => Promise<void>;
@@ -35,7 +44,7 @@ export type NorthbankExport = {
 
 const NORTHBANK = join(
 	__dirname,
-	"../../../models/northbank/.ods/northbank.json",
+	"../../../models/northbank/src/fixtures/northbank.monolith.json",
 );
 
 const freePort = () =>
@@ -60,23 +69,60 @@ async function listening(origin: string): Promise<void> {
 	throw new Error(`the static server at ${origin} never answered`);
 }
 
-/** Writes NorthBank's single-workspace static export and serves it on a free local port. */
-export async function startNorthbankExport(): Promise<NorthbankExport> {
+/**
+ * Writes NorthBank's static export and serves it on a free local port: the
+ * frozen single workspace by default, or the twelve files as one set.
+ */
+export async function startNorthbankExport(
+	kind: NorthbankKind = "monolith",
+): Promise<NorthbankExport> {
 	const dir = await mkdtemp(join(tmpdir(), "ods-reading-"));
-	const workspace = Workspace.fromSchema(
-		JSON.parse(readFileSync(NORTHBANK, "utf8")),
-	);
-	await exportSite({
-		appDir: join(__dirname, "../app"),
-		sources: [
-			{
+	if (kind === "set") {
+		const set = northbankSet();
+		const findings = set.validate();
+		await exportSite({
+			appDir: join(__dirname, "../app"),
+			sources: set.workspaces.map((workspace) => ({
 				workspace,
-				fileLabel: "northbank.json",
-				diagnostics: workspace.validate(),
-			},
-		],
-		outDir: dir,
-	});
+				fileLabel: workspace.file as string,
+				path: workspace.file as string,
+				set: "northbank",
+				diagnostics: findings.filter((d) => d.file === workspace.file),
+			})),
+			outDir: dir,
+		});
+	} else {
+		const workspace = Workspace.fromSchema(
+			JSON.parse(readFileSync(NORTHBANK, "utf8")),
+		);
+		await exportSite({
+			appDir: join(__dirname, "../app"),
+			sources: [
+				{
+					workspace,
+					fileLabel: "northbank-monolith.json",
+					diagnostics: workspace.validate(),
+				},
+			],
+			outDir: dir,
+		});
+	}
+	const served = await serveDir(dir);
+	return {
+		kind,
+		dir,
+		origin: served.origin,
+		stop: async () => {
+			await served.stop();
+			await rm(dir, { recursive: true, force: true });
+		},
+	};
+}
+
+/** Serves a folder on a free local port the way a static host would, until `stop` kills exactly that server. */
+export async function serveDir(
+	dir: string,
+): Promise<{ origin: string; stop: () => Promise<void> }> {
 	const port = await freePort();
 	const server: ChildProcess = spawn(
 		process.execPath,
@@ -86,24 +132,25 @@ export async function startNorthbankExport(): Promise<NorthbankExport> {
 	const origin = `http://localhost:${port}`;
 	await listening(origin);
 	return {
-		dir,
 		origin,
 		stop: async () => {
 			server.kill();
-			await rm(dir, { recursive: true, force: true });
 		},
 	};
 }
 
-/** NorthBank at `ref` ("" is the workspace) in `host`, with nothing focused. */
+/** NorthBank at `ref` ("" is the workspace, or the set's own page for a set export) in `host`, with nothing focused. */
 export async function openNorthbank(
 	page: Page,
 	host: ReadingHost,
 	ref: string,
 	site: NorthbankExport,
 ): Promise<void> {
-	if (host === "viewer") {
-		const url = await serveModel(page, "northbank");
+	if (host === "viewer" && site.kind === "set") {
+		await serveNorthbank(page);
+		await page.goto(`/${northbankQuery()}${modelHash(ref)}`);
+	} else if (host === "viewer") {
+		const url = await serveModel(page, "northbank-monolith");
 		await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(ref)}`);
 	} else if (host === "export-http") {
 		await page.goto(`${site.origin}/${modelHash(ref)}`);

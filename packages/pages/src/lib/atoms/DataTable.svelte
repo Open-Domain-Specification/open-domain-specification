@@ -45,7 +45,7 @@ import EmptyState from "./EmptyState.svelte";
  * Cells are the caller's: the `cell` snippet receives the row and the column,
  * so a name cell can be a lockup and a pattern cell a keyword without this
  * component knowing either. `rowId` gives each row an anchor so a ref inside
- * the page can scroll to it.
+ * the page can scroll to it; a row of another file has none (see `anchorOf`).
  *
  * A row may carry a `detail`: a second row under it spanning every column,
  * for the content that belongs to the row but not to any one cell — the
@@ -75,6 +75,7 @@ const {
 	detail,
 	hasDetail = () => true,
 	rowId,
+	rowKey,
 	sortValue = (row: T, key: string) =>
 		String((row as Record<string, unknown>)[key] ?? ""),
 	empty = "Nothing to show.",
@@ -88,6 +89,12 @@ const {
 	/** Which rows the detail row is drawn under; every row by default. */
 	hasDetail?: (row: T) => boolean;
 	rowId?: (row: T) => string | undefined;
+	/**
+	 * What tells one row from another when `rowId` cannot: a row of another
+	 * file may share a local ref with one of this page's own, so it has no
+	 * anchor, and the key still has to be unique. `rowId` by default.
+	 */
+	rowKey?: (row: T) => string;
 	sortValue?: (row: T, key: string) => string | number;
 	empty?: string;
 	caption?: string;
@@ -161,7 +168,7 @@ const ariaSort = (key: string) =>
 				{#if group.label}
 					<tr class="group"><th scope="rowgroup" colspan={columns.length}>{group.label}</th></tr>
 				{/if}
-				{#each ordered(group.rows) as row, i (rowId?.(row) ?? i)}
+				{#each ordered(group.rows) as row, i (rowKey?.(row) ?? rowId?.(row) ?? i)}
 					<tr id={rowId?.(row)}>
 						{#each columns as col (col.key)}
 							<td class:numeric={col.numeric} class:grow={col.key === growKey}>{@render cell(row, col)}</td>

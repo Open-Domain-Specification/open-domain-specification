@@ -7,12 +7,18 @@ title: Validation
 
 `workspace.validate()` checks the structural rules that DDD lets us verify
 without knowing the business, and returns a list of diagnostics with a
-severity, a rule id, a message and the ref of the element concerned.
+severity, a rule id, a message and the ref of the element concerned. A folder
+of workspace files is checked together with `WorkspaceSet.validate()`, which
+runs the same rules over every file at once, each diagnostic carrying the file
+it is about, and adds the two rules about a set that close the table. A
+workspace that belongs to a set answers `validate()` with that file's share of
+the set's diagnostics, since a rule about one file may need what another
+declares ([Sets of Workspaces](5-workspace-sets.md)).
 
 | Rule | Severity | Checks |
 | --- | --- | --- |
 | `ods-version` | error | the file states the ODS version it was written against and its major is this core's; the major is bumped by the decision that breaks the metamodel, so a file whose major differs — or that states none — was written against a model this reader does not read the same way, and used to fail as unresolved refs and rule errors that named the symptom. The file still loads and every other rule still runs |
-| `unresolved-ref` | error | every `$ref` a loaded file writes names something, and something the field it sits in can hold. The link is left unset and reported here rather than throwing, so one typo costs the author that diagnostic and not the whole file's |
+| `unresolved-ref` | error | every `$ref` a loaded file writes names something, and something the field it sits in can hold. A ref to another file is followed into exactly that file, and fails four ways, named in the message: the path is invalid, the file is not in the set, the file has no such element, or the element is the wrong kind. The link is left unset and reported here rather than throwing, so one typo costs the author that diagnostic and not the whole file's. In the four lists whose entry is the pair it joins, an entry whose ref has a path in front of its `#` is kept as written at its index; a local ref that names nothing is dropped on a save |
 | `unknown-field` | warning | every field a loaded file writes is one this metamodel knows; the model has no such element, see what it has instead. The field is dropped and reported rather than kept silently, and it stays dropped on the round trip |
 | `aggregate-root` | error / warning | exactly one root entity per aggregate of a context whose insides are knowable; a big ball of mud is exempt, since nobody can read it well enough to say what leads its clusters |
 | `cross-aggregate-reference` | error | relations into another aggregate are `references` to its root, or a kind of that root; a relation to a value object crosses no aggregate, since the context declares it |
@@ -81,8 +87,10 @@ severity, a rule id, a message and the ref of the element concerned.
 | `context-serves-subdomain` | warning | every bounded context serves at least one subdomain, except an external context, which was never in the problem-space view, and a shared kernel context, which is under all of its sharers' subdomains rather than serving one of its own |
 | `external-is-boundary` | error | an external context declares no aggregates, no policies, no processes and no internal operations or events, and is not a big ball of mud as well: one is somebody else's system, the other the enterprise's own. Its value objects may carry invariants, and it may state a context invariant marked `precondition` or `postcondition` on one of its own operations, or marked `postcondition` on one of its own events, because a published contract is citable — a webhook payload as much as an operation's answer. Such an invariant must name one of the context's own operations, or for a postcondition one of its own events, and may constrain an attribute of every named operation's published request for a precondition, or of every named operation's request, answer or refusal and every named event's payload for a postcondition; composition counts, but an external precondition does not borrow facts from that operation's internal calls; the context's own value objects remain in reach; an invariant with neither flag, one that names no operation or event of its own, or one that guards or constrains anything of another context, is refused |
 | `boundary-only-is-boundary` | error | a context marked `boundaryOnly` — one of ours, coherent as far as anyone knows, that nobody has interviewed yet — declares no aggregates, no policies, no processes and no context invariants, and is not `external` or a big ball of mud as well: the three flags are three different answers to who may change the system and what can be known of it. It states the consumables it offers and takes, the schemas they carry, its value objects and its glossary, and it serves subdomains and has a team like any context of ours; an `identifies` may name it or one of its schemas, no rule asks how it reacts or which of its operations calls out, and nothing consuming it is asked for an anti-corruption layer, because it is not a mess. The flag comes off the day the interview happens |
-| `comments-required` | warning | every context relationship carries a comment; opt in with `options.rules.commentsRequired` |
+| `comments-required` | warning | every context relationship carries a comment; opt in with `options.rules.commentsRequired`; the option belongs to the file that sets it, so another file of a set that does not ask is not asked |
 | `disposition-needs-comment` | warning | an intent whose disposition is `tolerated` or `refactor` carries at least one comment |
+| `file-path-invalid` | error | every file a host offers a set has a canonical, unique, relative path to a `.json` file inside the set's folder; a file whose path cannot be written in a ref, or that another file already has, is left out of the set and every ref that would have reached it is reported unresolved at the file that wrote it. Asked of a set, not of a workspace |
+| `workspace-id-unique` | error | every file of a set is a workspace with an id of its own; two files that claim one id cannot be told apart by a route, a folder of generated documentation or a cluster in a diagram, although their elements stay apart by file. Local element ids may still repeat across files. Asked of a set, not of a workspace |
 
 The UI reports the counts when a workspace is loaded and lists the
 diagnostics on the home page; the generated docs include them on the

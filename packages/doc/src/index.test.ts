@@ -12,10 +12,12 @@ import {
 	PATTERNS,
 	relationshipNarrative,
 	Workspace,
+	WorkspaceSet,
 } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
-import { toDoc } from "./index";
+import { toDoc, toDocSet } from "./index";
 import { pathToIndexMd } from "./lib/paths";
+import { northbankMonolith, northbankSet } from "./set.support";
 
 const petstoreSchema = JSON.parse(
 	readFileSync(
@@ -24,12 +26,6 @@ const petstoreSchema = JSON.parse(
 	),
 );
 const petstore = Workspace.fromSchema(petstoreSchema);
-const northbankSchema = JSON.parse(
-	readFileSync(
-		join(__dirname, "../../../models/northbank/.ods/northbank.json"),
-		"utf8",
-	),
-);
 
 describe("toDoc", () => {
 	it("writes distinct portable paths and links for adversarial identities", async () => {
@@ -115,8 +111,11 @@ describe("toDoc", () => {
 			rmSync(output, { recursive: true, force: true });
 		}
 	});
-	it("prints NorthBank aggregate rule timing before and after JSON round-trip", async () => {
-		const workspace = Workspace.fromSchema(northbankSchema);
+	// NorthBank is no longer one workspace: the standalone regression runs on
+	// the monolith the model froze, named as such, and the actual set is
+	// covered in set.test.ts and below.
+	it("prints aggregate rule timing of the frozen NorthBank monolith before and after JSON round-trip", async () => {
+		const workspace = northbankMonolith();
 		for (const model of [
 			workspace,
 			Workspace.fromSchema(workspace.toSchema()),
@@ -138,6 +137,41 @@ describe("toDoc", () => {
 			expect(card).toMatch(
 				/\| AuthWithinAvailableBalance \|[^\n]*\| Checked after \|/,
 			);
+		}
+	});
+
+	it("prints the same aggregate rule timing from the actual NorthBank set, in the folder of the file that holds each aggregate, before and after JSON round-trip", async () => {
+		const set = northbankSet();
+		const again = WorkspaceSet.fromSchemas(
+			[...set.toSchemas()].map(([file, schema]) => [
+				file,
+				JSON.parse(JSON.stringify(schema)),
+			]),
+		);
+		for (const model of [set, again]) {
+			const docs = await toDocSet(model);
+			const payment =
+				docs[
+					"payments.json/boundedcontexts/payments_hub/aggregates/payment_instruction/index.md"
+				];
+			const card =
+				docs["cards.json/boundedcontexts/cards/aggregates/card/index.md"];
+			expect(payment).toContain("| Name | Description | When | Constrains |");
+			expect(payment).toMatch(
+				/\| FundsAvailableAtInitiation \|[^\n]*\| Checked before \|/,
+			);
+			expect(payment).toMatch(
+				/\| PayerNotPayee \|[^\n]*\| Holds after every change \|/,
+			);
+			expect(card).toMatch(
+				/\| AuthWithinAvailableBalance \|[^\n]*\| Checked after \|/,
+			);
+			// No page of a set is written where a lone workspace's would be.
+			expect(
+				docs[
+					"boundedcontexts/payments_hub/aggregates/payment_instruction/index.md"
+				],
+			).toBeUndefined();
 		}
 	});
 

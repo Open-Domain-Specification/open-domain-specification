@@ -4,6 +4,7 @@ import {
 	constrainableLabel,
 	type Diagnostic,
 	type Invariant,
+	identityKeyOf,
 	invariantTimingLabel,
 } from "@open-domain-specification/core";
 import type { Column } from "../atoms/DataTable.svelte";
@@ -70,16 +71,16 @@ const columns = $derived<Column[]>([
 	<DataTable {columns} rows={invariants} rowId={(i) => i.ref} empty={emptyText}>
 		{#snippet cell(i, col)}
 			{#if col.key === "name"}
-				<Lockup kind="invariant" name={i.name} ref={i.ref} />
+				<Lockup kind="invariant" name={i.name} ref={i} />
 			{:else if col.key === "timing"}
 				<Keyword text={invariantTimingLabel(i)} />
 			{:else if col.key === "owner"}
 				{#if i.boundedcontext !== ownerRelativeTo && i.owner !== i.boundedcontext}
-					<Lockup kind="boundedcontext" name={i.boundedcontext.name} ref={i.boundedcontext.ref} />{" / "}
+					<Lockup kind="boundedcontext" name={i.boundedcontext.name} ref={i.boundedcontext} />{" / "}
 				{/if}
-				<Lockup kind={kindOf(i.owner)} name={i.owner.name} ref={i.owner.ref} />
+				<Lockup kind={kindOf(i.owner)} name={i.owner.name} ref={i.owner} />
 			{:else if col.key === "constrains"}
-				{#each i.targets as t, n (t.ref)}{#if n}{", "}{/if}<Ref ref={t.ref} label={constrainableLabel(t)} />{:else}<Keyword text={WHOLE[i.kind]} />{/each}
+				{#each i.targets as t, n (identityKeyOf(t))}{#if n}{", "}{/if}<Ref ref={t} label={constrainableLabel(t)} />{:else}<Keyword text={WHOLE[i.kind]} />{/each}
 			{:else}
 				{i.description}
 			{/if}

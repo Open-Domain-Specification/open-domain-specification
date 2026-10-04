@@ -1,0 +1,722 @@
+{
+  "$schema": "./schema.json",
+  "id": "northbank_payments",
+  "name": "NorthBank Payments",
+  "description": "NorthBank's Payments Team: the payments hub, the ISO 13616 standard it conforms to, and the Money Movement domain.",
+  "version": "1.0.0",
+  "odsVersion": "3.0.0",
+  "primaryColor": "#1d4ed8",
+  "domains": {
+    "money_movement": {
+      "name": "Money Movement",
+      "description": "Instructions in, settlements out",
+      "subdomains": {
+        "payments": {
+          "name": "Payments",
+          "type": "supporting",
+          "description": "The hub between customers and the schemes"
+        },
+        "scheme_connectivity": {
+          "name": "Scheme Connectivity",
+          "type": "generic",
+          "description": "Gateways in the schemes' formats"
+        }
+      }
+    }
+  },
+  "boundedcontexts": {
+    "payments_hub": {
+      "name": "Payments Hub",
+      "description": "Instructions scored, submitted, settled and posted",
+      "subdomains": [
+        {
+          "$ref": "#/domains/money_movement/subdomains/payments"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/payments_team"
+      },
+      "aggregates": {
+        "payment_instruction": {
+          "name": "PaymentInstruction",
+          "description": "A customer telling the bank to pay a payee an amount on a date",
+          "provides": {
+            "payment_initiated": {
+              "name": "PaymentInitiated",
+              "description": "A customer asked to pay; fraud scores it next",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments_hub/schemas/payment_event"
+              }
+            },
+            "payment_submitted": {
+              "name": "PaymentSubmitted",
+              "description": "Cleared and ready for the scheme",
+              "type": "event",
+              "internal": true
+            },
+            "payment_settled": {
+              "name": "PaymentSettled",
+              "description": "The scheme confirmed; the ledger posts",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments_hub/schemas/payment_event"
+              }
+            },
+            "payment_rejected": {
+              "name": "PaymentRejected",
+              "description": "Flagged or refused by the scheme",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments_hub/schemas/payment_event"
+              }
+            },
+            "submit_payment": {
+              "name": "SubmitPayment",
+              "description": "Mark cleared and hand to the gateway",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_submitted"
+                }
+              ]
+            },
+            "confirm_settlement": {
+              "name": "ConfirmSettlement",
+              "description": "Record the scheme's confirmation",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled"
+                }
+              ]
+            },
+            "reject_payment": {
+              "name": "RejectPayment",
+              "description": "Reject a flagged or scheme-refused instruction",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_rejected"
+                }
+              ]
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "payment_instruction": {
+              "name": "PaymentInstruction",
+              "description": "One instruction, from initiation to settlement or rejection",
+              "root": true,
+              "attributes": {
+                "instruction_id": {
+                  "name": "instructionId",
+                  "type": "string",
+                  "identity": true
+                },
+                "payer_account_id": {
+                  "name": "payerAccountId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "accounts.json#/boundedcontexts/accounts/aggregates/account/entities/account"
+                  }
+                },
+                "amount": {
+                  "name": "amount",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "core_banking.json#/boundedcontexts/ledger/valueobjects/money"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "PaymentStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/payment_status"
+                  }
+                },
+                "payee": {
+                  "name": "payee",
+                  "type": "Payee",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
+                  }
+                },
+                "execution_date": {
+                  "name": "executionDate",
+                  "type": "ExecutionDate",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/execution_date"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
+                  },
+                  "relation": "uses",
+                  "label": "to",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/execution_date"
+                  },
+                  "relation": "uses",
+                  "label": "on",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/payment_status"
+                  },
+                  "relation": "uses",
+                  "label": "has-status",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "invariants": {
+            "payer_not_payee": {
+              "name": "PayerNotPayee",
+              "description": "The payer and payee accounts differ",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
+                }
+              ]
+            },
+            "amount_positive": {
+              "name": "AmountPositive",
+              "description": "The amount is greater than zero",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
+                }
+              ]
+            },
+            "cut_off_respected": {
+              "name": "CutOffRespected",
+              "description": "A same-day instruction is initiated before the scheme cut-off",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/valueobjects/execution_date"
+                }
+              ]
+            },
+            "flagged_never_submitted": {
+              "name": "FlaggedNeverSubmitted",
+              "description": "A flagged instruction is rejected; it never reaches a scheme",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/valueobjects/payment_status"
+                }
+              ]
+            },
+            "funds_available_at_initiation": {
+              "name": "FundsAvailableAtInitiation",
+              "description": "An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
+              "precondition": true,
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
+                },
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/initiate_payment"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "invariants": {
+        "daily_limit": {
+          "name": "DailyLimit",
+          "description": "InitiatePayment refuses an instruction that would take the payer account over its daily limit, summing the day's instructions for that account before it acts. Checked, not held: no single instruction can see the others, so two arriving together can both pass the sum",
+          "constrains": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
+            },
+            {
+              "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/initiate_payment"
+            }
+          ]
+        }
+      },
+      "services": {
+        "payments_app": {
+          "name": "PaymentsApp",
+          "description": "The hub's application service: the boundary channels initiate payments through, and the one that calls the scheme, the ledger and fraud",
+          "type": "application",
+          "provides": {
+            "initiate_payment": {
+              "name": "InitiatePayment",
+              "description": "Create an instruction from a channel, once AccountServicing confirms the available balance covers it and the daily limit holds",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments_hub/schemas/initiate_payment"
+              },
+              "rejects": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/schemas/instruction_refused"
+                }
+              ],
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_initiated"
+                }
+              ]
+            },
+            "send_to_scheme": {
+              "name": "SendToScheme",
+              "description": "Hand a submitted instruction to the gateway, by calling SubmitToScheme",
+              "type": "operation",
+              "internal": true
+            },
+            "post_settlement": {
+              "name": "PostSettlement",
+              "description": "Post the settled instruction to the ledger, through the ACL over PostEntry",
+              "type": "operation",
+              "internal": true
+            },
+            "score_instruction": {
+              "name": "ScoreInstruction",
+              "description": "Send an initiated instruction to Fraud for a verdict, through the ACL",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "accounts.json#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/initiate_payment"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "scheme_connectivity.json#/boundedcontexts/scheme_gateway/services/scheme_gateway_app/provides/submit_to_scheme"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/send_to_scheme"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "core_banking.json#/boundedcontexts/ledger/services/ledger_app/provides/post_entry"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/post_settlement"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "scheme_connectivity.json#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_accepted"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/processes/instruction_lifecycle"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "scheme_connectivity.json#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_declined"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/processes/instruction_lifecycle"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "financial_crime.json#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/score_instruction"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "policies": {},
+      "processes": {
+        "instruction_lifecycle": {
+          "name": "Instruction lifecycle",
+          "description": "From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme through the gateway, in the scheme's own format, and the process then waits again, this time for the gateway to republish the scheme's own confirmation or rejection as its own settlement or refusal fact, once the scheme has answered on its own timings. A settlement settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the gateway's republished fact both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
+          "starts": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_initiated"
+            }
+          ],
+          "on": [
+            {
+              "$ref": "scheme_connectivity.json#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_accepted"
+            },
+            {
+              "$ref": "scheme_connectivity.json#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_declined"
+            },
+            {
+              "$ref": "financial_crime.json#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction/returns"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/send_to_scheme"
+            },
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/confirm_settlement"
+            },
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/reject_payment"
+            },
+            {
+              "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/post_settlement"
+            },
+            {
+              "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/score_instruction"
+            },
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/submit_payment"
+            }
+          ],
+          "ends": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled"
+            },
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_rejected"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "instruction": {
+          "name": "Instruction",
+          "definition": "A customer's request to pay. Cards say payment and mean a card transaction; branches say transfer",
+          "aliases": [
+            "Payment",
+            "Transfer"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction"
+          }
+        },
+        "payee": {
+          "name": "Payee",
+          "definition": "Who gets paid: a name and an IBAN",
+          "aliases": [
+            "Beneficiary"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
+          }
+        },
+        "party": {
+          "name": "Party",
+          "definition": "Either side of an instruction, payer or payee. The payer is a Customer & KYC customer; the payee may be anyone with an IBAN",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction"
+          }
+        },
+        "settlement": {
+          "name": "Settlement",
+          "definition": "The scheme's confirmation that the money moved",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled"
+          }
+        }
+      },
+      "valueobjects": {
+        "payee": {
+          "name": "Payee",
+          "description": "Name and IBAN of who gets paid; a value because the same details are the same payee",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "iban": {
+              "name": "iban",
+              "type": "IBAN",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/iso_13616/valueobjects/iban"
+              }
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "execution_date": {
+          "name": "ExecutionDate",
+          "description": "When to send it; today means before the scheme cut-off",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "date"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "payment_status": {
+          "name": "PaymentStatus",
+          "description": "initiated, cleared, flagged, submitted, settled, rejected",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'initiated' | 'cleared' | 'flagged' | 'submitted' | 'settled' | 'rejected'"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
+      "schemas": {
+        "initiate_payment": {
+          "name": "InitiatePayment",
+          "attributes": {
+            "payer_account_id": {
+              "name": "payerAccountId",
+              "type": "string",
+              "identifies": {
+                "$ref": "accounts.json#/boundedcontexts/accounts/aggregates/account/entities/account"
+              }
+            },
+            "payee": {
+              "name": "payee",
+              "type": "Payee",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
+              }
+            },
+            "amount": {
+              "name": "amount",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "core_banking.json#/boundedcontexts/ledger/valueobjects/money"
+              }
+            },
+            "execution_date": {
+              "name": "executionDate",
+              "type": "ExecutionDate",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/payments_hub/valueobjects/execution_date"
+              }
+            }
+          }
+        },
+        "instruction_refused": {
+          "name": "InstructionRefused",
+          "description": "Why an instruction was not created: over the daily limit, not covered, or past the cut-off",
+          "attributes": {
+            "reason": {
+              "name": "reason",
+              "type": "string"
+            },
+            "payer_account_id": {
+              "name": "payerAccountId",
+              "type": "string",
+              "identifies": {
+                "$ref": "accounts.json#/boundedcontexts/accounts/aggregates/account/entities/account"
+              }
+            },
+            "remaining_today": {
+              "name": "remainingToday",
+              "type": "Money",
+              "optional": true,
+              "valueobject": {
+                "$ref": "core_banking.json#/boundedcontexts/ledger/valueobjects/money"
+              }
+            }
+          }
+        },
+        "payment_event": {
+          "name": "PaymentEvent",
+          "description": "Instruction id, amount and payee; shared by the payment events",
+          "attributes": {
+            "instruction_id": {
+              "name": "instructionId",
+              "type": "string",
+              "identity": true
+            },
+            "payer_account_id": {
+              "name": "payerAccountId",
+              "type": "string",
+              "identifies": {
+                "$ref": "accounts.json#/boundedcontexts/accounts/aggregates/account/entities/account"
+              }
+            },
+            "amount": {
+              "name": "amount",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "core_banking.json#/boundedcontexts/ledger/valueobjects/money"
+              }
+            },
+            "payee": {
+              "name": "payee",
+              "type": "Payee",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
+              }
+            }
+          }
+        }
+      }
+    },
+    "iso_13616": {
+      "name": "ISO 13616",
+      "description": "The international bank account number standard. Published, not run by anyone here; the bank conforms to it wherever it names an account outside its own walls",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {},
+      "policies": {},
+      "processes": {},
+      "glossary": {},
+      "valueobjects": {
+        "iban": {
+          "name": "IBAN",
+          "description": "Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "string (ISO 13616)"
+            }
+          },
+          "relations": [],
+          "invariants": {
+            "iban_checksum_valid": {
+              "name": "IbanChecksumValid",
+              "description": "The IBAN's mod-97 checksum holds, or the value is not an IBAN at all",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/iso_13616/valueobjects/iban/attributes/value"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "schemas": {}
+    }
+  },
+  "relationships": [
+    {
+      "type": "customer-supplier",
+      "upstream": {
+        "$ref": "core_banking.json#/boundedcontexts/ledger"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments_hub"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Payments posts through the ledger API and is consulted on changes"
+    },
+    {
+      "type": "customer-supplier",
+      "upstream": {
+        "$ref": "financial_crime.json#/boundedcontexts/fraud"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments_hub"
+      },
+      "upstreamRoles": [
+        "open-host-service",
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Payments waits on the scorer and is consulted on its contract"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "scheme_connectivity.json#/boundedcontexts/scheme_gateway"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments_hub"
+      },
+      "upstreamRoles": [
+        "open-host-service",
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "You don't negotiate with a scheme"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "accounts.json#/boundedcontexts/accounts"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments_hub"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The funds check before an instruction exists"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/iso_13616"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments_hub"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "A payee is named by an IBAN, in the standard's form; the hub validates it before an instruction exists"
+    }
+  ],
+  "teams": {
+    "payments_team": {
+      "name": "Payments Team",
+      "description": "The payments hub"
+    }
+  }
+}

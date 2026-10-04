@@ -3,15 +3,19 @@ import * as vscode from "vscode";
 import { locateRef } from "./locate";
 import type { OdsProject, WorkspaceFile } from "./project";
 
+function positionAt(text: string, offset: number): vscode.Position {
+	const before = text.slice(0, offset);
+	const line = before.split("\n").length - 1;
+	return new vscode.Position(line, offset - (before.lastIndexOf("\n") + 1));
+}
+
 /** Converts a span from locateRef into an editor range for the file's current text. */
 export function rangeOfRef(file: WorkspaceFile, ref: string): vscode.Range {
-	const { start, end } = locateRef(file.text, ref);
-	const position = (offset: number) => {
-		const before = file.text.slice(0, offset);
-		const line = before.split("\n").length - 1;
-		return new vscode.Position(line, offset - (before.lastIndexOf("\n") + 1));
-	};
-	return new vscode.Range(position(start), position(end));
+	const { start, end } = locateRef(file.text, ref, file.relativePath);
+	return new vscode.Range(
+		positionAt(file.text, start),
+		positionAt(file.text, end),
+	);
 }
 
 function severityOf(d: Diagnostic): vscode.DiagnosticSeverity {
@@ -39,15 +43,21 @@ export class OdsDiagnostics implements vscode.Disposable {
 		for (const file of this.project.files.values()) {
 			const entries: vscode.Diagnostic[] = [];
 			if (file.error) {
-				entries.push(
-					new vscode.Diagnostic(
-						new vscode.Range(0, 0, 0, 0),
-						`Workspace file could not be loaded: ${file.error}`,
-						vscode.DiagnosticSeverity.Error,
-					),
+				// At the place the JSON broke when it is known, else the top of the file.
+				const at = file.errorOffset ?? 0;
+				const position = positionAt(file.text, at);
+				const entry = new vscode.Diagnostic(
+					new vscode.Range(position, position),
+					`Workspace file could not be loaded: ${file.error}`,
+					vscode.DiagnosticSeverity.Error,
 				);
+				entry.source = "ods";
+				entry.code = "file-not-loaded";
+				entries.push(entry);
 			}
-			const model = file.workspace?.validate() ?? [];
+			// Findings about this file, judged by the whole set it belongs to. A
+			// file that did not load has none: what it shows is its own error.
+			const model = this.project.diagnosticsOf(file);
 			this.byFile.set(file.uri.toString(), model);
 			for (const d of model) {
 				const entry = new vscode.Diagnostic(
@@ -59,6 +69,15 @@ export class OdsDiagnostics implements vscode.Disposable {
 				entry.code = d.rule;
 				entries.push(entry);
 			}
+			const failure = this.project.validationErrorOf(file);
+			if (failure && !file.error)
+				entries.push(
+					new vscode.Diagnostic(
+						new vscode.Range(0, 0, 0, 0),
+						`Validation could not run: ${failure}. Report this; the findings for this folder are missing.`,
+						vscode.DiagnosticSeverity.Error,
+					),
+				);
 			this.collection.set(file.uri, entries);
 		}
 	}

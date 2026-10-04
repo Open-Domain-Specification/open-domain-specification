@@ -5,11 +5,14 @@ import path from "node:path";
 import {
 	type BoundedContext,
 	Workspace,
+	WorkspaceSet,
 } from "@open-domain-specification/core";
 import {
 	pathToGlossaryMd,
 	pathToIndexMd,
+	placed,
 	toDoc,
+	toDocSet,
 } from "@open-domain-specification/doc";
 
 const require = createRequire(import.meta.url);
@@ -36,17 +39,7 @@ export async function generate(
 		console.log(`  [${d.severity}] ${d.rule}: ${d.message} (${d.ref})`);
 	}
 
-	const docs = await toDoc(workspace);
-	const docsDir = path.join(root, "docs");
-	const nextDir = path.join(root, "docs.next");
-	fs.rmSync(nextDir, { recursive: true, force: true });
-	for (const [docFile, content] of Object.entries(docs)) {
-		const target = path.join(nextDir, docFile);
-		fs.mkdirSync(path.dirname(target), { recursive: true });
-		fs.writeFileSync(target, content, "utf-8");
-	}
-	fs.rmSync(docsDir, { recursive: true, force: true });
-	fs.renameSync(nextDir, docsDir);
+	writeDocs(await toDoc(workspace), root);
 
 	const odsDir = path.join(root, ".ods");
 	fs.mkdirSync(odsDir, { recursive: true });
@@ -64,6 +57,74 @@ export async function generate(
 		"@open-domain-specification/core/dist/workspace.schema.json",
 	);
 	fs.copyFileSync(coreSchema, path.join(odsDir, "schema.json"));
+}
+
+/**
+ * Replaces `<root>/docs` with `docs`, the site a generator returned: it is
+ * written beside the old one first and swapped in once every file is down, so a
+ * page for an element the model no longer has cannot outlive it and a failed
+ * write leaves the old site as it was.
+ */
+function writeDocs(docs: Record<string, string>, root: string): void {
+	const docsDir = path.join(root, "docs");
+	const nextDir = path.join(root, "docs.next");
+	fs.rmSync(nextDir, { recursive: true, force: true });
+	for (const [docFile, content] of Object.entries(docs)) {
+		const target = path.join(nextDir, docFile);
+		fs.mkdirSync(path.dirname(target), { recursive: true });
+		fs.writeFileSync(target, content, "utf-8");
+	}
+	fs.rmSync(docsDir, { recursive: true, force: true });
+	fs.renameSync(nextDir, docsDir);
+}
+
+/** Code point order, which is the one order every reader gives a folder. */
+const byCodePoint = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * Reads a folder of workspace files as a host does: every `.json` file under
+ * it but a `schema.json`, at any depth, named by its path relative to the
+ * folder with `/` separators, in code point order of that path. A file's
+ * `$schema` pointer is an editor hint and is left out. Nothing here is a
+ * manifest: the folder listing is the set.
+ */
+export function readSetFolder(folder: string): WorkspaceSet {
+	const files = fs
+		.readdirSync(folder, { recursive: true, withFileTypes: true })
+		.filter((it) => it.isFile() && it.name.endsWith(".json"))
+		.filter((it) => it.name !== "schema.json")
+		.map((it) =>
+			path
+				.relative(folder, path.join(it.parentPath, it.name))
+				.split(path.sep)
+				.join("/"),
+		)
+		.sort(byCodePoint);
+	return WorkspaceSet.fromSchemas(
+		files.map((file) => {
+			const { $schema: _schema, ...schema } = JSON.parse(
+				fs.readFileSync(path.join(folder, file), "utf-8"),
+			);
+			return [file, schema];
+		}),
+	);
+}
+
+/**
+ * Writes `<root>/docs` for the set of workspace files in `<root>/.ods`, the
+ * way `generate` writes it for one workspace. The set is read back from the
+ * folder rather than taken from the DSL that wrote it, so the site shows the
+ * model as every other reader of the folder sees it, in the same order.
+ * Returns the set it documented.
+ */
+export async function generateSetDocs({
+	root = ".",
+}: {
+	root?: string;
+} = {}): Promise<WorkspaceSet> {
+	const set = readSetFolder(path.join(root, ".ods"));
+	writeDocs(await toDocSet(set), root);
+	return set;
 }
 
 /**
@@ -200,22 +261,22 @@ function resolveFrom(from: string, destination: string): string {
 /** The `index.md` (and, for the workspace, `glossary.md`) pages toDoc emits. */
 function expectedPages(workspace: Workspace): string[] {
 	const pages = [
-		pathToIndexMd(workspace.path),
-		pathToGlossaryMd(workspace.path),
+		pathToIndexMd(placed(workspace)),
+		pathToGlossaryMd(placed(workspace)),
 	];
 	for (const domain of workspace.domains.values()) {
-		pages.push(pathToIndexMd(domain.path));
+		pages.push(pathToIndexMd(placed(domain)));
 		for (const subdomain of domain.subdomains.values()) {
-			pages.push(pathToIndexMd(subdomain.path));
+			pages.push(pathToIndexMd(placed(subdomain)));
 		}
 	}
 	for (const context of workspace.boundedcontexts.values()) {
-		pages.push(pathToIndexMd(context.path));
+		pages.push(pathToIndexMd(placed(context)));
 		for (const aggregate of context.aggregates.values()) {
-			pages.push(pathToIndexMd(aggregate.path));
+			pages.push(pathToIndexMd(placed(aggregate)));
 		}
 		for (const service of context.services.values()) {
-			pages.push(pathToIndexMd(service.path));
+			pages.push(pathToIndexMd(placed(service)));
 		}
 	}
 	return pages;
@@ -226,24 +287,24 @@ function expectedPages(workspace: Workspace): string[] {
  * glossary, then each domain, its subdomains, and every context under each
  * subdomain it serves; contexts serving no subdomain hang off the workspace.
  */
-function expectedSidebar(workspace: Workspace): SidebarEntry[] {
+function expectedSidebar(workspace: Workspace, base = 0): SidebarEntry[] {
 	const entry = (depth: number, label: string, file: string): SidebarEntry => ({
-		depth,
+		depth: base + depth,
 		label,
 		href: `/${file}`,
 	});
 
 	const contextEntry = (context: BoundedContext, depth: number) =>
-		entry(depth, context.name, pathToIndexMd(context.path));
+		entry(depth, context.name, pathToIndexMd(placed(context)));
 
 	const entries: SidebarEntry[] = [
-		entry(0, workspace.name, pathToIndexMd(workspace.path)),
-		entry(1, "Glossary", pathToGlossaryMd(workspace.path)),
+		entry(0, workspace.name, pathToIndexMd(placed(workspace))),
+		entry(1, "Glossary", pathToGlossaryMd(placed(workspace))),
 	];
 	for (const domain of workspace.domains.values()) {
-		entries.push(entry(1, domain.name, pathToIndexMd(domain.path)));
+		entries.push(entry(1, domain.name, pathToIndexMd(placed(domain))));
 		for (const subdomain of domain.subdomains.values()) {
-			entries.push(entry(2, subdomain.name, pathToIndexMd(subdomain.path)));
+			entries.push(entry(2, subdomain.name, pathToIndexMd(placed(subdomain))));
 			for (const context of subdomain.boundedcontexts.values()) {
 				entries.push(contextEntry(context, 3));
 			}
@@ -340,9 +401,53 @@ export async function assertDocSite(
 	workspace: Workspace,
 ): Promise<Record<string, string>> {
 	const docs = await toDoc(workspace);
+	assertSite(docs, [workspace], expectedSidebar(workspace));
+	return docs;
+}
+
+/**
+ * What {@link assertDocSite} asserts, for the site `toDocSet` generates for a
+ * set of several workspaces: every workspace of every file has its pages in the
+ * folder of its file, no page is generated for anything else but the first
+ * page that lists the files, every relative link and image resolves, and
+ * `_sidebar.md` leads with the list of workspaces and then navigates each
+ * workspace depth-first, one level below it, in the order the set holds them.
+ */
+export async function assertDocSiteSet(
+	set: WorkspaceSet,
+): Promise<Record<string, string>> {
+	const docs = await toDocSet(set);
+	checkDocSiteSet(set, docs);
+	return docs;
+}
+
+/** The checks of {@link assertDocSiteSet} against a site already generated for `set`. */
+export function checkDocSiteSet(
+	set: WorkspaceSet,
+	docs: Record<string, string>,
+): void {
+	assertSite(
+		docs,
+		set.workspaces,
+		[
+			{ depth: 0, label: "Workspaces", href: "/index.md" },
+			...set.workspaces.flatMap((it) => expectedSidebar(it, 1)),
+		],
+		["index.md"],
+	);
+	for (const file of ["index.html", "contextmap.svg"])
+		assert.ok(docs[file], `${file} was not generated`);
+}
+
+function assertSite(
+	docs: Record<string, string>,
+	workspaces: ReadonlyArray<Workspace>,
+	sidebar: SidebarEntry[],
+	extraPages: string[] = [],
+): void {
 	const files = new Set(Object.keys(docs));
 
-	const pages = expectedPages(workspace);
+	const pages = [...extraPages, ...workspaces.flatMap(expectedPages)];
 	assertNoProblems(
 		"pages missing from the generated site",
 		pages.filter((page) => !files.has(page)),
@@ -360,8 +465,7 @@ export async function assertDocSite(
 	assert.ok(docs[SIDEBAR], "_sidebar.md was not generated");
 	assert.deepStrictEqual(
 		parseSidebar(docs[SIDEBAR]),
-		expectedSidebar(workspace),
+		sidebar,
 		"_sidebar.md does not navigate the workspace tree depth-first",
 	);
-	return docs;
 }

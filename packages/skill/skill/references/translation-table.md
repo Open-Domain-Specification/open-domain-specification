@@ -6,6 +6,7 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | What they say | ODS element | JSON | DSL |
 |---|---|---|---|
 | "the system for X", "our platform" | Workspace | top-level `name`, `description` | `new Workspace(name, {...})` |
+| "each team keeps its own model", "one repository or file per team" | One workspace file per team in the `.ods` folder, which together are a set; contexts reach each other's elements by file-qualified refs | `.ods/<team>.json`, a ref `<relative path>#/...` | `WorkspaceSet.fromWorkspaces([[file, ws], ...])` |
 | "the business areas", "departments", "lines of business" | Domain | `domains.<id>` | `ws.addDomain(name, {description})` |
 | "the part that handles Y", "the Y job" | Subdomain | `domains.<d>.subdomains.<id>` | `domain.addSubdomain(name, {type, description})` |
 | "what makes us different", "our secret sauce" | subdomain type | `"type": "core"` | `type: "core"` |

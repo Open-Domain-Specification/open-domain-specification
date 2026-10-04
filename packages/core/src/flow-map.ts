@@ -15,6 +15,8 @@ import {
 	type ProcessTrigger,
 	type Workspace,
 } from "./workspace";
+import type { WorkspaceSet } from "./workspace-set";
+import { identityKeyOf } from "./workspace-set";
 
 /**
  * The reactive flow through a scope, walked from its policies and processes
@@ -234,6 +236,11 @@ export class ODSFlowMap {
 		return ODSFlowMap.fromScope(ScopeManager.fromWorkspace(workspace));
 	}
 
+	/** The reactions of every file of a set as one chain, steps told apart by file. */
+	static fromSet(set: WorkspaceSet) {
+		return ODSFlowMap.fromScope(ScopeManager.fromSet(set));
+	}
+
 	static fromBoundedContext(boundedcontext: BoundedContext) {
 		return ODSFlowMap.fromScope(
 			ScopeManager.fromBoundedContext(boundedcontext),
@@ -249,7 +256,7 @@ export class ODSFlowMap {
  */
 function nodeFor(step: Reactor): ODSFlowMapNode {
 	const shared = {
-		id: step.ref,
+		id: identityKeyOf(step),
 		name: step.name,
 		description: step.description,
 	};
@@ -265,7 +272,7 @@ function nodeFor(step: Reactor): ODSFlowMapNode {
 		type: step.type === "event" ? "event" : "command",
 		namespace: [
 			...contextMemberNamespace(provider),
-			{ id: provider.ref, name: provider.name },
+			{ id: identityKeyOf(provider), name: provider.name },
 		],
 	};
 }
@@ -341,15 +348,15 @@ export type ODSFlowMapDeadline = {
 
 function answerOf(answer: Answer): ODSFlowMapAnswer {
 	return {
-		operation: answer.operation.ref,
+		operation: identityKeyOf(answer.operation),
 		outcome: answer.completion
 			? "completes"
 			: answer.rejection
 				? "rejects"
 				: "returns",
-		...(answer.schema && { schema: answer.schema.ref }),
+		...(answer.schema && { schema: identityKeyOf(answer.schema) }),
 		...(answer.reason && { reason: answer.reason }),
-		ref: answer.ref,
+		ref: identityKeyOf(answer),
 		name: answer.name,
 		origin: triggerReading(answer, "origin"),
 		context: triggerReading(answer, "context"),
@@ -369,7 +376,7 @@ function anchorOf(
 
 function deadlineOf(deadline: Deadline): ODSFlowMapDeadline {
 	return {
-		ref: deadline.ref,
+		ref: identityKeyOf(deadline),
 		id: deadline.id,
 		name: deadline.name,
 		after: deadline.after,

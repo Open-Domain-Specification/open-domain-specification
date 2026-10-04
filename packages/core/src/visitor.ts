@@ -18,8 +18,14 @@ import type {
 	ValueObject,
 	Workspace,
 } from "./workspace";
+import type { WorkspaceSet } from "./workspace-set";
 
 export interface Visitor {
+	/**
+	 * Optional, so a visitor written for one workspace stays valid: a set is
+	 * then visited as each of its workspaces in turn.
+	 */
+	visitWorkspaceSet?(node: WorkspaceSet): void;
 	visitWorkspace(node: Workspace): void;
 	visitDomain(node: Domain): void;
 	visitSubdomain(node: Subdomain): void;
@@ -53,7 +59,7 @@ export abstract class AbstractVisitor implements Visitor {
 	 * This prevents cycles in the traversal.
 	 * @private
 	 */
-	private readonly seen = new Set<string>();
+	private readonly seen = new Set<object>();
 
 	protected constructor(opts?: AbstractVisitorOptions) {
 		this.followRelations = !!opts?.followRelations;
@@ -66,10 +72,11 @@ export abstract class AbstractVisitor implements Visitor {
 	 * @param node - The node to mark, must have a `ref` property.
 	 */
 	protected mark(node: { ref?: string }): boolean {
-		const key = node?.ref;
-		if (!key) return false;
-		if (this.seen.has(key)) return true;
-		this.seen.add(key);
+		if (!node?.ref) return false;
+		// By the node itself, never by its ref: two workspaces of a set each
+		// hold a node with the same local ref, and both are to be visited.
+		if (this.seen.has(node)) return true;
+		this.seen.add(node);
 		return false;
 	}
 
@@ -80,6 +87,16 @@ export abstract class AbstractVisitor implements Visitor {
 	 */
 	protected before(_: Visitable) {}
 	protected after(_: Visitable) {}
+
+	/**
+	 * Visits a WorkspaceSet and, by default, each workspace of it in the order
+	 * the set holds them. A visitor that means one workspace keeps working on
+	 * that workspace; one that means the set overrides this.
+	 * @param node - The WorkspaceSet to visit.
+	 */
+	visitWorkspaceSet(node: WorkspaceSet): void {
+		for (const workspace of node.workspaces) workspace.accept(this);
+	}
 
 	/**
 	 * Visits a Workspace node and traverses its domains.

@@ -14,6 +14,7 @@ import {
 } from "ts-graphviz";
 import { getDebug } from "./debug";
 import { graphIdentifier } from "./identifier";
+import { spansWorkspaces } from "./spans-workspaces";
 
 const debug = getDebug("flow-map");
 
@@ -49,11 +50,15 @@ export function flowMapToDigraph(flowMap: ODSFlowMap): {
 	const g = new Digraph({ layout: "dot", rankdir: "LR", nodesep: 0.4 });
 	const nodes = new Map<string, Node>();
 
+	// Two files may both have a `Posted` of a `Payments` or a `React`, so a map
+	// across files says which file each node is in.
+	const across = spansWorkspaces(flowMap.nodes.values());
 	for (const [id, node] of flowMap.nodes) {
 		const owner = node.namespace[node.namespace.length - 1]?.name ?? "";
+		const workspace = across ? `\nin ${node.namespace[0]?.name ?? ""}` : "";
 		const graphvizNode = new Node(graphIdentifier(id), {
 			...NODE_STYLES[node.type],
-			label: isReaction(node) ? node.name : `${node.name}\n(${owner})`,
+			label: `${isReaction(node) ? node.name : `${node.name}\n(${owner})`}${workspace}`,
 			tooltip: node.description,
 			style: "filled",
 			fontname: "sans-serif",

@@ -15,6 +15,7 @@ import {
 	identityCrossings,
 	identityNamed,
 } from "./identity-crossings";
+import type { SetPath } from "./path-codec";
 import { reactionRings } from "./reaction-rings";
 import {
 	callsOut,
@@ -24,6 +25,7 @@ import {
 	reachedEvents,
 } from "./reaction-walk";
 import { ODS_VERSION, RelationType, type UpstreamRole } from "./schema";
+import { type Scope, scopeAround, soloScope } from "./scope";
 import {
 	Aggregate,
 	Answer,
@@ -33,6 +35,7 @@ import {
 	type Constrainable,
 	Consumable,
 	Consumption,
+	type ConsumptionCaller,
 	ContextRelationship,
 	constrainableLabel,
 	DataSchema,
@@ -45,9 +48,12 @@ import {
 	Process,
 	type ProcessTrigger,
 	type Service,
+	type UnresolvedReference,
 	ValueObject,
 	type Workspace,
+	workspaceOf,
 } from "./workspace";
+import { identityKeyOf, setFaults, type WorkspaceSet } from "./workspace-set";
 
 export type DiagnosticSeverity = "error" | "warning";
 
@@ -60,7 +66,17 @@ export type Diagnostic = {
 	ref: string;
 };
 
-type Rule = (workspace: Workspace) => Diagnostic[];
+/**
+ * A diagnostic together with the element it is about. A rule reports the
+ * element, not the file, because two files may each hold an element with the
+ * same ref; the file is read off the element afterwards (see
+ * {@link validateSet}).
+ */
+type Finding = Diagnostic & { at: object };
+
+type Rule = (scope: Scope) => Finding[];
+
+const identityOf = identityKeyOf;
 
 /**
  * The contexts whose insides the model states, which is every context we are
@@ -69,13 +85,12 @@ type Rule = (workspace: Workspace) => Diagnostic[];
  * aggregates, entities, invariants, policies and processes stay quiet rather
  * than repeating it element by element (decision 28).
  */
-function* modelledContexts(workspace: Workspace): Iterable<BoundedContext> {
-	for (const bc of workspace.boundedcontexts.values())
-		if (!bc.external) yield bc;
+function* modelledContexts(scope: Scope): Iterable<BoundedContext> {
+	for (const bc of scope.contexts()) if (!bc.external) yield bc;
 }
 
-function* aggregatesOf(workspace: Workspace): Iterable<Aggregate> {
-	for (const bc of modelledContexts(workspace)) yield* bc.aggregates.values();
+function* aggregatesOf(scope: Scope): Iterable<Aggregate> {
+	for (const bc of modelledContexts(scope)) yield* bc.aggregates.values();
 }
 
 /**
@@ -101,14 +116,14 @@ function* aggregatesOf(workspace: Workspace): Iterable<Aggregate> {
  * which is what petstore's Identity context did by calling itself a mess to
  * escape these rules (decision 28, sixth amendment; card 132).
  */
-function* knowableContexts(workspace: Workspace): Iterable<BoundedContext> {
-	for (const bc of modelledContexts(workspace))
+function* knowableContexts(scope: Scope): Iterable<BoundedContext> {
+	for (const bc of modelledContexts(scope))
 		if (!bc.bigBallOfMud && !bc.boundaryOnly) yield bc;
 }
 
 /** The aggregates of the contexts whose insides are knowable. */
-function* knowableAggregatesOf(workspace: Workspace): Iterable<Aggregate> {
-	for (const bc of knowableContexts(workspace)) yield* bc.aggregates.values();
+function* knowableAggregatesOf(scope: Scope): Iterable<Aggregate> {
+	for (const bc of knowableContexts(scope)) yield* bc.aggregates.values();
 }
 
 /**
@@ -117,8 +132,8 @@ function* knowableAggregatesOf(workspace: Workspace): Iterable<Aggregate> {
  * they are checked; only the entities inside an aggregate we do not own are
  * left alone.
  */
-function* modelMembersOf(workspace: Workspace): Iterable<Entity | ValueObject> {
-	for (const bc of workspace.boundedcontexts.values()) {
+function* modelMembersOf(scope: Scope): Iterable<Entity | ValueObject> {
+	for (const bc of scope.contexts()) {
 		yield* bc.valueobjects.values();
 		if (bc.external) continue;
 		for (const aggregate of bc.aggregates.values())
@@ -128,14 +143,14 @@ function* modelMembersOf(workspace: Workspace): Iterable<Entity | ValueObject> {
 
 /** The attribute-owner walk of one context, with the context it is in. */
 function* attributeOwnersOf(
-	workspace: Workspace,
+	scope: Scope,
 ): Iterable<{ owner: AttributeOwner; context: BoundedContext }> {
-	for (const context of workspace.boundedcontexts.values())
+	for (const context of scope.contexts())
 		for (const owner of attributeOwnersIn(context)) yield { owner, context };
 }
 
-function* relationsOf(workspace: Workspace): Iterable<EntityRelation> {
-	for (const member of modelMembersOf(workspace)) yield* member.relations;
+function* relationsOf(scope: Scope): Iterable<EntityRelation> {
+	for (const member of modelMembersOf(scope)) yield* member.relations;
 }
 
 /**
@@ -148,8 +163,8 @@ function aggregateOfEnd(member: Entity | ValueObject): Aggregate | undefined {
 }
 
 /** Every process of the contexts whose insides the model states. */
-function* processesOf(workspace: Workspace): Iterable<Process> {
-	for (const bc of modelledContexts(workspace)) yield* bc.processes.values();
+function* processesOf(scope: Scope): Iterable<Process> {
+	for (const bc of modelledContexts(scope)) yield* bc.processes.values();
 }
 
 /**
@@ -225,8 +240,8 @@ function reactorLabel(reactor: Policy | Process): string {
 	return reactor instanceof Process ? "Process" : "Policy";
 }
 
-function* consumptionsOf(workspace: Workspace): Iterable<Consumption> {
-	for (const bc of workspace.boundedcontexts.values()) {
+function* consumptionsOf(scope: Scope): Iterable<Consumption> {
+	for (const bc of scope.contexts()) {
 		for (const member of [...bc.aggregates.values(), ...bc.services.values()]) {
 			yield* member.consumptions;
 		}
@@ -238,9 +253,9 @@ function* consumptionsOf(workspace: Workspace): Iterable<Consumption> {
  * are knowable; a big ball of mud may name a cluster without naming what leads
  * it (see {@link knowableContexts}).
  */
-const aggregateRoot: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const aggregate of knowableAggregatesOf(workspace)) {
+const aggregateRoot: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const aggregate of knowableAggregatesOf(scope)) {
 		const roots = Array.from(aggregate.entities.values()).filter((e) => e.root);
 		if (roots.length === 1) continue;
 		diagnostics.push({
@@ -251,6 +266,7 @@ const aggregateRoot: Rule = (workspace) => {
 					? `Aggregate "${aggregate.name}" has no root entity`
 					: `Aggregate "${aggregate.name}" has ${roots.length} root entities; an aggregate has exactly one`,
 			ref: aggregate.ref,
+			at: aggregate,
 		});
 	}
 	return diagnostics;
@@ -280,9 +296,9 @@ function reachedAsRoot(member: Entity | ValueObject): boolean {
  * relation crosses exactly what the parent's crosses, and is reported once,
  * against the parent that declares it.
  */
-const crossAggregateReference: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const relation of relationsOf(workspace)) {
+const crossAggregateReference: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const relation of relationsOf(scope)) {
 		const source = aggregateOfEnd(relation.source);
 		const target = aggregateOfEnd(relation.target);
 		if (!source || !target || source === target) continue;
@@ -292,6 +308,7 @@ const crossAggregateReference: Rule = (workspace) => {
 				rule: "cross-aggregate-reference",
 				message: `"${relation.source.name}" ${relation.relation} "${relation.target.name}" in another aggregate; across aggregates only "references" is allowed`,
 				ref: relation.source.ref,
+				at: relation.source,
 			});
 		} else if (!reachedAsRoot(relation.target)) {
 			diagnostics.push({
@@ -299,6 +316,7 @@ const crossAggregateReference: Rule = (workspace) => {
 				rule: "cross-aggregate-reference",
 				message: `"${relation.source.name}" references "${relation.target.name}", which is neither the root of aggregate "${target.name}" nor a kind of that root; reference "${target.name}" by its root's identity, holding "${relation.target.name}"'s id beside it when the child is what you mean`,
 				ref: relation.source.ref,
+				at: relation.source,
 			});
 		}
 	}
@@ -329,9 +347,9 @@ const crossAggregateReference: Rule = (workspace) => {
  * boundary is still refused, and the fix names the two honest routes: borrow
  * the value where the model lets you, or hold an entity's identity.
  */
-const crossContextRelation: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const relation of relationsOf(workspace)) {
+const crossContextRelation: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const relation of relationsOf(scope)) {
 		const source = relation.source.boundedcontext;
 		const target = relation.target.boundedcontext;
 		if (source === target) continue;
@@ -339,7 +357,7 @@ const crossContextRelation: Rule = (workspace) => {
 		if (
 			value &&
 			relation.relation === RelationType.Uses &&
-			mayBorrowFrom(workspace, source, target)
+			mayBorrowFrom(scope, source, target)
 		)
 			continue;
 		const fix = value
@@ -350,6 +368,7 @@ const crossContextRelation: Rule = (workspace) => {
 			rule: "cross-context-relation",
 			message: `"${relation.source.name}" in "${source.name}" ${relation.relation} "${relation.target.name}" in "${target.name}"; ${fix}`,
 			ref: relation.source.ref,
+			at: relation.source,
 		});
 	}
 	return diagnostics;
@@ -414,9 +433,9 @@ const crossContextRelation: Rule = (workspace) => {
  * workspace does not have: one built against another workspace, or dropped
  * since, where the id reaches nothing.
  */
-const identifiesEntity: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const { owner } of attributeOwnersOf(workspace)) {
+const identifiesEntity: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const { owner } of attributeOwnersOf(scope)) {
 		for (const attribute of owner.attributes.values()) {
 			const target = attribute.identifies;
 			if (!target) continue;
@@ -428,6 +447,7 @@ const identifiesEntity: Rule = (workspace) => {
 					rule: "identifies-entity",
 					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of bounded context "${target.name}", which is neither external, nor a big ball of mud, nor modelled at its boundary only; a context whose insides the model states has the entity the id is of, so name that entity instead`,
 					ref: attribute.ref,
+					at: attribute,
 				});
 				continue;
 			}
@@ -442,15 +462,22 @@ const identifiesEntity: Rule = (workspace) => {
 					rule: "identifies-entity",
 					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of schema "${target.name}" of bounded context "${target.boundedcontext.name}", which is neither external nor modelled at its boundary only; a published schema is a kind the model names where it does not state the entity behind it, so name the entity the id is of instead`,
 					ref: attribute.ref,
+					at: attribute,
 				});
 				continue;
 			}
-			if (workspace.getEntityByRef(target.ref) !== target) {
+			const home = workspaceOf(target);
+			if (
+				!home ||
+				!scope.workspaces.includes(home) ||
+				home.getEntityByRef(target.ref) !== target
+			) {
 				diagnostics.push({
 					severity: "error",
 					rule: "identifies-entity",
 					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of "${target.name}", which is not an entity of this workspace; an identity names an entity here, root or child, and a child is reached through its root, or an external context when the id belongs to a system whose entities are not ours to state`,
 					ref: attribute.ref,
+					at: attribute,
 				});
 			}
 		}
@@ -464,9 +491,9 @@ const identifiesEntity: Rule = (workspace) => {
  * mud is exempt, as it is from `aggregate-root`: nobody can read its keys
  * either (see {@link knowableContexts}).
  */
-const rootIdentity: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const aggregate of knowableAggregatesOf(workspace)) {
+const rootIdentity: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const aggregate of knowableAggregatesOf(scope)) {
 		for (const root of aggregate.entities.values()) {
 			if (!root.root) continue;
 			const identified = Array.from(root.attributes.values()).some(
@@ -478,6 +505,7 @@ const rootIdentity: Rule = (workspace) => {
 				rule: "root-identity",
 				message: `Root entity "${root.name}" of aggregate "${aggregate.name}" declares no identity attribute, so nothing says which "${root.name}" a reference means`,
 				ref: root.ref,
+				at: root,
 			});
 		}
 	}
@@ -501,9 +529,9 @@ const rootIdentity: Rule = (workspace) => {
  * say which column tells one of its rows from another, and asking only invites
  * an invented key (see {@link knowableContexts}).
  */
-const entityIdentity: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const aggregate of knowableAggregatesOf(workspace)) {
+const entityIdentity: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const aggregate of knowableAggregatesOf(scope)) {
 		for (const entity of aggregate.entities.values()) {
 			if (entity.root) continue;
 			const identified = entity.allAttributes.some((a) => a.identity);
@@ -513,6 +541,7 @@ const entityIdentity: Rule = (workspace) => {
 				rule: "entity-identity",
 				message: `Entity "${entity.name}" in aggregate "${aggregate.name}" declares no identity attribute; an entity is what you tell apart from another holding the same values, so without one "${entity.name}" is a value object`,
 				ref: entity.ref,
+				at: entity,
 			});
 		}
 	}
@@ -534,9 +563,9 @@ const entityIdentity: Rule = (workspace) => {
  * entity's id, as an attribute with `identifies`, which is how anything crosses
  * to an entity it does not own (decision 14).
  */
-const valueObjectShape: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+const valueObjectShape: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of scope.contexts()) {
 		for (const vo of bc.valueobjects.values()) {
 			for (const attribute of vo.attributes.values()) {
 				if (!attribute.identity) continue;
@@ -545,6 +574,7 @@ const valueObjectShape: Rule = (workspace) => {
 					rule: "value-object-shape",
 					message: `Value object "${vo.name}" marks attribute "${attribute.name}" as an identity; two value objects with the same values are the same value, so it has no identity of its own`,
 					ref: vo.ref,
+					at: vo,
 				});
 			}
 			for (const relation of vo.relations) {
@@ -554,6 +584,7 @@ const valueObjectShape: Rule = (workspace) => {
 						rule: "value-object-shape",
 						message: `Value object "${vo.name}" ${relation.relation} entity "${relation.target.name}"; a value is a value of something and nothing is reached through it, so a value object relates only to other values — hold "${relation.target.name}"'s id as an attribute with identifies instead`,
 						ref: vo.ref,
+						at: vo,
 					});
 					continue;
 				}
@@ -566,6 +597,7 @@ const valueObjectShape: Rule = (workspace) => {
 							? `Value object "${vo.name}" includes "${relation.target.name}"; only an entity owns the lifecycle of what it includes, so "${vo.name}" uses "${relation.target.name}" instead`
 							: `Value object "${vo.name}" references "${relation.target.name}"; a reference holds another aggregate's identity and a value has none, so "${vo.name}" uses "${relation.target.name}" instead`,
 					ref: vo.ref,
+					at: vo,
 				});
 			}
 		}
@@ -582,9 +614,9 @@ const valueObjectShape: Rule = (workspace) => {
  * or reached at all, and the element has no identity — it is a value object, or
  * the model is missing the attribute that really identifies it.
  */
-const identityNotOptional: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const { owner } of attributeOwnersOf(workspace)) {
+const identityNotOptional: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const { owner } of attributeOwnersOf(scope)) {
 		for (const attribute of owner.attributes.values()) {
 			if (!attribute.identity || !attribute.optional) continue;
 			diagnostics.push({
@@ -592,6 +624,7 @@ const identityNotOptional: Rule = (workspace) => {
 				rule: "identity-not-optional",
 				message: `"${owner.name}" marks attribute "${attribute.name}" as both an identity and optional; an identity that may be missing cannot say which "${owner.name}" a reference means`,
 				ref: attribute.ref,
+				at: attribute,
 			});
 		}
 	}
@@ -599,8 +632,8 @@ const identityNotOptional: Rule = (workspace) => {
 };
 
 /** Everything that says it is a kind of something else (decision 22). */
-function* subtypesOf(workspace: Workspace): Iterable<Entity | ValueObject> {
-	for (const member of modelMembersOf(workspace))
+function* subtypesOf(scope: Scope): Iterable<Entity | ValueObject> {
+	for (const member of modelMembersOf(scope))
 		if (member.specialises) yield member;
 }
 
@@ -622,9 +655,9 @@ function* subtypesOf(workspace: Workspace): Iterable<Entity | ValueObject> {
  * written at all (decision 03, amendment of 2026-09-10). All three reach in
  * one direction only, downstream.
  */
-const specialisationInBoundary: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const member of subtypesOf(workspace)) {
+const specialisationInBoundary: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const member of subtypesOf(scope)) {
 		const parent = member.specialises;
 		if (!parent) continue;
 		if (member instanceof Entity) {
@@ -634,17 +667,19 @@ const specialisationInBoundary: Rule = (workspace) => {
 				rule: "specialisation-in-boundary",
 				message: `"${member.name}" in aggregate "${member.aggregate.name}" is a kind of "${parent.name}", which is not an entity of that aggregate; an entity is a kind of an entity of its own aggregate, since both are saved through the same root`,
 				ref: member.ref,
+				at: member,
 			});
 			continue;
 		}
 		const context = member.boundedcontext;
 		const owner = parent.boundedcontext;
-		if (owner === context || mayBorrowFrom(workspace, context, owner)) continue;
+		if (owner === context || mayBorrowFrom(scope, context, owner)) continue;
 		diagnostics.push({
 			severity: "error",
 			rule: "specialisation-in-boundary",
 			message: `"${member.name}" in "${context.name}" is a kind of "${parent.name}" in "${owner.name}", which "${context.name}" neither shares a kernel with, conforms to, nor is the customer of; a value object is a kind of one its own context declares, or of one it borrows through a shared kernel, as a conformist, or as the customer of a customer-supplier relationship with the context that owns it`,
 			ref: member.ref,
+			at: member,
 		});
 	}
 	return diagnostics;
@@ -655,17 +690,18 @@ const specialisationInBoundary: Rule = (workspace) => {
  * has no attributes anybody can list and no page anybody can read to the end,
  * and the model has lost the concept the chain was meant to refine.
  */
-const specialisationCycle: Rule = (workspace) => {
+const specialisationCycle: Rule = (scope) => {
 	const rings = cyclesOf(
-		modelMembersOf(workspace),
+		modelMembersOf(scope),
 		(member) => (member.specialises ? [member.specialises] : []),
-		(member) => member.ref,
+		identityOf,
 	);
 	return rings.map((ring) => ({
 		severity: "error" as const,
 		rule: "specialisation-cycle",
 		message: `${ring.map((it) => `"${it.name}"`).join(" is a kind of ")} is a kind of "${ring[0].name}"; a chain of kinds ends at the thing every one of them is, so nothing is a kind of itself`,
 		ref: ring[0].ref,
+		at: ring[0],
 	}));
 };
 
@@ -675,15 +711,16 @@ const specialisationCycle: Rule = (workspace) => {
  * that root is reached through it: naming two roots would leave a reference
  * unable to say which of them it lands on.
  */
-const specialisationNotRoot: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const member of subtypesOf(workspace)) {
+const specialisationNotRoot: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const member of subtypesOf(scope)) {
 		if (!(member instanceof Entity) || !member.root) continue;
 		diagnostics.push({
 			severity: "error",
 			rule: "specialisation-not-root",
 			message: `"${member.name}" is a kind of "${member.specialises?.name}" and is also marked the root of aggregate "${member.aggregate.name}"; an aggregate has one root, and a kind of it is reached through that root`,
 			ref: member.ref,
+			at: member,
 		});
 	}
 	return diagnostics;
@@ -695,9 +732,9 @@ const specialisationNotRoot: Rule = (workspace) => {
  * description, or the kind's — and whichever the answer, one of the two is
  * saying something the model never asked for.
  */
-const specialisationRedeclares: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const member of subtypesOf(workspace)) {
+const specialisationRedeclares: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const member of subtypesOf(scope)) {
 		// Nearest parent first, so the origin named is the one a reader meets
 		// first walking up the chain.
 		const inherited = new Map<string, Attribute>();
@@ -712,6 +749,7 @@ const specialisationRedeclares: Rule = (workspace) => {
 				rule: "specialisation-redeclares",
 				message: `"${member.name}" declares attribute "${attribute.name}", which it already has from "${already.owner.name}"; a kind adds to what it is a kind of and never restates it, or a reader cannot tell which of the two applies`,
 				ref: attribute.ref,
+				at: attribute,
 			});
 		}
 	}
@@ -755,9 +793,9 @@ function saysWhatItPointsAt(relation: EntityRelation): boolean {
  * the instance tree a tree is the code's job, not the model's. Relations that
  * leave the aggregate belong to `cross-aggregate-reference`.
  */
-const aggregateTree: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const member of modelMembersOf(workspace)) {
+const aggregateTree: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const member of modelMembersOf(scope)) {
 		for (const relation of member.relations) {
 			if (!saysWhatItPointsAt(relation)) continue;
 			if (relation.relation === "uses") {
@@ -767,6 +805,7 @@ const aggregateTree: Rule = (workspace) => {
 					rule: "aggregate-tree",
 					message: `"${member.name}" uses "${relation.target.name}", which is an entity; "uses" points at a value object, and an entity the aggregate owns is included`,
 					ref: member.ref,
+					at: member,
 				});
 				continue;
 			}
@@ -789,10 +828,11 @@ const aggregateTree: Rule = (workspace) => {
 				rule: "aggregate-tree",
 				message: `"${member.name}" ${relation.relation} "${relation.target.name}", which is a value object; ${said}. A value object is used`,
 				ref: member.ref,
+				at: member,
 			});
 		}
 	}
-	for (const aggregate of aggregatesOf(workspace)) {
+	for (const aggregate of aggregatesOf(scope)) {
 		diagnostics.push(...orphanEntities(aggregate));
 	}
 	return diagnostics;
@@ -807,7 +847,7 @@ const aggregateTree: Rule = (workspace) => {
  * an instance of the kind is an instance of that entity — a kind of the root
  * is reached through the root (decision 22).
  */
-function orphanEntities(aggregate: Aggregate): Diagnostic[] {
+function orphanEntities(aggregate: Aggregate): Finding[] {
 	const roots = Array.from(aggregate.entities.values()).filter((e) => e.root);
 	if (roots.length === 0) return [];
 	const reached = new Set<Entity>();
@@ -832,6 +872,7 @@ function orphanEntities(aggregate: Aggregate): Diagnostic[] {
 				.map((r) => `"${r.name}"`)
 				.join(" or ")}, so nothing inside the boundary can get to it`,
 			ref: entity.ref,
+			at: entity,
 		}));
 }
 
@@ -867,19 +908,20 @@ function cardinalityDiagnostics(
 	member: Entity | ValueObject,
 	attribute: Attribute,
 	relation: EntityRelation,
-): Diagnostic[] {
+): Finding[] {
 	const cardinality = relation.cardinality;
 	if (!cardinality) return [];
 	const target = relation.target.name;
 	const says = (what: string) =>
 		`"${member.name}" types attribute "${attribute.name}" ${what} but its "uses" relation to "${target}" has cardinality "${cardinality}"`;
-	const diagnostics: Diagnostic[] = [];
+	const diagnostics: Finding[] = [];
 	const warn = (message: string) =>
 		diagnostics.push({
 			severity: "warning" as const,
 			rule: "attribute-relation-coherence",
 			message,
 			ref: member.ref,
+			at: member,
 		});
 	if (attribute.type.trim().endsWith("[]")) {
 		if (cardinality === "1" || cardinality === "0..1") {
@@ -941,9 +983,9 @@ function cardinalityDiagnostics(
  * Only what the member declares itself is reported, so a parent's own mismatch
  * is one diagnostic on the parent rather than one per kind of it.
  */
-const attributeRelationCoherence: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const member of modelMembersOf(workspace)) {
+const attributeRelationCoherence: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const member of modelMembersOf(scope)) {
 		for (const attribute of member.attributes.values()) {
 			const vo = attribute.valueobject;
 			if (!vo) continue;
@@ -957,6 +999,7 @@ const attributeRelationCoherence: Rule = (workspace) => {
 					rule: "attribute-relation-coherence",
 					message: `"${member.name}" types attribute "${attribute.name}" by value object "${vo.name}", and ${candidates.length} "uses" relations point at "${vo.name}" with none of them declaring \`for: "${attribute.name}"\`; where one value object is used twice each relation names the attribute it draws`,
 					ref: member.ref,
+					at: member,
 				});
 				continue;
 			}
@@ -982,6 +1025,7 @@ const attributeRelationCoherence: Rule = (workspace) => {
 						? `"${member.name}" uses "${target.name}" but no attribute of "${member.name}" is typed by "${target.name}", so the page says the relation exists and never shows where`
 						: `"${member.name}" uses "${target.name}" ${siblings.length} time${siblings.length === 1 ? "" : "s"} and this relation draws ${relation.for ? `\`for: "${relation.for}"\`` : "no named attribute"}, which is no attribute of "${member.name}" typed by "${target.name}"; where one value object is used twice each relation names the attribute it draws with \`for\``,
 				ref: member.ref,
+				at: member,
 			});
 		}
 	}
@@ -998,9 +1042,9 @@ const attributeRelationCoherence: Rule = (workspace) => {
  * as the subtype's own (decision 22), so a kind may draw an attribute its
  * parent declares.
  */
-const relationForResolves: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const member of modelMembersOf(workspace)) {
+const relationForResolves: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const member of modelMembersOf(scope)) {
 		for (const relation of member.relations) {
 			if (!relation.for) continue;
 			if (member.allAttributes.some((a) => a.name === relation.for)) continue;
@@ -1009,6 +1053,7 @@ const relationForResolves: Rule = (workspace) => {
 				rule: "relation-for-resolves",
 				message: `"${member.name}" relates to "${relation.target.name}" for attribute "${relation.for}", which is no attribute of "${member.name}"`,
 				ref: member.ref,
+				at: member,
 			});
 		}
 	}
@@ -1028,9 +1073,9 @@ const relationForResolves: Rule = (workspace) => {
  * boundary's vocabulary inside the model it exists to protect. Composition
  * with a schema is a schema's own business.
  */
-const attributeOneShape: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const { owner } of attributeOwnersOf(workspace)) {
+const attributeOneShape: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const { owner } of attributeOwnersOf(scope)) {
 		for (const attribute of owner.attributes.values()) {
 			if (attribute.valueobject && attribute.schema) {
 				diagnostics.push({
@@ -1038,6 +1083,7 @@ const attributeOneShape: Rule = (workspace) => {
 					rule: "attribute-one-shape",
 					message: `"${owner.name}" types attribute "${attribute.name}" by both value object "${attribute.valueobject.name}" and schema "${attribute.schema.name}"; an attribute has one shape`,
 					ref: attribute.ref,
+					at: attribute,
 				});
 				continue;
 			}
@@ -1047,6 +1093,7 @@ const attributeOneShape: Rule = (workspace) => {
 					rule: "attribute-one-shape",
 					message: `"${owner.name}" types attribute "${attribute.name}" by schema "${attribute.schema.name}", which is a payload shape at the context's boundary; an entity or value object names a value object instead`,
 					ref: attribute.ref,
+					at: attribute,
 				});
 			}
 		}
@@ -1166,7 +1213,7 @@ function guardGraph(guard: Consumable): {
 	const operations = new Set<Consumable>([guard]);
 	const callers = new Map<Consumable, Set<Consumable>>();
 	const unattributed = new Set<Consumable>();
-	const foreignReactors = [...bc.workspace.boundedcontexts.values()]
+	const foreignReactors = [...scopeAround(bc.workspace).contexts()]
 		.filter((it) => it !== bc)
 		.flatMap(reactorsOf);
 	const queue = [guard];
@@ -1612,9 +1659,9 @@ function valueObjectsHeldIn(
  * (decision 28, third amendment).
  */
 function* valueObjectInvariantsOf(
-	workspace: Workspace,
+	scope: Scope,
 ): Iterable<[ValueObject, Invariant]> {
-	for (const bc of workspace.boundedcontexts.values())
+	for (const bc of scope.contexts())
 		for (const vo of bc.valueobjects.values())
 			for (const invariant of vo.invariants.values()) yield [vo, invariant];
 }
@@ -1664,15 +1711,16 @@ function compositionReachOf(vo: ValueObject): Set<Constrainable> {
  * something the value cannot see, and that rule belongs to the aggregate or
  * the context (decision 27, amended 2026-09-10).
  */
-const invariantInValueObject: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const [vo, invariant] of valueObjectInvariantsOf(workspace)) {
+const invariantInValueObject: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const [vo, invariant] of valueObjectInvariantsOf(scope)) {
 		if (invariant.precondition || invariant.postcondition)
 			diagnostics.push({
 				severity: "error",
 				rule: "invariant-in-value-object",
 				message: `Invariant "${invariant.name}" of value object "${vo.name}" sets call timing; a value's rule holds by construction and cannot be a precondition or postcondition. Move a rule about a call to the aggregate or context that owns it`,
 				ref: invariant.ref,
+				at: invariant,
 			});
 		const reach = compositionReachOf(vo);
 		for (const target of invariant.targets) {
@@ -1682,6 +1730,7 @@ const invariantInValueObject: Rule = (workspace) => {
 				rule: "invariant-in-value-object",
 				message: `Invariant "${invariant.name}" of value object "${vo.name}" constrains "${constrainableLabel(target)}", which is neither an attribute of "${vo.name}" nor one of a value "${vo.name}" is made of; a value's rule holds by construction of that value and reaches only along what it composes`,
 				ref: invariant.ref,
+				at: invariant,
 			});
 		}
 	}
@@ -1709,10 +1758,10 @@ function outsideAggregate(
 		return `${service.type === "application" ? "an application" : "a domain"} service's, on "${service.name}" in bounded context "${service.boundedcontext.name}"`;
 	const schema = schemaOf(target);
 	if (schema) return schemaAttributeRefusal(schema, invariant);
-	const scope = scopeOf(target);
+	const home = scopeOf(target);
 	return `in ${
-		scope
-			? `${scope instanceof Aggregate ? "aggregate" : "bounded context"} "${scope.name}"`
+		home
+			? `${home instanceof Aggregate ? "aggregate" : "bounded context"} "${home.name}"`
 			: "no aggregate at all"
 	}`;
 }
@@ -1773,15 +1822,15 @@ function outsideAggregate(
  * were given, fetched or delivered, is a fact we hold, and their model is not
  * (decision 19, amendments of 2026-09-10, second and third).
  */
-const invariantInAggregate: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const aggregate of aggregatesOf(workspace)) {
+const invariantInAggregate: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const aggregate of aggregatesOf(scope)) {
 		if (aggregate.invariants.size === 0) continue;
 		const held = valueObjectsHeldIn(aggregate);
 		for (const invariant of aggregate.invariants.values()) {
 			for (const target of invariant.targets) {
 				const vo = valueObjectOf(target);
-				const scope = scopeOf(target);
+				const home = scopeOf(target);
 				// A value object is asked one question and no other: does
 				// anything inside this aggregate hold one? Its scope is the
 				// context whichever context declared it, so reading the scope
@@ -1790,8 +1839,7 @@ const invariantInAggregate: Rule = (workspace) => {
 				if (vo) {
 					if (held.has(vo)) continue;
 				} else {
-					if (scope === aggregate || scope === aggregate.boundedcontext)
-						continue;
+					if (home === aggregate || home === aggregate.boundedcontext) continue;
 					if (guardedByService(target, aggregate.boundedcontext)) continue;
 					if (inGuardedShapes(target, invariant)) continue;
 				}
@@ -1800,6 +1848,7 @@ const invariantInAggregate: Rule = (workspace) => {
 					rule: "invariant-in-aggregate",
 					message: `Invariant "${invariant.name}" of aggregate "${aggregate.name}" constrains "${constrainableLabel(target)}", which is ${outsideAggregate(target, aggregate, invariant)}; an aggregate's rule stays within its boundary, whether held on save, checked before a call, or guaranteed of its answer. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched, and the payload of the event the reactor issuing it heard`,
 					ref: invariant.ref,
+					at: invariant,
 				});
 			}
 		}
@@ -1809,9 +1858,9 @@ const invariantInAggregate: Rule = (workspace) => {
 
 /** Every invariant a bounded context owns, in declaration order. */
 function* contextInvariantsOf(
-	workspace: Workspace,
+	scope: Scope,
 ): Iterable<[BoundedContext, Invariant]> {
-	for (const bc of modelledContexts(workspace))
+	for (const bc of modelledContexts(scope))
 		for (const invariant of bc.invariants.values()) yield [bc, invariant];
 }
 
@@ -1851,10 +1900,10 @@ function contextOf(target: Constrainable): BoundedContext | undefined {
  * service that stores nothing — states the contract of its own operation that
  * way, which is the only home it has for one (decision 27, third amendment).
  */
-const invariantInContext: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
+const invariantInContext: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
 	const heldIn = new Map<BoundedContext, Set<ValueObject>>();
-	for (const [bc, invariant] of contextInvariantsOf(workspace)) {
+	for (const [bc, invariant] of contextInvariantsOf(scope)) {
 		let held = heldIn.get(bc);
 		if (!held) {
 			held = valueObjectsHeldIn(bc);
@@ -1881,6 +1930,7 @@ const invariantInContext: Rule = (workspace) => {
 				rule: "invariant-in-context",
 				message: `Invariant "${invariant.name}" of bounded context "${bc.name}" constrains "${constrainableLabel(target)}", which is ${where}; a context's invariant holds across its own aggregates and no further — where the two contexts really must agree, the rule is a policy or a process of "${bc.name}" that reacts to the other context's event instead`,
 				ref: invariant.ref,
+				at: invariant,
 			});
 		}
 	}
@@ -1918,9 +1968,9 @@ const invariantInContext: Rule = (workspace) => {
  *
  * An error, because the model states a rule nothing keeps.
  */
-const contextInvariantIsChecked: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const [bc, invariant] of contextInvariantsOf(workspace)) {
+const contextInvariantIsChecked: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const [bc, invariant] of contextInvariantsOf(scope)) {
 		if (invariant.precondition || invariant.postcondition) continue;
 		const guards = invariant.guarded.filter(
 			(it) => it.type === "operation" && it.boundedcontext === bc,
@@ -1931,14 +1981,15 @@ const contextInvariantIsChecked: Rule = (workspace) => {
 			rule: "context-invariant-is-checked",
 			message: `Invariant "${invariant.name}" of bounded context "${bc.name}" names no operation that checks it; a rule across the instances of a context is kept true only by an operation that checks it, before it acts or of what it answers with`,
 			ref: invariant.ref,
+			at: invariant,
 		});
 	}
 	return diagnostics;
 };
 
 /** Invariants that may name a call; value rules have construction timing only. */
-function* invariantsOf(workspace: Workspace): Iterable<Invariant> {
-	for (const bc of modelledContexts(workspace)) {
+function* invariantsOf(scope: Scope): Iterable<Invariant> {
+	for (const bc of modelledContexts(scope)) {
 		yield* bc.invariants.values();
 		for (const aggregate of bc.aggregates.values())
 			yield* aggregate.invariants.values();
@@ -1951,9 +2002,9 @@ function* invariantsOf(workspace: Workspace): Iterable<Invariant> {
  * afterward and names no moment at which it was ever checked. That leaves a
  * reader with a sentence and nowhere to look (decision 27, second amendment).
  */
-const preconditionNamesOperation: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const invariant of invariantsOf(workspace)) {
+const preconditionNamesOperation: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const invariant of invariantsOf(scope)) {
 		if (!invariant.precondition) continue;
 		if (!invariant.guarded.some((it) => it.type === "operation"))
 			diagnostics.push({
@@ -1961,6 +2012,7 @@ const preconditionNamesOperation: Rule = (workspace) => {
 				rule: "precondition-names-operation",
 				message: `Invariant "${invariant.name}" is marked a precondition but names no operation; a precondition is checked before something runs, so say what`,
 				ref: invariant.ref,
+				at: invariant,
 			});
 	}
 	return diagnostics;
@@ -1980,9 +2032,9 @@ const preconditionNamesOperation: Rule = (workspace) => {
  * precondition without one: there is not even a call whose answer it could be
  * about (decision 19, third amendment).
  */
-const postconditionNamesOperation: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const invariant of invariantsOf(workspace)) {
+const postconditionNamesOperation: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const invariant of invariantsOf(scope)) {
 		if (!invariant.postcondition) continue;
 		if (invariant.precondition) {
 			diagnostics.push({
@@ -1990,6 +2042,7 @@ const postconditionNamesOperation: Rule = (workspace) => {
 				rule: "postcondition-names-operation",
 				message: `Invariant "${invariant.name}" is marked both a precondition and a postcondition; a rule is checked before a call or guaranteed of what comes back, and one that is both says two things about when it holds`,
 				ref: invariant.ref,
+				at: invariant,
 			});
 			continue;
 		}
@@ -1999,6 +2052,7 @@ const postconditionNamesOperation: Rule = (workspace) => {
 				rule: "postcondition-names-operation",
 				message: `Invariant "${invariant.name}" is marked a postcondition but names no operation; a postcondition is a guarantee about what a call answers with, so say which call`,
 				ref: invariant.ref,
+				at: invariant,
 			});
 	}
 	return diagnostics;
@@ -2010,26 +2064,27 @@ const postconditionNamesOperation: Rule = (workspace) => {
  * but they are not themselves calls that check or keep a rule. An external
  * context's published event contract is checked separately by decision 28.
  */
-const invariantGuardsAreOperations: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const invariant of invariantsOf(workspace))
+const invariantGuardsAreOperations: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const invariant of invariantsOf(scope))
 		for (const event of invariant.guarded.filter((it) => it.type === "event"))
 			diagnostics.push({
 				severity: "error",
 				rule: "invariant-guards-are-operations",
 				message: `Invariant "${invariant.name}" names event "${event.name}" as a guard; a modelled aggregate or context names operations that check or keep a rule, not events. A precondition may constrain the reachable payload attributes of an event its issuing reactor already heard; an external context may separately guarantee a published event's payload`,
 				ref: invariant.ref,
+				at: invariant,
 			});
 	return diagnostics;
 };
 
 /** Whether the two contexts declare a partnership with one another. */
 function partnersWith(
-	workspace: Workspace,
+	scope: Scope,
 	one: BoundedContext,
 	other: BoundedContext,
 ): boolean {
-	return workspace.relationships.some(
+	return scope.relationships.some(
 		(r) => r.type === "partnership" && r.involves(one) && r.involves(other),
 	);
 }
@@ -2047,12 +2102,12 @@ function partnersWith(
  * operation the caller reaches and nowhere else.
  */
 function translatesFrom(
-	workspace: Workspace,
+	scope: Scope,
 	downstream: BoundedContext,
 	upstream: BoundedContext,
 ): boolean {
 	return downstreamRoleToward(
-		workspace,
+		scope,
 		downstream,
 		upstream,
 		"anti-corruption-layer",
@@ -2070,11 +2125,11 @@ function translatesFrom(
  * partnership (decision 16, second amendment of 2026-09-10).
  */
 function borrowingRoutes(
-	workspace: Workspace,
+	scope: Scope,
 	borrower: BoundedContext,
 	owner: BoundedContext,
 ): string {
-	if (partnersWith(workspace, borrower, owner))
+	if (partnersWith(scope, borrower, owner))
 		return `and a partnership is not what shares one — "${borrower.name}" and "${owner.name}" plan and release together, which is not the same as keeping one model between them — so declare a shared kernel beside the partnership if they really do share this`;
 	return `and holding it wants a shared kernel with "${owner.name}", a conformist relationship toward it, or a customer-supplier relationship under which "${borrower.name}" is the customer`;
 }
@@ -2124,14 +2179,14 @@ function translatesForCaller(
  * attributes keep {@link mayBorrowFrom}'s narrower reading.
  */
 function mayCarrySchemaFrom(
-	workspace: Workspace,
+	scope: Scope,
 	carrier: BoundedContext,
 	owner: BoundedContext,
 	consumable: Consumable,
 ): boolean {
 	return (
-		mayBorrowFrom(workspace, carrier, owner) ||
-		(translatesFrom(workspace, carrier, owner) &&
+		mayBorrowFrom(scope, carrier, owner) ||
+		(translatesFrom(scope, carrier, owner) &&
 			translatesForCaller(consumable, owner))
 	);
 }
@@ -2156,10 +2211,8 @@ type ValueObjectBorrowing = {
  * is the definition rather than an instance, and a payload naming a foreign
  * value depends on it exactly as an entity does (decision 16).
  */
-function* valueObjectBorrowings(
-	workspace: Workspace,
-): Iterable<ValueObjectBorrowing> {
-	for (const { owner, context } of attributeOwnersOf(workspace)) {
+function* valueObjectBorrowings(scope: Scope): Iterable<ValueObjectBorrowing> {
+	for (const { owner, context } of attributeOwnersOf(scope)) {
 		for (const attribute of owner.attributes.values()) {
 			const valueobject = attribute.valueobject;
 			if (!valueobject || valueobject.boundedcontext === context) continue;
@@ -2170,11 +2223,11 @@ function* valueObjectBorrowings(
 
 /** Whether the two contexts meet as equals, as partners or over a shared kernel. */
 function symmetricallyRelated(
-	workspace: Workspace,
+	scope: Scope,
 	one: BoundedContext,
 	other: BoundedContext,
 ): boolean {
-	return workspace.relationships.some(
+	return scope.relationships.some(
 		(r) =>
 			(r.type === "partnership" || r.type === "shared-kernel") &&
 			r.involves(one) &&
@@ -2205,13 +2258,11 @@ function symmetricallyRelated(
  * cards (card 104).
  */
 function relationshipJoins(
-	workspace: Workspace,
+	scope: Scope,
 	one: BoundedContext,
 	other: BoundedContext,
 ): boolean {
-	return workspace.relationships.some(
-		(r) => r.involves(one) && r.involves(other),
-	);
+	return scope.relationships.some((r) => r.involves(one) && r.involves(other));
 }
 
 /**
@@ -2257,28 +2308,33 @@ function relationshipJoins(
  * other may still want two relationships, and `relationship-duplicate` keeps
  * those apart; this rule asks only that the pair has been described at all.
  */
-const relationshipDeclared: Rule = (workspace) => {
-	const missing = new Map<string, Diagnostic>();
+const relationshipDeclared: Rule = (scope) => {
+	const missing = new Map<string, Finding>();
 	const note = (
 		upstream: BoundedContext,
 		downstream: BoundedContext,
 		message: string,
-		ref: string,
+		subject: { ref: string },
 	) => {
 		// Keyed by the pair rather than by the direction, because one
-		// relationship either way round is what clears it.
-		const key = JSON.stringify([upstream.ref, downstream.ref].sort());
-		if (missing.has(key) || relationshipJoins(workspace, upstream, downstream))
+		// relationship either way round is what clears it. The two contexts are
+		// told apart by where they are, not by their local refs, which two files
+		// may share.
+		const key = JSON.stringify(
+			[identityOf(upstream), identityOf(downstream)].sort(),
+		);
+		if (missing.has(key) || relationshipJoins(scope, upstream, downstream))
 			return;
 		missing.set(key, {
 			severity: "warning",
 			rule: "relationship-declared",
 			message,
-			ref,
+			ref: subject.ref,
+			at: subject,
 		});
 	};
 
-	for (const consumption of consumptionsOf(workspace)) {
+	for (const consumption of consumptionsOf(scope)) {
 		const upstream = consumption.consumable.provider.boundedcontext;
 		const downstream = consumption.consumer.boundedcontext;
 		if (upstream === downstream) continue;
@@ -2286,18 +2342,16 @@ const relationshipDeclared: Rule = (workspace) => {
 			upstream,
 			downstream,
 			`"${downstream.name}" consumes "${consumption.consumable.name}" from "${upstream.name}", but no relationship says how "${upstream.name}" and "${downstream.name}" stand to each other`,
-			consumption.consumer.ref,
+			consumption.consumer,
 		);
 	}
-	for (const { attribute, valueobject, from } of valueObjectBorrowings(
-		workspace,
-	)) {
+	for (const { attribute, valueobject, from } of valueObjectBorrowings(scope)) {
 		const owner = valueobject.boundedcontext;
 		note(
 			owner,
 			from,
 			`"${from.name}" types "${attribute.owner.name}"'s "${attribute.name}" by "${valueobject.name}" from "${owner.name}", but no relationship says how "${owner.name}" and "${from.name}" stand to each other`,
-			attribute.ref,
+			attribute,
 		);
 	}
 	// A policy or a process reacting to another context's event, or waiting on
@@ -2306,7 +2360,7 @@ const relationshipDeclared: Rule = (workspace) => {
 	// both already count it — so it wants a relationship for the same reason.
 	// Last, because it is the crossing a reader is least likely to have in mind
 	// and a pair joined by something more concrete is better named by that.
-	for (const bc of workspace.boundedcontexts.values()) {
+	for (const bc of scope.contexts()) {
 		for (const reactor of reactorsOf(bc)) {
 			for (const trigger of subscribedTriggers(reactor)) {
 				// A deadline crosses nothing: it is the process's own timer, so
@@ -2325,7 +2379,7 @@ const relationshipDeclared: Rule = (workspace) => {
 					upstream,
 					bc,
 					`${reactorLabel(reactor)} "${reactor.name}" in "${bc.name}" ${what} "${upstream.name}", but no relationship says how "${upstream.name}" and "${bc.name}" stand to each other`,
-					reactor.ref,
+					reactor,
 				);
 			}
 		}
@@ -2356,8 +2410,13 @@ const relationshipDeclared: Rule = (workspace) => {
 function relationshipKey(relationship: ContextRelationship): string {
 	const { source, target, type, nameId } = relationship;
 	if (isDirectedRelationshipType(type))
-		return JSON.stringify([source.id, "directed", target.id, nameId]);
-	const ends = [source.id, target.id].sort();
+		return JSON.stringify([
+			identityOf(source),
+			"directed",
+			identityOf(target),
+			nameId,
+		]);
+	const ends = [identityOf(source), identityOf(target)].sort();
 	return JSON.stringify([ends[0], type, ends[1], nameId]);
 }
 
@@ -2389,10 +2448,10 @@ function relationshipKey(relationship: ContextRelationship): string {
  * An error otherwise, because the model has lost information the moment it is
  * written.
  */
-const relationshipDuplicate: Rule = (workspace) => {
+const relationshipDuplicate: Rule = (scope) => {
 	const seen = new Map<string, ContextRelationship>();
-	const diagnostics: Diagnostic[] = [];
-	for (const relationship of workspace.relationships) {
+	const diagnostics: Finding[] = [];
+	for (const relationship of scope.relationships) {
 		const key = relationshipKey(relationship);
 		const first = seen.get(key);
 		if (!first) {
@@ -2413,6 +2472,7 @@ const relationshipDuplicate: Rule = (workspace) => {
 			rule: "relationship-duplicate",
 			message,
 			ref: relationship.ref,
+			at: relationship,
 		});
 	}
 	return diagnostics;
@@ -2428,11 +2488,11 @@ const relationshipDuplicate: Rule = (workspace) => {
  * two, which of them an exchange belongs to is the exchange's to say.
  */
 function agreementsFrom(
-	workspace: Workspace,
+	scope: Scope,
 	from: BoundedContext,
 	to: BoundedContext,
 ): ContextRelationship[] {
-	return workspace.relationships.filter(
+	return scope.relationships.filter(
 		(r) =>
 			isDirectedRelationshipType(r.type) &&
 			r.source === from &&
@@ -2452,11 +2512,11 @@ function agreementsFrom(
  * apart when the pair has two of them.
  */
 function agreementsBetween(
-	workspace: Workspace,
+	scope: Scope,
 	one: BoundedContext,
 	other: BoundedContext,
 ): ContextRelationship[] {
-	return workspace.relationships.filter(
+	return scope.relationships.filter(
 		(r) =>
 			isDirectedRelationshipType(r.type) &&
 			r.involves(one) &&
@@ -2476,11 +2536,11 @@ function agreementsBetween(
  * it (decision 15, amended 2026-09-10).
  */
 function agreementOf(
-	workspace: Workspace,
+	scope: Scope,
 	consumption: Consumption,
 ): ContextRelationship | undefined {
 	const agreements = agreementsFrom(
-		workspace,
+		scope,
 		consumption.consumable.provider.boundedcontext,
 		consumption.consumer.boundedcontext,
 	);
@@ -2507,14 +2567,14 @@ function agreementOf(
  * for none (decision 03, amendment of 2026-09-10).
  */
 function declaredAgreement(
-	workspace: Workspace,
+	scope: Scope,
 	one: BoundedContext,
 	other: BoundedContext,
 	crossing?: Consumption,
 ): ContextRelationship | undefined {
 	const named = crossing?.relationship;
 	if (named?.involves(one) && named.involves(other)) return named;
-	return workspace.relationships.find(
+	return scope.relationships.find(
 		(r) =>
 			isDirectedRelationshipType(r.type) &&
 			r.involves(one) &&
@@ -2549,31 +2609,33 @@ function declaredAgreement(
  * neither counts it for one nor criticises it against one, and the author is
  * told once what to write rather than twice what it broke.
  */
-const consumptionAgreement: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const consumption of consumptionsOf(workspace)) {
+const consumptionAgreement: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const consumption of consumptionsOf(scope)) {
 		const provider = consumption.consumable.provider.boundedcontext;
 		const consumer = consumption.consumer.boundedcontext;
 		if (provider === consumer) continue;
 		const named = consumption.relationship;
 		if (named) {
-			if (agreementsBetween(workspace, provider, consumer).includes(named))
+			if (agreementsBetween(scope, provider, consumer).includes(named))
 				continue;
 			diagnostics.push({
 				severity: "warning",
 				rule: "consumption-agreement",
 				message: `"${consumption.consumer.name}" says its consumption of "${consumption.consumable.name}" belongs to ${relationshipLabel(named)}, which does not join "${provider.name}" and "${consumer.name}"; an exchange belongs to an agreement between the two contexts it crosses`,
 				ref: consumption.ref,
+				at: consumption,
 			});
 			continue;
 		}
-		const agreements = agreementsFrom(workspace, provider, consumer);
+		const agreements = agreementsFrom(scope, provider, consumer);
 		if (agreements.length < 2) continue;
 		diagnostics.push({
 			severity: "warning",
 			rule: "consumption-agreement",
 			message: `"${consumption.consumer.name}" consumes "${consumption.consumable.name}" from "${provider.name}" without saying which agreement it belongs to; the pair has ${agreements.length} in that direction — ${agreements.map((it) => `"${it.name ?? it.type}"`).join(", ")} — and their roles, comments and dispositions are different things`,
 			ref: consumption.ref,
+			at: consumption,
 		});
 	}
 	return diagnostics;
@@ -2634,22 +2696,17 @@ function relationshipLabel(relationship: ContextRelationship): string {
  * 2026-09-10; card 135). A big ball of mud is ours and is asked, which is
  * what `mud-needs-acl` exists to say.
  */
-const roleCoherence: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const consumption of consumptionsOf(workspace)) {
+const roleCoherence: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const consumption of consumptionsOf(scope)) {
 		const { consumable } = consumption;
 		const provider = consumable.provider.boundedcontext;
 		const consumer = consumption.consumer.boundedcontext;
 		if (provider === consumer) continue;
 		// Partners and shared-kernel contexts have no upstream or downstream
 		// side, so neither end of the exchange carries a role to declare.
-		if (symmetricallyRelated(workspace, provider, consumer)) continue;
-		const agreement = declaredAgreement(
-			workspace,
-			provider,
-			consumer,
-			consumption,
-		);
+		if (symmetricallyRelated(scope, provider, consumer)) continue;
+		const agreement = declaredAgreement(scope, provider, consumer, consumption);
 		// The call runs against the declared direction: the caller is upstream
 		// and the provider translates for it. Nothing to ask of either end here.
 		if (agreement?.source === consumer) continue;
@@ -2659,6 +2716,7 @@ const roleCoherence: Rule = (workspace) => {
 				rule: "role-coherence",
 				message: `"${consumable.name}" is consumed from another context but declares no upstream role (open-host-service or published-language)`,
 				ref: consumable.ref,
+				at: consumable,
 			});
 		}
 		// A customer-supplier downstream is asked for no role: the negotiated
@@ -2677,6 +2735,7 @@ const roleCoherence: Rule = (workspace) => {
 				rule: "role-coherence",
 				message: `"${consumption.consumer.name}" consumes "${consumable.name}" from another context without a downstream role (conformist or anti-corruption-layer)`,
 				ref: consumption.ref,
+				at: consumption,
 			});
 		}
 	}
@@ -2685,11 +2744,11 @@ const roleCoherence: Rule = (workspace) => {
 
 /** Every consumption in which `to` consumes something `from` provides. */
 function crossingsBetween(
-	workspace: Workspace,
+	scope: Scope,
 	from: BoundedContext,
 	to: BoundedContext,
 ): Consumption[] {
-	return Array.from(consumptionsOf(workspace)).filter(
+	return Array.from(consumptionsOf(scope)).filter(
 		(c) =>
 			c.consumable.provider.boundedcontext === from &&
 			c.consumer.boundedcontext === to,
@@ -2704,14 +2763,14 @@ function crossingsBetween(
  * is criticised for the other's.
  */
 function crossingsFor(
-	workspace: Workspace,
+	scope: Scope,
 	relationship: ContextRelationship,
 ): Consumption[] {
 	return crossingsBetween(
-		workspace,
+		scope,
 		relationship.source,
 		relationship.target,
-	).filter((c) => agreementOf(workspace, c) === relationship);
+	).filter((c) => agreementOf(scope, c) === relationship);
 }
 
 /**
@@ -2786,13 +2845,13 @@ function carriesAnySchema(consumable: Consumable): boolean {
  * none; a crossing that belongs to neither is `consumption-agreement`'s to
  * report and is left out of this rule entirely (card 107).
  */
-const relationshipRolesBacked: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const relationship of workspace.relationships) {
+const relationshipRolesBacked: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const relationship of scope.relationships) {
 		if (!isDirectedRelationshipType(relationship.type)) continue;
 		const upstream = relationship.source;
 		const downstream = relationship.target;
-		const crossings = crossingsFor(workspace, relationship);
+		const crossings = crossingsFor(scope, relationship);
 		for (const role of relationship.upstreamRoles) {
 			if (crossings.some((c) => carriesUpstreamRole(c.consumable, role)))
 				continue;
@@ -2807,6 +2866,7 @@ const relationshipRolesBacked: Rule = (workspace) => {
 				rule: "relationship-roles-backed",
 				message: `"${upstream.name}" is declared ${role} to "${downstream.name}", but nothing "${downstream.name}" consumes from "${upstream.name}" carries that upstream role${alsoBorrowed}`,
 				ref: relationship.ref,
+				at: relationship,
 			});
 		}
 		for (const role of relationship.downstreamRoles) {
@@ -2826,6 +2886,7 @@ const relationshipRolesBacked: Rule = (workspace) => {
 				rule: "relationship-roles-backed",
 				message: `"${downstream.name}" is declared ${role} to "${upstream.name}", but no consumption of "${downstream.name}" from "${upstream.name}" declares that downstream role${alsoBorrows}`,
 				ref: relationship.ref,
+				at: relationship,
 			});
 		}
 		for (const crossing of crossings) {
@@ -2836,6 +2897,7 @@ const relationshipRolesBacked: Rule = (workspace) => {
 				rule: "relationship-roles-backed",
 				message: `"${crossing.consumer.name}" consumes "${crossing.consumable.name}" from "${upstream.name}" as ${crossing.pattern}, a downstream role the ${relationship.type} relationship between "${upstream.name}" and "${downstream.name}" does not declare`,
 				ref: crossing.consumer.ref,
+				at: crossing.consumer,
 			});
 		}
 	}
@@ -2862,11 +2924,11 @@ function translatesForUpstream(
 
 /** Whether one context calls an operation the other offers, on any terms. */
 function callCrosses(
-	workspace: Workspace,
+	scope: Scope,
 	provider: BoundedContext,
 	consumer: BoundedContext,
 ): boolean {
-	return crossingsBetween(workspace, provider, consumer).some(
+	return crossingsBetween(scope, provider, consumer).some(
 		(c) => c.consumable.type === "operation",
 	);
 }
@@ -2891,11 +2953,11 @@ function callCrosses(
  * somebody here is written against the neighbour's contract.
  */
 function untranslatedCallCrosses(
-	workspace: Workspace,
+	scope: Scope,
 	upstream: BoundedContext,
 	downstream: BoundedContext,
 ): boolean {
-	return crossingsBetween(workspace, upstream, downstream).some(
+	return crossingsBetween(scope, upstream, downstream).some(
 		(c) =>
 			c.consumable.type === "operation" &&
 			c.pattern !== "anti-corruption-layer",
@@ -2917,12 +2979,10 @@ function untranslatedCallCrosses(
  * Every group is a plain array shared by its members, so merging two is
  * writing the joined array back over both.
  */
-function movingAsOne(
-	workspace: Workspace,
-): Map<BoundedContext, BoundedContext[]> {
+function movingAsOne(scope: Scope): Map<BoundedContext, BoundedContext[]> {
 	const groups = new Map<BoundedContext, BoundedContext[]>();
-	for (const bc of workspace.boundedcontexts.values()) groups.set(bc, [bc]);
-	for (const relationship of workspace.relationships) {
+	for (const bc of scope.contexts()) groups.set(bc, [bc]);
+	for (const relationship of scope.relationships) {
 		if (relationship.type !== "partnership") continue;
 		const one = groups.get(relationship.source);
 		const other = groups.get(relationship.target);
@@ -2952,23 +3012,19 @@ function movingAsOne(
  * named cleared nothing (card 104). What is left is the honest case: contexts
  * calling each other with nothing between them.
  */
-const relationshipCycle: Rule = (workspace) => {
+const relationshipCycle: Rule = (scope) => {
 	// The nodes are the contexts, partners counted as one, so every ring found
 	// is a ring of distinct nodes. Walking the relationships instead would also
 	// report the longer closed walks that thread the same context twice, which
 	// say nothing new.
-	const groups = movingAsOne(workspace);
+	const groups = movingAsOne(scope);
 	const asOne = (bc: BoundedContext) => (groups.get(bc) ?? [bc])[0];
 	const startingAt = new Map<BoundedContext, ContextRelationship[]>();
-	for (const relationship of workspace.relationships) {
+	for (const relationship of scope.relationships) {
 		if (!isDirectedRelationshipType(relationship.type)) continue;
 		if (asOne(relationship.source) === asOne(relationship.target)) continue;
 		if (
-			!untranslatedCallCrosses(
-				workspace,
-				relationship.source,
-				relationship.target,
-			)
+			!untranslatedCallCrosses(scope, relationship.source, relationship.target)
 		)
 			continue;
 		append(startingAt, asOne(relationship.source), relationship);
@@ -2979,9 +3035,9 @@ const relationshipCycle: Rule = (workspace) => {
 		(groups.get(bc) ?? [bc]).map((it) => `"${it.name}"`).join(" and ");
 
 	return cyclesOf(
-		new Set([...workspace.boundedcontexts.values()].map(asOne)),
+		new Set([...scope.contexts()].map(asOne)),
 		(context) => (startingAt.get(context) ?? []).map((r) => asOne(r.target)),
-		(context) => context.id,
+		identityOf,
 	).flatMap((ring) => {
 		// The ring reports at a relationship on it rather than at a context, so a
 		// reader lands on something they can edit. There is one by construction —
@@ -3010,6 +3066,7 @@ const relationshipCycle: Rule = (workspace) => {
 						" -> ",
 					)}; each of these calls the next, so all of them depend on each other's contracts${asOneNote}. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership between two neighbours on the ring that really do move as one, which makes them one context here; or reverse a dependency by turning that call into an event the other side reacts to`,
 				ref: link.ref,
+				at: link,
 			},
 		];
 	});
@@ -3157,15 +3214,15 @@ function borrowsFrom(borrower: BoundedContext, owner: BoundedContext): boolean {
  * a value object either side can copy. Calling one of the kernel's operations
  * is that sharing, and it counts here (decision 16, second amendment; card 90).
  */
-const sharedKernelBacked: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const relationship of workspace.relationships) {
+const sharedKernelBacked: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const relationship of scope.relationships) {
 		if (relationship.type !== "shared-kernel") continue;
 		const { source, target } = relationship;
 		if (borrowsFrom(source, target) || borrowsFrom(target, source)) continue;
 		if (
-			callCrosses(workspace, source, target) ||
-			callCrosses(workspace, target, source)
+			callCrosses(scope, source, target) ||
+			callCrosses(scope, target, source)
 		)
 			continue;
 		diagnostics.push({
@@ -3173,6 +3230,7 @@ const sharedKernelBacked: Rule = (workspace) => {
 			rule: "shared-kernel-backed",
 			message: `"${source.name}" and "${target.name}" declare a shared kernel, but neither types an attribute by a value object the other declares, specialises one, carries one of its schemas or calls one of its operations, so nothing is in the kernel`,
 			ref: relationship.ref,
+			at: relationship,
 		});
 	}
 	return diagnostics;
@@ -3198,12 +3256,12 @@ const sharedKernelBacked: Rule = (workspace) => {
  * and hid the case (card 95).
  */
 function conformsInSubstance(
-	workspace: Workspace,
+	scope: Scope,
 	downstream: BoundedContext,
 	upstream: BoundedContext,
 ): boolean {
 	if (borrowsFrom(downstream, upstream)) return true;
-	return crossingsBetween(workspace, upstream, downstream).length > 0;
+	return crossingsBetween(scope, upstream, downstream).length > 0;
 }
 
 /**
@@ -3226,19 +3284,20 @@ function conformsInSubstance(
  * rule did until card 95, reported the ones whose upstream publishes a bare
  * notification.
  */
-const conformistBacked: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const relationship of workspace.relationships) {
+const conformistBacked: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const relationship of scope.relationships) {
 		if (!isDirectedRelationshipType(relationship.type)) continue;
 		if (!relationship.downstreamRoles.includes("conformist")) continue;
 		const upstream = relationship.source;
 		const downstream = relationship.target;
-		if (conformsInSubstance(workspace, downstream, upstream)) continue;
+		if (conformsInSubstance(scope, downstream, upstream)) continue;
 		diagnostics.push({
 			severity: "warning",
 			rule: "conformist-backed",
 			message: `"${downstream.name}" declares itself a conformist of "${upstream.name}", but it names none of "${upstream.name}"'s schemas or value objects, specialises none of its value objects, and consumes nothing "${upstream.name}" provides, so there is nothing here to conform to`,
 			ref: relationship.ref,
+			at: relationship,
 		});
 	}
 	return diagnostics;
@@ -3246,11 +3305,11 @@ const conformistBacked: Rule = (workspace) => {
 
 /** Whether anything of `from`'s crosses into `to`, as traffic or as a subscription. */
 function trafficCrosses(
-	workspace: Workspace,
+	scope: Scope,
 	from: BoundedContext,
 	to: BoundedContext,
 ): boolean {
-	if (crossingsBetween(workspace, from, to).length > 0) return true;
+	if (crossingsBetween(scope, from, to).length > 0) return true;
 	// A policy or a process subscribing to another context's event is the same
 	// exchange as a consumption, so it backs the partnership just as well.
 	for (const reactor of reactorsOf(to)) {
@@ -3274,14 +3333,14 @@ function trafficCrosses(
  * direction is a wish: nothing binds the two release trains together, and the
  * relationship is a claim on the map with nothing under it.
  */
-const partnershipBacked: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const relationship of workspace.relationships) {
+const partnershipBacked: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const relationship of scope.relationships) {
 		if (relationship.type !== "partnership") continue;
 		const { source, target } = relationship;
 		if (
-			trafficCrosses(workspace, source, target) ||
-			trafficCrosses(workspace, target, source)
+			trafficCrosses(scope, source, target) ||
+			trafficCrosses(scope, target, source)
 		)
 			continue;
 		diagnostics.push({
@@ -3289,6 +3348,7 @@ const partnershipBacked: Rule = (workspace) => {
 			rule: "partnership-backed",
 			message: `"${source.name}" and "${target.name}" are declared partners, but nothing crosses between them in either direction; a partnership does not need traffic both ways — one team may consume everything and the other nothing and still share a release train — but with no exchange at all there is nothing holding the two together`,
 			ref: relationship.ref,
+			at: relationship,
 		});
 	}
 	return diagnostics;
@@ -3308,9 +3368,9 @@ const partnershipBacked: Rule = (workspace) => {
  * nothing about an identity attribute that merely names the mud (decision 28,
  * amended; card 108).
  */
-const mudNeedsAcl: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const consumption of consumptionsOf(workspace)) {
+const mudNeedsAcl: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const consumption of consumptionsOf(scope)) {
 		const provider = consumption.consumable.provider.boundedcontext;
 		const consumer = consumption.consumer.boundedcontext;
 		if (provider === consumer || !provider.bigBallOfMud) continue;
@@ -3323,21 +3383,25 @@ const mudNeedsAcl: Rule = (workspace) => {
 			rule: "mud-needs-acl",
 			message: `"${consumer.name}" consumes "${consumption.consumable.name}" from "${provider.name}" ${how}, and "${provider.name}" is a big ball of mud; translate it behind an anti-corruption layer so its model stays out of "${consumer.name}"`,
 			ref: consumption.ref,
+			at: consumption,
 		});
 	}
 	return diagnostics;
 };
 
 /** A glossary term names the ubiquitous language of one context: its own. */
-const termInContext: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+const termInContext: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of scope.contexts()) {
 		for (const term of bc.glossary.values()) {
 			const embodiment = term.embodiedBy;
 			if (!embodiment) continue;
+			// Contained by where it is as well as by its pointer: another file's
+			// element whose local ref happens to start with this context's is
+			// not part of this context.
 			if (
-				embodiment.ref === bc.ref ||
-				embodiment.ref.startsWith(`${bc.ref}/`)
+				workspaceOf(embodiment) === bc.workspace &&
+				(embodiment.ref === bc.ref || embodiment.ref.startsWith(`${bc.ref}/`))
 			) {
 				continue;
 			}
@@ -3346,6 +3410,7 @@ const termInContext: Rule = (workspace) => {
 				rule: "term-in-context",
 				message: `Glossary term "${term.name}" of "${bc.name}" is embodied by "${embodiment.name}", which is not part of "${bc.name}"; a term belongs to the language of one context, and the same word means something else next door`,
 				ref: term.ref,
+				at: term,
 			});
 		}
 	}
@@ -3371,16 +3436,16 @@ const termInContext: Rule = (workspace) => {
  * one did and it said these contexts do not integrate. Card 100 moved them
  * here, where the rule can say what is actually wrong.
  */
-const separateWays: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	const separateWaysRelationships = workspace.relationships.filter(
+const separateWays: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	const separateWaysRelationships = scope.relationships.filter(
 		(r) => r.type === "separate-ways",
 	);
 	/** Whether the two contexts have declared they do not integrate. */
 	const apart = (one: BoundedContext, other: BoundedContext) =>
 		one !== other &&
 		separateWaysRelationships.some((r) => r.involves(one) && r.involves(other));
-	for (const consumption of consumptionsOf(workspace)) {
+	for (const consumption of consumptionsOf(scope)) {
 		const providerContext = consumption.consumable.provider.boundedcontext;
 		const consumerContext = consumption.consumer.boundedcontext;
 		const declaredApart = separateWaysRelationships.some(
@@ -3395,12 +3460,13 @@ const separateWays: Rule = (workspace) => {
 				rule: "separate-ways",
 				message: `"${consumerContext.name}" consumes "${consumption.consumable.name}" from "${providerContext.name}" although the contexts declare separate ways`,
 				ref: consumption.consumer.ref,
+				at: consumption.consumer,
 			});
 		}
 	}
 	// A policy or a process subscribing to another context's event is the same
 	// exchange as a consumption, so separate ways rules it out too.
-	for (const bc of workspace.boundedcontexts.values()) {
+	for (const bc of scope.contexts()) {
 		for (const reactor of reactorsOf(bc)) {
 			for (const event of subscribedEvents(reactor)) {
 				const providerContext = event.provider.boundedcontext;
@@ -3414,6 +3480,7 @@ const separateWays: Rule = (workspace) => {
 					rule: "separate-ways",
 					message: `${reactorLabel(reactor)} "${reactor.name}" in "${bc.name}" reacts to "${event.name}" from "${providerContext.name}" although the contexts declare separate ways`,
 					ref: reactor.ref,
+					at: reactor,
 				});
 			}
 		}
@@ -3421,21 +3488,20 @@ const separateWays: Rule = (workspace) => {
 	// An identity held here that names something over there is a dependency on
 	// the other context's identity scheme, which separate ways says there is
 	// none of.
-	for (const crossing of identityCrossings([
-		...workspace.boundedcontexts.values(),
-	])) {
+	for (const crossing of identityCrossings([...scope.contexts()])) {
 		if (!apart(crossing.from, crossing.to)) continue;
 		diagnostics.push({
 			severity: "error",
 			rule: "separate-ways",
 			message: `"${crossing.from.name}" holds "${crossing.attribute.name}", ${identityNamed(crossing)}, although the contexts declare separate ways`,
 			ref: crossing.attribute.ref,
+			at: crossing.attribute,
 		});
 	}
 	// Borrowing any part of the other context's language contradicts separate
 	// ways. Permission to borrow it over another relationship answers a different
 	// question and does not erase this pair's declaration that it stays apart.
-	for (const from of workspace.boundedcontexts.values()) {
+	for (const from of scope.contexts()) {
 		for (const borrowing of languageBorrowingsOf(from)) {
 			if (!apart(from, borrowing.owner)) continue;
 			let message: string;
@@ -3464,6 +3530,7 @@ const separateWays: Rule = (workspace) => {
 				rule: "separate-ways",
 				message: `${message} although the contexts declare separate ways`,
 				ref: borrowing.ref,
+				at: borrowing,
 			});
 		}
 	}
@@ -3471,9 +3538,9 @@ const separateWays: Rule = (workspace) => {
 };
 
 /** An internal consumable never leaves its context. */
-const internalConsumable: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const consumption of consumptionsOf(workspace)) {
+const internalConsumable: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const consumption of consumptionsOf(scope)) {
 		const { consumable, consumer } = consumption;
 		if (
 			consumable.internal &&
@@ -3484,10 +3551,11 @@ const internalConsumable: Rule = (workspace) => {
 				rule: "internal-consumable",
 				message: `"${consumer.name}" consumes "${consumable.name}" from "${consumable.provider.boundedcontext.name}", but it is internal to that context`,
 				ref: consumer.ref,
+				at: consumer,
 			});
 		}
 	}
-	for (const bc of workspace.boundedcontexts.values()) {
+	for (const bc of scope.contexts()) {
 		for (const reactor of reactorsOf(bc)) {
 			for (const event of subscribedEvents(reactor)) {
 				if (event.internal && event.provider.boundedcontext !== bc) {
@@ -3496,6 +3564,7 @@ const internalConsumable: Rule = (workspace) => {
 						rule: "internal-consumable",
 						message: `${reactorLabel(reactor)} "${reactor.name}" reacts to "${event.name}", which is internal to "${event.provider.boundedcontext.name}"`,
 						ref: reactor.ref,
+						at: reactor,
 					});
 				}
 			}
@@ -3506,6 +3575,7 @@ const internalConsumable: Rule = (workspace) => {
 						rule: "internal-consumable",
 						message: `${reactorLabel(reactor)} "${reactor.name}" issues "${command.name}", which is internal to "${command.provider.boundedcontext.name}"`,
 						ref: reactor.ref,
+						at: reactor,
 					});
 				}
 			}
@@ -3538,18 +3608,18 @@ const internalConsumable: Rule = (workspace) => {
  * gave two consumptions one ref while this rule, reading the callers
  * themselves, saw two different things and said nothing (card 95).
  */
-const consumptionOnce: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
+const consumptionOnce: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
 	const pairs = new Map<string, Consumption[]>();
-	for (const consumption of consumptionsOf(workspace)) {
-		const key = `${consumption.consumer.ref} ${consumption.consumable.ref}`;
+	for (const consumption of consumptionsOf(scope)) {
+		const key = `${identityOf(consumption.consumer)} ${identityOf(consumption.consumable)}`;
 		const pair = pairs.get(key);
 		if (pair) pair.push(consumption);
 		else pairs.set(key, [consumption]);
 	}
 	for (const pair of pairs.values()) {
 		if (pair.length < 2) continue;
-		const callers = new Map<string, Consumption>();
+		const callers = new Map<ConsumptionCaller, Consumption>();
 		for (const consumption of pair) {
 			const { consumer, consumable } = consumption;
 			const takes = `"${consumer.name}" consumes "${consumable.name}" from "${consumable.provider.name}" ${pair.length} times`;
@@ -3559,15 +3629,15 @@ const consumptionOnce: Rule = (workspace) => {
 					rule: "consumption-once",
 					message: `${takes}, and ${says}; where one consumer takes one consumable more than once, each of those consumptions names the callers that make it and no two of them name the same caller`,
 					ref: consumption.ref,
+					at: consumption,
 				});
 			if (consumption.by.length === 0) {
 				report("one of them names no caller in `by`");
 				continue;
 			}
 			for (const caller of consumption.by) {
-				if (callers.has(caller.ref))
-					report(`"${caller.name}" makes more than one`);
-				else callers.set(caller.ref, consumption);
+				if (callers.has(caller)) report(`"${caller.name}" makes more than one`);
+				else callers.set(caller, consumption);
 			}
 		}
 	}
@@ -3581,9 +3651,9 @@ const consumptionOnce: Rule = (workspace) => {
  * policy or a process may be named too, because both are how its context
  * reacts, but each has to belong to that same context (decisions 21 and 23).
  */
-const consumptionByResolves: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const consumption of consumptionsOf(workspace)) {
+const consumptionByResolves: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const consumption of consumptionsOf(scope)) {
 		const { consumer } = consumption;
 		for (const caller of consumption.by) {
 			const wrong =
@@ -3598,6 +3668,7 @@ const consumptionByResolves: Rule = (workspace) => {
 					rule: "consumption-by-resolves",
 					message: `"${consumer.name}" says its consumption of "${consumption.consumable.name}" is made by ${wrong}; a consumption names the consumer's own operations, or the policies and processes of its context`,
 					ref: consumption.ref,
+					at: consumption,
 				});
 				continue;
 			}
@@ -3607,6 +3678,7 @@ const consumptionByResolves: Rule = (workspace) => {
 					rule: "consumption-by-resolves",
 					message: `"${consumer.name}" says its consumption of "${consumption.consumable.name}" is made by the event "${caller.name}"; an event is something that has happened, so it calls nothing`,
 					ref: consumption.ref,
+					at: consumption,
 				});
 			}
 		}
@@ -3631,9 +3703,9 @@ const consumptionByResolves: Rule = (workspace) => {
  * An error, because the two are not two ways of saying one thing: the reader is
  * told about a call by a thing that makes none.
  */
-const consumptionByOperation: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const consumption of consumptionsOf(workspace)) {
+const consumptionByOperation: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const consumption of consumptionsOf(scope)) {
 		const { consumer, consumable } = consumption;
 		if (consumable.type !== "operation") continue;
 		for (const caller of consumption.by) {
@@ -3643,6 +3715,7 @@ const consumptionByOperation: Rule = (workspace) => {
 				rule: "consumption-by-operation",
 				message: `"${consumer.name}" says its consumption of "${consumable.name}" is made by ${reactorLabel(caller).toLowerCase()} "${caller.name}"; a ${reactorLabel(caller).toLowerCase()} issues an operation of its own context and that operation makes the call, so name that operation here`,
 				ref: consumption.ref,
+				at: consumption,
 			});
 		}
 	}
@@ -3672,9 +3745,9 @@ const consumptionByOperation: Rule = (workspace) => {
  * An error, because the model is telling the reader about a reaction by naming
  * something that never runs when the fact arrives.
  */
-const consumptionByReactor: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const consumption of consumptionsOf(workspace)) {
+const consumptionByReactor: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const consumption of consumptionsOf(scope)) {
 		const { consumer, consumable } = consumption;
 		if (consumable.type !== "event") continue;
 		for (const caller of consumption.by) {
@@ -3684,6 +3757,7 @@ const consumptionByReactor: Rule = (workspace) => {
 				rule: "consumption-by-reactor",
 				message: `"${consumer.name}" says its subscription to "${consumable.name}" is made by the operation "${caller.name}"; an operation is issued rather than woken, so name the policy or the process of "${consumer.boundedcontext.name}" that reacts to the fact — for a projection or a report, that is the policy whose own operation writes what "${caller.name}" later reads`,
 				ref: consumption.ref,
+				at: consumption,
 			});
 		}
 	}
@@ -3737,9 +3811,9 @@ const consumptionByReactor: Rule = (workspace) => {
  * and an author part-way through an interview should not be blocked for not yet
  * knowing which operation calls out (decision 21, third amendment).
  */
-const consumptionByRequired: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const consumption of consumptionsOf(workspace)) {
+const consumptionByRequired: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const consumption of consumptionsOf(scope)) {
 		const { consumer, consumable } = consumption;
 		const provider = consumable.provider.boundedcontext;
 		const here = consumer.boundedcontext;
@@ -3760,6 +3834,7 @@ const consumptionByRequired: Rule = (workspace) => {
 			rule: "consumption-by-required",
 			message,
 			ref: consumption.ref,
+			at: consumption,
 		});
 	}
 	return diagnostics;
@@ -3790,9 +3865,9 @@ const consumptionByRequired: Rule = (workspace) => {
  * An error, because without it the model is silent about a dependency it has:
  * the reactor is written against the neighbour's event and no map says so.
  */
-const subscriptionConsumed: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of modelledContexts(workspace)) {
+const subscriptionConsumed: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of modelledContexts(scope)) {
 		const taken = new Set<Consumable>();
 		for (const member of [...bc.aggregates.values(), ...bc.services.values()])
 			for (const consumption of member.consumptions)
@@ -3806,6 +3881,7 @@ const subscriptionConsumed: Rule = (workspace) => {
 					rule: "subscription-consumed",
 					message: `${reactorLabel(reactor)} "${reactor.name}" reacts to "${event.name}" from "${upstream.name}", but nothing in "${bc.name}" consumes it; a context takes a foreign fact in at its own boundary, so the subscription is a consumption and reads as one on both maps`,
 					ref: reactor.ref,
+					at: reactor,
 				});
 			}
 		}
@@ -3847,9 +3923,9 @@ const subscriptionConsumed: Rule = (workspace) => {
  * A warning rather than an error, because the subscription may be real and the
  * reaction simply not modelled yet.
  */
-const subscriptionBacked: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of knowableContexts(workspace)) {
+const subscriptionBacked: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of knowableContexts(scope)) {
 		const reacted = new Set<ProcessTrigger>();
 		for (const reactor of reactorsOf(bc))
 			for (const trigger of subscribedTriggers(reactor)) reacted.add(trigger);
@@ -3863,6 +3939,7 @@ const subscriptionBacked: Rule = (workspace) => {
 					rule: "subscription-backed",
 					message: `"${member.name}" consumes "${consumable.name}" from "${consumable.provider.boundedcontext.name}", but no policy or process of "${bc.name}" reacts to it; a subscription nothing acts on is a dependency with nothing under it`,
 					ref: consumption.ref,
+					at: consumption,
 				});
 			}
 	}
@@ -3874,9 +3951,9 @@ const subscriptionBacked: Rule = (workspace) => {
  * event is a consumption and crosses the boundary; acting inside another
  * context does not (decision 17).
  */
-const policyInContext: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of modelledContexts(workspace)) {
+const policyInContext: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of modelledContexts(scope)) {
 		for (const policy of bc.policies.values()) {
 			for (const command of policy.commands) {
 				const owner = command.boundedcontext;
@@ -3886,6 +3963,7 @@ const policyInContext: Rule = (workspace) => {
 					rule: "policy-in-context",
 					message: `Policy "${policy.name}" in "${bc.name}" issues "${command.name}", which belongs to "${owner.name}"`,
 					ref: policy.ref,
+					at: policy,
 				});
 			}
 		}
@@ -3907,9 +3985,9 @@ const policyInContext: Rule = (workspace) => {
  * heard of. A foreign *event* starting one is a subscription and stays
  * allowed, which is the difference (decision 23, third amendment).
  */
-const processInContext: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const process of processesOf(workspace)) {
+const processInContext: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const process of processesOf(scope)) {
 		for (const command of process.commands) {
 			const owner = command.boundedcontext;
 			if (owner === process.boundedcontext) continue;
@@ -3918,6 +3996,7 @@ const processInContext: Rule = (workspace) => {
 				rule: "process-in-context",
 				message: `Process "${process.name}" in "${process.boundedcontext.name}" issues "${command.name}", which belongs to "${owner.name}"`,
 				ref: process.ref,
+				at: process,
 			});
 		}
 		for (const command of startingCommands(process)) {
@@ -3928,6 +4007,7 @@ const processInContext: Rule = (workspace) => {
 				rule: "process-in-context",
 				message: `Process "${process.name}" in "${process.boundedcontext.name}" starts on "${command.name}", an operation of "${owner.name}"; the command that creates an instance is this context's own, though an event that starts one may cross`,
 				ref: process.ref,
+				at: process,
 			});
 		}
 	}
@@ -3944,15 +4024,16 @@ const processInContext: Rule = (workspace) => {
  * process whose author has not said how it finishes, and a reader cannot tell
  * which from the model (decision 23).
  */
-const processHasEnds: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const process of processesOf(workspace)) {
+const processHasEnds: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const process of processesOf(scope)) {
 		if (process.endEvents.length > 0) continue;
 		diagnostics.push({
 			severity: "warning",
 			rule: "process-has-ends",
 			message: `Process "${process.name}" names no event that completes an instance, so the model never says how it finishes`,
 			ref: process.ref,
+			at: process,
 		});
 	}
 	return diagnostics;
@@ -3971,15 +4052,16 @@ const processHasEnds: Rule = (workspace) => {
  * deadline is counted from the moment an instance began waiting, so both need
  * the instance to exist already.
  */
-const processStarts: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const process of processesOf(workspace)) {
+const processStarts: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const process of processesOf(scope)) {
 		if (process.startEvents.length > 0) continue;
 		diagnostics.push({
 			severity: "error",
 			rule: "process-starts",
 			message: `Process "${process.name}" names no event or command that begins an instance, so nothing in the model says when one exists`,
 			ref: process.ref,
+			at: process,
 		});
 	}
 	return diagnostics;
@@ -3996,9 +4078,9 @@ function operationsStayInside(
 	label: string,
 	provider: Aggregate | Service,
 	shares: (consumer: BoundedContext) => boolean = () => false,
-): Diagnostic[] {
+): Finding[] {
 	const bc = provider.boundedcontext;
-	const diagnostics: Diagnostic[] = [];
+	const diagnostics: Finding[] = [];
 	for (const operation of provider.consumables.values()) {
 		if (operation.type !== "operation") continue;
 		if (operation.pattern) {
@@ -4007,6 +4089,7 @@ function operationsStayInside(
 				rule,
 				message: `${label} "${provider.name}" offers "${operation.name}" as ${operation.pattern}, but what "${bc.name}" offers outward is provided by an application service`,
 				ref: operation.ref,
+				at: operation,
 			});
 		}
 		for (const { consumer } of operation.consumptions) {
@@ -4017,6 +4100,7 @@ function operationsStayInside(
 				rule,
 				message: `"${consumer.name}" in "${consumer.boundedcontext.name}" consumes "${operation.name}", an operation of ${label.toLowerCase()} "${provider.name}" internal to "${bc.name}"`,
 				ref: consumer.ref,
+				at: consumer,
 			});
 		}
 	}
@@ -4042,14 +4126,14 @@ function operationsStayInside(
  * offered to everyone, and what a context offers everyone still leaves an
  * application service.
  */
-const aggregateNotPublic: Rule = (workspace) =>
-	Array.from(modelledContexts(workspace)).flatMap((bc) =>
+const aggregateNotPublic: Rule = (scope) =>
+	Array.from(modelledContexts(scope)).flatMap((bc) =>
 		Array.from(bc.aggregates.values()).flatMap((aggregate) =>
 			operationsStayInside(
 				"aggregate-not-public",
 				"Aggregate",
 				aggregate,
-				(consumer) => sharesKernelWith(workspace, bc, consumer),
+				(consumer) => sharesKernelWith(scope, bc, consumer),
 			),
 		),
 	);
@@ -4076,9 +4160,9 @@ const aggregateNotPublic: Rule = (workspace) =>
  * An event is left alone: a fact another aggregate published is not a call,
  * and nothing waits on it.
  */
-const aggregateConsumesInside: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of modelledContexts(workspace)) {
+const aggregateConsumesInside: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of modelledContexts(scope)) {
 		for (const aggregate of bc.aggregates.values()) {
 			for (const { consumable } of aggregate.consumptions) {
 				const owner = consumable.provider.boundedcontext;
@@ -4092,6 +4176,7 @@ const aggregateConsumesInside: Rule = (workspace) => {
 						rule: "aggregate-consumes-inside",
 						message: `Aggregate "${aggregate.name}" consumes "${consumable.name}" from "${owner.name}"; an aggregate is a consistency boundary, not a client, so ${instead} and hand "${aggregate.name}" what it needs`,
 						ref: aggregate.ref,
+						at: aggregate,
 					});
 					continue;
 				}
@@ -4107,6 +4192,7 @@ const aggregateConsumesInside: Rule = (workspace) => {
 					rule: "aggregate-consumes-inside",
 					message: `Aggregate "${aggregate.name}" consumes "${consumable.name}" from aggregate "${provider.name}" in "${bc.name}"; each is saved in its own transaction, so one calling the other spans two of them with nothing on any map to say so. Let a service of "${bc.name}" front the call and hand "${aggregate.name}" what it needs`,
 					ref: aggregate.ref,
+					at: aggregate,
 				});
 			}
 		}
@@ -4128,9 +4214,9 @@ const aggregateConsumesInside: Rule = (workspace) => {
  * domain service what it needs, or a policy reacts to the foreign fact and
  * issues an operation of this context (decision 17's second amendment).
  */
-const domainServiceConsumesInside: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of modelledContexts(workspace)) {
+const domainServiceConsumesInside: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of modelledContexts(scope)) {
 		for (const service of bc.services.values()) {
 			if (service.type !== "domain") continue;
 			for (const { consumable } of service.consumptions) {
@@ -4145,6 +4231,7 @@ const domainServiceConsumesInside: Rule = (workspace) => {
 					rule: "domain-service-consumes-inside",
 					message: `Domain service "${service.name}" consumes "${consumable.name}" from "${owner.name}"; a domain service is the inside of the model, not a client, so ${instead} and hand "${service.name}" what it needs`,
 					ref: service.ref,
+					at: service,
 				});
 			}
 		}
@@ -4165,8 +4252,8 @@ const domainServiceConsumesInside: Rule = (workspace) => {
  * the validator quiet rather than the word that was true (decision 28,
  * amendment of 2026-09-10, fourth; card 116).
  */
-const domainServiceInternal: Rule = (workspace) =>
-	Array.from(modelledContexts(workspace)).flatMap((bc) =>
+const domainServiceInternal: Rule = (scope) =>
+	Array.from(modelledContexts(scope)).flatMap((bc) =>
 		Array.from(bc.services.values())
 			.filter((service) => service.type === "domain")
 			.flatMap((service) =>
@@ -4193,18 +4280,17 @@ const domainServiceInternal: Rule = (workspace) =>
  * for five days while nothing read `attribute.valueobject` at all; the
  * architect's third review found it.
  */
-const valueObjectContext: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const { attribute, valueobject, from } of valueObjectBorrowings(
-		workspace,
-	)) {
+const valueObjectContext: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const { attribute, valueobject, from } of valueObjectBorrowings(scope)) {
 		const owner = valueobject.boundedcontext;
-		if (mayBorrowFrom(workspace, from, owner)) continue;
+		if (mayBorrowFrom(scope, from, owner)) continue;
 		diagnostics.push({
 			severity: "error",
 			rule: "valueobject-context",
-			message: `"${attribute.owner.name}" in "${from.name}" types attribute "${attribute.name}" by value object "${valueobject.name}" from "${owner.name}"; a value object is part of one context's language, ${borrowingRoutes(workspace, from, owner)}`,
+			message: `"${attribute.owner.name}" in "${from.name}" types attribute "${attribute.name}" by value object "${valueobject.name}" from "${owner.name}"; a value object is part of one context's language, ${borrowingRoutes(scope, from, owner)}`,
 			ref: attribute.ref,
+			at: attribute,
 		});
 	}
 	return diagnostics;
@@ -4231,43 +4317,46 @@ const valueObjectContext: Rule = (workspace) => {
  * ({@link mayCarrySchemaFrom}). An attribute gets no such exception, because
  * an attribute is inside the model and past the layer.
  */
-const schemaContext: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
+const schemaContext: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
 	/** Whether the schema is another context's and nothing lets this one hold it. */
 	const borrowedBy = (schema: DataSchema, bc: BoundedContext) =>
 		schema.boundedcontext !== bc &&
-		!mayBorrowFrom(workspace, bc, schema.boundedcontext);
-	for (const { owner, context } of attributeOwnersOf(workspace)) {
+		!mayBorrowFrom(scope, bc, schema.boundedcontext);
+	for (const { owner, context } of attributeOwnersOf(scope)) {
 		for (const attribute of owner.attributes.values()) {
 			if (!attribute.schema || !borrowedBy(attribute.schema, context)) continue;
 			diagnostics.push({
 				severity: "error",
 				rule: "schema-context",
-				message: `"${owner.name}" types attribute "${attribute.name}" by schema "${attribute.schema.name}" from "${attribute.schema.boundedcontext.name}"; a payload belongs to the context that publishes it, ${borrowingRoutes(workspace, context, attribute.schema.boundedcontext)}`,
+				message: `"${owner.name}" types attribute "${attribute.name}" by schema "${attribute.schema.name}" from "${attribute.schema.boundedcontext.name}"; a payload belongs to the context that publishes it, ${borrowingRoutes(scope, context, attribute.schema.boundedcontext)}`,
 				ref: attribute.ref,
+				at: attribute,
 			});
 		}
 	}
-	for (const bc of workspace.boundedcontexts.values()) {
+	for (const bc of scope.contexts()) {
 		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
 			for (const c of p.consumables.values()) {
 				const borrowed = (schema: DataSchema) =>
 					schema.boundedcontext !== bc &&
-					!mayCarrySchemaFrom(workspace, bc, schema.boundedcontext, c);
+					!mayCarrySchemaFrom(scope, bc, schema.boundedcontext, c);
 				if (c.schema && borrowed(c.schema)) {
 					diagnostics.push({
 						severity: "error",
 						rule: "schema-context",
-						message: `"${c.name}" carries schema "${c.schema.name}" from "${c.schema.boundedcontext.name}"; a payload belongs to the context that publishes it, ${borrowingRoutes(workspace, bc, c.schema.boundedcontext)}`,
+						message: `"${c.name}" carries schema "${c.schema.name}" from "${c.schema.boundedcontext.name}"; a payload belongs to the context that publishes it, ${borrowingRoutes(scope, bc, c.schema.boundedcontext)}`,
 						ref: c.ref,
+						at: c,
 					});
 				}
 				if (c.returns && borrowed(c.returns)) {
 					diagnostics.push({
 						severity: "error",
 						rule: "schema-context",
-						message: `"${c.name}" returns schema "${c.returns.name}" from "${c.returns.boundedcontext.name}"; a payload belongs to the context that publishes it, ${borrowingRoutes(workspace, bc, c.returns.boundedcontext)}`,
+						message: `"${c.name}" returns schema "${c.returns.name}" from "${c.returns.boundedcontext.name}"; a payload belongs to the context that publishes it, ${borrowingRoutes(scope, bc, c.returns.boundedcontext)}`,
 						ref: c.ref,
+						at: c,
 					});
 				}
 				for (const rejection of c.rejects) {
@@ -4275,8 +4364,9 @@ const schemaContext: Rule = (workspace) => {
 					diagnostics.push({
 						severity: "error",
 						rule: "schema-context",
-						message: `"${c.name}" rejects with schema "${rejection.name}" from "${rejection.boundedcontext.name}"; a payload belongs to the context that publishes it, ${borrowingRoutes(workspace, bc, rejection.boundedcontext)}`,
+						message: `"${c.name}" rejects with schema "${rejection.name}" from "${rejection.boundedcontext.name}"; a payload belongs to the context that publishes it, ${borrowingRoutes(scope, bc, rejection.boundedcontext)}`,
 						ref: c.ref,
+						at: c,
 					});
 				}
 				if (c.internal && c.pattern) {
@@ -4285,6 +4375,7 @@ const schemaContext: Rule = (workspace) => {
 						rule: "internal-consumable",
 						message: `"${c.name}" is internal but declares the upstream role "${c.pattern}", which only matters to other contexts`,
 						ref: c.ref,
+						at: c,
 					});
 				}
 			}
@@ -4294,9 +4385,9 @@ const schemaContext: Rule = (workspace) => {
 };
 
 /** Only an operation answers its caller, so only an operation declares returns. */
-const returnsOnOperation: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+const returnsOnOperation: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of scope.contexts()) {
 		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
 			for (const c of p.consumables.values()) {
 				if (c.type === "event" && c.returns) {
@@ -4305,6 +4396,7 @@ const returnsOnOperation: Rule = (workspace) => {
 						rule: "returns-on-operation",
 						message: `"${c.name}" is an event but declares returns "${c.returns.name}"; an event is a fact nobody answers`,
 						ref: c.ref,
+						at: c,
 					});
 				}
 			}
@@ -4314,9 +4406,9 @@ const returnsOnOperation: Rule = (workspace) => {
 };
 
 /** Only an operation is refused, so only an operation declares rejections. */
-const rejectsOnOperation: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+const rejectsOnOperation: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of scope.contexts()) {
 		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
 			for (const c of p.consumables.values()) {
 				if (c.type !== "event" || !c.rejects.length) continue;
@@ -4325,6 +4417,7 @@ const rejectsOnOperation: Rule = (workspace) => {
 					rule: "rejects-on-operation",
 					message: `"${c.name}" is an event but rejects with ${c.rejects.map((it) => `"${it.name}"`).join(", ")}; an event is a fact that already happened, so there is nothing left to refuse`,
 					ref: c.ref,
+					at: c,
 				});
 			}
 		}
@@ -4333,30 +4426,31 @@ const rejectsOnOperation: Rule = (workspace) => {
 };
 
 /** A rejection shape and each named reason have one declaration per operation. */
-const duplicateRejections: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+const duplicateRejections: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of scope.contexts()) {
 		for (const provider of [
 			...bc.aggregates.values(),
 			...bc.services.values(),
 		]) {
 			for (const consumable of provider.consumables.values()) {
 				if (consumable.type !== "operation") continue;
-				const firstRejection = new Map<string, number>();
+				const firstRejection = new Map<DataSchema, number>();
 				for (const [
 					rejectionIndex,
 					rejection,
 				] of consumable.rejections.entries()) {
-					const firstIndex = firstRejection.get(rejection.schema.ref);
+					const firstIndex = firstRejection.get(rejection.schema);
 					if (firstIndex !== undefined) {
 						diagnostics.push({
 							severity: "error",
 							rule: "rejects-duplicate",
 							message: `"${consumable.name}" declares schema "${rejection.schema.name}" more than once in rejects (entries ${firstIndex + 1} and ${rejectionIndex + 1}); keep one declaration for that schema`,
 							ref: consumable.ref,
+							at: consumable,
 						});
 					} else {
-						firstRejection.set(rejection.schema.ref, rejectionIndex);
+						firstRejection.set(rejection.schema, rejectionIndex);
 					}
 
 					if (!Array.isArray(rejection.reasons)) continue;
@@ -4370,6 +4464,7 @@ const duplicateRejections: Rule = (workspace) => {
 								rule: "rejects-duplicate",
 								message: `"${consumable.name}" names refusal reason "${reason}" more than once for schema "${rejection.schema.name}" (reasons ${firstReasonIndex + 1} and ${reasonIndex + 1}); keep one occurrence`,
 								ref: consumable.ref,
+								at: consumable,
 							});
 						} else {
 							firstReason.set(reason, reasonIndex);
@@ -4451,9 +4546,9 @@ function undeclaredAnswer(reactor: Policy | Process, answer: Answer): string {
 	return `${who} waits for "${operation.name}" to complete, but "${operation.name}" returns "${operation.returns?.name}"; wait for that answer, which is the same call coming back and says what it came back with`;
 }
 
-const consumableKinds: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+const consumableKinds: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of scope.contexts()) {
 		// An external context's policies and processes are refused outright by
 		// external-is-boundary; there is nothing here to say about them.
 		const reactors = bc.external ? [] : reactorsOf(bc);
@@ -4466,6 +4561,7 @@ const consumableKinds: Rule = (workspace) => {
 						rule: "consumable-kind",
 						message: undeclaredAnswer(reactor, trigger),
 						ref: reactor.ref,
+						at: reactor,
 					});
 				else if (!hearsAnswerOf(reactor, trigger.operation))
 					diagnostics.push({
@@ -4473,6 +4569,7 @@ const consumableKinds: Rule = (workspace) => {
 						rule: "consumable-kind",
 						message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.origin}", but nothing says ${reactorLabel(reactor).toLowerCase()} "${reactor.name}" made that call: it does not issue "${trigger.operation.name}", and no chain of "by" inside "${bc.name}" runs from an operation it issues${reactor instanceof Process ? " or starts on" : ""} to the consumption of "${trigger.operation.name}". An answer comes back to whoever called, routing along the local "by" chain through as many of this context's fronts as it takes, so issue that operation, or say in "by" which of this context's operations makes the call, or react to an event instead`,
 						ref: reactor.ref,
+						at: reactor,
 					});
 			}
 			for (const c of subscribedEvents(reactor).filter(
@@ -4483,6 +4580,7 @@ const consumableKinds: Rule = (workspace) => {
 					rule: "consumable-kind",
 					message: `${reactorLabel(reactor)} "${reactor.name}" reacts to "${c.name}", which is an operation, not an event`,
 					ref: reactor.ref,
+					at: reactor,
 				});
 			}
 			for (const c of reactor.commands.filter((c) => c.type !== "operation")) {
@@ -4491,6 +4589,7 @@ const consumableKinds: Rule = (workspace) => {
 					rule: "consumable-kind",
 					message: `${reactorLabel(reactor)} "${reactor.name}" issues "${c.name}", which is an event, not an operation`,
 					ref: reactor.ref,
+					at: reactor,
 				});
 			}
 		}
@@ -4502,6 +4601,7 @@ const consumableKinds: Rule = (workspace) => {
 						rule: "consumable-kind",
 						message: `"${c.name}" is an event but declares raises; only operations raise events`,
 						ref: c.ref,
+						at: c,
 					});
 				}
 				for (const e of c.raisedEvents.filter((e) => e.type !== "event")) {
@@ -4510,6 +4610,7 @@ const consumableKinds: Rule = (workspace) => {
 						rule: "consumable-kind",
 						message: `"${c.name}" raises "${e.name}", which is an operation, not an event`,
 						ref: c.ref,
+						at: c,
 					});
 				}
 			}
@@ -4534,9 +4635,9 @@ const consumableKinds: Rule = (workspace) => {
  * though a context had reached through the wall. Acting on another context is
  * a consumption, and what comes back is that context's own event.
  */
-const raisesInContext: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+const raisesInContext: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of scope.contexts()) {
 		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
 			for (const c of p.consumables.values()) {
 				for (const event of c.raisedEvents) {
@@ -4547,6 +4648,7 @@ const raisesInContext: Rule = (workspace) => {
 						rule: "raises-in-context",
 						message: `"${c.name}" raises "${event.name}", which belongs to "${owner.name}"; a context publishes its own facts, so "${bc.name}" cannot raise another context's event`,
 						ref: c.ref,
+						at: c,
 					});
 				}
 			}
@@ -4588,9 +4690,9 @@ const raisesInContext: Rule = (workspace) => {
  * larger thing about the same write; reporting both would tell one author two
  * things about one line.
  */
-const raisesInAggregate: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of modelledContexts(workspace)) {
+const raisesInAggregate: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of modelledContexts(scope)) {
 		const inside = [
 			...bc.aggregates.values(),
 			...[...bc.services.values()].filter((it) => it.type === "domain"),
@@ -4617,6 +4719,7 @@ const raisesInAggregate: Rule = (workspace) => {
 						rule: "raises-in-aggregate",
 						message: `${who} raises "${event.name}", which belongs to ${where} in "${bc.name}"; ${because}each aggregate is saved in its own transaction, so "${provider.name}" making another's fact true spans two of them with nothing on any map to say so. Let "${raiser.name}" raise its own event, and let ${front} of "${bc.name}" front both`,
 						ref: operation.ref,
+						at: operation,
 					});
 				}
 			}
@@ -4639,9 +4742,9 @@ const raisesInAggregate: Rule = (workspace) => {
  * Only what the front reaches is reported: an event a front raises itself and
  * nothing it calls raises is its own fact and is left alone.
  */
-const raisesRestated: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of modelledContexts(workspace)) {
+const raisesRestated: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of modelledContexts(scope)) {
 		for (const provider of [...bc.aggregates.values(), ...bc.services.values()])
 			for (const operation of provider.consumables.values()) {
 				if (operation.type !== "operation") continue;
@@ -4653,6 +4756,7 @@ const raisesRestated: Rule = (workspace) => {
 						rule: "raises-restated",
 						message: `"${operation.name}" raises "${event.name}", which "${raisersAmong(operation, event).join('", "')}" already raises through the consumption it makes; drop it, the chain carries it`,
 						ref: operation.ref,
+						at: operation,
 					});
 				}
 			}
@@ -4709,9 +4813,9 @@ const raisersAmong = (operation: Consumable, event: Consumable): string[] =>
  * to have is a reactor, not a foreign one (decision 25, second note of
  * 2026-09-10; card 128).
  */
-const rejectionRaised: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+const rejectionRaised: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of scope.contexts()) {
 		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
 			for (const operation of p.consumables.values()) {
 				if (operation.type !== "operation") continue;
@@ -4719,12 +4823,13 @@ const rejectionRaised: Rule = (workspace) => {
 					const event = operation.raisedEvents.find(
 						(it) => it.schema === rejection.schema,
 					);
-					if (!event || hearersOf(workspace, event).length > 0) continue;
+					if (!event || hearersOf(scope, event).length > 0) continue;
 					diagnostics.push({
 						severity: "warning",
 						rule: "rejection-raised",
 						message: `"${operation.name}" rejects with "${rejection.schema.name}", which it also raises as the event "${event.name}", and no policy or process anywhere reacts to "${event.name}"; a rejection answers the caller and an event tells the world, and where both are true keep both \u2014 the fact somebody hears is what makes it an event, so name the policy or process that hears "${event.name}", one of "${bc.name}"'s own included, or drop the event and let the rejection answer`,
 						ref: operation.ref,
+						at: operation,
 					});
 				}
 			}
@@ -4744,12 +4849,9 @@ const rejectionRaised: Rule = (workspace) => {
  * the listener, and counted nothing at all for a listener in the raising
  * context, which needs no route (decision 25, second note of 2026-09-10).
  */
-function hearersOf(
-	workspace: Workspace,
-	event: Consumable,
-): Array<Policy | Process> {
+function hearersOf(scope: Scope, event: Consumable): Array<Policy | Process> {
 	const heard: Array<Policy | Process> = [];
-	for (const bc of workspace.boundedcontexts.values())
+	for (const bc of scope.contexts())
 		for (const reactor of reactorsOf(bc))
 			if (subscribedTriggers(reactor).includes(event)) heard.push(reactor);
 	return heard;
@@ -4774,9 +4876,9 @@ function hearersOf(
  * in no interview note. A mud context may say what it emits without saying how
  * (see {@link knowableContexts}).
  */
-const eventUnraised: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of knowableContexts(workspace)) {
+const eventUnraised: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of knowableContexts(scope)) {
 		const providers = [...bc.aggregates.values(), ...bc.services.values()];
 		const raised = new Set<Consumable>();
 		for (const provider of providers)
@@ -4790,6 +4892,7 @@ const eventUnraised: Rule = (workspace) => {
 					rule: "event-unraised",
 					message: `No operation of "${bc.name}" raises "${consumable.name}", so the model never says what makes it happen`,
 					ref: consumable.ref,
+					at: consumable,
 				});
 			}
 	}
@@ -4797,10 +4900,10 @@ const eventUnraised: Rule = (workspace) => {
 };
 
 /** A policy reacts to something and does something. */
-const policyComplete: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	const policies: Policy[] = Array.from(modelledContexts(workspace)).flatMap(
-		(bc) => Array.from(bc.policies.values()),
+const policyComplete: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	const policies: Policy[] = Array.from(modelledContexts(scope)).flatMap((bc) =>
+		Array.from(bc.policies.values()),
 	);
 	for (const policy of policies) {
 		if (policy.events.length === 0 || policy.commands.length === 0) {
@@ -4809,6 +4912,7 @@ const policyComplete: Rule = (workspace) => {
 				rule: "policy-complete",
 				message: `Policy "${policy.name}" ${policy.events.length === 0 ? "reacts to no event" : "issues no command"}`,
 				ref: policy.ref,
+				at: policy,
 			});
 		}
 	}
@@ -4857,8 +4961,8 @@ const policyComplete: Rule = (workspace) => {
  * back edge at a time, a process's lifecycle hid feedback through a second
  * live process (issue #108, local audit before the twenty-first review).
  */
-const reactionCycle: Rule = (workspace) =>
-	reactionRings(new ReactionChain(workspace.boundedcontexts.values())).map(
+const reactionCycle: Rule = (scope) =>
+	reactionRings(new ReactionChain(scope.contexts())).map(
 		({ nodes, verdict }) => {
 			const contexts = [...new Set(nodes.map((n) => n.boundedcontext))];
 			const across =
@@ -4881,6 +4985,7 @@ const reactionCycle: Rule = (workspace) =>
 				rule: "reaction-cycle",
 				message,
 				ref: nodes[0]!.ref,
+				at: nodes[0]!,
 			};
 		},
 	);
@@ -4898,13 +5003,10 @@ const reactionCycle: Rule = (workspace) =>
  * the kernel is the two teams' joint model and neither of them a context of
  * its own.
  */
-function isSharedKernelContext(
-	workspace: Workspace,
-	bc: BoundedContext,
-): boolean {
+function isSharedKernelContext(scope: Scope, bc: BoundedContext): boolean {
 	const sharers = new Set<BoundedContext>();
 	let any = false;
-	for (const relationship of workspace.relationships) {
+	for (const relationship of scope.relationships) {
 		if (!relationship.involves(bc)) continue;
 		if (relationship.type !== "shared-kernel") return false;
 		any = true;
@@ -4929,16 +5031,17 @@ function isSharedKernelContext(
  * nobody's customer journey runs through — a row on the problem-space view
  * that exists so a rule would stop asking (decision 16's amendment, card 95).
  */
-const contextServesSubdomain: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of modelledContexts(workspace)) {
+const contextServesSubdomain: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of modelledContexts(scope)) {
 		if (bc.subdomains.size > 0) continue;
-		if (isSharedKernelContext(workspace, bc)) continue;
+		if (isSharedKernelContext(scope, bc)) continue;
 		diagnostics.push({
 			severity: "warning",
 			rule: "context-serves-subdomain",
 			message: `Bounded context "${bc.name}" serves no subdomain, so it is missing from the problem-space view`,
 			ref: bc.ref,
+			at: bc,
 		});
 	}
 	return diagnostics;
@@ -5087,9 +5190,9 @@ function publishedFacts(
  * rule that reads one of the two flags to guess which reading the author meant
  * (decision 28; card 98).
  */
-const externalIsBoundary: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+const externalIsBoundary: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of scope.contexts()) {
 		if (!bc.external) continue;
 		const refuse = (what: string, ref: string, alternative?: string) =>
 			diagnostics.push({
@@ -5097,6 +5200,7 @@ const externalIsBoundary: Rule = (workspace) => {
 				rule: "external-is-boundary",
 				message: `External context "${bc.name}" declares ${what}; what happens inside a system we do not own is not ours to state, only what it provides and what it consumes${alternative ? `. ${alternative}` : ""}`,
 				ref,
+				at: bc,
 			});
 		if (bc.bigBallOfMud)
 			diagnostics.push({
@@ -5104,6 +5208,7 @@ const externalIsBoundary: Rule = (workspace) => {
 				rule: "external-is-boundary",
 				message: `Bounded context "${bc.name}" is marked both external and a big ball of mud; a mud context is the enterprise's own, however unreadable, and an external one is somebody else's system, so a context is one or the other`,
 				ref: bc.ref,
+				at: bc,
 			});
 		for (const aggregate of bc.aggregates.values())
 			refuse(
@@ -5150,6 +5255,7 @@ const externalIsBoundary: Rule = (workspace) => {
 					rule: "external-is-boundary",
 					message: `External context "${bc.name}" marks invariant "${invariant.name}" both a precondition and a postcondition; a published contract checks a request before a call or guarantees its answer or an event's payload, and cannot claim both moments`,
 					ref: invariant.ref,
+					at: invariant,
 				});
 				continue;
 			}
@@ -5159,6 +5265,7 @@ const externalIsBoundary: Rule = (workspace) => {
 					rule: "external-is-boundary",
 					message: `External context "${bc.name}" declares invariant "${invariant.name}", which is neither a precondition nor a postcondition; a rule a system we do not own keeps at rest is not ours to state. What is ours to write down is that system's published contract: mark the rule a precondition or a postcondition of one of this context's own operations, or a postcondition of one of its own events, or move it to the context of ours that really keeps it`,
 					ref: invariant.ref,
+					at: invariant,
 				});
 				continue;
 			}
@@ -5175,6 +5282,7 @@ const externalIsBoundary: Rule = (workspace) => {
 					rule: "external-is-boundary",
 					message: `External context "${bc.name}" states ${kind} "${invariant.name}" on none of its own operations${invariant.postcondition ? " or events" : ""}; what a system we do not own publishes is the contract of an operation it offers${invariant.postcondition ? ", or of a fact it sends us" : ""}, so name that ${invariant.postcondition ? "operation or event" : "operation"}. ${externalContractMay}`,
 					ref: invariant.ref,
+					at: invariant,
 				});
 			const reach = externalContractReach(bc, invariant);
 			for (const target of invariant.targets) {
@@ -5196,6 +5304,7 @@ const externalIsBoundary: Rule = (workspace) => {
 					rule: "external-is-boundary",
 					message: `External context "${bc.name}" states a ${kind} on ${elsewhere}`,
 					ref: invariant.ref,
+					at: invariant,
 				});
 			}
 		}
@@ -5216,6 +5325,7 @@ const externalIsBoundary: Rule = (workspace) => {
 					rule: "external-is-boundary",
 					message: `External context "${bc.name}" marks ${kind} "${consumable.name}" internal; whether an ${kind} of a system we do not own stays inside it is not ours to state, only that it exists and who it reaches. Drop internal, or drop the ${kind} if nothing here depends on it`,
 					ref: consumable.ref,
+					at: consumable,
 				});
 			}
 		// A value object of an external context is its published vocabulary, and
@@ -5263,9 +5373,9 @@ const externalIsBoundary: Rule = (workspace) => {
  * boundary-only context may not declare would be answering a question they
  * have not yet asked.
  */
-const boundaryOnlyIsBoundary: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+const boundaryOnlyIsBoundary: Rule = (scope) => {
+	const diagnostics: Finding[] = [];
+	for (const bc of scope.contexts()) {
 		if (!bc.boundaryOnly) continue;
 		const clash = bc.external
 			? "external; a system the enterprise does not own is nobody here's to interview, and a context modelled at its boundary only is ours and waiting to be"
@@ -5278,6 +5388,7 @@ const boundaryOnlyIsBoundary: Rule = (workspace) => {
 				rule: "boundary-only-is-boundary",
 				message: `Bounded context "${bc.name}" is marked both boundary-only and ${clash}, so a context is one or the other`,
 				ref: bc.ref,
+				at: bc,
 			});
 			continue;
 		}
@@ -5287,6 +5398,7 @@ const boundaryOnlyIsBoundary: Rule = (workspace) => {
 				rule: "boundary-only-is-boundary",
 				message: `Boundary-only context "${bc.name}" declares ${what}; a context modelled at its boundary only states what it offers and what it takes, and nothing about its insides until somebody interviews it${alternative ? `. ${alternative}` : ""}`,
 				ref,
+				at: bc,
 			});
 		for (const aggregate of bc.aggregates.values())
 			refuse(
@@ -5325,19 +5437,53 @@ const boundaryOnlyIsBoundary: Rule = (workspace) => {
  * every map, page and rule downstream is reading a model with a hole in it. It
  * is also the one rule that says nothing about DDD; it is about the file.
  */
-const unresolvedRef: Rule = (workspace) =>
-	workspace.unresolved.map((it) => ({
-		severity: "error" as const,
-		rule: "unresolved-ref",
-		message: `${it.owner} names "${it.target}" in "${it.field}"${
-			it.where ? ` on ${it.where}` : ""
-		}, ${
-			it.present
+const unresolvedRef: Rule = (scope) =>
+	scope.workspaces.flatMap((workspace) =>
+		workspace.unresolved.map((it) => ({
+			severity: "error" as const,
+			rule: "unresolved-ref",
+			message: `${it.owner} names "${it.target}" in "${it.field}"${
+				it.where ? ` on ${it.where}` : ""
+			}, ${unresolvedReason(it)}; the link is left unset until it resolves, so correct the ref or declare what it names`,
+			ref: it.ref,
+			at: workspace,
+		})),
+	);
+
+/**
+ * The expected kind as a ref into another file reads it. The labels say "of
+ * this workspace" because they were written for a ref within one file, but a
+ * kind found in another file is as legal as one found here, so beside "which
+ * is in b.json" the qualifier would say the opposite: that the kind belongs to
+ * the file that wrote the ref and b.json's does not count. A cross-file wrong
+ * kind names the kind alone, and the file says where the target is.
+ */
+function foreignKind(expected: string): string {
+	return expected
+		.replace(" of one of this workspace's domains", " of a domain")
+		.replace(/ of this workspace/g, "");
+}
+
+/**
+ * Why a ref did not resolve. A ref that names a file says which of the four
+ * ways it failed; one that does not keeps the words it has always had.
+ */
+function unresolvedReason(it: UnresolvedReference): string {
+	switch (it.cause) {
+		case "invalid-path":
+			return `but the path before its "#" is not a usable path to another file: ${it.detail}`;
+		case "missing-file":
+			return `but ${it.detail}`;
+		case "missing-target":
+			return `but ${it.file} has nothing at that ref`;
+		case "wrong-kind":
+			return `which is in ${it.file} but is not ${foreignKind(it.expected)}`;
+		default:
+			return it.present
 				? `which is not ${it.expected}`
-				: "but nothing in this workspace has that ref"
-		}; the link is left unset until it resolves, so correct the ref or declare what it names`,
-		ref: it.ref,
-	}));
+				: "but nothing in this workspace has that ref";
+	}
+}
 
 /**
  * A field a loaded file wrote that this metamodel does not know.
@@ -5357,13 +5503,16 @@ const unresolvedRef: Rule = (workspace) =>
  * raw JSON alongside every element, which is a bigger change than reporting
  * the loss (card 121).
  */
-const unknownField: Rule = (workspace) =>
-	workspace.unknownFields.map((it) => ({
-		severity: "warning" as const,
-		rule: "unknown-field",
-		message: `${it.owner} writes "${it.field}", which this metamodel has no such field for; it is dropped rather than kept. See what this element has instead, or, if this is a newer field, check the odsVersion this core reads`,
-		ref: it.ref,
-	}));
+const unknownField: Rule = (scope) =>
+	scope.workspaces.flatMap((workspace) =>
+		workspace.unknownFields.map((it) => ({
+			severity: "warning" as const,
+			rule: "unknown-field",
+			message: `${it.owner} writes "${it.field}", which this metamodel has no such field for; it is dropped rather than kept. See what this element has instead, or, if this is a newer field, check the odsVersion this core reads`,
+			ref: it.ref,
+			at: workspace,
+		})),
+	);
 
 /**
  * The file was written against a metamodel this core reads.
@@ -5384,35 +5533,41 @@ const unknownField: Rule = (workspace) =>
  * noted 2026-09-10). Nothing here fires for a workspace built through the
  * DSL, which is written against this core by construction.
  */
-const odsVersion: Rule = (workspace) => {
-	const mismatch = workspace.odsVersionMismatch;
-	if (!mismatch) return [];
-	return [
-		{
-			severity: "error" as const,
-			rule: "ods-version",
-			message: mismatch.found
-				? `This file was written against ODS ${mismatch.found}, and this is ODS ${ODS_VERSION}; the majors differ, so parts of it mean something else here or nothing at all`
-				: `This file states no odsVersion, so it was written before ODS said which metamodel a file is written against; this is ODS ${ODS_VERSION}`,
-			ref: "#/odsVersion",
-		},
-	];
-};
+const odsVersion: Rule = (scope) =>
+	scope.workspaces.flatMap((workspace) => {
+		const mismatch = workspace.odsVersionMismatch;
+		if (!mismatch) return [];
+		return [
+			{
+				severity: "error" as const,
+				rule: "ods-version",
+				message: mismatch.found
+					? `This file was written against ODS ${mismatch.found}, and this is ODS ${ODS_VERSION}; the majors differ, so parts of it mean something else here or nothing at all`
+					: `This file states no odsVersion, so it was written before ODS said which metamodel a file is written against; this is ODS ${ODS_VERSION}`,
+				ref: "#/odsVersion",
+				at: workspace,
+			},
+		];
+	});
 
 /**
  * Every context relationship carries at least one comment. Opt-in: a workspace
  * asks for it with `options.rules.commentsRequired`, because a model that has
  * not started on its evidence layer yet should not be buried in warnings.
  */
-const commentsRequired: Rule = (workspace) => {
-	if (!workspace.options?.rules?.commentsRequired) return [];
-	return relationshipsWithoutComments(workspace).map((r) => ({
-		severity: "warning" as const,
-		rule: "comments-required",
-		message: `"${r.source.name}" and "${r.target.name}" are related as ${r.type}, but nothing is written down about the real system behind it`,
-		ref: r.ref,
-	}));
-};
+const commentsRequired: Rule = (scope) =>
+	scope.workspaces.flatMap((workspace) => {
+		// The option belongs to the file that sets it: another file in the set
+		// that does not ask is not asked.
+		if (!workspace.options?.rules?.commentsRequired) return [];
+		return relationshipsWithoutComments(workspace).map((r) => ({
+			severity: "warning" as const,
+			rule: "comments-required",
+			message: `"${r.source.name}" and "${r.target.name}" are related as ${r.type}, but nothing is written down about the real system behind it`,
+			ref: r.ref,
+			at: r,
+		}));
+	});
 
 /** Names a strategic intent the way a Problems row has to read on its own. */
 function intentLabel(intent: StrategicIntent): string {
@@ -5434,14 +5589,15 @@ function intentLabel(intent: StrategicIntent): string {
  * "Intent" here is {@link intentsWithoutComments}'s reading, so internal
  * consumables are out: they never cross a boundary and so are not strategic.
  */
-const dispositionNeedsComment: Rule = (workspace) =>
-	intentsWithoutComments(workspace)
+const dispositionNeedsComment: Rule = (scope) =>
+	intentsWithoutComments(scope)
 		.filter((intent) => dispositionOf(intent) !== "by-design")
 		.map((intent) => ({
 			severity: "warning" as const,
 			rule: "disposition-needs-comment",
 			message: `${intentLabel(intent)} is marked ${dispositionOf(intent)}, but carries no comment saying what makes it so or what would clear it`,
 			ref: intent.ref,
+			at: intent,
 		}));
 
 /** What a validation rule checks, in words a reader new to DDD can follow. */
@@ -6109,7 +6265,55 @@ export const RULE_CATALOG: ReadonlyArray<RuleDescription> = RULES.map(
 	({ check: _check, ...description }) => description,
 );
 
-/** Checks a workspace against the DDD rules ODS can verify structurally. */
+/**
+ * Runs every rule over a scope, each finding with the element it is about.
+ * Rules run in catalogue order, and within a rule over the workspaces in the
+ * order the scope holds them.
+ */
+function findingsIn(scope: Scope): Finding[] {
+	return RULES.flatMap((rule) => rule.check(scope));
+}
+
+/** Without the element a finding was reported at. */
+function plain({ at: _at, ...diagnostic }: Finding): Diagnostic {
+	return diagnostic;
+}
+
+/**
+ * Checks a workspace against the DDD rules ODS can verify structurally, read
+ * on its own: a workspace in a set is judged as if it were the only file (a
+ * member of a set is judged by {@link validateSet}, which is the question that
+ * has an answer for a file that borrows from another).
+ */
 export function validateWorkspace(workspace: Workspace): Diagnostic[] {
-	return RULES.flatMap((rule) => rule.check(workspace));
+	return findingsIn(soloScope(workspace)).map(plain);
+}
+
+/** A diagnostic that belongs to one file of a set. */
+export type SetDiagnostic = Diagnostic & {
+	/** The raw set path of the file the diagnostic is about. */
+	file: SetPath;
+};
+
+/**
+ * Checks every file of a set against the same rules, as one set: a rule asks
+ * its question of the workspaces together, and each diagnostic comes back
+ * with the file of the element it is about. The set's own faults (a path the
+ * host gave that was refused, two files claiming one workspace id) come first.
+ *
+ * A set of one file answers exactly as that workspace does alone.
+ */
+export function validateSet(set: WorkspaceSet): SetDiagnostic[] {
+	const findings = findingsIn(set.scope).map((finding) => {
+		const file = workspaceOf(finding.at)?.file;
+		// A rule reports at an element of a workspace of the set; one that does
+		// not is a defect in the rule, and silence about it would lose the
+		// diagnostic rather than the file it belongs to.
+		if (file === undefined)
+			throw new Error(
+				`Rule ${finding.rule} reported at ${finding.ref}, which is in no file of the set`,
+			);
+		return { ...plain(finding), file };
+	});
+	return [...setFaults(set), ...findings];
 }

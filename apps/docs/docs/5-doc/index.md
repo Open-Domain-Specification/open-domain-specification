@@ -18,6 +18,7 @@ A TypeScript library for generating comprehensive Markdown documentation from Op
 - **Navigation Structure**: Create sidebar navigation with proper hierarchy and cross-linking
 - **A Complete Static Site**: An `index.html` docsify shell alongside the Markdown, so the folder renders on any static host
 - **Breadcrumb Navigation**: Optional breadcrumb trails for easy navigation
+- **Sets of Workspaces**: `toDocSet` documents a whole folder of workspace files, one folder of pages per file, with links between files and a first page that lists them
 - **Multiple Component Types**: Support for workspaces, domains, subdomains, bounded contexts, services, and aggregates
 
 ## Installation
@@ -48,3 +49,16 @@ This is crafted for ease of use with `Docsify` or similar documentation generato
 Alongside the Markdown, `toDoc` writes an `index.html`: a docsify shell that loads docsify from a CDN, names the site after the workspace, points a bare `/` at the workspace page, and resolves each page's diagrams beside it. The folder is therefore a complete static site — drop it on any host, no `docsify serve` required.
 
 A Playwright spec in the pages package (`packages/pages/e2e/docsify.spec.ts`) serves the generated petstore folder from a plain static server and walks every page in the sidebar, failing the build on a missing heading, a console error, or any request that 404s.
+
+## A Set of Workspaces
+
+`toDocSet` takes a `WorkspaceSet` (the files of a folder, see [Sets of Workspaces](../3-core/5-workspace-sets.md)) and returns the same kind of dictionary, for the whole set:
+
+- **One folder of pages for each file.** Local ids repeat across files, so a page named only by its element would be two pages. The folder of a file is its path with the `.json` kept on the last name: `accounts.json/`, `team/payments.json/`. Every segment of a path is projected the way every other path here is, so a space, a `#`, a `%` or a non-ASCII character in a file or folder name becomes a bounded `_ods_<hex>` component rather than a character a file system or a URL might read differently. The inside of a folder is exactly what `toDoc` writes for one workspace. A name with a dot in it cannot be a page the model writes, so a folder cannot collide with one, and a directory (which has no dot) cannot collide with the folder of a file.
+- **Links across files.** A consumption whose provider is in another file links to the provider's page in that file's folder; so do value-object and schema rows, glossary and subdomain links, and a context's relationships and consumers. A relationship is shown on the page of each context it is about, whichever file declares it.
+- **A first page.** `index.md` lists the files in the order the set holds them (which a host gives in code point order of path), draws one context map across all of them with a cluster for each file, tabulates how the contexts relate and lists every diagnostic of the set with the file it is about, including a file the host offered that the set left out. `_sidebar.md` leads with it and nests each file's tree one level under it, and each file's own page has a link back.
+- **Standalone stays standalone.** A set of one workspace is documented as that workspace alone, file for file as `toDoc` writes it. `toDoc` of a workspace that is one of several in a set throws and names `toDocSet`: written alone, its links to the other files would resolve to nothing.
+
+The reference model NorthBank is generated this way: `models/northbank/docs` is `toDocSet` of the twelve files under `.ods`, read back from the folder in code point order, so its listings show what every other reader of the folder shows.
+
+The order of a list that gathers across files follows the order of the files. Nothing can say otherwise: there is no order hint and no manifest. Renaming a file can reorder such a list, and the pages of a file are in a folder named after it.

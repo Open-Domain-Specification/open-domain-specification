@@ -1,3 +1,4 @@
+import { scopeAround } from "./scope";
 import type {
 	Aggregate,
 	Attribute,
@@ -66,7 +67,7 @@ export function usersOfSchema(schema: DataSchema): SchemaUser[] {
 					: undefined;
 	};
 	const carriers = schema.consumables;
-	for (const bc of schema.boundedcontext.workspace.boundedcontexts.values()) {
+	for (const bc of scopeAround(schema.boundedcontext.workspace).contexts()) {
 		for (const owner of carriers) {
 			if (owner.boundedcontext === bc)
 				users.push({ kind: "consumable", boundedcontext: bc, owner });

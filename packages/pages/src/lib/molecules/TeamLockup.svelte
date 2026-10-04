@@ -11,4 +11,4 @@ import Lockup from "../atoms/Lockup.svelte";
 const { team }: { team?: Team } = $props();
 </script>
 
-{#if team}<Lockup kind="team" name={team.name} ref={team.ref} />{:else}<Keyword text="no owning team" />{/if}
+{#if team}<Lockup kind="team" name={team.name} ref={team} />{:else}<Keyword text="no owning team" />{/if}

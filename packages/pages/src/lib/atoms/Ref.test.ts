@@ -1,6 +1,10 @@
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
+import { petstoreModel } from "../fixtures";
+import { loadSet } from "../load";
+import { cxPayloads } from "../set-fixture";
 import Ref from "./Ref.svelte";
+import Harness from "./RefInModel.harness.svelte";
 
 describe("Ref", () => {
 	it("carries aria-current only when it is told it is the current page", () => {
@@ -92,5 +96,54 @@ describe("Ref in running text (#79)", () => {
 		unmount();
 		render(Ref, { ref: "#/x", label: "Sentence", prose: true });
 		expect(screen.getByRole("link", { name: "Sentence" })).toHaveClass("prose");
+	});
+});
+
+describe("Ref in a set", () => {
+	const cx = loadSet(cxPayloads());
+	const [a, b] = cx.files;
+	const ledgerOf = (f: typeof a) =>
+		f.workspace.boundedcontexts.get("ledger") as never;
+
+	it("links an element to the page of the file that owns it, whatever the page it is on", () => {
+		render(Ref, { ref: ledgerOf(b), label: "Ledger" });
+		const link = screen.getByRole("link", { name: "Ledger" });
+		expect(link).toHaveAttribute(
+			"data-ref",
+			"#/workspaces/b.json/boundedcontexts/ledger",
+		);
+		expect(link).toHaveAttribute(
+			"href",
+			"#/workspaces/b.json/boundedcontexts/ledger",
+		);
+	});
+
+	it("reads a string ref as a ref of the file on screen, and an element as its own file's", () => {
+		render(Harness, {
+			model: a.model,
+			local: "#/boundedcontexts/ledger",
+			foreign: ledgerOf(b),
+		});
+		const links = screen.getAllByRole("link");
+		expect(links.map((l) => l.dataset.ref)).toEqual([
+			"#/workspaces/a.json/boundedcontexts/ledger",
+			"#/workspaces/b.json/boundedcontexts/ledger",
+		]);
+	});
+
+	it("leaves a string ref alone with no model around it, and an element of no set as its own ref", () => {
+		render(Ref, { ref: "#/boundedcontexts/ledger", label: "Local" });
+		expect(screen.getByRole("link", { name: "Local" })).toHaveAttribute(
+			"data-ref",
+			"#/boundedcontexts/ledger",
+		);
+		const alone = petstoreModel().workspace.boundedcontexts.get(
+			"sales_bc",
+		) as never;
+		render(Ref, { ref: alone, label: "Alone" });
+		expect(screen.getByRole("link", { name: "Alone" })).toHaveAttribute(
+			"data-ref",
+			"#/boundedcontexts/sales_bc",
+		);
 	});
 });

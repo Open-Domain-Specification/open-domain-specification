@@ -64,8 +64,34 @@ export function fileComponents(segment: string): string[] {
 	return chunks;
 }
 
+/**
+ * Separates the folder a workspace file is written under from the model path
+ * inside it. NUL cannot occur in either side: a set path with a control
+ * character is refused by core, and a model path is built of pointer segments.
+ */
+export const PLACE = "\u0000";
+
+/**
+ * The folder a file of a set of several workspaces is written under, already
+ * projected: directories as bounded components, and the file's own name as the
+ * projected stem followed by `.json`. A component the model projects never
+ * holds a dot, so this folder cannot be named like anything the model writes
+ * inside a workspace folder (an id, `domains`, `index.md`), and a directory
+ * (which has no dot) cannot be named like the folder of a file.
+ */
+export function setFolder(file: string): string {
+	const segments = file.split("/");
+	const name = segments.pop() as string;
+	const stem = fileComponents(name.replace(/\.json$/, ""));
+	stem[stem.length - 1] += ".json";
+	return [...segments.flatMap(fileComponents), ...stem].join("/");
+}
+
 /** Projects every canonical model-path segment without dropping empty ones. */
 export function physicalPath(path: string): string {
+	const at = path.indexOf(PLACE);
+	if (at >= 0)
+		return `${path.slice(0, at)}/${physicalPath(path.slice(at + 1))}`;
 	return path.split("/").flatMap(fileComponents).join("/");
 }
 

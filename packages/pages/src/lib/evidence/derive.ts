@@ -8,6 +8,7 @@ import {
 	type Evidenced,
 	isSymmetricRelationship,
 	relationshipsWithoutComments,
+	scopeAround,
 	type Workspace,
 } from "@open-domain-specification/core";
 
@@ -46,7 +47,7 @@ const row = (r: ContextRelationship, index: number): EvidenceRow => ({
  */
 export function positionGroups(
 	bc: BoundedContext,
-	relationships: ContextRelationship[],
+	relationships: ReadonlyArray<ContextRelationship>,
 ): RowGroup[] {
 	const mine = relationships.filter((r) => r.source === bc || r.target === bc);
 	const rows = mine.map(row);
@@ -164,7 +165,9 @@ export function crossingConsumables(
 ): Crossing[] {
 	const sides = [r.source, r.target];
 	const crossings: Crossing[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+	// A relationship's two sides may be in different files, and the
+	// consumptions that cross it are written by whichever file consumes.
+	for (const bc of scopeAround(workspace).contexts()) {
 		for (const owner of [...bc.aggregates.values(), ...bc.services.values()]) {
 			for (const consumption of owner.consumptions) {
 				const from = contextOf(consumption.consumable.provider);

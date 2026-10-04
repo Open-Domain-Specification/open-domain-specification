@@ -4,13 +4,15 @@ date: 2026-09-06
 ---
 # Decision 14 — A relation never crosses a bounded context; only an identity does
 
-## Current position (2026-09-10)
+## Current position (2026-10-04)
 
 Status is Accepted (2026-09-10, after thirteen review rounds; it had read Proposed while its rules were errors the models were pinned to). `cross-context-relation` refuses a relation into another context and the identity attribute is the crossing; stable. Since the amendment of 2026-09-06 (card 54) the attribute says which boundary through `identifies`, which may name any entity anywhere, child or root, in its own context or another (amendments of 2026-09-07, card 67, and 2026-09-08 third, card 91, which reversed card 90's refusal of a same-context child), an external context (2026-09-08, card 81), or a schema an external context publishes (decision 28's third amendment of 2026-09-10, card 113). `identifies-entity` checks only that the target is of this workspace.
 
 The decision's sentence that the consumable map is where the dependency reads no longer holds; see the amendment of 2026-09-07 (card 70): the context map draws it as an implied «id» edge.
 
 The consequences' sentence that `relationship-declared` asks for the relationship behind an identity crossing no longer holds; see the amendment of 2026-09-09 (card 100): the «id» edge is its own record, and a relationship is declared where something is exchanged or a language is borrowed. `relationship-declared` reads entity and value-object attributes only, never a payload's echoed id (2026-09-08 second, card 90). `mud-needs-acl` likewise reads consumptions, not a held key (decision 28, cards 107 and 108). Two named costs stand: `identifies` is opt-in, and a denormalised copy of another context's fact is invisible unless its carrying event is modelled (2026-09-09).
+
+Since 2026-10-04 an identity may reach into another file of a set exactly where it may reach into another context, with the target found through the file the ref names; the file is no second reason to allow or refuse it, and a relationship with an end in another file has a seven or eight segment ref (amendment of 2026-10-04; decisions 08 and 26).
 
 ## Context
 
@@ -72,3 +74,7 @@ An identity crossing is its own record. The context map draws it as the «id» e
 ## Note (2026-09-10)
 
 `cross-context-relation` refused a `uses` relation to a value object borrowed through a kernel or a conformist relationship and told the author to hold its identity instead, which a value has none of; decision 16 already derives the line from the attribute and a declared relation only adds a label and a cardinality. A relation to a borrowed value is allowed where the borrowing is (card 126). Inside a context, `references` and an `identifies` attribute are two forms of one dependency: `references` draws the line and its cardinality, `identifies` names the key; both may be written, and the interview playbook says to write the attribute and add the relation where the map needs the cardinality.
+
+## Amendment (2026-10-04)
+
+A file boundary changes none of this. An `identifies` attribute names an entity, an external, mud or boundary-only context, or a schema such a context publishes, and may reach into another file of the set by a qualified ref exactly where it may reach into another context; the file is not a second reason to allow or refuse it, and a relation still never crosses a context, whichever files the two contexts are in. `identifies-entity` finds its target through the file the ref names, so an entity with the same local id in two files is two targets. The implied «id» edge is drawn between the two contexts across files as within one, and a relationship that backs a crossing may be declared in either file. A relationship's own ref has a seven or eight segment form when an end is in another file; see decision 26, amendment of 2026-10-04.

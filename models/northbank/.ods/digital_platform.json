@@ -1,0 +1,108 @@
+{
+  "$schema": "./schema.json",
+  "id": "northbank_digital_platform",
+  "name": "NorthBank Digital Platform",
+  "description": "NorthBank's Digital Platform Team: identity and access, and the Platform domain.",
+  "version": "1.0.0",
+  "odsVersion": "3.0.0",
+  "primaryColor": "#1d4ed8",
+  "domains": {
+    "platform": {
+      "name": "Platform",
+      "description": "Shared technical capabilities",
+      "subdomains": {
+        "identity_&_access": {
+          "name": "Identity & Access",
+          "type": "generic",
+          "description": "Login and step-up authentication. Vendor built; never placed on the capability map"
+        }
+      }
+    }
+  },
+  "boundedcontexts": {
+    "identity_&_access": {
+      "name": "Identity & Access",
+      "description": "Usernames, credentials, step-up authentication",
+      "subdomains": [],
+      "team": {
+        "$ref": "#/teams/digital_platform_team"
+      },
+      "aggregates": {
+        "credential": {
+          "name": "Credential",
+          "description": "A customer's login",
+          "provides": {
+            "customer_authenticated": {
+              "name": "CustomerAuthenticated",
+              "description": "A customer proved who they are on a channel",
+              "pattern": "published-language",
+              "type": "event"
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "credential": {
+              "name": "Credential",
+              "description": "Username and step-up factors for one customer",
+              "root": true,
+              "attributes": {
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  }
+                },
+                "username": {
+                  "name": "username",
+                  "type": "string"
+                },
+                "step_up_enrolled": {
+                  "name": "stepUpEnrolled",
+                  "type": "boolean"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {}
+        }
+      },
+      "invariants": {},
+      "services": {
+        "identity_app": {
+          "name": "IdentityApp",
+          "description": "Identity & Access' application service: the boundary channels authenticate customers through",
+          "type": "application",
+          "provides": {
+            "authenticate_customer": {
+              "name": "AuthenticateCustomer",
+              "description": "Verify credentials and step-up",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity_&_access/aggregates/credential/provides/customer_authenticated"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "processes": {},
+      "glossary": {},
+      "valueobjects": {},
+      "schemas": {}
+    }
+  },
+  "relationships": [],
+  "teams": {
+    "digital_platform_team": {
+      "name": "Digital Platform Team",
+      "description": "Identity and access"
+    }
+  }
+}

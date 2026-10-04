@@ -51,7 +51,7 @@ test("imports the workspace from a relative url typed into the form", async ({
 test("imports a workspace picked from disk", async ({ page }) => {
 	await page.goto("/");
 
-	await page.locator("input[type=file]").setInputFiles(PETSTORE_PATH);
+	await page.locator("#file").setInputFiles(PETSTORE_PATH);
 
 	await expect(page.locator("main h1")).toContainText(WORKSPACE_NAME);
 	// v2 keeps the version and the file out of the title and states them as
@@ -80,7 +80,7 @@ test("reports a url that cannot be fetched", async ({ page }) => {
 test("reports a file that is not json", async ({ page }) => {
 	await page.goto("/");
 
-	await page.locator("input[type=file]").setInputFiles({
+	await page.locator("#file").setInputFiles({
 		name: "notes.json",
 		mimeType: "application/json",
 		buffer: Buffer.from("this is not json"),

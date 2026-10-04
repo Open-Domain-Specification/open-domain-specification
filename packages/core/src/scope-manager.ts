@@ -7,6 +7,7 @@ import type {
 	Subdomain,
 	Workspace,
 } from "./workspace";
+import type { WorkspaceSet } from "./workspace-set";
 
 export type Scope =
 	| Workspace
@@ -56,6 +57,13 @@ export class ScopeManager extends AbstractVisitor {
 	static fromWorkspace(workspace: Workspace) {
 		const collector = new ScopeManager();
 		collector.visitWorkspace(workspace);
+		return collector;
+	}
+
+	/** Every workspace of a set, each in scope on its own terms. */
+	static fromSet(set: WorkspaceSet) {
+		const collector = new ScopeManager();
+		collector.visitWorkspaceSet(set);
 		return collector;
 	}
 

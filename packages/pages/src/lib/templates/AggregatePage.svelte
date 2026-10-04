@@ -9,6 +9,7 @@ export const sections = [
 </script>
 
 <script lang="ts">
+import { identityKeyOf } from "@open-domain-specification/core";
 import {
 	type Aggregate,
 	type Consumable,
@@ -61,13 +62,13 @@ const raisersOf = (event: Consumable) =>
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Root">
-				{#if root}<Lockup kind="entity" name={root.name} ref={root.ref} />{:else}<Keyword
+				{#if root}<Lockup kind="entity" name={root.name} ref={root} />{:else}<Keyword
 						text="no root entity"
 						tone="error"
 						title="An aggregate needs exactly one root entity; it keeps persistent aggregate rules true on save."
 					/>{/if}
 			</Definition>
-			<Definition term="Context"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
+			<Definition term="Context"><Lockup kind="boundedcontext" name={bc.name} ref={bc} /></Definition>
 		</DefinitionList>
 	{/snippet}
 </PageHeader>
@@ -89,9 +90,9 @@ const raisersOf = (event: Consumable) =>
 	problems={[...entities, ...valueobjects].flatMap((e) => problemsUnder(model, e.ref))}
 >
 	<Heading level={3} count={entities.length}>Entities</Heading>
-	{#each entities as e (e.ref)}<StructureSubsection element={e} />{:else}<EmptyState text="No entities. An aggregate needs a root entity." />{/each}
+	{#each entities as e (identityKeyOf(e))}<StructureSubsection element={e} />{:else}<EmptyState text="No entities. An aggregate needs a root entity." />{/each}
 	<Heading level={3} count={valueobjects.length}>Value objects</Heading>
-	{#each valueobjects as v (v.ref)}<StructureSubsection element={v} />{:else}<EmptyState text="No value objects held by this aggregate." />{/each}
+	{#each valueobjects as v (identityKeyOf(v))}<StructureSubsection element={v} />{:else}<EmptyState text="No value objects held by this aggregate." />{/each}
 </Section>
 
 <InvariantsSection
@@ -112,9 +113,9 @@ const raisersOf = (event: Consumable) =>
 	problems={consumables.flatMap((x) => problemsUnder(model, x.ref))}
 >
 	<Heading level={3} count={operations.length}>Operations</Heading>
-	{#each operations as c (c.ref)}<ConsumableSubsection consumable={c} />{:else}<EmptyState text="No operations. How does state change?" />{/each}
+	{#each operations as c (identityKeyOf(c))}<ConsumableSubsection consumable={c} />{:else}<EmptyState text="No operations. How does state change?" />{/each}
 	<Heading level={3} count={events.length}>Events</Heading>
-	{#each events as e (e.ref)}<ConsumableSubsection consumable={e} raisedBy={raisersOf(e)} />{:else}<EmptyState text="No events provided by this aggregate." />{/each}
+	{#each events as e (identityKeyOf(e))}<ConsumableSubsection consumable={e} raisedBy={raisersOf(e)} />{:else}<EmptyState text="No events provided by this aggregate." />{/each}
 </Section>
 
 <Section

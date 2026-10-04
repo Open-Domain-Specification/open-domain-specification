@@ -2,7 +2,7 @@
 
 ## Goal / health
 
-Clear the guarded backlog: **3 open / 51 closed** from 54 (43 implemented, 8 not planned, 0 new/reopened). Open #63, #59, #54. Milestones 1-8 source delivered and closed; the M8 closing records have accepted quality and wait for their own clean-head gate and publication. No release.
+Clear the guarded backlog: **3 open / 51 closed** from54 (43implemented,8notplanned,zero new/reopened). Open #59,#54,#63. Milestones1–8 and their closing records are complete and published. No release.
 
 ## Binding delegation policy — 2026-10-03
 
@@ -14,22 +14,29 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-M8 closing records (this change: STATUS, roadmap, manifest, card 189, sprint 09, retrospective 09). Written 2026-10-04T03:37Z from actual closure evidence; Their complete quality is accepted (eight canonical Sonnet end turns through Opus, highest 0.3, no blocker). The unmodified clean-head gate and publication are pending and belong to root.
+M9 #59 source and integration are accepted for the landing candidate. Core2,334 tests; extension207; pages1,541 at100% coverage and997 files with0 errors/warnings; Graphviz56, Markdown106, skill186, shared28, NorthBank51 and docs28. NorthBank is12 team-owned files with19contexts/34declaredrelationships/37root-map edges and exact3diagnostics. Packaged ESM/CJS independently produce214files/420cross-file links matching the generated site. Frozen original bytes and DISCOVERY history remain intact.
+
+Whole eight-lens quality F and bounded behavior corrections G are complete. Diagnostic ranges resolve alternate valid path spellings at the owning element; cross-file kind wording names the correct file; malformed URL imports return actionable failures; navigation prose states its host scope. No known introduced defects/high-score findings remain. All five generated schema copies are current.
 
 ## Next
 
-After publication, the next M9 action (#59 team-owned model files) is the bounded linked-workspace contract correction. Implementation awaits root acceptance. The survey facts are accepted, but root rejected the flat one-workspace design: decision 08's linked complete workspace files and the duplicate-local-id identity counterexample need a bounded contract correction, accepted by root, before any source. No M9 design is approved and no source is authorized.
+Freeze the exact complete candidate and run the unmodified clean-head local landing gate, followed serially by actual native and keyboard suites. Then root whole-model readiness and final Astra Low/Claude signoff, necessary exact pre/postCI (publish skipped), identical-tree merge and #59closure. C native34pass/4existingoptional and32keyboard are retained prior-source proof; current-candidate native proof remains required. No release or new tickets.
+
+Aggregated listing order depends on deterministic file order; the DSL-versus-JSON consumption sequence cost is pre-existing at5120fd54, not stale docs or a new graph-order defect. Writer checks remain non-atomic; known native races are stated. Hosts guard malformed shapes; core is a typed loader. Low-score optional refactors are declined.
 
 ## Later
 
-#54 forms follow #59; the survey's "current commands none" is a premise gap, not scope zero. M10 starts with an intentional, complete add/update authoring inventory (no card or ticket opened). Parent #63 last after a whole-promise audit. Preserve the four readers, exact model pins, generated integrity and the original model approval. No Astra UI/tooling/metadata review.
+Workspace-aware add/update forms #54 consume the same resolver and owning-write contract. Current extension has no add/update commands: establish a complete intentional authoring inventory, not vacuous zero-command acceptance. Parent #63 last after whole-promise audit. No modules/shared-kernel assets or new expressive semantics, no backwards-compatibility aliases, no optional tooling/refactor tickets. Astra remains final whole-model only after complete implementation/checks and primary readiness; existing e5c/5a6 approval is historical, never approval for new core identity changes.
 
 ## Outcomes / blockers
 
-M8 importer PR139: source 23c281af, unmodified gate 190 s (1323 pages/100%, 689 browser, 20 existing opt-in baseline skips, 0 failed/flaky/retried), merge af913078 with identical tree f1991f8f, pre/post CI 37170929768/37171695891 success, publish skipped; #92 closed 02:50:38Z, #93 02:50:41Z. M8 copy PR140: source fe7e59e8, unmodified gate 190 s (same counts), merge a7552b96 with identical tree 1b76924e, pre/post CI 37173478992/37174063275 success, publish skipped; #94 closed 03:34:52Z. Four manual CI runs, no automatic duplicates, no release, no quota response. Evidence: external milestone-08 importer/publication/closures.json and copy/publication/closures.json; retrospective docs/bots/sprints/2026-10-04-retro-09.md. No blocker.
+M8source PR139/140 closed92/93/94 after exact pre/postCI success and identical gated/merged trees; source gates190s each,1323pages100/689browser20existingoptionalcaptures/zero failed/flaky/retried. M8closing records5120fd54 passed own unmodified gate188s and are published, remote verified03:57:30Z. Three local gates/fournecessarymanualCI in M8, no duplicate automatic run/release/quota/Astra. CanonicalOpus/Sonnet runtime/endturn proofs retained. Source map accepted; flat design rejected with concrete identity counterexample. No external blocker.
 
 ## Working state
 
-Updated 2026-10-04T03:41:42.564359+00:00. Branch codex/m8-closeout-records based on a7552b96. Six closing records edited; no product, model or generated file changed; protected M1 objects and milestones 1-7 unchanged. Limits are in the retrospective: no true OS cancel or same-file dedupe proof, no phone contents anchor proof, uneven quality record depth.
+Updated 2026-10-04T10:29:33.546860+00:00. Branch `codex/m9-multifile`, base `5120fd54`; complete source and root records await freeze/gate. G root acceptance: `/Users/jonathanturnock/.codex/ods-delivery/milestone-09/G-final-corrections/root-acceptance.json`. Final model reviews, native/current-candidate gates, CI and landing are pending; #59 remains open.
 
-Closing-record quality checkpoint 2026-10-04T03:48:34.280617+00:00:eight actualcanonicalSonnetendturns/Opus terminal and sixfrozenhashes verified; highest0.3/no blocker. Metadata-only, diff-level readlimits retained; no independent newmodelapproval. Rootbounded3record readiness delta inline8principles accepted. Exactcleancommit/unmodifiedgate/publication next.
+
+### M9 complete-source checkpoint — 2026-10-04T09:46:38.004847+00:00
+
+C and D source/integration reports are complete. E2 corrected the normal-generator content agreement tests; root independently reran shared28/28. All five schema copies are generated and current, NorthBank remains12files with exact three diagnostic tuples, and ordinary packaged ESM/CJS produce214files/19contextnodes/37edges/420cross-filelinks. The DSL-versus-JSON consumption sequence cost is pre-existing at5120fd54; the earlier stale-artifact/candidate-order attribution is withdrawn. M9/#59 remains open: whole eight-lens source quality, clean-head landing gate, final whole-model signoff, native acceptance/necessary exact CI and publication are pending. No final Astra review has been requested. #54 real forms and #63 parent audit remain after #59.

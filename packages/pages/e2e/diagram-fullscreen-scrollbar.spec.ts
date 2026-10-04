@@ -21,7 +21,7 @@ test.use({
 test("the overlay is the visible viewport, and the node nearest the scrollbar is painted", async ({
 	page,
 }) => {
-	const url = await serveModel(page, "northbank");
+	const url = await serveModel(page, "northbank-monolith");
 	await page.goto(
 		`/?url=${encodeURIComponent(url)}${modelHash("#/boundedcontexts/customer_&_kyc/services/onboarding_app")}`,
 	);

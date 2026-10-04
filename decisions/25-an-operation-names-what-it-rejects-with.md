@@ -6,13 +6,15 @@ Date: 2026-09-07
 
 Accepted
 
-## Current position (2026-10-02)
+## Current position (2026-10-04)
 
 Stable, and extended once. `rejects` on operations only, a rejection being neither an event nor a transport error; decision 13's contrary line is superseded. Each rejection shape is one the operation's context may carry under `schema-context`: its own, one it borrows from a context it shares a kernel with, conforms to, or is the customer of in a customer-supplier relationship, or the caller's own shape on the operation that caller reaches through an anti-corruption layer translating from it (decision 03, card 98; correction of 2026-10-01). Since the amendment of 2026-09-10 (card 114) a rejection may name `reasons`, the contract's enumerated outcomes, each an answer a process may hear beside the shape-level answer; a reason is a named outcome, not a condition on data. A process or policy waits on a rejection by origin, `<op>/rejects/<encoded context>/<encoded schema>`, with `/<encoded reason>` for one outcome, and every id in `<op>` is encoded as one segment too (decision 23, cards 92 and 94, the sixth and seventh notes of 2026-10-01). An empty reason means the shape-level refusal. A postcondition may constrain a rejection's attributes (decision 19, card 104), and a rejection carried by a downstream backs the upstream's role (decision 03, card 98). A second successful outcome is not a rejection: it is the `raises` list, or a second `returns` shape if decision 18's condition is ever met, and a rejection shape the operation also raises as an event draws a warning (decision 18, note after card 117, card 123).
 
 Since then (cards 123, 126, 128): `rejection-raised` warns when an operation rejects with a shape it also raises as an event, and is quiet where any policy or process, the raising context's own included, hears the event.
 
 As of 2026-10-02, `rejects-duplicate` reports each repeated rejection schema declaration and each repeated nonempty reason within a declaration. Repeated empty reasons remain allowed aliases for the shape-level answer, which is enumerated once; authored arrays, including invalid repeated schemas and nonempty reasons, survive JSON round trips unchanged. This representation rule protects the canonical answer ref's meaning.
+
+Since 2026-10-04 a rejection shape may be a schema of another file where `schema-context` admits it, and its answer is `<op>/rejects-in/<wire path>/<context>/<schema>[/<reason>]` (note of 2026-10-04; decision 23).
 
 ## Context
 
@@ -59,3 +61,7 @@ The correction made the refusal suffix unique across borrowed schemas but left r
 ## Amendment (2026-10-02)
 
 An operation declares each rejection schema once, and each nonempty named reason once within that declaration (`rejects-duplicate`, issue 108). The answer ref is the operation, schema and optional reason, so repeated schema declarations gave one ref competing `many` and `reasons` semantics, and a repeated nonempty reason named the same answer twice. The validator reports every repeated declaration after the first. It does not merge, drop or rewrite authored entries: invalid JSON still loads without throwing (decision 29), and its arrays survive a JSON round trip so the author can correct them. An empty reason remains an allowed alias for the shape-level answer, including when listed more than once; the derived answer enumeration includes that shape-level answer once. Distinct schemas with the same local id remain distinct because the schema context is part of the ref. This representation rule protects the canonical answer ref's meaning; it is not a newly chosen DDD omission.
+
+## Note (2026-10-04)
+
+A rejection shape may be a schema of another file of the set where `schema-context` admits it, and the answer it names carries the file. A refusal with a schema of the operation's own file is `<op>/rejects/<context>/<schema>[/<reason>]`, as before. With a schema of another file it is `<op>/rejects-in/<wire path of the schema's file, relative to the operation's file, as one pointer segment>/<context>/<schema>[/<reason>]`, so two schemas with one context id and one schema id in two files are two refusals and `rejects-duplicate` still reports only a repeat of one. The rule the entry says about reasons, the empty reason and the structured reading is unchanged. See decision 23, note of 2026-10-04, and decision 08, amendment of 2026-10-04.

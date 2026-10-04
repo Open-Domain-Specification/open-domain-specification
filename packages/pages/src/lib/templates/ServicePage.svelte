@@ -33,7 +33,7 @@ const caption = $derived(`${s.name} consumable map`);
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Kind">{SERVICE_TYPE[s.type] ?? s.type}</Definition>
-			<Definition term="Context"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
+			<Definition term="Context"><Lockup kind="boundedcontext" name={bc.name} ref={bc} /></Definition>
 		</DefinitionList>
 	{/snippet}
 </PageHeader>

@@ -57,10 +57,12 @@ export const kindOf = (element: unknown): Kind => {
  * What an answer's row links to. An answer has no page of its own — it is a
  * call coming back, not an element — so it links to the shape it came back as,
  * and the row says which call. A completion came back as nothing, so the call
- * is the only thing there is to link to (decision 13, second amendment).
+ * is the only thing there is to link to (decision 13, second amendment). It is
+ * the element, not its ref, because a link into a set goes to the file that
+ * owns that element, which a bare ref cannot say.
  */
-export const answerRef = (answer: Answer): string =>
-	answer.schema?.ref ?? answer.operation.ref;
+export const answerTarget = (answer: Answer): { ref: string } =>
+	answer.schema ?? answer.operation;
 
 /**
  * Which of the three kinds of answer a reaction is waiting on. A completion is

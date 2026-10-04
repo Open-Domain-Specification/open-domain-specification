@@ -2,7 +2,7 @@
 import type { Snippet } from "svelte";
 import Heading from "../atoms/Heading.svelte";
 import Markdown from "../atoms/Markdown.svelte";
-import Crumbs from "../molecules/Crumbs.svelte";
+import Crumbs, { type Crumb } from "../molecules/Crumbs.svelte";
 
 /**
  * The top of every page: the trail back, the title, what the thing is, and
@@ -23,7 +23,7 @@ const {
 	meta,
 	facts,
 }: {
-	crumbs?: [string, string][];
+	crumbs?: Crumb[];
 	title: Snippet;
 	description?: string;
 	meta?: Snippet;

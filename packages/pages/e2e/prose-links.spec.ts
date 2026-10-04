@@ -24,7 +24,7 @@ const PET_STATUS_CHANGED =
 const CATEGORY = "#/boundedcontexts/catalog_bc/valueobjects/category";
 
 async function openNorthbank(page: Page, ref: string): Promise<void> {
-	const url = await serveModel(page, "northbank");
+	const url = await serveModel(page, "northbank-monolith");
 	await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(ref)}`);
 	await page.locator("main h1").waitFor();
 }

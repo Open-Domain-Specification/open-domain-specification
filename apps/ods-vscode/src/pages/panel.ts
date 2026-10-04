@@ -6,20 +6,25 @@ import type {
 import * as vscode from "vscode";
 import type { OdsDiagnostics } from "../diagnostics";
 import type { OdsProject, WorkspaceFile } from "../project";
+import { locationOfRoute, readerPayloads, routeOfLocation } from "../reader";
 
 type Location = { file: WorkspaceFile; ref: string };
 
 /**
  * One reusable webview hosting the shared pages app. The extension feeds it the
- * workspace and diagnostics over postMessage; the app owns routing and reports
- * every navigation back so the tree can follow.
+ * whole `.ods` folder (every file that has a workspace to show) and the
+ * diagnostics of each file over postMessage; the app owns routing and reports
+ * every navigation back, as a route that names a file, so the tree can follow
+ * to the file that owns the page.
  */
 export class DetailPanel implements vscode.Disposable {
 	private panel?: vscode.WebviewPanel;
 	private current?: Location;
 	private ready = false;
-	/** The file whose workspace the webview holds, so a different one restarts its history. */
+	/** The folder whose files the webview holds, so a different one restarts its history. */
 	private shown?: string;
+	/** The files the webview was handed last, in the order it was given them. */
+	private members: WorkspaceFile[] = [];
 	private readonly subscriptions: vscode.Disposable[] = [];
 	private readonly opened = new vscode.EventEmitter<Location>();
 	/** Fires whenever a page is shown, so the tree can follow. */
@@ -45,13 +50,28 @@ export class DetailPanel implements vscode.Disposable {
 	}
 
 	async open(location: Location): Promise<void> {
-		const sameFile =
-			this.current?.file.uri.toString() === location.file.uri.toString();
+		// The webview holds the whole folder, so another file of it is a page of
+		// what it already has, not another workspace.
+		const sameFolder =
+			this.shown !== undefined &&
+			this.shown === this.project.folderKey(location.file) &&
+			this.members.some(
+				(f) => f.uri.toString() === location.file.uri.toString(),
+			);
 		this.current = location;
 		this.ensurePanel();
-		if (sameFile && this.ready)
-			this.post({ type: "navigate", ref: location.ref });
+		if (sameFolder && this.ready)
+			this.post({ type: "navigate", ref: this.routeOf(location) });
 		else this.send();
+	}
+
+	/** The route the app writes for a location: qualified by file when the app holds more than one. */
+	private routeOf({ file, ref }: Location): string {
+		return routeOfLocation(
+			this.members.map((f) => f.relativePath),
+			file.relativePath,
+			ref,
+		);
 	}
 
 	private ensurePanel(): void {
@@ -88,21 +108,43 @@ export class DetailPanel implements vscode.Disposable {
 					this.shown = undefined;
 					this.send();
 					break;
-				case "navigated":
-					if (msg.ref && msg.ref !== this.current.ref) {
-						this.current = { file: this.current.file, ref: msg.ref };
+				case "navigated": {
+					const at = this.locate(msg.ref);
+					if (
+						at &&
+						(at.file !== this.current.file || at.ref !== this.current.ref)
+					) {
+						this.current = at;
 						this.opened.fire(this.current);
 					}
 					break;
-				case "reveal":
-					void vscode.commands.executeCommand("ods.revealInJson", {
+				}
+				case "reveal": {
+					// The route of a page that is no one file's (the set's own) reveals
+					// the file the reader was last in.
+					const at = this.locate(msg.ref) ?? {
 						file: this.current.file,
-						ref: msg.ref,
+						ref: "#",
+					};
+					void vscode.commands.executeCommand("ods.revealInJson", {
+						file: at.file,
+						ref: at.ref,
 					});
 					break;
+				}
 			}
 		});
 		this.panel.webview.html = this.shell();
+	}
+
+	/** The file and local ref a route of the app names, among the files the app was handed. */
+	private locate(route: string): Location | undefined {
+		const at = locationOfRoute(
+			this.members.map((f) => f.relativePath),
+			route,
+		);
+		const file = at && this.members.find((f) => f.relativePath === at.file);
+		return at && file ? { file, ref: at.ref } : undefined;
 	}
 
 	/**
@@ -117,36 +159,48 @@ export class DetailPanel implements vscode.Disposable {
 		void this.panel?.webview.postMessage(msg);
 	}
 
-	/** Sends the current file's workspace and diagnostics; the app re-renders in place. */
+	/** Sends the folder of the current file; the app re-renders in place. */
 	private send(): void {
 		if (!this.panel || !this.current) return;
-		const { file, ref } = this.current;
+		const { file } = this.current;
 		const key = file.uri.toString();
-		// Another file, or a webview with no history yet, starts its history here.
-		const reset = this.shown !== key;
-		this.shown = key;
+		const folder = this.project.folderKey(file);
+		// Another folder, or a webview with no history yet, starts its history here.
+		const reset = this.shown !== folder;
+		this.shown = folder;
 		const live = this.project.files.get(key);
 		if (!live?.workspace) {
+			this.members = [];
 			this.panel.title = "Unavailable";
 			this.post({
 				type: "model",
 				workspaces: [],
-				ref,
+				ref: this.current.ref,
 				...(reset && { reset }),
 			});
 			return;
 		}
+		this.members = this.project.folderFiles(live).filter((f) => f.workspace);
+		// A route is read against the files the app now holds, so the current
+		// location is looked up in them afresh: a file that no longer loads at
+		// all is a different folder to the app, and `live` is in it by its stale
+		// load.
+		const current = { file: live, ref: this.current.ref };
+		this.current = current;
 		this.panel.title = live.workspace.name;
 		this.post({
 			type: "model",
-			workspaces: [
-				{
-					schema: live.workspace.toSchema(),
-					fileLabel: live.relativePath,
-					diagnostics: this.diagnostics.byFile.get(live.uri.toString()) ?? [],
-				},
-			],
-			ref,
+			workspaces: readerPayloads(
+				folder,
+				this.members.map((f) => ({
+					relativePath: f.relativePath,
+					workspace: f.workspace,
+					stale: f.stale,
+					error: f.error,
+					diagnostics: this.diagnostics.byFile.get(f.uri.toString()) ?? [],
+				})),
+			),
+			ref: this.routeOf(current),
 			...(reset && { reset }),
 		});
 		this.opened.fire(this.current);

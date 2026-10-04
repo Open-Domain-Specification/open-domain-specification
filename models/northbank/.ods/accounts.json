@@ -1,0 +1,643 @@
+{
+  "$schema": "./schema.json",
+  "id": "northbank_accounts",
+  "name": "NorthBank Accounts",
+  "description": "NorthBank's Accounts Team: the current-account platform, with its mandates, overdraft limits, holds and status.",
+  "version": "1.0.0",
+  "odsVersion": "3.0.0",
+  "primaryColor": "#1d4ed8",
+  "domains": {},
+  "boundedcontexts": {
+    "accounts": {
+      "name": "Accounts",
+      "description": "Current accounts on the 2019 platform: mandates, overdrafts, holds, status. Savings remain on Sovereign",
+      "subdomains": [
+        {
+          "$ref": "core_banking.json#/domains/banking_products/subdomains/current_&_savings_accounts"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/accounts_team"
+      },
+      "aggregates": {
+        "account": {
+          "name": "Account",
+          "description": "One product with its mandates, limit and status; the rules about balance and status are checked here",
+          "provides": {
+            "account_opened": {
+              "name": "AccountOpened",
+              "description": "A product exists for a verified customer",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/account_opened"
+              }
+            },
+            "account_frozen": {
+              "name": "AccountFrozen",
+              "description": "Debits are blocked pending a fraud case",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
+              }
+            },
+            "account_closed": {
+              "name": "AccountClosed",
+              "description": "The account is closed at zero balance",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
+              }
+            },
+            "close_account": {
+              "name": "CloseAccount",
+              "description": "Close at zero balance",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_closed"
+                }
+              ]
+            },
+            "update_balance": {
+              "name": "UpdateBalance",
+              "description": "Recompute posted and available balances from a ledger posting, releasing the hold the posting captures",
+              "type": "operation",
+              "internal": true
+            },
+            "place_hold": {
+              "name": "PlaceHold",
+              "description": "Add an approved card authorisation to pending authorisations, so the available balance drops before the capture posts",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "account": {
+              "name": "Account",
+              "description": "A current account on the new platform. Savings accounts are Sovereign rows until they are migrated",
+              "root": true,
+              "attributes": {
+                "account_id": {
+                  "name": "accountId",
+                  "type": "string",
+                  "identity": true
+                },
+                "product_code": {
+                  "name": "productCode",
+                  "type": "'current'",
+                  "description": "Only current accounts live here; savings stay on Sovereign until the hollowing-out moves them"
+                },
+                "iban": {
+                  "name": "iban",
+                  "type": "IBAN",
+                  "valueobject": {
+                    "$ref": "payments.json#/boundedcontexts/iso_13616/valueobjects/iban"
+                  }
+                },
+                "account_number": {
+                  "name": "accountNumber",
+                  "type": "AccountNumber",
+                  "valueobject": {
+                    "$ref": "core_banking.json#/boundedcontexts/ledger/valueobjects/account_number"
+                  }
+                },
+                "posted_balance": {
+                  "name": "postedBalance",
+                  "type": "Money",
+                  "description": "What the ledger has posted to this account",
+                  "valueobject": {
+                    "$ref": "core_banking.json#/boundedcontexts/ledger/valueobjects/money"
+                  }
+                },
+                "pending_authorisations": {
+                  "name": "pendingAuthorisations",
+                  "type": "Money",
+                  "description": "Card authorisations approved but not yet captured; a hold placed on CardAuthorised and released when the capture posts",
+                  "valueobject": {
+                    "$ref": "core_banking.json#/boundedcontexts/ledger/valueobjects/money"
+                  }
+                },
+                "available_balance": {
+                  "name": "availableBalance",
+                  "type": "Money",
+                  "description": "Posted balance less pending card authorisations",
+                  "valueobject": {
+                    "$ref": "core_banking.json#/boundedcontexts/ledger/valueobjects/money"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "AccountStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/account_status"
+                  }
+                },
+                "overdraft": {
+                  "name": "overdraft",
+                  "type": "OverdraftLimit",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/overdraft_limit"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/mandate"
+                  },
+                  "relation": "includes",
+                  "label": "operated-under",
+                  "cardinality": "1..*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/overdraft_limit"
+                  },
+                  "relation": "uses",
+                  "label": "overdraft",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/account_status"
+                  },
+                  "relation": "uses",
+                  "label": "has-status",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "mandate": {
+              "name": "Mandate",
+              "description": "A customer's authority to operate the account; an entity because it is granted and revoked over time",
+              "root": false,
+              "attributes": {
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  }
+                },
+                "powers": {
+                  "name": "powers",
+                  "type": "'sole' | 'joint' | 'view-only'"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "balance_within_overdraft": {
+              "name": "BalanceWithinOverdraft",
+              "description": "The available balance never falls below minus the overdraft limit",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/available_balance"
+                },
+                {
+                  "$ref": "#/boundedcontexts/accounts/valueobjects/overdraft_limit"
+                }
+              ]
+            },
+            "available_is_posted_less_holds": {
+              "name": "AvailableIsPostedLessHolds",
+              "description": "Available balance equals posted balance less pending authorisations, always; the three are updated as one",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/available_balance"
+                },
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/pending_authorisations"
+                }
+              ]
+            },
+            "frozen_accepts_no_debits": {
+              "name": "FrozenAcceptsNoDebits",
+              "description": "A frozen account accepts no debits until Financial Crime unfreezes it",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/valueobjects/account_status"
+                }
+              ]
+            },
+            "closed_has_zero_balance": {
+              "name": "ClosedHasZeroBalance",
+              "description": "An account closes only at a zero balance",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/valueobjects/account_status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/available_balance"
+                }
+              ]
+            },
+            "mandate_holder_is_verified": {
+              "name": "MandateHolderIsVerified",
+              "description": "Every mandate holder is a verified customer",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/mandate"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "invariants": {},
+      "services": {
+        "account_servicing": {
+          "name": "AccountServicing",
+          "description": "The documented account API for channels, cards and lending",
+          "type": "application",
+          "provides": {
+            "open_account": {
+              "name": "OpenAccount",
+              "description": "Open a product for a verified customer",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/open_account"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_opened"
+                }
+              ]
+            },
+            "get_available_balance": {
+              "name": "GetAvailableBalance",
+              "description": "Posted balance less pending authorisations",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/accounts/schemas/available_balance"
+              }
+            },
+            "freeze_account": {
+              "name": "FreezeAccount",
+              "description": "Block debits; issued when Financial Crime opens a case",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_frozen"
+                }
+              ]
+            },
+            "record_verified_customer": {
+              "name": "RecordVerifiedCustomer",
+              "description": "Note that a customer has passed KYC, so a product may be opened for them and a mandate may name them",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/customer_verified"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/policies/note_a_verified_customer"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "core_banking.json#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "financial_crime.json#/boundedcontexts/fraud/aggregates/fraud_case/provides/fraud_case_opened"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "cards.json#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
+        }
+      },
+      "policies": {
+        "note_a_verified_customer": {
+          "name": "Note a verified customer",
+          "description": "A verified customer is one Accounts may open a product for; nothing opens by itself",
+          "on": [
+            {
+              "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/customer_verified"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/record_verified_customer"
+            }
+          ]
+        },
+        "update_balance_on_posting": {
+          "name": "Update balance on posting",
+          "description": "Every posting to an account recomputes its available balance",
+          "on": [
+            {
+              "$ref": "core_banking.json#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/update_balance"
+            }
+          ]
+        },
+        "freeze_on_fraud_case": {
+          "name": "Freeze on fraud case",
+          "description": "An opened case freezes the account the same second",
+          "on": [
+            {
+              "$ref": "financial_crime.json#/boundedcontexts/fraud/aggregates/fraud_case/provides/fraud_case_opened"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/freeze_account"
+            }
+          ]
+        },
+        "hold_on_card_authorisation": {
+          "name": "Hold on card authorisation",
+          "description": "Every approved authorisation places a hold on its account the same second, so the available balance is what the merchant has not yet captured",
+          "on": [
+            {
+              "$ref": "cards.json#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/place_hold"
+            }
+          ]
+        }
+      },
+      "processes": {},
+      "glossary": {
+        "account": {
+          "name": "Account",
+          "definition": "A current or savings product held by one or more verified customers",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/accounts/aggregates/account"
+          }
+        },
+        "balance": {
+          "name": "Balance",
+          "definition": "The available balance: posted balance less pending card authorisations. The ledger's balance is the posted one; the contact centre's is whatever the screen shows",
+          "aliases": [
+            "Available balance"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/available_balance"
+          }
+        },
+        "mandate": {
+          "name": "Mandate",
+          "definition": "A customer's authority to operate an account. Not a card authorisation",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/mandate"
+          }
+        }
+      },
+      "valueobjects": {
+        "overdraft_limit": {
+          "name": "OverdraftLimit",
+          "description": "How far below zero the available balance may go",
+          "attributes": {
+            "limit": {
+              "name": "limit",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "core_banking.json#/boundedcontexts/ledger/valueobjects/money"
+              }
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "account_status": {
+          "name": "AccountStatus",
+          "description": "open, frozen or closed",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'open' | 'frozen' | 'closed'"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
+      "schemas": {
+        "account_ref": {
+          "name": "AccountRef",
+          "attributes": {
+            "account_id": {
+              "name": "accountId",
+              "type": "string",
+              "identity": true
+            }
+          }
+        },
+        "available_balance": {
+          "name": "AvailableBalance",
+          "description": "Posted balance less pending authorisations, at the moment of the call",
+          "attributes": {
+            "amount": {
+              "name": "amount",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "core_banking.json#/boundedcontexts/ledger/valueobjects/money"
+              }
+            }
+          }
+        },
+        "account_opened": {
+          "name": "AccountOpened",
+          "description": "What reporting and the ledger learn about a new account",
+          "attributes": {
+            "account_id": {
+              "name": "accountId",
+              "type": "string",
+              "identity": true
+            },
+            "iban": {
+              "name": "iban",
+              "type": "IBAN",
+              "valueobject": {
+                "$ref": "payments.json#/boundedcontexts/iso_13616/valueobjects/iban"
+              }
+            },
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identifies": {
+                "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+              }
+            },
+            "product_code": {
+              "name": "productCode",
+              "type": "'current'"
+            }
+          }
+        },
+        "open_account": {
+          "name": "OpenAccount",
+          "attributes": {
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identifies": {
+                "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+              }
+            },
+            "product_code": {
+              "name": "productCode",
+              "type": "'current'"
+            }
+          }
+        }
+      }
+    }
+  },
+  "relationships": [
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "core_banking.json#/boundedcontexts/ledger"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "Balances follow the ledger: Accounts takes EntryPosted as published, with no translation"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "financial_crime.json#/boundedcontexts/fraud"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "cards.json#/boundedcontexts/cards"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Every authorisation becomes a hold on the account"
+    },
+    {
+      "type": "shared-kernel",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/accounts"
+        },
+        {
+          "$ref": "core_banking.json#/boundedcontexts/ledger"
+        }
+      ],
+      "description": "Money and AccountNumber, from @northbank/money, changed and released together by the two teams",
+      "comments": [
+        {
+          "text": "Money and AccountNumber live in @northbank/money, which Accounts and Ledger change and release together.",
+          "link": {
+            "kind": "code",
+            "url": "https://github.com/example/northbank/blob/main/packages/money/src/Money.ts",
+            "label": "packages/money/src/Money.ts"
+          }
+        },
+        {
+          "text": "Kept deliberately tiny: two value objects and their parsers, changed only by agreement of the Accounts Team and the Core Banking Team.",
+          "link": {
+            "kind": "adr",
+            "url": "https://github.com/example/northbank/blob/main/docs/adr/006-money-kernel.md",
+            "label": "ADR-006 The money kernel"
+          }
+        }
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "payments.json#/boundedcontexts/iso_13616"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "Accounts holds the IBAN of every current account and takes ISO 13616's definition of it, checksum and all"
+    }
+  ],
+  "teams": {
+    "accounts_team": {
+      "name": "Accounts Team",
+      "description": "The account platform"
+    }
+  }
+}

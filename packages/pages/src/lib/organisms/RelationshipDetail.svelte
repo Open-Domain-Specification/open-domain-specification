@@ -2,6 +2,7 @@
 import {
 	type ContextRelationship,
 	type DownstreamRole,
+	identityKeyOf,
 	isSymmetricRelationship,
 	PATTERNS,
 	type UpstreamRole,
@@ -105,7 +106,7 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 			<DefinitionList>
 				{#each sides as side (side.term)}
 					<Definition term={side.term}>
-						<Lockup kind="boundedcontext" name={side.context.name} ref={side.context.ref} />
+						<Lockup kind="boundedcontext" name={side.context.name} ref={side.context} />
 						<!-- Each role is its own item, code then name and summary, so two
 						     roles on one side never run together (#84). -->
 						{#if side.roles.length}
@@ -137,12 +138,13 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 			{columns}
 			rows={crossings}
 			rowId={(c) => `${c.consumable.ref}:${c.consumption.consumer.ref}`}
+			rowKey={(c) => `${identityKeyOf(c.consumable)}:${identityKeyOf(c.consumption.consumer)}`}
 			empty="Nothing crosses this boundary; the relationship is strategic only."
 		>
 			{#snippet cell(c, col)}
 				{#if col.key === "consumable"}
 					<Ref
-						ref={c.consumable.ref}
+						ref={c.consumable}
 						label={c.consumable.name}
 						icon={consumableIcon(c.consumable)}
 						kind={c.consumable.type === "event" ? "event" : "command"}
@@ -158,7 +160,7 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 						{/each}
 					</Joined>
 				{:else if col.key === "consumer"}
-					<Ref ref={c.consumption.consumer.ref} label={c.consumption.consumer.name} />
+					<Ref ref={c.consumption.consumer} label={c.consumption.consumer.name} />
 				{:else}
 					<Disposition disposition={c.consumable.disposition} />
 				{/if}

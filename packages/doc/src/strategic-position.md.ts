@@ -5,6 +5,7 @@ import {
 	isSymmetricRelationship,
 	narrativeText,
 	relationshipNarrative,
+	scopeAround,
 	withAgreementName,
 } from "@open-domain-specification/core";
 import { commentsMd } from "./comments.md";
@@ -82,7 +83,9 @@ const group = (
  * what it merely works alongside. A group with no rows is left out.
  */
 export const strategicPositionMd = (boundedcontext: BoundedContext): string => {
-	const mine = boundedcontext.workspace.relationships.filter(
+	// A relationship about this context may be declared in any file of its set,
+	// so the whole set is read; a workspace alone is its own scope.
+	const mine = scopeAround(boundedcontext.workspace).relationships.filter(
 		(r) => r.source === boundedcontext || r.target === boundedcontext,
 	);
 	const dependsOn = mine.filter(

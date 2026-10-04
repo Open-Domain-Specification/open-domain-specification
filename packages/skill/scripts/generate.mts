@@ -160,6 +160,28 @@ An answer has no id of its own either: it is one operation coming back, so its p
 Encoding every authored id in the operation prefix makes the answer grammar injective. In context \`b\`, service \`h\`, operation A with id \`a\` may reject schema \`decline\` for reason \`completed\`; its answer is \`#/boundedcontexts/b/services/h/provides/a/rejects/b/decline/completed\`. A distinct operation B whose raw id is \`a/rejects/b/decline\` has ref \`#/boundedcontexts/b/services/h/provides/a~1rejects~1b~1decline\`, so B's completion is \`.../a~1rejects~1b~1decline/completed\` and cannot equal A's refusal. Unknown shapes or reasons, malformed escapes, noncanonical unescaped forms and surplus segments resolve to nothing. There are no legacy aliases.
 
 A bounded context path never embeds the domain or subdomain, so moving a context between subdomains breaks no refs. A ref that points at nothing is an \`unresolved-ref\` diagnostic at the referencing element; the rest of the file still loads. Canonical refs are model identity strings. When a surface puts one in a URL fragment, a Markdown filename or another transport, that surface encodes and decodes the transport layer separately without changing the canonical ref.
+
+## Refs between files
+
+A folder of workspace files is a set: every file is one complete workspace with an id of its own, and there is no root file or manifest that lists them. A ref that begins with \`#/\` is local: it is looked up in the file that writes it and nowhere else, so the same local id may be used in two files and each file's refs mean its own. A ref that reaches another file writes that file's path first and the same pointer after it, with no extra \`#\`: \`ledger.json#/boundedcontexts/ledger/aggregates/account\`.
+
+\`\`\`
+Ref          ::= LocalRef | QualifiedRef
+LocalRef     ::= "#/" Pointer
+QualifiedRef ::= WirePath "#/" Pointer
+WirePath     ::= Segment ( "/" Segment )*
+Segment      ::= "." | ".." | ( unreserved | "%" HEX HEX )+     ; unreserved = A-Z a-z 0-9 - . _ ~
+\`\`\`
+
+- The path is relative to the file that writes the ref, with forward slashes. Each file name is written percent-encoded as UTF-8, with uppercase hex: a file \`my team.json\` is \`my%20team.json\`, \`a#%.json\` is \`a%23%25.json\` and \`team/ü.json\` is \`team/%C3%BC.json\`. A raw space, a raw non-ASCII character, a backslash, a colon, a query or a malformed \`%\` is not in the grammar. No normalisation of case or Unicode form is applied.
+- \`.\` and \`..\` are folded against the writing file's directory, and \`..\` is allowed exactly when the result stays inside the set's root, the folder the host opened (the \`.ods\` folder, the folder an upload was taken from, the explicit root of a viewer URL). A path that leaves the root, is absolute, names a URL, is empty, has an empty segment, does not end in \`.json\` or names \`schema.json\` resolves to nothing. Nothing is read above the root.
+- A qualified ref is looked up in exactly the file it names, and it must be a kind of element the field can hold, as a local one must. It fails four ways, each an \`unresolved-ref\` at the element that wrote it, with the cause in the message: the path is invalid, the file is not in the set, the file has no such element, or the element is the wrong kind for the field. Opening one file alone gives every qualified ref the cause "no such file", because there is no set to look in; open the folder instead.
+- What is allowed to cross a file is exactly what is allowed to cross a context. A file boundary grants no permission and removes none: the same relationship, shared kernel, conformist or customer-supplier route that lets a context name another's value object, schema, consumable or identity in one file lets it do so across two, and the rules that refuse it in one file refuse it across two. Where two contexts are in different files, the relationship that permits the crossing may be declared in either file; rules read every file of the set.
+- Files may refer to each other in both directions. A cycle of files is not diagnosed; a cycle the model forbids (a relationship cycle, a specialisation cycle, a reaction cycle) is diagnosed wherever its links are, in whichever files.
+- An element's identity in a set is its file's wire path followed by its local ref, for example \`a%23%25.json#/boundedcontexts/ledger\`. It depends on the file alone: adding, removing or reordering other files never changes it, and two files' \`#/boundedcontexts/ledger\` stay two elements. Hosts that show several workspaces key, link and route by this identity.
+- Each file keeps its own \`options\`: an opt-in rule such as \`comments-required\` asks only of the file that sets it.
+- A ref in a list that is the pair it joins (a consumer's \`consumes\`, a workspace's \`relationships\`, an entity's or value object's \`relations\`, and a consumption's \`by\`) cannot leave a half-entry behind when what it names is missing. If the ref has a path in front of its \`#\`, whatever becomes of it (an invalid path, a file that is not there, no such element, the wrong kind), the whole entry is kept as written, with every key it had, at the position it had, and is written back untouched; it links again as soon as the file and element are there. If it is a local ref that names nothing, the entry is dropped and reported, and a save drops it, the cost decision 29 names. The same applies to an unknown key on an entry that does resolve: it is dropped and reported by \`unknown-field\`.
+- Raw JSON is not trusted to be a workspace. The loader takes a \`WorkspaceSchema\`: a file that is not JSON, or is JSON of another shape, can make it throw, so a host checks the shape of what it hands the loader and reports a file it cannot load as a problem of that file, leaving the rest of the set loaded.
 `;
 
 export function renderModelReference(): string {
@@ -190,23 +212,26 @@ export function renderModelReference(): string {
 // ---------------------------------------------------------------------------
 
 export function renderValidationRules(): string {
-	const { RULE_CATALOG } = require("@open-domain-specification/core") as {
-		RULE_CATALOG: ReadonlyArray<{
-			rule: string;
-			severities: string[];
-			summary: string;
-			why: string;
-			fix: string;
-		}>;
-	};
+	type Described = ReadonlyArray<{
+		rule: string;
+		severities: string[];
+		summary: string;
+		why: string;
+		fix: string;
+	}>;
+	const { RULE_CATALOG, SET_RULE_CATALOG } =
+		require("@open-domain-specification/core") as {
+			RULE_CATALOG: Described;
+			SET_RULE_CATALOG: Described;
+		};
 	const parts: string[] = [
-		GENERATED_HEADER("RULE_CATALOG"),
+		GENERATED_HEADER("RULE_CATALOG and SET_RULE_CATALOG"),
 		"# Validation rules",
 		"",
-		"`Workspace.validate()` returns diagnostics `{ severity, rule, message, ref }`. Errors describe a model that contradicts itself and should be fixed before finishing. Warnings describe a decision that is missing; discuss them with the user rather than silently fixing them. Explain a diagnostic to the user in the plain words below, not by quoting the rule id.",
+		"`Workspace.validate()` returns diagnostics `{ severity, rule, message, ref }`. `WorkspaceSet.validate()` returns the same for a folder of files together, each with the `file` it is about; a workspace that belongs to a set is judged with the whole set, since a rule about one file may need what another declares, and one read alone is judged alone. Errors describe a model that contradicts itself and should be fixed before finishing. Warnings describe a decision that is missing; discuss them with the user rather than silently fixing them. Explain a diagnostic to the user in the plain words below, not by quoting the rule id.",
 		"",
 	];
-	for (const r of RULE_CATALOG) {
+	const entry = (r: Described[number]) =>
 		parts.push(
 			`## \`${r.rule}\` (${r.severities.join(", ")})`,
 			"",
@@ -217,7 +242,14 @@ export function renderValidationRules(): string {
 			`**Usual fix:** ${r.fix}`,
 			"",
 		);
-	}
+	for (const r of RULE_CATALOG) entry(r);
+	parts.push(
+		"# Rules about a folder of files",
+		"",
+		"The next rules are asked of a set of workspace files, not of one workspace: a workspace alone has no sibling file to share an id with and no host to offer it a path. `WorkspaceSet.validate()` reports them, and every other rule above is asked of the files together.",
+		"",
+	);
+	for (const r of SET_RULE_CATALOG) entry(r);
 	return parts.join("\n");
 }
 

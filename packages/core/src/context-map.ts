@@ -6,6 +6,7 @@ import type {
 	DownstreamRole,
 	UpstreamRole,
 } from "./schema";
+import { scopeAround } from "./scope";
 import { ScopeManager } from "./scope-manager";
 import {
 	BoundedContext,
@@ -15,22 +16,24 @@ import {
 	type Subdomain,
 	type Workspace,
 } from "./workspace";
+import type { WorkspaceSet } from "./workspace-set";
+import { identityKeyOf } from "./workspace-set";
 
 function contextNode(bc: BoundedContext): ODSContextMapNode {
 	return {
-		id: bc.ref,
+		id: identityKeyOf(bc),
 		name: bc.name,
 		description: bc.description,
 		namespace: boundedContextNamespace(bc),
 		bigBallOfMud: bc.bigBallOfMud,
 		external: bc.external,
 		boundaryOnly: bc.boundaryOnly,
-		team: bc.team && { id: bc.team.ref, name: bc.team.name },
+		team: bc.team && { id: identityKeyOf(bc.team), name: bc.team.name },
 	};
 }
 
 function pairKey(a: BoundedContext, b: BoundedContext): string {
-	return JSON.stringify([a.ref, b.ref].sort());
+	return JSON.stringify([identityKeyOf(a), identityKeyOf(b)].sort());
 }
 
 /**
@@ -166,6 +169,9 @@ export class ODSContextMap {
 			(it): it is BoundedContext => it instanceof BoundedContext,
 		);
 		const workspace = contexts[0]?.workspace;
+		// What a context's file declares is not all that touches it: another
+		// file of its set may declare a relationship that involves it.
+		const declared = workspace ? scopeAround(workspace).relationships : [];
 		// A relationship is kept when it touches the scope, and also when the
 		// walk found a crossing between its two ends: that pair would be drawn
 		// as implied, and the declaration says the same edge better. A pair the
@@ -173,12 +179,11 @@ export class ODSContextMap {
 		// there to replace, and drawing one would put a piece of a neighbouring
 		// map on this page.
 		const crossed = ODSContextMap.crossedPairs(contexts, consumptions);
-		const relationships =
-			workspace?.relationships.filter(
-				(it) =>
-					contexts.some((bc) => it.involves(bc)) ||
-					crossed.has(pairKey(it.source, it.target)),
-			) ?? [];
+		const relationships = declared.filter(
+			(it) =>
+				contexts.some((bc) => it.involves(bc)) ||
+				crossed.has(pairKey(it.source, it.target)),
+		);
 		return new ODSContextMap(contexts, relationships, consumptions);
 	}
 
@@ -186,6 +191,14 @@ export class ODSContextMap {
 		return ODSContextMap.fromScope(
 			ScopeManager.fromWorkspace(workspace),
 			ODSConsumptionGraph.fromWorkspace(workspace).consumptions,
+		);
+	}
+
+	/** Every context of every file of a set, kept apart even where their ids agree. */
+	static fromSet(set: WorkspaceSet) {
+		return ODSContextMap.fromScope(
+			ScopeManager.fromSet(set),
+			ODSConsumptionGraph.fromSet(set).consumptions,
 		);
 	}
 

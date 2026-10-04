@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { Attribute } from "@open-domain-specification/core";
+import { identityKeyOf } from "@open-domain-specification/core";
 import type { Column, Group } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Keyword from "../atoms/Keyword.svelte";
@@ -138,9 +139,9 @@ const columns: Column[] = [
 		{:else if col.key === "type"}
 			<span class="typecell">
 			{#if a.valueobject}
-				<code class="type"><Ref ref={a.valueobject.ref} label={a.type} /></code>
+				<code class="type"><Ref ref={a.valueobject} label={a.type} /></code>
 			{:else if a.schema}
-				<code class="type"><Ref ref={a.schema.ref} label={a.type} /></code>
+				<code class="type"><Ref ref={a.schema} label={a.type} /></code>
 			{:else}
 				<code class="type">{#each typeAlternatives(a.type) as piece, i (i)}{#if i > 0}<wbr />{/if}<span class="alternative">{piece}</span>{/each}</code>
 			{/if}
@@ -149,7 +150,7 @@ const columns: Column[] = [
 			{/if}
 			{#if a.identifies}
 				<Keyword text="identifies" />
-				<code><Ref ref={a.identifies.ref} label={a.identifies.name} /></code>
+				<code><Ref ref={a.identifies} label={a.identifies.name} /></code>
 			{/if}
 			</span>
 		{:else}

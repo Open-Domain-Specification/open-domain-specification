@@ -7,6 +7,7 @@ import {
 	type Service,
 	type Subdomain,
 	type Workspace,
+	workspaceOf,
 } from "@open-domain-specification/core";
 import { healthCountsOf } from "@open-domain-specification/pages";
 import * as vscode from "vscode";
@@ -21,6 +22,12 @@ type NodeOptions = {
 	description?: string;
 	/** A link node reveals the real node for this ref instead of expanding. */
 	linkTo?: string;
+	/**
+	 * The file that owns the `linkTo` element, when it is not the file the link
+	 * is in: a consumption names a consumable of another file, and a ref alone
+	 * does not say which file's `ledger` is meant.
+	 */
+	linkFile?: WorkspaceFile;
 	parent?: ModelNode;
 	expanded?: boolean;
 };
@@ -44,7 +51,12 @@ export class ModelNode {
 		const base = this.file.uri.toString();
 		if (this.options.ref && !this.options.linkTo)
 			return `${base}${this.options.ref}`;
-		return `${this.options.parent?.key ?? base}/${this.label}`;
+		const parent = `${this.options.parent?.key ?? base}/${this.label}`;
+		// Two links of one parent may carry one name and name different elements,
+		// or one local ref in different files; what they point at tells them apart.
+		return this.options.linkTo
+			? `${parent}\u2192${(this.options.linkFile ?? this.file).uri.toString()}${this.options.linkTo}`
+			: parent;
 	}
 }
 
@@ -141,8 +153,9 @@ export class ModelTree
 		item.id = node.key;
 		item.description = node.options.description;
 		item.contextValue = node.ref ? "ref" : "group";
+		// A link is judged where the element it names lives.
 		const problems = node.ref
-			? this.diagnostics.forRef(node.file, node.ref)
+			? this.diagnostics.forRef(node.options.linkFile ?? node.file, node.ref)
 			: [];
 		const worst = problems.some((d) => d.severity === "error")
 			? "error"
@@ -169,7 +182,7 @@ export class ModelTree
 			item.command = {
 				command: "ods.revealRef",
 				title: "Reveal",
-				arguments: [node.file, node.options.linkTo],
+				arguments: [node.options.linkFile ?? node.file, node.options.linkTo],
 			};
 		} else if (node.ref) {
 			item.command = {
@@ -179,6 +192,12 @@ export class ModelTree
 			};
 		}
 		return item;
+	}
+
+	/** The file that owns an element, so a link to it opens the right file's node. */
+	private ownerOf(element: object): WorkspaceFile | undefined {
+		const owner = workspaceOf(element);
+		return owner ? this.project.fileOf(owner) : undefined;
 	}
 
 	private workspaceNode(file: WorkspaceFile): ModelNode {
@@ -222,7 +241,13 @@ export class ModelTree
 				].filter((n): n is ModelNode => !!n),
 			{
 				ref: "#",
-				description: [file.relativePath, healthDescription(ws)]
+				// A file that no longer loads keeps showing its last good load, said so
+				// here, and without a health count the old model can no longer vouch for.
+				description: [
+					file.relativePath,
+					file.stale ? "last good, current text does not load" : undefined,
+					file.stale ? undefined : healthDescription(ws),
+				]
 					.filter(Boolean)
 					.join(" · "),
 				expanded: true,
@@ -253,6 +278,7 @@ export class ModelTree
 						new ModelNode(parent.file, bc.name, "link", undefined, {
 							ref: bc.ref,
 							linkTo: bc.ref,
+							linkFile: this.ownerOf(bc),
 							description: "bounded context",
 							parent: node,
 						}),
@@ -388,6 +414,7 @@ export class ModelTree
 								new ModelNode(file, c.consumable.name, "link", undefined, {
 									ref: c.consumable.ref,
 									linkTo: c.consumable.ref,
+									linkFile: this.ownerOf(c.consumable),
 									description: c.consumable.provider.name,
 								}),
 						),
@@ -415,6 +442,7 @@ export class ModelTree
 								new ModelNode(file, c.consumable.name, "link", undefined, {
 									ref: c.consumable.ref,
 									linkTo: c.consumable.ref,
+									linkFile: this.ownerOf(c.consumable),
 									description: c.consumable.provider.name,
 								}),
 						),

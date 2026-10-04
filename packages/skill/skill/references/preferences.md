@@ -130,8 +130,13 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
   never names an entity, so a resource-style API restates its aggregate as one or more schemas —
   a `Pet` beside a `PetSummary` and a `RegisterPet` — with a shared value object bridging the
   leaves that repeat.
-- **A workspace is one file.** Refs never cross files until decision 08's `WorkspaceSet` lands;
-  a project that wants several files today keeps each as its own workspace.
+- **A set of files has no root, no manifest and no order hint, and a context is one file.** A
+  `.ods` folder is a set of complete workspaces and the folder listing is the set (decision 08);
+  nothing lists the files, so a viewer given one URL sees only the files that entry reaches,
+  and nothing says in what order they come, so every reader takes the order of the host (code
+  point order of path) and a list that gathers across files follows it: renaming a file can
+  reorder such a list. A context is never split across files, so a team that wants to share a
+  context's insides shares a kernel context instead.
 - **A refusal enumerates its outcomes and a success does not.** A refusal's `reasons` names each
   shape a process may wait on and branch across; a success has one edge, and which of several
   things happened on the way is prose until a reference model needs to branch on it too.

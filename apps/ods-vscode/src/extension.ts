@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { OdsDiagnostics, rangeOfRef } from "./diagnostics";
 import { DetailPanel } from "./pages/panel";
 import { OdsProject, odsFolderOf } from "./project";
+import { exportSources } from "./reader";
 import { showSearch } from "./search";
 import { installSkillCommand, promptWhenSkillStale } from "./skill";
 import { type ModelNode, ModelTree } from "./tree";
@@ -87,16 +88,27 @@ export async function activate(
 		vscode.commands.registerCommand("ods.exportSite", async () => {
 			const folder = await pickFolder();
 			if (!folder) return;
-			const sources = project.workspaces.flatMap((f) =>
-				f.workspace && f.uri.fsPath.startsWith(folder.uri.fsPath)
-					? [
-							{
-								workspace: f.workspace,
-								fileLabel: f.relativePath,
-								diagnostics: diagnostics.byFile.get(f.uri.toString()) ?? [],
-							},
-						]
-					: [],
+			// Every file of a `.ods` folder is exported as a file of that folder's
+			// set (see `exportSources`), so the export of a folder is the folder.
+			const inFolder = project.workspaces.filter((f) =>
+				f.uri.fsPath.startsWith(folder.uri.fsPath),
+			);
+			const sets = new Map<string, typeof inFolder>();
+			for (const f of inFolder) {
+				const key = project.folderKey(f);
+				sets.set(key, [...(sets.get(key) ?? []), f]);
+			}
+			const sources = [...sets].flatMap(([key, files]) =>
+				exportSources(
+					key,
+					files.map((f) => ({
+						relativePath: f.relativePath,
+						workspace: f.workspace,
+						stale: f.stale,
+						error: f.error,
+						diagnostics: diagnostics.byFile.get(f.uri.toString()) ?? [],
+					})),
+				),
 			);
 			if (sources.length === 0) {
 				vscode.window.showErrorMessage("No ODS workspaces to export.");
