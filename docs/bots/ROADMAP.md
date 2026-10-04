@@ -14,7 +14,7 @@ Actual 7 open / 47 closed from 54: 39 implemented, 8 not planned, 0 new/reopened
 
 M6 #91/#77 is delivered. Original PR136 (merge 5bfdb713, gated b757fd2e) passed the local gate and preCI 37152204246, but postCI 37152866652 failed its `test` job (one new App history-availability unit assertion; browser and native jobs green), so the issues stayed open. Corrective PR137 (one test, two records; gated c83ec6ef, local gate exit 0: 652 browser/20 baseline skips/0 flaky, 1283 pages tests/100% coverage) passed preCI 37154961207 and postCI 37155696421, all 3 jobs each, publish skipped; merge edbbbd7f (2026-10-03T21:36:26Z) has a tree identical to the gated head. #91 closed 21:46:24Z and #77 closed 21:46:28Z individually. Four necessary CI runs, two successful local source gates, no duplicate runs, no release, no quota response. Native 32 keyboard/0 failed/0 skips/checker 0; static 36, history 6, bypass 6; quality highest 0.4. The failure cause is a sufficient deadline-straddle mechanism reproduced under a controlled stall; the actual CI occurrence is unproven. Card186 done; see [retrospective 07](sprints/2026-10-03-retro-07.md).
 
-**Closing records pending:** these six record paths still need review, their own clean-head unmodified gate and publication; none has run on this record candidate. `active_milestone` stays 6 until published. Then M7 (#82 phone reading) starts with a baseline only; it is waiting/next, not activated, with no card yet.
+**M6 records published:** clean `ef0a82eb` passed its own unmodified gate (181 s; 1283 pages/100%, 652 browser/20 existing baseline skips/zero flaky), and remote develop equals that head. M7 #82 reader outcome is accepted for final quality (card187, sprint08); full landing and CI remain pending. Expected next closure 7→6, followed by import/copy, multifile and forms. Preserve source/model approval and all existing controls.
 
 **Binding reviewer policy:** Astra low is the one final complete-model quality gate, only after lead review and explicit readiness. It is never a default or per-change reviewer. After a BLOCK, correct and locally verify the complete defect class before the lead declares readiness again. Claude weekly quota exhaustion activates the owner-authorized OpenAI-only exception for this final gate; no Claude approval is claimed. Preserve the actual reviewed SHA and require product-tree equivalence at merge.
 
@@ -26,7 +26,7 @@ M6 #91/#77 is delivered. Original PR136 (merge 5bfdb713, gated b757fd2e) passed 
 | 4. Readable tables | #105, #87, #88, #80 | 12 | complete: four closures and gate-green published records |
 | 5. Accessible reading | #78, #79, #83 | 9 | complete: three closures; own-gated closing records8606b282 published |
 | 6. Location and return paths | #91, #77 | 7 | complete: PR137 merged edbbbd7f, two individual closures; closing records pending own gate and publication |
-| 7. Phone reading | #82 | 6 | waiting: next after closing-records publication; baseline not started |
+| 7. Phone reading | #82 | 6 | active: reader outcome accepted; final quality, landing and CI next |
 | 8. Import and copy finish | #92, #93, #94 | 3 | waiting |
 | 9. Team-owned model files | #59 | 2 | waiting |
 | 10. Informed forms and authoring epic | #54, #63 | 0 | waiting |

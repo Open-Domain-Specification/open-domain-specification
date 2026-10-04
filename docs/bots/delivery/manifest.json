@@ -8,11 +8,11 @@
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
-  "active_milestone": 6,
-  "integration_batch": "milestone-06-location-return-paths",
+  "active_milestone": 7,
+  "integration_batch": "milestone-07-phone-reading",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M6 delivered (PR137 merged edbbbd7f, #91/#77 closed); 7 actual open; closing records unpublished, own clean-head gate pending; M7 baseline waits for publication.",
+  "candidate_state": "M7 reader and complete quality accepted; exact local gate and CI pending",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -874,7 +874,7 @@
         77
       ],
       "owner": "lead",
-      "state": "complete: PR137 corrective landing merged edbbbd7f, two individually accepted closures; closing records pending own gate and publication",
+      "state": "complete: source, two individual closures and own-gated records published",
       "expected_remaining": 7,
       "entry_scope": "Active tree row visibility and extension Back/Forward only.",
       "exit_acceptance": "Deep-link/load/route/reduced-motion visibility; pointer/key history states and heading focus.",
@@ -1152,6 +1152,20 @@
           "status": "pending",
           "note": "Own clean-head unmodified gate and push have not run on this record candidate; active_milestone stays 6 until published",
           "base": "edbbbd7f475b8dc65e814ad2fe617bbc6abde3e0"
+        },
+        {
+          "at": "2026-10-03T22:17:51.743629+00:00",
+          "scope": "M6 records own-gated and published",
+          "head": "ef0a82eb45fffd67412e3b67cbd93262d2e6254f",
+          "gate_exit": 0,
+          "remote_develop_verified": true,
+          "browser_passed": 652,
+          "baseline_capture_skips": 20,
+          "flaky": 0,
+          "pages_passed": 1283,
+          "coverage": 100,
+          "runtime_seconds": 181,
+          "publication": "/Users/jonathanturnock/.codex/ods-delivery/milestone-06/closing-records/publication.json"
         }
       ],
       "closed_issues": [
@@ -1166,12 +1180,188 @@
         82
       ],
       "owner": "lead",
-      "state": "waiting: next after closing-records publication; baseline not started",
+      "state": "M7 reader and complete quality accepted; exact local gate and CI pending",
       "expected_remaining": 6,
       "entry_scope": "Page-first phone layout and accessible tree access.",
       "exit_acceptance": "All9reported families fit 390\u00d7844 without page-level horizontal overflow; desktop preserved.",
       "investigation_limit": "Shared layout first; local exceptions only for measured residual failures.",
-      "evidence": [],
+      "evidence": [
+        {
+          "at": "2026-10-03T22:17:51.743629+00:00",
+          "scope": "M7 baseline-only activation",
+          "base": "ef0a82eb45fffd67412e3b67cbd93262d2e6254f",
+          "issue": 82,
+          "current_open": 7,
+          "source_changes_authorized": false,
+          "acceptance_outline": "/Users/jonathanturnock/.codex/ods-delivery/milestone-07/preparation/acceptance-outline.md"
+        },
+        {
+          "at": "2026-10-03T22:38:51.874000+00:00",
+          "lead": "root",
+          "baseline_accepted": true,
+          "sourcebase": "ef0a82eb45fffd67412e3b67cbd93262d2e6254f",
+          "canonical_models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "worker": "ae0d041fc75b286bc",
+          "worker_stop_reason": "end_turn",
+          "terminal_exit": 0,
+          "phone_cells": 54,
+          "desktop_cells": 6,
+          "bootstraps": 6,
+          "all_valid": true,
+          "harness_errors_matrix": 0,
+          "phone_overflow_cells": 12,
+          "overflow_by_family": {
+            "invariant-valueobject": 152,
+            "invariant-aggregate": 104
+          },
+          "page_after_full_tree": 54,
+          "source_hashes_checked": 1290,
+          "source_mismatches": 0,
+          "cleanup_verified": true,
+          "limits": "Plain Chromium viewport; native and Markdown not measured; desktop single sample; historical seven other overflow values do not reproduce. Preserved all harness errors/API/encoding/snapshot/theme-field/coordinator hung verification. Canonical encoding is transport contract; no new routing scope.",
+          "design": "At <=900px one labelled disclosure before page, initially closed, bounded scrollable single tree when deliberately opened; no CSS visual/DOM reorder. Above900 persistent existing sidebar. Keep actual page readable immediately when closed. Local RefList prose wrapping, not global Keyword token changes.",
+          "source_authorized": true,
+          "product_accepted": false
+        },
+        {
+          "at": "2026-10-03T22:59:48.574052+00:00",
+          "phase": "M7 source/unit readiness",
+          "accepted": false,
+          "terminal_exit": 0,
+          "canonical_models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "worker": "a764ec5499917200e",
+          "worker_stop_reason": "end_turn",
+          "useful_evidence": {
+            "unit": 1301,
+            "coverage": [
+              100,
+              100,
+              100,
+              100
+            ],
+            "browser": 132,
+            "type_errors": 0,
+            "type_warnings_final": 0
+          },
+          "blockers": [
+            "Modified/nonprimary tree clicks collapse despite router no arrival, hidden focus",
+            "Unit failure hidden by describe reordering; prove proper fixture isolation in original order or deterministic cause before readiness"
+          ],
+          "additional_bounded_probe": "Current exact deep row on widening from narrow ownscroller to desktop; preserve M6 visibility without moving document. Fold into existing interaction sequence, not new corpus.",
+          "raw_corrections": "check-1 had1warning; check-2 andcheck-3 raw logs zero. unit-green-1 had3failures includingwrongheading/comma; green-2onlyfocus. Coordinator/worker generalizedfailureclaims are not source of truth.",
+          "product_acceptance": false
+        },
+        {
+          "at": "2026-10-03T23:16:43.311374+00:00",
+          "source_unit_ready": true,
+          "product_accepted": false,
+          "canonical_models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "worker": "a7ddeb447bd3b16ad",
+          "worker_stop_reason": "end_turn",
+          "terminal_exit": 0,
+          "sourcebase": "ef0a82eb45fffd67412e3b67cbd93262d2e6254f",
+          "unit_passed": 1310,
+          "coverage": [
+            100,
+            100,
+            100,
+            100
+          ],
+          "browser_passed": 109,
+          "type_errors": 0,
+          "type_warnings": 0,
+          "blockers_closed": [
+            "Taken vs untaken tree click guard,5 unitred cases then green",
+            "Queued synthetic unpreventedanchor defaultaction cause traced; final fixture tests appclaimed flag before owncancel; bothdescribeorderspass; no longerwait/productionrouterchange",
+            "Breakpoint ownscroller reveal/currentrow focustransfer; unit and actualviewerred/green"
+          ],
+          "preservation": "1290baselinefile hashes outside authorized rootrecords/pages source unchanged; M1actualapproval e5c retained",
+          "limits": [
+            "Fullfinitecandidatehosts/native/quality/fullgate/CI remain pending",
+            "Modifiedclick browserred was wrongheading testauthorerror after guardbuilt; unitred meaningful, browsergreen meaningful",
+            "Three instrumented probes exceeded brief max2; record processdeviation, noterase productive causeproof",
+            "Coordinator mentions docsify ashost; permanentreaders are viewer/HTTPexport/physicalfile/native/Markdown, no new docsify scope"
+          ],
+          "next": "Readonly candidateactualhost phase; all source/test/rootrecords frozen"
+        },
+        {
+          "at": "2026-10-04T00:11:51.516315+00:00",
+          "lead": "root",
+          "phase": "M7 reader outcome ready for final quality",
+          "coordinator": "188e80e1-5023-4836-a0b8-41634bfe3d93",
+          "worker": "a0cbb12536d144c07",
+          "terminal_exit": 0,
+          "worker_stop_reason": "end_turn",
+          "canonical_models": [
+            "claude-opus-5-5",
+            "claude-sonnet-5-5"
+          ],
+          "unit": 1313,
+          "coverage": [
+            100,
+            100,
+            100,
+            100
+          ],
+          "package_check": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "changed_browser": 13,
+          "root_independent_browser": 13,
+          "actual_host_reduce_sequences": 6,
+          "narrow_320": 6,
+          "default_motion_widening": 4,
+          "all_pass": true,
+          "accessible_name": "Workspace tree, exact raw snapshot and role count1, collapsed/open",
+          "cause": "Reduced-motion0.01ms layout transitions settle after query change; oldrowbottom904/scroller900. Wait actual ownednav animationfinished, focus preventScroll, reveal only stillwide; no sleep/pixel fudge/global changes.",
+          "retained_equivalence": {
+            "geometry_cells": 82,
+            "native_witnesses": 4,
+            "reason": "CSS identical; RefList/App embedded branch/model/core unchanged since original host proof. SiteNav additions local decorative wrapper and width-change transition sequencing, six representative narrow geometry and all6newhostsequences prove affected axes. Native SiteNav never mounted.",
+            "limit": "Native4 remain measurements on CC-XAeTH; not new served-byte proof. Final unmodified gate and required exact-head real-vscode CI remain necessary."
+          },
+          "source_preservation": {
+            "files_checked": 1293,
+            "changed_since_reader_snapshot": [
+              "boards/project-backlog/187-phone-reading.md",
+              "STATUS.md",
+              "packages/pages/src/app/SiteNav.svelte",
+              "packages/pages/src/app/App.test.ts",
+              "packages/pages/e2e/phone-reading.spec.ts"
+            ],
+            "unexpected": 0
+          },
+          "new_js": {
+            "name": "index-DlLvKl9K.js",
+            "sha256": "1b63e60186900feda63a76ac71ccfd8f1a2a629352729c95403ff4fbc6442fb9"
+          },
+          "css_unchanged_sha256": "0e5737d9dc55cdbbd53293bb027cf23fa21f9e1b8d6fe5a8a0898342e6af99cd",
+          "raw_limits": [
+            "R1b all13 fail exactname, notisolatedresize proof",
+            "R2 initially greenbecause motion notactuallyapplied; invalidproof preserved; R2b3actualreduce red",
+            "U0 filtered27skips expected, notfullgate",
+            "Adhoc plain-tsc alltests16preexistingSvelte-export errors; packagecheck and scopedtest typingzero"
+          ],
+          "quality_authorized": true,
+          "landing_accepted": false,
+          "next": "One complete8lens scopedquality, then root exactcandidatefreeze/fullgate/requiredprepostCI"
+        },
+        {
+          "at": "2026-10-04T00:23:15.024620+00:00",
+          "scope": "Complete8lensquality accepted, highest0.3; root metadata status corrected",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-07/quality/root-acceptance.json"
+        }
+      ],
       "closed_issues": []
     },
     {
@@ -1255,15 +1445,15 @@
     "updated": "2026-10-03T19:41:52.900949+00:00"
   },
   "active_delivery": {
-    "milestone": 6,
-    "base": "edbbbd7f475b8dc65e814ad2fe617bbc6abde3e0",
-    "branch": "codex/m6-closeout-records",
-    "state": "M6 complete; closing records review, own clean-head gate and publication pending",
+    "milestone": 7,
+    "base": "ef0a82eb45fffd67412e3b67cbd93262d2e6254f",
+    "branch": "codex/m7-phone-reading",
+    "state": "M7 reader and complete quality accepted; exact local gate and CI pending",
     "source_changes_authorized": false,
-    "feature_accepted": true,
-    "expected_remaining": 7,
-    "record_candidate": "uncommitted six-path record edit; no gate run on it",
-    "next": "Milestone 7 baseline only after records publication"
+    "feature_accepted": false,
+    "expected_remaining": 6,
+    "card": "boards/project-backlog/187-phone-reading.md",
+    "sprint": "docs/bots/sprints/2026-10-03-sprint-08.md"
   },
   "previous_delivery": {
     "scope": "M6 merged accepted closeout",
@@ -1301,7 +1491,15 @@
     "actual_remaining": 7,
     "new": 0,
     "reopened": 0,
-    "record_closeout": "own clean-head unmodified gate/publication pending",
+    "record_closeout": {
+      "at": "2026-10-03T22:11:35.582298+00:00",
+      "remote_develop": "ef0a82eb45fffd67412e3b67cbd93262d2e6254f",
+      "gate_exit": 0,
+      "published": true,
+      "source_changed": false,
+      "additionalCI": 0,
+      "release": false
+    },
     "retrospective": "docs/bots/sprints/2026-10-03-retro-07.md"
   }
 }

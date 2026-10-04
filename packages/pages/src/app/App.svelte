@@ -6,7 +6,6 @@ import SkipLink from "../lib/atoms/SkipLink.svelte";
 import { focusArrival } from "../lib/focus";
 import ModelProvider from "../lib/ModelProvider.svelte";
 import type { Model } from "../lib/model";
-import Sidebar from "../lib/organisms/Sidebar.svelte";
 import Page from "../lib/Page.svelte";
 import { modelRefToHash } from "../lib/ref-transport";
 import { createRouter } from "../lib/router.svelte";
@@ -19,6 +18,7 @@ import {
 	type WorkspacePayload,
 } from "./host";
 import ImportScreen from "./ImportScreen.svelte";
+import SiteNav from "./SiteNav.svelte";
 import WorkspacePicker from "./WorkspacePicker.svelte";
 
 /** Workspaces handed in by the host skip the import screen; more than one shows a picker. */
@@ -118,7 +118,7 @@ $effect(() => {
 		<ModelProvider {model}>
 			<div class="site" class:embedded={embedded}>
 				{#if !embedded}<SkipLink href={modelRefToHash(router.ref)} />{/if}
-				{#if !embedded}<div class="site-nav"><Sidebar current={router.ref} /></div>{/if}
+				{#if !embedded}<SiteNav current={router.ref} />{/if}
 				<div class="site-page"><Page ref={router.ref} arrivals={router.arrivals} /></div>
 			</div>
 		</ModelProvider>
