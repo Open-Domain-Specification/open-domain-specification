@@ -1,8 +1,3 @@
-<script module lang="ts">
-/** A link in the trail: a route or a ref of the page's own workspace, or the element itself when it may be in another file. */
-export type Crumb = [string | { ref: string }, string];
-</script>
-
 <script lang="ts">
 import Ref from "../atoms/Ref.svelte";
 
@@ -14,11 +9,11 @@ import Ref from "../atoms/Ref.svelte";
  * page being read, so no crumb is `aria-current`. It is named, because a page
  * has more than one navigation landmark and they are told apart by name.
  */
-const { crumbs }: { crumbs: Crumb[] } = $props();
+const { crumbs }: { crumbs: [string, string][] } = $props();
 </script>
 
 <nav class="crumbs" aria-label="Breadcrumb">
-	{#each crumbs as [ref, label], i (`${i}:${label}`)}{#if i}<span class="sep">›</span>{/if}<Ref {ref} {label} />{/each}
+	{#each crumbs as [ref, label], i (ref)}{#if i}<span class="sep">›</span>{/if}<Ref {ref} {label} />{/each}
 </nav>
 
 <style>

@@ -9,7 +9,6 @@ A TypeScript library for generating comprehensive Markdown documentation from Op
 - **Relationship Tables**: Generate tables showing consumption patterns and relationships between components
 - **Navigation Structure**: Create sidebar navigation with proper hierarchy and cross-linking
 - **Breadcrumb Navigation**: Optional breadcrumb trails for easy navigation
-- **Sets of Workspaces**: `toDocSet` documents a whole folder of workspace files, one folder of pages per file, with links between files and a first page that lists them. `toDoc` still documents one workspace alone
 - **Multiple Component Types**: Support for workspaces, domains, subdomains, bounded contexts, services, and aggregates
 
 ## Installation

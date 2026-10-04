@@ -6,31 +6,11 @@ import type { Diagnostic } from "@open-domain-specification/core";
  * definition.
  */
 
-/**
- * One workspace as handed to the app: its schema JSON, a label and optional
- * diagnostics.
- *
- * With no `set` it is a workspace opened alone. Payloads that share a `set`
- * are the files of one folder: they are loaded together, each at its `path`,
- * so a `$ref` that names another file reaches it. The app never merges them.
- */
+/** One workspace as handed to the app: its schema JSON, a label and optional diagnostics. */
 export type WorkspacePayload = {
 	schema: unknown;
 	fileLabel: string;
 	diagnostics?: Diagnostic[];
-	/** Names the set this file belongs to; payloads with the same value are one set. */
-	set?: string;
-	/**
-	 * The raw path of the file relative to the set's folder, forward slashes,
-	 * for example `nested/a#%.json`. Defaults to `fileLabel`. Never URL-encoded:
-	 * the app encodes it where a ref or a route needs it.
-	 */
-	path?: string;
-	/**
-	 * Present when the file's current text does not load and this is its last
-	 * good load: what is wrong and what to do about it, shown beside the page.
-	 */
-	stale?: string;
 };
 
 /** An example workspace the viewer offers on its import screen. */
@@ -39,14 +19,6 @@ export type Example = {
 	description?: string;
 	/** Fetched by the browser, so it must allow cross-origin requests or be same-origin. */
 	url: string;
-	/**
-	 * Every file of an example that is a set: each is fetched as an entry, so
-	 * the example opens complete even where no one file refers to all the rest.
-	 * `url` stays the one the example is named for.
-	 */
-	urls?: string[];
-	/** The folder every entry lies under, when it is not the common folder of the entries. */
-	root?: string;
 	/** Accent for the card, e.g. the workspace primaryColor. */
 	color?: string;
 };

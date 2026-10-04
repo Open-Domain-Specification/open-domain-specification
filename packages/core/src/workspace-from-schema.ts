@@ -1,23 +1,4 @@
 import { getDebug } from "./debug";
-import {
-	A_CALLER,
-	A_CONSTRAINABLE,
-	A_CONSUMABLE,
-	A_CONTEXT,
-	A_REACTION_TRIGGER,
-	A_RELATION_TARGET,
-	A_SCHEMA,
-	A_STARTING_TRIGGER,
-	A_SUBDOMAIN,
-	A_TEAM,
-	A_VALUE_OBJECT,
-	AN_AGREEMENT,
-	AN_ELEMENT,
-	AN_ENTITY,
-	AN_IDENTITY_TARGET,
-	deadlineAnchor,
-	processTrigger,
-} from "./ref-kinds";
 import { encodeRefSegment } from "./reference";
 import {
 	type AggregateSchema,
@@ -27,7 +8,6 @@ import {
 	boundedcontextRef,
 	contextInvariantRef,
 	domainRef,
-	type EntityRelationSchema,
 	entityRef,
 	invariantRef,
 	ODS_VERSION,
@@ -46,21 +26,29 @@ import {
 import type {
 	Aggregate,
 	AttributeOwner,
+	Constrainable,
+	Consumable,
 	ConsumptionCaller,
-	RetainedEntry,
+	ContextRelationship,
+	IdentityTarget,
+	Process,
+	ProcessTrigger,
+	ReactionTrigger,
+	Referenceable,
 	Service,
-	UnresolvedReference,
+	Subdomain,
+	Team,
 	ValueObject,
 	Workspace,
-	WrittenRef,
 } from "./workspace";
 import {
-	type BoundedContext,
+	BoundedContext,
+	DataSchema,
+	Deadline,
 	Entity,
 	keepsUnresolvedWrites,
 	Workspace as WorkspaceModel,
 } from "./workspace";
-import { type RefKind, type Resolution, resolveWritten } from "./workspace-set";
 
 const debug = getDebug("get-workspace-from-schema");
 
@@ -466,46 +454,12 @@ function isPlainObject(value: unknown): value is object {
  * unset, remembers what was written and where, and `unresolved-ref` reports it
  * beside everything else the file gets wrong (card 100).
  *
- * A ref that names a file is read by the one resolver the set uses
- * ({@link resolveWritten}), from the file that wrote it, so the four ways a
- * ref can fail (`invalid-path`, `missing-file`, `missing-target`,
- * `wrong-kind`) are the same ones a host sees from `WorkspaceSet.resolve`.
- *
  * The loader's own lookups for the elements it has just created stay on the
  * `...OrThrow` methods: a miss there is a bug in this file, not a mistake in
  * the model, and it should stop the run.
  */
 class Refs {
-	/**
-	 * The refs that name a file and failed, with what they were looked up as, so
-	 * that why they failed can be told again once every element of every file
-	 * exists (see {@link settle}).
-	 */
-	private readonly pending: Array<{
-		record: UnresolvedReference;
-		written: string;
-		kind: RefKind<object>;
-	}> = [];
-
 	constructor(readonly workspace: Workspace) {}
-
-	/**
-	 * Tells again why each ref that names a file failed, now that the whole
-	 * load is done. A ref is first judged while its target's file is still
-	 * being made, so a context asked for where a consumable is found would say
-	 * "nothing there" rather than "the wrong kind"; the answer a host is given
-	 * is the one about the finished model.
-	 */
-	settle() {
-		for (const { record, written, kind } of this.pending) {
-			const again = resolveLoaded(this.workspace, written, kind);
-			if (again.ok) continue;
-			record.present = again.cause === "wrong-kind";
-			record.cause = again.cause;
-			record.file = "file" in again ? again.file : undefined;
-			record.detail = again.detail;
-		}
-	}
 
 	/**
 	 * One optional ref: what it names, or `undefined` with the miss recorded.
@@ -513,59 +467,33 @@ class Refs {
 	 * @param where a phrase for the place inside the element, when the field
 	 *   alone does not say which of several: `its consumption of "Decide"`.
 	 */
-	one<T extends object>(
+	one<T>(
 		at: Site,
 		field: string,
-		kind: RefKind<T>,
+		kind: Kind<T>,
 		written: { $ref: string } | undefined,
 		where?: string,
 	): T | undefined {
 		if (!written) return undefined;
-		const resolution = this.attempt(at, field, kind, written, where);
-		return resolution.ok ? resolution.target : undefined;
-	}
-
-	/**
-	 * One ref, with the miss recorded and also handed back, for the lists that
-	 * keep an entry raw when it names a file that is not there.
-	 */
-	attempt<T extends object>(
-		at: Site,
-		field: string,
-		kind: RefKind<T>,
-		written: { $ref: string },
-		where?: string,
-	): Resolution<T> {
-		const resolution = resolveLoaded(this.workspace, written.$ref, kind);
-		if (!resolution.ok) {
-			const record: UnresolvedReference = {
-				ref: at.ref,
-				owner: at.owner,
-				field,
-				where,
-				target: written.$ref,
-				expected: kind.label,
-				present: resolution.cause === "wrong-kind",
-				...(isQualified(written.$ref)
-					? {
-							cause: resolution.cause,
-							file: "file" in resolution ? resolution.file : undefined,
-							detail: resolution.detail,
-						}
-					: {}),
-			};
-			this.workspace.unresolved.push(record);
-			if (isQualified(written.$ref))
-				this.pending.push({ record, written: written.$ref, kind });
-		}
-		return resolution;
+		const found = kind.find(this.workspace, written.$ref);
+		if (found !== undefined) return found;
+		this.workspace.unresolved.push({
+			ref: at.ref,
+			owner: at.owner,
+			field,
+			where,
+			target: written.$ref,
+			expected: kind.what,
+			present: this.workspace.getByRef(written.$ref) !== undefined,
+		});
+		return undefined;
 	}
 
 	/** Every ref of a list that resolves; the rest are recorded and dropped. */
-	many<T extends object>(
+	many<T>(
 		at: Site,
 		field: string,
-		kind: RefKind<T>,
+		kind: Kind<T>,
 		written: { $ref: string }[] | undefined,
 		where?: string,
 	): T[] {
@@ -579,41 +507,75 @@ class Refs {
 }
 
 /**
- * Forgets the unknown fields found inside an entry that is kept raw: they are
- * written back as they were, so "dropped rather than kept" would not be true
- * of them.
+ * What one field may name: how to resolve a ref written in it, and the phrase
+ * that says what it should have named. The two travel together so that a
+ * message can never describe a different kind from the one that was looked up.
  */
-function keepsRaw(workspace: Workspace, entryRef: string) {
-	const fields = workspace.unknownFields;
-	for (let i = fields.length - 1; i >= 0; i--)
-		if (fields[i].ref === entryRef || fields[i].ref.startsWith(`${entryRef}/`))
-			fields.splice(i, 1);
-}
+type Kind<T> = {
+	readonly what: string;
+	find(workspace: Workspace, ref: string): T | undefined;
+};
 
-/**
- * Whether a ref names a file: something stands before its first `#`. A ref
- * with none (`#/...`, or one that is not a pointer at all) is read in the file
- * that wrote it and keeps the cost decision 29 names when it names nothing.
- */
-function isQualified(written: string): boolean {
-	return written.indexOf("#") > 0;
-}
-
-/** Reads a written ref from the file that wrote it; see {@link resolveWritten}. */
-function resolveLoaded<T extends object>(
-	workspace: Workspace,
-	written: string,
-	kind: RefKind<T>,
-): Resolution<T> {
-	if (!isQualified(written) && !written.startsWith("#/"))
-		return {
-			ok: false,
-			cause: "missing-target",
-			file: workspace.file ?? "",
-			detail: `${written} is not a pointer`,
-		};
-	return resolveWritten(workspace, written, kind);
-}
+const A_SCHEMA: Kind<DataSchema> = {
+	what: "a schema of this workspace",
+	find: (workspace, ref) => workspace.getSchemaByRef(ref),
+};
+const A_CONSUMABLE: Kind<Consumable> = {
+	what: "an operation or an event of this workspace",
+	find: (workspace, ref) => workspace.getConsumableByRef(ref),
+};
+const A_VALUE_OBJECT: Kind<ValueObject> = {
+	what: "a value object of this workspace",
+	find: (workspace, ref) => workspace.getValueObjectByRef(ref),
+};
+const AN_ENTITY: Kind<Entity> = {
+	what: "an entity of this workspace",
+	find: (workspace, ref) => workspace.getEntityByRef(ref),
+};
+const A_RELATION_TARGET: Kind<Entity | ValueObject> = {
+	what: "an entity or a value object of this workspace",
+	find: (workspace, ref) => workspace.getEntityOrValueobjectByRef(ref),
+};
+const AN_IDENTITY_TARGET: Kind<IdentityTarget> = {
+	what: "an entity of this workspace, or a bounded context whose entities it does not state, or a schema such a context publishes",
+	find: identifiedBy,
+};
+const A_CALLER: Kind<ConsumptionCaller> = {
+	what: "an operation, a policy or a process of this workspace",
+	find: (workspace, ref) => workspace.getConsumptionCallerByRef(ref),
+};
+const A_TEAM: Kind<Team> = {
+	what: "a team of this workspace",
+	find: (workspace, ref) => workspace.getTeamByRef(ref),
+};
+const A_SUBDOMAIN: Kind<Subdomain> = {
+	what: "a subdomain of one of this workspace's domains",
+	find: (workspace, ref) => workspace.getSubdomainByRef(ref),
+};
+const A_CONSTRAINABLE: Kind<Constrainable> = {
+	what: "an entity, a value object, an attribute or a consumable of this workspace",
+	find: (workspace, ref) => workspace.getConstrainableByRef(ref),
+};
+const A_REACTION_TRIGGER: Kind<ReactionTrigger> = {
+	what: "an event, or an answer an operation comes back with",
+	find: (workspace, ref) => workspace.getReactionTriggerByRef(ref),
+};
+const A_STARTING_TRIGGER: Kind<Consumable> = {
+	what: "an event, or an operation of this process's own context",
+	find: (workspace, ref) => workspace.getConsumableByRef(ref),
+};
+const AN_ELEMENT: Kind<Referenceable> = {
+	what: "an element of this workspace",
+	find: (workspace, ref) => workspace.getByRef(ref),
+};
+const A_CONTEXT: Kind<BoundedContext> = {
+	what: "a bounded context of this workspace",
+	find: (workspace, ref) => workspace.getBoundedContextByRef(ref),
+};
+const AN_AGREEMENT: Kind<ContextRelationship> = {
+	what: "a relationship between two bounded contexts of this workspace",
+	find: (workspace, ref) => workspace.findRelationship(ref),
+};
 
 /** Consumables are added in the second pass because their schema must already exist. */
 function addProvides(
@@ -702,23 +664,14 @@ function addConsumes(
 		// A consumption is the pair it joins, so a consumable that resolves to
 		// nothing leaves no consumption to hang the rest of it on: the whole
 		// entry is dropped and reported at the consumer, which is where it was
-		// written. When the ref names a file, the entry is kept raw at its index
-		// instead, so a file that is not loaded yet costs the author nothing.
-		const found = refs.attempt(
+		// written.
+		const consumable = refs.one(
 			at,
 			"consumable",
 			A_CONSUMABLE,
 			consumption.consumable,
 		);
-		if (!found.ok) {
-			if (isQualified(consumption.consumable.$ref))
-				consumer.retainedConsumes.push({
-					index,
-					raw: structuredClone(consumption),
-				});
-			continue;
-		}
-		const consumable = found.target;
+		if (!consumable) continue;
 		checkUnknownFields(
 			refs.workspace,
 			at.owner,
@@ -726,38 +679,49 @@ function addConsumes(
 			"consumption",
 			consumption,
 		);
-		const where = `its consumption of "${consumable.name}"`;
-		// A caller is the pair it joins to the consumption too: one that names a
-		// file that is not there is kept raw at its index within `by`.
-		const retainedBy: RetainedEntry<WrittenRef>[] = [];
-		const by: ConsumptionCaller[] = [];
-		for (const [position, caller] of listOf(consumption.by).entries()) {
-			const outcome = refs.attempt(at, "by", A_CALLER, caller, where);
-			if (outcome.ok) by.push(outcome.target);
-			else if (isQualified(caller.$ref)) {
-				retainedBy.push({ index: position, raw: structuredClone(caller) });
-				keepsRaw(refs.workspace, `${at.ref}/consumes/${index}/by/${position}`);
-			}
-		}
-		// The relationships are loaded before the consumptions for this ref,
-		// since an agreement has to exist before an exchange can say it belongs
-		// to it.
-		const agreementRef = consumption.relationship;
-		const agreement =
-			agreementRef &&
-			refs.attempt(at, "relationship", AN_AGREEMENT, agreementRef, where);
-		const made = consumer.addConsumption(consumable, {
+		consumer.addConsumption(consumable, {
 			...consumption,
-			by,
-			relationship: agreement?.ok ? agreement.target : undefined,
+			by: refs.many(
+				at,
+				"by",
+				A_CALLER,
+				consumption.by,
+				`its consumption of "${consumable.name}"`,
+			),
+			// The relationships are loaded before the consumptions for this
+			// ref, since an agreement has to exist before an exchange can say
+			// it belongs to it.
+			relationship: refs.one(
+				at,
+				"relationship",
+				AN_AGREEMENT,
+				consumption.relationship,
+				`its consumption of "${consumable.name}"`,
+			),
 		});
-		made.retainedBy.push(...retainedBy);
-		// The miss is recorded at the consumer, but it is this consumption that
-		// writes the ref, so it keeps it, local or qualified: a consumer may hold
-		// several, each naming a different agreement.
-		if (agreementRef && !agreement?.ok)
-			made.unresolvedWrites.add("relationship", { $ref: agreementRef.$ref });
 	}
+}
+
+/**
+ * What an identity attribute names: an entity anywhere in the workspace; a
+ * bounded context, for an id that belongs to a system whose entities are not
+ * modelled (decision 28); or a schema that system publishes for the kind the
+ * id names (decision 28, third amendment). Whether that context is really
+ * external is `identifies-entity`'s to say; the loader only resolves what the
+ * ref points at, so a model that names the wrong kind of context, or a schema
+ * of a context whose insides it does state, loads and is reported rather than
+ * throwing.
+ */
+function identifiedBy(
+	workspace: Workspace,
+	ref: string,
+): IdentityTarget | undefined {
+	const target = workspace.getByRef(ref);
+	return target instanceof Entity ||
+		target instanceof BoundedContext ||
+		target instanceof DataSchema
+		? target
+		: undefined;
 }
 
 /**
@@ -783,49 +747,28 @@ function addAttributes(
 			"attribute",
 			attributeSchema,
 		);
-		const attribute = owner.attributes.get(id);
-		if (!attribute)
-			throw new Error(`Attribute ${at.ref} was not made before it was linked`);
-		attribute.valueobject = refs.one(
-			at,
-			"valueobject",
-			A_VALUE_OBJECT,
-			attributeSchema.valueobject,
-		);
-		attribute.schema = refs.one(at, "schema", A_SCHEMA, attributeSchema.schema);
-		attribute.identifies = refs.one(
-			at,
-			"identifies",
-			AN_IDENTITY_TARGET,
-			attributeSchema.identifies,
-		);
-	}
-}
-
-/**
- * Makes the attributes of an owner without what they point at.
- *
- * An invariant may constrain an attribute of another context, or of another
- * file, so every attribute has to exist before any invariant is linked; what
- * an attribute points at is joined afterwards, in the order it always was
- * (see {@link addAttributes}).
- */
-function makeAttributes(
-	owner: AttributeOwner,
-	attributes: Record<string, AttributeSchema> | undefined,
-) {
-	for (const [id, attributeSchema] of entriesOf(attributes))
 		owner.addAttribute(attributeSchema.name, {
 			...attributeSchema,
 			id,
-			valueobject: undefined,
-			schema: undefined,
-			identifies: undefined,
+			valueobject: refs.one(
+				at,
+				"valueobject",
+				A_VALUE_OBJECT,
+				attributeSchema.valueobject,
+			),
+			schema: refs.one(at, "schema", A_SCHEMA, attributeSchema.schema),
+			identifies: refs.one(
+				at,
+				"identifies",
+				AN_IDENTITY_TARGET,
+				attributeSchema.identifies,
+			),
 		});
+	}
 }
 
 function addDomains(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
-	for (const [id, domainSchema] of entriesOf(workspaceSchema.domains)) {
+	for (const [id, domainSchema] of Object.entries(workspaceSchema.domains)) {
 		debug(`Adding domain: ${domainSchema.name}`);
 		const domain = workspace.addDomain(domainSchema.name, {
 			...domainSchema,
@@ -861,7 +804,7 @@ function addDomains(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 }
 
 function addTeams(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
-	for (const [id, teamSchema] of entriesOf(workspaceSchema.teams)) {
+	for (const [id, teamSchema] of Object.entries(workspaceSchema.teams)) {
 		debug(`Adding team: ${teamSchema.name}`);
 		workspace.addTeam(teamSchema.name, { ...teamSchema, id });
 		checkUnknownFields(
@@ -878,6 +821,7 @@ function addBoundedContext(
 	workspace: Workspace,
 	id: string,
 	boundedcontextSchema: BoundedContextSchema,
+	refs: Refs,
 ): BoundedContext {
 	debug(`Adding bounded context: ${boundedcontextSchema.name}`);
 	const at = site(
@@ -887,10 +831,17 @@ function addBoundedContext(
 	);
 	const boundedcontext = workspace.addBoundedContext(
 		boundedcontextSchema.name,
-		// Its team and subdomains are joined once every context of every file
-		// exists (linkOwnership), so a ref that names a context where a team is
-		// wanted is the wrong kind rather than a thing not made yet.
-		{ ...boundedcontextSchema, id, team: undefined, subdomains: [] },
+		{
+			...boundedcontextSchema,
+			id,
+			team: refs.one(at, "team", A_TEAM, boundedcontextSchema.team),
+			subdomains: refs.many(
+				at,
+				"subdomains",
+				A_SUBDOMAIN,
+				boundedcontextSchema.subdomains,
+			),
+		},
 	);
 	checkUnknownFields(
 		workspace,
@@ -1115,40 +1066,9 @@ function addBoundedContext(
 	return boundedcontext;
 }
 
-/**
- * A context's team and the subdomains it serves, which may be declared in
- * another file. They are the first refs a load resolves after the contexts
- * exist, and nothing but them is resolved at this point.
- */
-function linkOwnership(
-	workspace: Workspace,
-	workspaceSchema: WorkspaceSchema,
-	refs: Refs,
-) {
-	for (const [id, boundedcontextSchema] of entriesOf(
-		workspaceSchema.boundedcontexts,
-	)) {
-		const at = site(
-			"Bounded context",
-			boundedcontextSchema.name,
-			boundedcontextRef(id).$ref,
-		);
-		const boundedcontext = workspace.getBoundedContextByRefOrThrow(at.ref);
-		const team = refs.one(at, "team", A_TEAM, boundedcontextSchema.team);
-		if (team) boundedcontext.ownedBy(team);
-		for (const subdomain of refs.many(
-			at,
-			"subdomains",
-			A_SUBDOMAIN,
-			boundedcontextSchema.subdomains,
-		))
-			boundedcontext.serves(subdomain);
-	}
-}
-
 /** Every service and aggregate, paired with its schema. */
 function* providersOf(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
-	for (const [boundedcontextId, boundedcontextSchema] of entriesOf(
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
 		for (const [serviceId, schema] of entriesOf(
@@ -1171,40 +1091,6 @@ function* providersOf(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 }
 
 /**
- * A member's relations. A relation is the pair it joins, so a target that
- * resolves to nothing leaves no relation; when the ref names a file the
- * relation is kept raw at its index instead (see {@link RetainedEntry}).
- */
-function addRelations(
-	member: Entity | ValueObject,
-	relations: EntityRelationSchema[] | undefined,
-	refs: Refs,
-) {
-	const at = site(
-		member instanceof Entity ? "Entity" : "Value object",
-		member.name,
-		member.ref,
-	);
-	for (const [index, relation] of listOf(relations).entries()) {
-		const found = refs.attempt(
-			at,
-			"target",
-			A_RELATION_TARGET,
-			relation.target,
-			`its "${relation.relation}" relation`,
-		);
-		if (found.ok) member.addRelation(found.target, relation);
-		else if (isQualified(relation.target.$ref)) {
-			member.retainedRelations.push({
-				index,
-				raw: structuredClone(relation),
-			});
-			keepsRaw(refs.workspace, `${member.ref}/relations/${index}`);
-		}
-	}
-}
-
-/**
  * Second pass: everything that points at another node by `$ref` can only be
  * resolved once every node exists. Consumables come before consumptions
  * because a consumption points at a consumable.
@@ -1214,7 +1100,15 @@ function linkReferences(
 	workspaceSchema: WorkspaceSchema,
 	refs: Refs,
 ) {
-	for (const [boundedcontextId, boundedcontextSchema] of entriesOf(
+	for (const { provider, schema } of providersOf(workspace, workspaceSchema)) {
+		addProvides(provider, schema, refs);
+	}
+	for (const { provider, schema } of providersOf(workspace, workspaceSchema)) {
+		linkRaises(provider, schema, workspace, refs);
+		addConsumes(provider, schema, refs);
+	}
+
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
 		for (const [schemaId, schemaSchema] of entriesOf(
@@ -1236,7 +1130,17 @@ function linkReferences(
 				valueObjectRef(boundedcontextId, valueobjectId).$ref,
 			);
 			addAttributes(valueobject, valueobjectSchema.attributes, refs);
-			addRelations(valueobject, valueobjectSchema.relations, refs);
+			const valueAt = site("Value object", valueobject.name, valueobject.ref);
+			for (const relation of listOf(valueobjectSchema.relations)) {
+				const target = refs.one(
+					valueAt,
+					"target",
+					A_RELATION_TARGET,
+					relation.target,
+					`its "${relation.relation}" relation`,
+				);
+				if (target) valueobject.addRelation(target, relation);
+			}
 
 			// A value's rule is about its own attributes, so it is wired once
 			// they exist, the way an aggregate's is below.
@@ -1267,7 +1171,17 @@ function linkReferences(
 					entityRef(boundedcontextId, aggregateId, entityId).$ref,
 				);
 				addAttributes(entity, entitySchema.attributes, refs);
-				addRelations(entity, entitySchema.relations, refs);
+				const entityAt = site("Entity", entity.name, entity.ref);
+				for (const relation of listOf(entitySchema.relations)) {
+					const target = refs.one(
+						entityAt,
+						"target",
+						A_RELATION_TARGET,
+						relation.target,
+						`its "${relation.relation}" relation`,
+					);
+					if (target) entity.addRelation(target, relation);
+				}
 			}
 
 			// Invariants come last: they may constrain attributes added just above.
@@ -1317,7 +1231,7 @@ function linkSpecialisations(
 	workspaceSchema: WorkspaceSchema,
 	refs: Refs,
 ) {
-	for (const [boundedcontextId, boundedcontextSchema] of entriesOf(
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
 		for (const [valueobjectId, valueobjectSchema] of entriesOf(
@@ -1361,7 +1275,7 @@ function linkGlossary(
 	workspaceSchema: WorkspaceSchema,
 	refs: Refs,
 ) {
-	for (const [boundedcontextId, boundedcontextSchema] of entriesOf(
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
 		for (const [termId, termSchema] of entriesOf(
@@ -1388,7 +1302,7 @@ function linkPolicies(
 	workspaceSchema: WorkspaceSchema,
 	refs: Refs,
 ) {
-	for (const [boundedcontextId, boundedcontextSchema] of entriesOf(
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
 		for (const [policyId, policySchema] of entriesOf(
@@ -1404,13 +1318,55 @@ function linkPolicies(
 	}
 }
 
+/**
+ * What a process may wait for or end on: an event, an answer, or one of *its
+ * own* deadlines.
+ *
+ * A deadline of another process is refused here rather than reported by a
+ * rule, for the reason the DSL refuses it: a per-instance clock starts when
+ * one instance began waiting, so no other reactor knows the instance exists,
+ * and a ref to somebody else's is not a thing this field can name at all.
+ */
+function processTrigger(process: Process): Kind<ProcessTrigger> {
+	return {
+		what: "an event, an answer an operation comes back with, or one of this process's own deadlines",
+		find: (workspace, ref) => {
+			const found = workspace.getProcessTriggerByRef(ref);
+			if (found instanceof Deadline && found.process !== process)
+				return undefined;
+			return found;
+		},
+	};
+}
+
+/**
+ * What a deadline's `from` may name: one of the triggers the process already
+ * waits for.
+ *
+ * A clock starts on a moment the instance can tell has arrived, and the only
+ * moments it knows are the ones it listens for, so anything else is not a
+ * thing this field can name — reported the same way a ref that names nothing
+ * at all is, rather than throwing out of `countsFrom` at load.
+ */
+function deadlineAnchor(process: Process): Kind<ProcessTrigger> {
+	const waitsFor = [...process.startEvents, ...process.events];
+	const trigger = processTrigger(process);
+	return {
+		what: "one of the triggers this process starts or waits on",
+		find: (workspace, ref) => {
+			const found = trigger.find(workspace, ref);
+			return found && waitsFor.includes(found) ? found : undefined;
+		},
+	};
+}
+
 /** Processes join consumables that may live in any context. */
 function linkProcesses(
 	workspace: Workspace,
 	workspaceSchema: WorkspaceSchema,
 	refs: Refs,
 ) {
-	for (const [boundedcontextId, boundedcontextSchema] of entriesOf(
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
 		for (const [processId, processSchema] of entriesOf(
@@ -1459,33 +1415,23 @@ function addRelationships(
 	workspaceSchema: WorkspaceSchema,
 	refs: Refs,
 ) {
-	for (const [index, relationship] of listOf(
-		workspaceSchema.relationships,
-	).entries()) {
+	for (const [index, relationship] of workspaceSchema.relationships.entries()) {
 		const written =
 			"participants" in relationship
 				? relationship.participants
 				: [relationship.upstream, relationship.downstream];
 		// A relationship is the pair it joins, so an end that resolves to
 		// nothing leaves no relationship at all. It has no ref of its own until
-		// both ends are known, so the miss is reported at the end of this file
-		// that did resolve, and at the ref as written when neither did (at the
-		// relationship's place in the file, when what was written names a file).
+		// both ends are known, so the miss is reported at the end that did
+		// resolve, and at the ref as written when neither did.
 		const ends = written.map((end) =>
-			resolveLoaded(workspace, end.$ref, A_CONTEXT),
+			workspace.getBoundedContextByRef(end.$ref),
 		);
-		const landsOn = ends.find((it) => it.ok && it.workspace === workspace);
-		const failing = written.find((_, i) => !ends[i].ok);
+		const landsOn = ends.find((it) => it !== undefined);
 		const at = site(
 			"Relationship",
 			`${relationship.type} between "${written[0].$ref}" and "${written[1].$ref}"`,
-			landsOn?.ok
-				? landsOn.target.ref
-				: failing === undefined
-					? ""
-					: isQualified(failing.$ref)
-						? `#/relationships/${index}`
-						: failing.$ref,
+			landsOn?.ref ?? written.find((_, i) => !ends[i])?.$ref ?? "",
 		);
 		// A relationship is the one thing a file writes that has no ref of its
 		// own, so an unknown field on it is reported at the place it sits in
@@ -1500,7 +1446,7 @@ function addRelationships(
 			relationship,
 		);
 		const both = written.map((end, i) =>
-			refs.attempt(
+			refs.one(
 				at,
 				"participants" in relationship
 					? "participants"
@@ -1511,21 +1457,8 @@ function addRelationships(
 				end,
 			),
 		);
-		const [first, second] = both;
-		if (!first.ok || !second.ok) {
-			// An end that names a file keeps the whole relationship raw, so a
-			// file that is not loaded yet costs the author nothing.
-			if (written.some((end, i) => !both[i].ok && isQualified(end.$ref))) {
-				workspace.retainedRelationships.push({
-					index,
-					raw: structuredClone(relationship),
-				});
-				keepsRaw(workspace, `#/relationships/${index}`);
-			}
-			continue;
-		}
-		const source = first.target;
-		const target = second.target;
+		const [source, target] = both;
+		if (!source || !target) continue;
 		if ("participants" in relationship) {
 			workspace.addRelationship({
 				type: relationship.type,
@@ -1564,11 +1497,6 @@ function addRelationships(
  * are reported and dropped (see {@link UnresolvedWrites}). A `returns` keeps
  * its ref but not its `many`, which says how many of a shape a call comes
  * back with and means nothing until the shape resolves.
- *
- * A miss is also recorded at an element that does not write the ref: a
- * consumption's `relationship` is reported at its consumer, which does not
- * serialize it. The consumption keeps the unresolved ref itself, local or
- * qualified, when it is made (see {@link addConsumes}).
  */
 function keepUnresolvedRefs(workspace: Workspace) {
 	for (const written of workspace.unresolved) {
@@ -1596,60 +1524,9 @@ function recordOdsVersion(workspace: Workspace, found: string | undefined) {
 	workspace.odsVersionMismatch = { found };
 }
 
-/** Makes every attribute of a workspace, before anything is linked to one. */
-function makeAttributesOf(
-	workspace: Workspace,
+export function getWorkspaceFromSchema(
 	workspaceSchema: WorkspaceSchema,
-) {
-	for (const [boundedcontextId, boundedcontextSchema] of entriesOf(
-		workspaceSchema.boundedcontexts,
-	)) {
-		for (const [schemaId, schemaSchema] of entriesOf(
-			boundedcontextSchema.schemas,
-		))
-			makeAttributes(
-				workspace.getSchemaByRefOrThrow(
-					schemaRef(boundedcontextId, schemaId).$ref,
-				),
-				schemaSchema.attributes,
-			);
-		for (const [valueobjectId, valueobjectSchema] of entriesOf(
-			boundedcontextSchema.valueobjects,
-		))
-			makeAttributes(
-				workspace.getValueObjectByRefOrThrow(
-					valueObjectRef(boundedcontextId, valueobjectId).$ref,
-				),
-				valueobjectSchema.attributes,
-			);
-		for (const [aggregateId, aggregateSchema] of entriesOf(
-			boundedcontextSchema.aggregates,
-		))
-			for (const [entityId, entitySchema] of entriesOf(
-				aggregateSchema.entities,
-			))
-				makeAttributes(
-					workspace.getEntityByRefOrThrow(
-						entityRef(boundedcontextId, aggregateId, entityId).$ref,
-					),
-					entitySchema.attributes,
-				);
-	}
-}
-
-/** One file being loaded: the workspace made from it, and the file itself. */
-export type Loading = {
-	readonly workspace: Workspace;
-	readonly schema: WorkspaceSchema;
-	readonly refs: Refs;
-};
-
-/**
- * First phase of a load: the workspace itself, without anything in it. A set
- * joins every one of these before the next phase, so that nothing is linked
- * across a file until every file exists and knows which file it is.
- */
-export function beginLoading(workspaceSchema: WorkspaceSchema): Loading {
+): Workspace {
 	debug(`Creating workspace from schema: ${workspaceSchema.name}`);
 	const workspace = new WorkspaceModel(workspaceSchema.name, {
 		id: workspaceSchema.id,
@@ -1668,70 +1545,25 @@ export function beginLoading(workspaceSchema: WorkspaceSchema): Loading {
 		"workspace",
 		workspaceSchema,
 	);
-	return { workspace, schema: workspaceSchema, refs: new Refs(workspace) };
-}
+	const refs = new Refs(workspace);
 
-/**
- * Every other phase of a load, over every file of it at once.
- *
- * A phase runs over all the files before the next begins, which is what keeps
- * a ref into another file from meeting a half-made element: the domains and
- * teams a context names exist before any context is made, every context
- * exists before any relationship or specialisation names one, every
- * consumable and attribute exists before anything consumes, raises or
- * constrains one. Within one file the phases are the ones a lone workspace
- * has always run, in the same order, so the diagnostics of a file come out in
- * the order they always did.
- */
-export function linkLoadings(loadings: readonly Loading[]) {
-	for (const { workspace, schema } of loadings) {
-		addDomains(workspace, schema);
-		addTeams(workspace, schema);
+	addDomains(workspace, workspaceSchema);
+	addTeams(workspace, workspaceSchema);
+	for (const [id, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		addBoundedContext(workspace, id, boundedcontextSchema, refs);
 	}
-	for (const { workspace, schema } of loadings)
-		for (const [id, boundedcontextSchema] of entriesOf(schema.boundedcontexts))
-			addBoundedContext(workspace, id, boundedcontextSchema);
-	for (const { workspace, schema, refs } of loadings)
-		linkOwnership(workspace, schema, refs);
 	// Relationships come before the references because a consumption may name
 	// the agreement it belongs to, and they need nothing but the two contexts,
 	// which exist by now.
-	for (const { workspace, schema, refs } of loadings)
-		addRelationships(workspace, schema, refs);
-	for (const { workspace, schema, refs } of loadings)
-		linkSpecialisations(workspace, schema, refs);
-	for (const { workspace, schema } of loadings)
-		makeAttributesOf(workspace, schema);
-	for (const { workspace, schema, refs } of loadings)
-		for (const { provider, schema: providerSchema } of providersOf(
-			workspace,
-			schema,
-		))
-			addProvides(provider, providerSchema, refs);
-	for (const { workspace, schema, refs } of loadings)
-		for (const { provider, schema: providerSchema } of providersOf(
-			workspace,
-			schema,
-		)) {
-			linkRaises(provider, providerSchema, workspace, refs);
-			addConsumes(provider, providerSchema, refs);
-		}
-	for (const { workspace, schema, refs } of loadings)
-		linkReferences(workspace, schema, refs);
-	for (const { workspace, schema, refs } of loadings)
-		linkPolicies(workspace, schema, refs);
-	for (const { workspace, schema, refs } of loadings)
-		linkProcesses(workspace, schema, refs);
-	for (const { workspace, schema, refs } of loadings)
-		linkGlossary(workspace, schema, refs);
-	for (const { refs } of loadings) refs.settle();
-	for (const { workspace } of loadings) keepUnresolvedRefs(workspace);
-}
+	addRelationships(workspace, workspaceSchema, refs);
+	linkSpecialisations(workspace, workspaceSchema, refs);
+	linkReferences(workspace, workspaceSchema, refs);
+	linkPolicies(workspace, workspaceSchema, refs);
+	linkProcesses(workspace, workspaceSchema, refs);
+	linkGlossary(workspace, workspaceSchema, refs);
+	keepUnresolvedRefs(workspace);
 
-export function getWorkspaceFromSchema(
-	workspaceSchema: WorkspaceSchema,
-): Workspace {
-	const loading = beginLoading(workspaceSchema);
-	linkLoadings([loading]);
-	return loading.workspace;
+	return workspace;
 }

@@ -2,7 +2,7 @@
 
 ## Goal / health
 
-Clear the guarded backlog: **2 open / 52 closed** from54 (44implemented,8notplanned,zero new/reopened). Open #54,#63. Milestones1–9 and their closing records are delivered. M10 source foundations are accepted for form implementation; full authoring acceptance remains open. No release.
+Owner has requested review of milestones 1-8 with the entire #63 epic outside develop and main. This branch restores the accepted M8 baseline; root's publication state is authoritative. The dedicated `codex/epic-63-team-authoring` branch preserves M9/M10. #54 and #63 remain open. No release.
 
 ## Binding delegation policy — 2026-10-03
 
@@ -14,24 +14,26 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-M9 multifile support is delivered in PR #141. Astra Low and Claude Opus 5.5 approved exact candidate `8b98b6e6812b04b31cd9e5adb6c2f87787d16035`; merge `dc040764e4b9565fc023f6725de26c40caf02a8e` has the identical tree. The unmodified clean-head landing gate passed. Pre-merge CI 37202757756 and post-merge CI 37203798923 passed package, browser, real VS Code, keyboard and result-guard steps; publishing was skipped. #59 is closed.
-
-The first pre-merge package job had a Vitest reporting timeout after all 1,547 page tests passed. Only that failed job was retried; the successful browser/native jobs were retained. The raw failed evidence is preserved. No testing framework or timeout change was made.
+Prepare the rollback candidate on `codex/defer-epic-63` for the requested M1-8 review handoff. Before record edits, its staged tree exactly matched accepted M8 baseline `5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9` (tree `39e5572e324a1fdb6950fc007ff1353621ad7c19`). That baseline's closing-record gate passed exit 0 in 188 seconds and was published to develop. Root owns review, gate and publication of this rollback candidate.
 
 ## Next
 
-Implement #54 against the accepted multifile resolver. M9 closing records eb6707b3 passed their own unmodified gate and were published with the remote verified. The source-backed inventory covers 20 authoring families and 39 add/update operations, plus safe workspace creation. Real extension-owned forms have labelled fields, legal dropdowns, populated updates and explicit Save/Cancel. Two palette commands and context-aware tree entry points keep the command surface small.
-
-Opus coordinates bounded Sonnet subsets. Safe creation/fresh reads, core legal-choice queries and atomic writer source are accepted for downstream implementation. Focused checks: 17 legal-choice cases, 8 safe-create cases and 102 writer cases; owning types/format/build passed. Real-host evidence remains outstanding. Host form descriptors/session/choices are now accepted for all 39 operations. The final 26 authoring cases pass, including draft-choice refresh, complete relationship checks and deadline update. The real labelled webview and command/tree source are accepted for native verification. A bounded form-script correction preserves newer unfinished drafts and focus across older host refreshes; actual DOM proof remains outstanding. The existing native Add/Update journeys now pass, including unfinished-draft/focus preservation, Cancel/no-write and visible required-field refusal. The multi-file host checks prove all loaded owners, owner-only writes and safe-create refusal. Integrated quality is complete. Confirmed dirty-buffer completion messaging and shared-label corrections passed 18 core-query and 24 session/choice cases plus owning checks; README now matches actual Add/Update, owner and editor-save behavior. Next: existing complete-batch landing gate and all five native configurations plus keyboard/result guard on a clean committed candidate. The writer must reject choices that become illegal or stale during a form, while preserving unrelated or deliberately pinned diagnostics. Existing identity keys remain read-only; display names and supported mutable fields are editable. Real native add AND update journeys must interact with the actual form DOM.
+Owner review of M1-8 on `codex/model-extension-review` (`5120fd54`) comes first. M9/#59 and M10/#54/#63 are deferred to `codex/epic-63-team-authoring` at `88cb0f610e9e5c164acaf0c69362469108f33fb9`; keep the whole epic outside develop and main during review. The M9 Astra/Claude approval of `8b98b6e6812b04b31cd9e5adb6c2f87787d16035` remains historical on that epic work and does not approve this baseline. #59 is reopened for the owner-requested deferral. Reintegrating later requires reverting the separation rollback or cherry-picking from the dedicated branch.
 
 ## Later
 
-Close #54 only after complete acceptance, exact gates and merge verification. Audit every promise of #63 and close it last. A zero issue count alone is not goal completion. No modules, shared assets, compatibility or release. Astra remains a final whole-model gate; no new Astra review for forms/UI or these metadata records.
+#54 forms follow #59 after owner review. The previous survey's "current commands none" is a premise gap, not scope zero. Parent #63 remains last after a whole-promise audit. Preserve all four readers, exact model pins, generated integrity and historical M1 model approval. No new Astra UI/tooling/metadata review.
+
+## Outcomes / blockers
+
+M8 importer PR139: source 23c281af, unmodified gate 190 s (1323 pages/100%, 689 browser, 20 existing opt-in baseline skips, 0 failed/flaky/retried), merge af913078 with identical tree f1991f8f, pre/post CI 37170929768/37171695891 success, publish skipped; #92 closed 02:50:38Z, #93 02:50:41Z. M8 copy PR140: source fe7e59e8, unmodified gate 190 s (same counts), merge a7552b96 with identical tree 1b76924e, pre/post CI 37173478992/37174063275 success, publish skipped; #94 closed 03:34:52Z. Four manual CI runs, no automatic duplicates, no release, no quota response. Evidence: external milestone-08 importer/publication/closures.json and copy/publication/closures.json; retrospective docs/bots/sprints/2026-10-04-retro-09.md. No blocker.
 
 ## Working state
 
-Updated 2026-10-04T16:10:17.913482+00:00. Branch codex/m10-authoring is based on published eb6707b3. The M10 candidate is local and unpushed; no M10 PR or full landing gate yet. Its exact clean commit and verification evidence are recorded in the durable checkpoint. The next complete batch must pass the unmodified landing gate before push. Next sprint: `docs/bots/sprints/2026-10-04-sprint-11.md`. Durable acceptance, controls and raw evidence: `/Users/jonathanturnock/.codex/ods-delivery`.
+Updated 2026-10-04. Branch `codex/defer-epic-63`, based on 88cb0f61, carries three no-commit reverts. Product, models and generated files match the accepted M8 baseline exactly; root will verify and publish the candidate. The M8 retrospective's limits remain in force: no true OS cancel or same-file dedupe proof, no phone contents anchor proof, and uneven quality record depth.
 
-## Binding owner verification cadence
+Closing-record quality checkpoint 2026-10-04T03:48:34.280617+00:00: eight canonical Sonnet end turns through Opus, highest 0.3, no blocker; metadata-only, no independent model approval. M8 record gate passed and was published on `5120fd54` (188 seconds, exit 0; 1323 page tests, 100% coverage, 689 browser passed, 20 existing skips, no failures/flakes/retries). GitHub snapshot after #59 reopen: 51 closed / 3 open (#59, #54, #63); 43 completed and 8 not planned. One deliberate reopening records the owner’s sequencing change.
 
-Do not add mutation-testing scripts, harnesses or campaigns, including evidence/scratch automation. Do not add long-running suites or new slow gates. Use focused meaningful regressions and existing required landing/native gates; defer full existing suites to the complete-batch gate and avoid optional broad repetitions. Latest owner instruction overrides older mutation requests in skills/briefs. This rule must survive compaction and enter every remaining worker brief.
+Review-first retrospective: keep cumulative test effort proportionate. Observed worker saturation is not proven to have caused historical CI reporter failures; preserve failure evidence and avoid speculative rabbit holes or new gates. The #63 work remains on its dedicated branch.
+
+Owner ban remains: no mutation scripts, harnesses or campaigns, including scratch/evidence automation; no added long-running suites or slow gates. Use focused meaningful regressions and existing required gates.

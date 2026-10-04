@@ -6,7 +6,6 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import { scopeAround } from "@open-domain-specification/core";
 import { type Domain, ODSContextMap } from "@open-domain-specification/core";
 import { contextGraph } from "../flow/graph";
 import { problemsUnder, useModel } from "../model";
@@ -50,6 +49,6 @@ const mapCaption = $derived(`${d.name} context map`);
 	<DiagramFigure
 		caption={mapCaption}
 		emptyText="No contexts serve this domain yet."
-		graph={contextGraph(contextMap, scopeAround(model.workspace).relationships)}
+		graph={contextGraph(contextMap, model.workspace.relationships)}
 	/>
 </Section>

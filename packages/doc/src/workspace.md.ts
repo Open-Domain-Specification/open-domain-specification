@@ -15,15 +15,13 @@ import {
 	pathToContextMapSvg,
 	pathToGlossaryMd,
 	pathToIndexMd,
-	pathToSetIndexMd,
-	placed,
 } from "./lib/paths";
 import type { Options } from "./options";
 import { teamLinkMd } from "./team.md";
 
 const domainSection = (domain: Domain) => `
 
-### [${domain.name}](${pathToIndexMd(placed(domain), placed(domain.workspace))})
+### [${domain.name}](${pathToIndexMd(domain.path, domain.workspace.path)})
 ${domain.description}
 
 `;
@@ -84,20 +82,14 @@ const healthSection = (workspace: Workspace) => {
 	].join("\n");
 };
 
-/** Where a workspace is among its set's files, said only when there are several. */
-const setLocationMd = (workspace: Workspace) =>
-	workspace.set && workspace.set.workspaces.length > 1
-		? `\n> The file \`${workspace.file}\`, one of ${workspace.set.workspaces.length} workspaces. [All workspaces](${pathToSetIndexMd(placed(workspace))})\n`
-		: "";
-
 export const workspaceMd = (workspace: Workspace, options?: Options) => `
 ${options?.breadcrumbs ? breadcrumbsMd(workspace) : ""}
 # ${workspace.name}
 ${workspace.description}
-${setLocationMd(workspace)}
-![contextmap](${pathToContextMapSvg(placed(workspace), placed(workspace))})
 
-[Glossary](${pathToGlossaryMd(placed(workspace), placed(workspace))})
+![contextmap](${pathToContextMapSvg(workspace.path, workspace.path)})
+
+[Glossary](${pathToGlossaryMd(workspace.path, workspace.path)})
 
 ## Domains
 ${
@@ -134,7 +126,7 @@ ${contextRelationshipsMd(ODSContextMap.fromWorkspace(workspace))}
 ${markdownTable(
 	["Consumer", "Consumed As", "Provider", "Consumable", "Provided As"],
 	ODSConsumptionGraph.fromWorkspace(workspace).consumptions.map((it) => [
-		`[${it.consumer.name}](${pathToIndexMd(placed(it.consumer), placed(workspace))})`,
+		`[${it.consumer.name}](${pathToIndexMd(it.consumer.path, workspace.path)})`,
 		it.pattern ?? "-",
 		it.consumable.provider.name,
 		it.consumable.name,

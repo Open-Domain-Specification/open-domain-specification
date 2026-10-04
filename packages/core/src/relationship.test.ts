@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-	counterpartOf,
 	isSymmetricRelationship,
 	relationshipArrow,
 	relationshipTitle,
-	strategicPositionOf,
 	withAgreementName,
 } from "./relationship";
 import { Workspace } from "./workspace";
@@ -102,84 +100,5 @@ describe("withAgreementName", () => {
 		expect(withAgreementName("upstream-downstream", "")).toBe(
 			"upstream-downstream",
 		);
-	});
-});
-
-describe("counterpartOf", () => {
-	it("returns the context on the other side, whichever end it is", () => {
-		const { catalog, sales } = makeWs();
-		const r = catalog.upstreamOf(sales, {});
-		expect(counterpartOf(r, catalog)).toBe(sales);
-		expect(counterpartOf(r, sales)).toBe(catalog);
-	});
-});
-
-describe("strategicPositionOf", () => {
-	function threeContexts() {
-		const { ws, catalog, sales } = makeWs();
-		const billing = ws
-			.addDomain("Money", { description: "" })
-			.addSubdomain("Billing", { type: "core", description: "" })
-			.addBoundedcontext("Billing", { description: "" });
-		return { ws, catalog, sales, billing };
-	}
-
-	it("groups by direction in the order depends-on, depended-on-by, works-alongside", () => {
-		const { ws, catalog, sales, billing } = threeContexts();
-		const alongside = ws.addRelationship({
-			type: "partnership",
-			participants: [sales, catalog],
-		});
-		const dependedOnBy = sales.upstreamOf(billing, {});
-		const dependsOn = catalog.upstreamOf(sales, {});
-		const position = strategicPositionOf(sales, [
-			alongside,
-			dependedOnBy,
-			dependsOn,
-		]);
-		expect(
-			position.groups.map((g) => [g.id, g.label, g.relationships]),
-		).toEqual([
-			["depends-on", "Depends on", [dependsOn]],
-			["depended-on-by", "Depended on by", [dependedOnBy]],
-			["works-alongside", "Works alongside", [alongside]],
-		]);
-		expect(position.relationships).toEqual([
-			alongside,
-			dependedOnBy,
-			dependsOn,
-		]);
-	});
-
-	it("routes a symmetric relationship to works-alongside from either end", () => {
-		const { ws, catalog, sales } = makeWs();
-		const r = ws.addRelationship({
-			type: "shared-kernel",
-			participants: [catalog, sales],
-		});
-		for (const bc of [catalog, sales]) {
-			const { groups } = strategicPositionOf(bc, [r]);
-			expect(groups.map((g) => g.id)).toEqual(["works-alongside"]);
-		}
-	});
-
-	it("leaves out empty groups and relationships that do not touch the context", () => {
-		const { catalog, sales, billing } = threeContexts();
-		const touching = catalog.upstreamOf(sales, {});
-		const elsewhere = sales.upstreamOf(billing, {});
-		const position = strategicPositionOf(catalog, [elsewhere, touching]);
-		expect(position.relationships).toEqual([touching]);
-		expect(position.groups.map((g) => g.id)).toEqual(["depended-on-by"]);
-		expect(strategicPositionOf(billing, [touching]).groups).toEqual([]);
-	});
-
-	it("keeps input order inside a group and every occurrence of a repeated relationship", () => {
-		const { catalog, sales, billing } = threeContexts();
-		const a = sales.upstreamOf(catalog, {});
-		const b = billing.upstreamOf(catalog, {});
-		const { groups } = strategicPositionOf(catalog, [b, a, b]);
-		expect(groups).toHaveLength(1);
-		expect(groups[0].relationships).toEqual([b, a, b]);
-		expect(groups[0].relationships[2]).toBe(b);
 	});
 });

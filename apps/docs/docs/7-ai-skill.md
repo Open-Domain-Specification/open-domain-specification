@@ -13,9 +13,7 @@ the model the tooling implements.
   in a `.ods` folder, edited by the VS Code extension, or builds it with the TypeScript DSL and
   generates the JSON. The skill looks for a generator script first, falls back to the `.ods`
   folder, and asks only when neither exists. In DSL mode it edits the source and re-runs the
-  generator; in JSON mode it edits the files and validates them. A folder of several files is one
-  set: it reads and validates them together, writes a ref to another file as a relative,
-  percent-encoded path in front of the pointer, and keeps each bounded context whole in one file.
+  generator; in JSON mode it edits the files and validates them.
 - **Interviews before it models.** Most developers do not know DDD, and the skill does not
   expect them to. It plays the role of a facilitator: plain-language questions about the
   business areas, who owns which part, how the parts talk to each other, what the things
@@ -64,8 +62,8 @@ cp -r package/skill .claude/skills/ods-authoring
 | `references/json-mode.md`, `references/dsl-mode.md` | Mechanics of each authoring mode, including how to validate. |
 | `references/dsl-api.md` | The core DSL surface. |
 | `references/model-reference.md` | Generated from the JSON Schema: every element, field, type and requirement, plus the ref grammar. |
-| `references/validation-rules.md` | Generated from the core rule catalogs: what each of the 72 workspace rules and the two rules about a set of files requires, why it matters and the usual fix. |
-| `examples/` | A minimal workspace as JSON and as DSL, a script that validates a folder of files as one set, and patterns excerpted from the Petstore example. |
+| `references/validation-rules.md` | Generated from the core rule catalog: what each rule requires, why it matters and the usual fix. |
+| `examples/` | A minimal workspace as JSON and as DSL, a validation script, and patterns excerpted from the Petstore example. |
 
 The minimal workspace the skill starts from:
 

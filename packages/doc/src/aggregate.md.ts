@@ -17,7 +17,6 @@ import {
 	pathToConsumableMapSvg,
 	pathToIndexMd,
 	pathToRelationMapSvg,
-	placed,
 } from "./lib/paths";
 import type { Options } from "./options";
 
@@ -33,11 +32,11 @@ const kindOf = (member: Entity | ValueObject, type: string) =>
 const valueObjectSection =
 	(aggregate: Aggregate) => (valueObject: ValueObject) => [
 		kindOf(valueObject, "Value Object"),
-		`[${valueObject.name}](${pathToIndexMd(placed(valueObject.boundedcontext), placed(aggregate))}#value-objects)`,
+		`[${valueObject.name}](${pathToIndexMd(valueObject.boundedcontext.path, aggregate.path)}#value-objects)`,
 		valueObject.description,
 		attributeListMd(
 			valueObject.attributes,
-			placed(aggregate),
+			aggregate.path,
 			valueObject.inheritedAttributes,
 		),
 	];
@@ -52,7 +51,7 @@ const entitySection = (aggregate: Aggregate) => (entity: Entity) => [
 	entity.description,
 	attributeListMd(
 		entity.attributes,
-		placed(aggregate),
+		aggregate.path,
 		entity.inheritedAttributes,
 	),
 ];
@@ -69,9 +68,9 @@ ${options?.breadcrumbs ? contextBreadcrumbsMd(aggregate.boundedcontext) : ""}
 # ${aggregate.name}
 ${aggregate.description}
 
-![contextmap](${pathToRelationMapSvg(placed(aggregate), placed(aggregate))})
+![contextmap](${pathToRelationMapSvg(aggregate.path, aggregate.path)})
 
-![consumablemap](${pathToConsumableMapSvg(placed(aggregate), placed(aggregate))})
+![consumablemap](${pathToConsumableMapSvg(aggregate.path, aggregate.path)})
 
 ## Entities and Value Objects
 ${
@@ -101,7 +100,7 @@ ${markdownTable(
 		// Entities have no page of their own, so a source links to the section
 		// that lists it: its aggregate's page, or, for a value object, the page
 		// of the context that declares it.
-		`[${ownerOf(it.source).name} - ${it.source.name}](${pathToIndexMd(placed(ownerOf(it.source)), placed(aggregate))}#${it.source instanceof Entity ? "entities-and-value-objects" : "value-objects"})`,
+		`[${ownerOf(it.source).name} - ${it.source.name}](${pathToIndexMd(ownerOf(it.source).path, aggregate.path)}#${it.source instanceof Entity ? "entities-and-value-objects" : "value-objects"})`,
 		it.label || "-",
 		`${ownerOf(it.target).name} - ${it.target.name}`,
 		it.relation,
@@ -120,7 +119,7 @@ ${
 }
 
 ## Provides
-${providesTableMd(aggregate.consumables, placed(aggregate))}
+${providesTableMd(aggregate.consumables, aggregate.path)}
 
 ## Consumes
 ${

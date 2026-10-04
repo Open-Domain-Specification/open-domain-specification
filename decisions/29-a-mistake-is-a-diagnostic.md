@@ -6,7 +6,7 @@ Date: 2026-09-09
 
 Accepted
 
-## Current position (2026-10-04)
+## Current position (2026-10-01)
 
 Loading never throws on a model mistake and `unresolved-ref` reports the reference at the referencing element; the DSL still throws for a programming error; stable (card 100). The consequence that a bad reference does not survive a round trip no longer holds; see the note of 2026-09-09 (card 102): it survives on every element that can hold one, and the four that cannot, a consumption's `consumable`, a relationship's two ends, a relation's `target`, and `by` recorded at the consumer, are a named cost.
 
@@ -17,8 +17,6 @@ For `separate-ways`, a borrowed-value crossing is every declaration already used
 `odsVersion` is a constant core writes, now `3.0.0`, with an `ods-version` diagnostic on a differing or missing major. Version 3 deliberately replaces the accepted wire grammar for refs: every raw id is encoded as one segment, and answers, relationships and consumptions use the complete segmented grammars recorded in decisions 07, 23, 25 and 26, with no aliases for the former ambiguous forms (note of 2026-10-01). The number is bumped by the decision that breaks the metamodel; the earlier note of 2026-09-10 records why version 2 was introduced and the bumps decisions 01, 02, 03, 08 and 09 promised were never made.
 
 Since then (card 132): `unknown-field` reports unknown keys inside nested objects too, with the path; the `mud-needs-acl` item of the decision list is superseded by decision 28 (correction).
-
-Since 2026-10-04 (decision 08's set; note of 2026-10-04 below): a ref that names another file is an `unresolved-ref` with one of four causes, and in the four lists above an entry whose ref has a path before its `#` is kept raw at its index when it fails, so the named cost now holds only for a local ref that names nothing; the loader still takes a `WorkspaceSchema`, so a host checks the shape of a file before loading and core claims no throw-free handling of arbitrary malformed input; `odsVersion` stays `3.0.0`.
 
 ## Context
 
@@ -64,17 +62,3 @@ This is the breaking metamodel change the 2026-09-10 note says increments the ma
 ## Note (2026-10-01, second)
 
 The `separate-ways` rule originally checked a foreign value object only when an attribute named it. That left the same language dependency unreported when it came through value-object specialisation or through a foreign schema in an attribute, request, return or rejection, even though those declarations already backed a shared kernel. The rule now reads that complete declaration inventory and reports the declaration introducing the crossing. It does not infer another crossing from members reached through a specialisation or composition. A shared kernel, conformist role or customer-supplier relationship may permit a borrowing, but it does not erase a simultaneous `separate-ways` declaration; the declarations contradict each other until the borrowing or the separate-ways relationship is removed.
-
-## Note (2026-10-04)
-
-Loading a set follows this rule and states its limits.
-
-- **A file reference is a diagnostic.** A ref that names another file and fails, because its path is invalid, the file is not in the set, the file has no such element or the element is the wrong kind, leaves the link unset and is an `unresolved-ref` at the element that wrote it, with the cause in the message. A workspace loaded alone has no set, so every qualified ref is "no such file". The host's mistakes are diagnostics of the set too: `file-path-invalid` for a path it offered that cannot be accepted or was offered twice, and `workspace-id-unique` for a second file that claims an id.
-- **The named cost is scoped, not removed.** The four lists whose entry is the pair it joins, a consumption's `consumable` in a consumer's `consumes`, a relationship's two ends, a relation's `target` and a consumption's `by`, kept nothing for a ref that resolved to nothing. For a ref that has a path before its `#`, whatever happens to that path (invalid, no such file, no such element, the wrong kind), the whole entry is now kept raw, with every key it had, at the index it had in the list (clamped when the list is shorter), and written back untouched. It is not reported as an unknown field, because it is not dropped, and it links again as soon as what it names is there. A local ref in those lists that names nothing keeps exactly the cost this record names: the entry is not kept and a save drops it. An unknown key on an entry that does resolve is still dropped, and still reported by `unknown-field`. Nothing is retained outside the four lists, which already keep an unresolved ref on the element that wrote it.
-- **The loader still assumes a shape.** "Loading never throws on a model mistake" is a statement about the model. The loader is typed against `WorkspaceSchema`, and JSON that is not one, however deep (`null` or an array as a file, a context whose `aggregates` hold a number, a relationship entry that is `null`, a `consumes` entry whose `consumable` is a string), can still make it throw. Core does not claim that arbitrary malformed input is survived; a host that reads files checks the shape first, catches what still throws and reports the file as a problem of that file, as the extension does (decision 08, amendment of 2026-10-04, fourth).
-- **A hand-edited unknown field survives only where it is kept.** The cost the 2026-09-10 note names for `unknown-field` is unchanged and applies to every file of a set: an owning-file write by the extension drops unknown fields on the entries that resolve, and keeps them on the retained qualified entries.
-- **`odsVersion` stays `3.0.0`.** The wire widening of a `$ref` string bumps nothing.
-
-## Note (2026-10-04, second): what a surviving reference carries
-
-"Survives a round trip on every element that can hold one" (note of 2026-09-09 and the Current position's reading of it) means the `$ref`, and only that. An element keeps the raw ref it wrote, so a failing `returns` or `schema` is written back as `{ $ref }` without its `many`, and a failing `rejects` entry without its `many` or `reasons`; a failing `raises` entry is a bare `{ $ref }` already. A key written beside a ref that resolves to nothing has no resolved shape to describe, so it is not retained. Nothing was changed to widen this; it is the boundary of the cost the record names, stated precisely.

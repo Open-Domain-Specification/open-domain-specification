@@ -6,8 +6,6 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import { scopeAround } from "@open-domain-specification/core";
-import { identityKeyOf } from "@open-domain-specification/core";
 import type { Team } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
 import type { Column } from "../atoms/DataTable.svelte";
@@ -30,8 +28,7 @@ const { team: t }: { team: Team } = $props();
 const model = useModel();
 const ws = model.workspace;
 const owned = $derived(
-	// A context of any file of the set may name this team as its own.
-	[...scopeAround(ws).contexts()].filter((bc) => bc.team === t),
+	[...ws.boundedcontexts.values()].filter((bc) => bc.team === t),
 );
 const subdomains = $derived([
 	...new Set(owned.flatMap((bc) => [...bc.subdomains])),

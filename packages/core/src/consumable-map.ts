@@ -11,13 +11,11 @@ import {
 	type Subdomain,
 	type Workspace,
 } from "./workspace";
-import type { WorkspaceSet } from "./workspace-set";
-import { identityKeyOf } from "./workspace-set";
 
 /** A consumer or provider node; both are services or aggregates. */
 function memberNode(member: Aggregate | Service): ODSConsumptionMapNode {
 	return {
-		id: identityKeyOf(member),
+		id: member.ref,
 		name: member.name,
 		description: member.description,
 		type: member instanceof Service ? "service" : "aggregate",
@@ -70,7 +68,7 @@ export class ODSConsumableMap {
 			);
 
 			const targetSlot: ODSConsumptionMapNodeSlot = this.addNodeSlot({
-				id: identityKeyOf(consumption.consumable),
+				id: consumption.consumable.ref,
 				name: consumption.consumable.name,
 				description: consumption.consumable.description,
 				type: consumption.consumable.type,
@@ -90,7 +88,7 @@ export class ODSConsumableMap {
 					agreement: {
 						name: relationship.name,
 						type: relationship.type,
-						ref: identityKeyOf(relationship),
+						ref: relationship.ref,
 					},
 				}),
 			});
@@ -101,11 +99,6 @@ export class ODSConsumableMap {
 		return new ODSConsumableMap(
 			ODSConsumptionGraph.fromWorkspace(workspace).consumptions,
 		);
-	}
-
-	/** Every consumption across the files of a set. */
-	static fromSet(set: WorkspaceSet) {
-		return new ODSConsumableMap(ODSConsumptionGraph.fromSet(set).consumptions);
 	}
 
 	static fromDomain(domain: Domain) {

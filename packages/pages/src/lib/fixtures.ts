@@ -2,50 +2,11 @@ import {
 	type BoundedContext,
 	Workspace,
 } from "@open-domain-specification/core";
-import northbankMonolith from "../../../../models/northbank/src/fixtures/northbank.monolith.json";
+import northbank from "../../../../models/northbank/.ods/northbank.json";
 import petstore from "../../../../models/petstore/.ods/petstore.json";
 import rivermart from "../../../../models/rivermart/.ods/rivermart.json";
 import streamline from "../../../../models/streamline/.ods/streamline.json";
-import type { WorkspacePayload } from "../protocol";
-import { type LoadedSet, loadSet } from "./load";
 import type { Model } from "./model";
-
-/**
- * NorthBank as it ships: twelve workspace files, one per team, read as one
- * set. This is the live, shared NorthBank. The code-point order of the paths
- * is the order the extension, the upload form and the viewer give a set, so a
- * listing that aggregates across files reads in this order everywhere.
- */
-const NORTHBANK_FILES = import.meta.glob(
-	"../../../../models/northbank/.ods/*.json",
-	{ eager: true, import: "default" },
-) as Record<string, unknown>;
-
-export function northbankPayloads(): WorkspacePayload[] {
-	return Object.entries(NORTHBANK_FILES)
-		.map(([key, schema]) => ({ path: key.split("/").at(-1) as string, schema }))
-		.filter(({ path }) => path !== "schema.json")
-		.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
-		.map(({ path, schema }) => ({
-			schema,
-			fileLabel: path,
-			path,
-			set: "northbank",
-		}));
-}
-
-/** The twelve NorthBank files as one set, as a reader that holds the whole folder reads them. */
-export function northbankSet(): LoadedSet {
-	return loadSet(northbankPayloads());
-}
-
-/** The model of one NorthBank file inside the set, e.g. `lending.json`. */
-export function northbankModel(file: string): Model {
-	const loaded = northbankSet();
-	const found = loaded.files.find((f) => f.path === file);
-	if (!found) throw new Error(`NorthBank has no file ${file}`);
-	return found.model;
-}
 
 /** The petstore example as a model, for stories and component tests. */
 export function petstoreModel(): Model {
@@ -431,14 +392,9 @@ export function emptyWorkspaceModel(): Model {
 	};
 }
 
-/**
- * The larger fictional-organisation workspaces, for stress tests over every
- * page. NorthBank here is the frozen single-file original, loaded standalone:
- * a regression baseline for the one-workspace pages, never what NorthBank is
- * now (see {@link northbankSet}).
- */
+/** The larger fictional-organisation workspaces, for stress tests over every page. */
 export function referenceModels(): Model[] {
-	return [rivermart, streamline, northbankMonolith].map((schema) => {
+	return [rivermart, streamline, northbank].map((schema) => {
 		const workspace = Workspace.fromSchema(
 			schema as Parameters<typeof Workspace.fromSchema>[0],
 		);

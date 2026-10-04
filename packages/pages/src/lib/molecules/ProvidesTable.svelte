@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { Consumable } from "@open-domain-specification/core";
-import { identityKeyOf } from "@open-domain-specification/core";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Keyword from "../atoms/Keyword.svelte";
@@ -40,7 +39,7 @@ const columns: Column[] = [
 >
 	{#snippet cell(c, col)}
 		{#if col.key === "name"}
-			<Lockup kind={c.type === "event" ? "event" : "command"} name={c.name} ref={c} />
+			<Lockup kind={c.type === "event" ? "event" : "command"} name={c.name} ref={c.ref} />
 		{:else if col.key === "type"}
 			<Keyword text={c.type} />
 		{:else if col.key === "visibility"}
@@ -51,16 +50,16 @@ const columns: Column[] = [
 			{#if c.pattern}<Keyword text={c.pattern} mono />{/if}
 		{:else if col.key === "schema"}
 			{#if c.schema}
-				<Ref ref={c.schema} label={c.schema.name} icon={ICONS.schema} />
+				<Ref ref={c.schema.ref} label={c.schema.name} icon={ICONS.schema} />
 			{:else}
 				<Keyword text="none" />
 			{/if}
 		{:else if col.key === "raises"}
-			<Joined>{#each c.raisedEvents as e (identityKeyOf(e))}<Ref ref={e} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="–" />{/each}</Joined>
+			<Joined>{#each c.raisedEvents as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="–" />{/each}</Joined>
 		{:else if c.internal}
 			<Keyword text="internal" />
 		{:else}
-			<Joined>{#each c.consumptions as x (identityKeyOf(x.consumer))}<Ref ref={x.consumer} label={x.consumer.name} />{:else}<Keyword text="none" />{/each}</Joined>
+			<Joined>{#each c.consumptions as x (x.consumer.ref)}<Ref ref={x.consumer.ref} label={x.consumer.name} />{:else}<Keyword text="none" />{/each}</Joined>
 		{/if}
 	{/snippet}
 </DataTable>

@@ -29,8 +29,3 @@ The Library provides several functions to convert ODS maps into Graphviz diagram
 
 See the specific examples in the next pages.
 
-## Over a set of workspaces
-
-Every map is built from a workspace, a part of one, or from a whole `WorkspaceSet` (`ODSContextMap.fromSet(set)` and the same for the consumable, relation and flow maps). A node's id in a set is the element's identity across the set, its file and its local ref, so two contexts that are both `ledger` in different files are two nodes, and an edge joins the two it names. The context and consumable maps cluster nodes under the workspace they are in, then under the domain and subdomain, so two files read as two clusters with their own labels.
-
-Where one map draws nodes of more than one workspace, a label says which when it would otherwise read the same: the clusters of a relation map lead with the workspace name (`Team A / Bank / Core / Ledger / Account`), and a flow map ends each node with `in <workspace>`. A map inside one workspace is labelled exactly as it always was. A workspace id that two files share is reported by `workspace-id-unique`; the context and consumable maps still draw their nodes apart, but the two files' workspace cluster is one.

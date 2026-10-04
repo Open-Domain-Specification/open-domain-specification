@@ -24,7 +24,6 @@ export default defineConfig({
 			exclude: [
 				"src/**/*.{test,stories,harness}.{ts,svelte}",
 				"src/lib/fixtures.ts",
-				"src/lib/set-fixture.ts",
 				"src/lib/test-setup.ts",
 				"src/lib/xyflow-test-env.ts",
 				"src/app/main.ts",

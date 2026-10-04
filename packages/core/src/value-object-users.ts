@@ -1,5 +1,4 @@
 import { mayBorrowFrom } from "./borrowing";
-import { scopeAround } from "./scope";
 import {
 	type Aggregate,
 	type BoundedContext,
@@ -7,7 +6,6 @@ import {
 	Entity,
 	ValueObject,
 } from "./workspace";
-import { identityKeyOf } from "./workspace-set";
 
 /**
  * The value objects an aggregate holds: the ones typing its entities'
@@ -72,19 +70,19 @@ export function usersOfValueObject(
 	valueObject: ValueObject,
 ): ValueObjectUser[] {
 	const users: ValueObjectUser[] = [];
-	const scope = scopeAround(valueObject.boundedcontext.workspace);
+	const workspace = valueObject.boundedcontext.workspace;
 	const related = (candidate: ValueObject, holder: BoundedContext) =>
 		candidate === valueObject ||
 		candidate.ancestors.includes(valueObject) ||
 		(valueObject.ancestors.includes(candidate) &&
 			(holder === valueObject.boundedcontext ||
-				mayBorrowFrom(scope, holder, valueObject.boundedcontext)));
+				mayBorrowFrom(workspace, holder, valueObject.boundedcontext)));
 	const through = (direct: Iterable<ValueObject>, holder: BoundedContext) =>
 		Array.from(new Set(direct))
 			.filter(
 				(candidate) => candidate !== valueObject && related(candidate, holder),
 			)
-			.sort((a, b) => identityKeyOf(a).localeCompare(identityKeyOf(b)));
+			.sort((a, b) => a.ref.localeCompare(b.ref));
 	const typedBy = (owner: ValueObject | DataSchema) =>
 		Array.from(
 			owner instanceof ValueObject
@@ -96,7 +94,7 @@ export function usersOfValueObject(
 				(candidate): candidate is ValueObject =>
 					!!candidate && related(candidate, owner.boundedcontext),
 			);
-	for (const bc of scope.contexts()) {
+	for (const bc of workspace.boundedcontexts.values()) {
 		for (const owner of bc.aggregates.values()) {
 			const direct = valueObjectsUsedBy(owner).filter((candidate) =>
 				related(candidate, bc),

@@ -12,8 +12,6 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import { scopeAround } from "@open-domain-specification/core";
-import { identityKeyOf } from "@open-domain-specification/core";
 import {
 	type Aggregate,
 	Answer,
@@ -57,7 +55,7 @@ import {
 	EXTERNAL,
 	MUD,
 } from "../molecules/ContextLockup.svelte";
-import { answerTarget, kindOf } from "../molecules/element-kind";
+import { answerRef, kindOf } from "../molecules/element-kind";
 import Joined from "../molecules/Joined.svelte";
 import ProvidesTable from "../molecules/ProvidesTable.svelte";
 import TeamLockup from "../molecules/TeamLockup.svelte";
@@ -93,11 +91,7 @@ const members = $derived([...aggregates, ...services]);
 const provides = $derived(members.flatMap((m) => [...m.consumables.values()]));
 const consumes = $derived(members.flatMap((m) => m.consumptions));
 const relationships = $derived(
-	// A relationship is declared in its downstream's file, so those that involve
-	// this context may be in any file of its set.
-	scopeAround(ws).relationships.filter(
-		(r) => r.source === bc || r.target === bc,
-	),
+	ws.relationships.filter((r) => r.source === bc || r.target === bc),
 );
 const contextMap = $derived(ODSContextMap.fromBoundedContext(bc));
 const consumableMap = $derived(ODSConsumableMap.fromBoundedContext(bc));
@@ -169,12 +163,12 @@ const labelsOf = (triggers: ProcessTrigger[]) =>
 
 const triggerLink = (trigger: ProcessTrigger) => {
 	if (trigger instanceof Answer)
-		return { ref: answerTarget(trigger), title: trigger.origin };
+		return { ref: answerRef(trigger), title: trigger.origin };
 	// A deadline has no page either: it is declared on the process, and how
 	// long the instance had is the whole of what it says.
 	if (trigger instanceof Deadline)
-		return { ref: trigger.process, title: `after ${trigger.after}` };
-	return { ref: trigger, title: undefined };
+		return { ref: trigger.process.ref, title: `after ${trigger.after}` };
+	return { ref: trigger.ref, title: undefined };
 };
 const policyColumns: Column[] = [
 	{ key: "name", label: "Policy" },
@@ -211,10 +205,10 @@ const termColumns: Column[] = [
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Serves">
-				<Joined>{#each [...bc.subdomains] as s (identityKeyOf(s))}<span class="serves"><span class="pair"><Lockup
+				<Joined>{#each [...bc.subdomains] as s (s.ref)}<span class="serves"><span class="pair"><Lockup
 								kind="subdomain"
 								name={s.name}
-								ref={s}
+								ref={s.ref}
 							/> <Keyword text={s.type} title={SUBDOMAIN_TYPE[s.type]} /></span></span>{:else}<Keyword text="no subdomain" />{/each}</Joined>
 			</Definition>
 			<Definition term="Owned by">{#if bc.external}Nobody here; the enterprise integrates with it and does not run it{:else}<TeamLockup team={bc.team} />{/if}</Definition>
@@ -233,7 +227,7 @@ const termColumns: Column[] = [
 	<DiagramFigure
 		caption={mapCaption}
 		emptyText="No neighbouring contexts yet."
-		graph={contextGraph(contextMap, scopeAround(ws).relationships)}
+		graph={contextGraph(contextMap, ws.relationships)}
 	/>
 </Section>
 
@@ -253,11 +247,11 @@ const termColumns: Column[] = [
 	>
 		{#snippet cell(a, col)}
 			{#if col.key === "name"}
-				<Lockup kind="aggregate" name={a.name} ref={a} />
+				<Lockup kind="aggregate" name={a.name} ref={a.ref} />
 			{:else if col.key === "root"}
 				{@const root = [...a.entities.values()].find((e) => e.root)}
 				{#if root}
-					<Lockup kind="entity" name={root.name} ref={root} />
+					<Lockup kind="entity" name={root.name} ref={root.ref} />
 				{:else}
 					<Keyword text="no root" tone="warn" />
 				{/if}
@@ -286,7 +280,7 @@ const termColumns: Column[] = [
 	>
 		{#snippet cell(s, col)}
 			{#if col.key === "name"}
-				<Lockup kind="service" name={s.name} ref={s} />
+				<Lockup kind="service" name={s.name} ref={s.ref} />
 			{:else if col.key === "type"}
 				<Keyword text={s.type} title={SERVICE_TYPE[s.type]} />
 			{:else}
@@ -322,11 +316,11 @@ const termColumns: Column[] = [
 	>
 		{#snippet cell(v, col)}
 			{#if col.key === "name"}
-				<Lockup kind="valueobject" name={v.name} ref={v} />
+				<Lockup kind="valueobject" name={v.name} ref={v.ref} />
 			{:else if col.key === "attributes"}
 				{v.attributes.size}
 			{:else if col.key === "usedby"}
-				<Joined>{#each usersOfValueObject(v) as user (`${user.kind}:${identityKeyOf(user.owner)}`)}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{#if user.kind === "value object" && user.asKind} <Keyword text="kind" />{/if}{#if user.through.length} <Keyword text={throughLabel(bc, user.through)} />{/if}{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+				<Joined>{#each usersOfValueObject(v) as user (`${user.kind}:${user.owner.ref}`)}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner.ref} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{#if user.kind === "value object" && user.asKind} <Keyword text="kind" />{/if}{#if user.through.length} <Keyword text={throughLabel(bc, user.through)} />{/if}{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else}
 				{v.description}
 			{/if}
@@ -362,11 +356,11 @@ const termColumns: Column[] = [
 	<DataTable columns={policyColumns} rows={policies} rowId={(p) => p.ref} empty="No policies.">
 		{#snippet cell(p, col)}
 			{#if col.key === "name"}
-				<Lockup kind="policy" name={p.name} ref={p} />
+				<Lockup kind="policy" name={p.name} ref={p.ref} />
 			{:else if col.key === "when"}
-				{@const labels = labelsOf(p.events)}<Joined>{#each p.events as e (identityKeyOf(e))}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
+				{@const labels = labelsOf(p.events)}<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "then"}
-				<Joined>{#each p.commands as c (identityKeyOf(c))}<Ref ref={c} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
+				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else}
 				{p.description}
 			{/if}
@@ -377,15 +371,15 @@ const termColumns: Column[] = [
 	<DataTable columns={processColumns} rows={processes} rowId={(p) => p.ref} empty="No processes. Nothing here waits for more than one event before it acts.">
 		{#snippet cell(p, col)}
 			{#if col.key === "name"}
-				<Lockup kind="process" name={p.name} ref={p} />
+				<Lockup kind="process" name={p.name} ref={p.ref} />
 			{:else if col.key === "starts"}
-				{@const labels = labelsOf(p.startEvents)}<Joined>{#each p.startEvents as e (identityKeyOf(e))}<Ref ref={e} label={labels(e)} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+				{@const labels = labelsOf(p.startEvents)}<Joined>{#each p.startEvents as e (e.ref)}<Ref ref={e.ref} label={labels(e)} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else if col.key === "when"}
-				{@const labels = labelsOf(p.events)}<Joined>{#each p.events as e (identityKeyOf(e))}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
+				{@const labels = labelsOf(p.events)}<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "then"}
-				<Joined>{#each p.commands as c (identityKeyOf(c))}<Ref ref={c} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
+				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "ends"}
-				{@const labels = labelsOf(p.endEvents)}<Joined>{#each p.endEvents as e (identityKeyOf(e))}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+				{@const labels = labelsOf(p.endEvents)}<Joined>{#each p.endEvents as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={labels(e)} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else}
 				{p.description}
 			{/if}
@@ -408,18 +402,18 @@ const termColumns: Column[] = [
 	count={schemas.length}
 	problems={schemas.flatMap((s) => problemsUnder(model, s.ref))}
 >
-	{#each schemas as s (identityKeyOf(s))}
+	{#each schemas as s (s.ref)}
 		<Heading level={3} id={s.ref}>
-			<Lockup kind="schema" name={s.name} ref={s} />
+			<Lockup kind="schema" name={s.name} ref={s.ref} />
 			{@const users = usersOfSchema(s)}
 			{#if users.length}
 				<span class="carried">used by</span>
-				<Joined>{#each users as user (`${user.kind}:${identityKeyOf(user.owner)}`)}{#if user.kind === "consumable"}<Ref
-							ref={user.owner}
+				<Joined>{#each users as user (`${user.kind}:${user.owner.ref}`)}{#if user.kind === "consumable"}<Ref
+							ref={user.owner.ref}
 							label={userLabel(bc, user)}
 							icon={consumableIcon(user.owner)}
 							kind={user.owner.type === "event" ? "event" : "command"}
-						/>{:else}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{#if user.use !== "shape"} <Keyword text={user.use} />{/if}{/if}{/each}</Joined>
+						/>{:else}<Lockup kind={kindOf(user.owner)} name={userLabel(bc, user)} ref={user.owner.ref} />{#if user.kind !== "aggregate"} <Keyword text={user.kind} />{/if}{#if user.use !== "shape"} <Keyword text={user.use} />{/if}{/if}{/each}</Joined>
 			{:else}
 				<Keyword text="unused" />
 			{/if}
@@ -446,13 +440,13 @@ const termColumns: Column[] = [
 	>
 		{#snippet cell(t, col)}
 			{#if col.key === "name"}
-				<Lockup kind="term" name={t.name} ref={t} />
+				<Lockup kind="term" name={t.name} ref={t.ref} />
 			{:else if col.key === "definition"}
 				{t.definition}
 			{:else if col.key === "aliases"}
 				<Joined>{#each t.aliases as alias (alias)}<Keyword text={alias} />{:else}<Keyword text="–" />{/each}</Joined>
 			{:else if t.embodiedBy}
-				<Ref ref={t.embodiedBy} label={nameOf(t.embodiedBy)} />
+				<Ref ref={t.embodiedBy.ref} label={nameOf(t.embodiedBy)} />
 			{:else}
 				<Keyword text="not modelled" />
 			{/if}

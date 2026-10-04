@@ -1,5 +1,4 @@
 import type * as ods from "./schema";
-import { type InScope, toScope } from "./scope";
 import type {
 	Consumable,
 	Consumption,
@@ -68,11 +67,12 @@ export function dispositionOf(element: {
  * consumable is a gap in the notes, whereas one uncommented relationship is a
  * strategic claim nobody has justified, and only the second is worth a warning.
  */
-export function intentsWithoutComments(from: InScope): StrategicIntent[] {
-	const scope = toScope(from);
-	const intents: StrategicIntent[] = [...scope.relationships];
+export function intentsWithoutComments(
+	workspace: Workspace,
+): StrategicIntent[] {
+	const intents: StrategicIntent[] = [...workspace.relationships];
 
-	for (const boundedcontext of scope.contexts()) {
+	for (const boundedcontext of workspace.boundedcontexts.values()) {
 		const providers = [
 			...boundedcontext.aggregates.values(),
 			...boundedcontext.services.values(),

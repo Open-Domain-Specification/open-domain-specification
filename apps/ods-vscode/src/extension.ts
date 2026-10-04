@@ -1,10 +1,8 @@
 import { exportSite } from "@open-domain-specification/pages/site";
 import * as vscode from "vscode";
-import { type AuthoringApi, registerAuthoring } from "./authoring/register";
 import { OdsDiagnostics, rangeOfRef } from "./diagnostics";
 import { DetailPanel } from "./pages/panel";
 import { OdsProject, odsFolderOf } from "./project";
-import { exportSources, isInFolder } from "./reader";
 import { showSearch } from "./search";
 import { installSkillCommand, promptWhenSkillStale } from "./skill";
 import { type ModelNode, ModelTree } from "./tree";
@@ -19,7 +17,6 @@ export type OdsTestApi = {
 	project: OdsProject;
 	panel: DetailPanel;
 	tree: ModelTree;
-	authoring: AuthoringApi;
 };
 
 export async function activate(
@@ -90,27 +87,16 @@ export async function activate(
 		vscode.commands.registerCommand("ods.exportSite", async () => {
 			const folder = await pickFolder();
 			if (!folder) return;
-			// Every file of a `.ods` folder is exported as a file of that folder's
-			// set (see `exportSources`), so the export of a folder is the folder.
-			const inFolder = project.workspaces.filter((f) =>
-				isInFolder(folder.uri.fsPath, f.uri.fsPath),
-			);
-			const sets = new Map<string, typeof inFolder>();
-			for (const f of inFolder) {
-				const key = project.folderKey(f);
-				sets.set(key, [...(sets.get(key) ?? []), f]);
-			}
-			const sources = [...sets].flatMap(([key, files]) =>
-				exportSources(
-					key,
-					files.map((f) => ({
-						relativePath: f.relativePath,
-						workspace: f.workspace,
-						stale: f.stale,
-						error: f.error,
-						diagnostics: diagnostics.byFile.get(f.uri.toString()) ?? [],
-					})),
-				),
+			const sources = project.workspaces.flatMap((f) =>
+				f.workspace && f.uri.fsPath.startsWith(folder.uri.fsPath)
+					? [
+							{
+								workspace: f.workspace,
+								fileLabel: f.relativePath,
+								diagnostics: diagnostics.byFile.get(f.uri.toString()) ?? [],
+							},
+						]
+					: [],
 			);
 			if (sources.length === 0) {
 				vscode.window.showErrorMessage("No ODS workspaces to export.");
@@ -152,25 +138,19 @@ export async function activate(
 				placeHolder: "Catalog, sales and inventory for the pet store",
 			});
 			if (description === undefined) return;
-			const created = await project.create(
+			const file = await project.create(
 				folder,
 				name.trim(),
 				description.trim(),
 			);
-			if (!created.ok) {
-				vscode.window.showErrorMessage(created.message);
-				return;
-			}
-			await vscode.window.showTextDocument(created.file.uri);
+			await vscode.window.showTextDocument(file.uri);
 		}),
 	);
-
-	const authoring = registerAuthoring(context, project);
 
 	await project.reload();
 	void promptWhenSkillStale(context);
 
-	return { project, panel: pages, tree, authoring };
+	return { project, panel: pages, tree };
 }
 
 async function pickFolder(

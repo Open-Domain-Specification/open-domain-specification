@@ -15,8 +15,6 @@ import {
 	type ProcessTrigger,
 	type Workspace,
 } from "./workspace";
-import type { WorkspaceSet } from "./workspace-set";
-import { identityKeyOf } from "./workspace-set";
 
 /**
  * The reactive flow through a scope, walked from its policies and processes
@@ -236,11 +234,6 @@ export class ODSFlowMap {
 		return ODSFlowMap.fromScope(ScopeManager.fromWorkspace(workspace));
 	}
 
-	/** The reactions of every file of a set as one chain, steps told apart by file. */
-	static fromSet(set: WorkspaceSet) {
-		return ODSFlowMap.fromScope(ScopeManager.fromSet(set));
-	}
-
 	static fromBoundedContext(boundedcontext: BoundedContext) {
 		return ODSFlowMap.fromScope(
 			ScopeManager.fromBoundedContext(boundedcontext),
@@ -256,7 +249,7 @@ export class ODSFlowMap {
  */
 function nodeFor(step: Reactor): ODSFlowMapNode {
 	const shared = {
-		id: identityKeyOf(step),
+		id: step.ref,
 		name: step.name,
 		description: step.description,
 	};
@@ -272,7 +265,7 @@ function nodeFor(step: Reactor): ODSFlowMapNode {
 		type: step.type === "event" ? "event" : "command",
 		namespace: [
 			...contextMemberNamespace(provider),
-			{ id: identityKeyOf(provider), name: provider.name },
+			{ id: provider.ref, name: provider.name },
 		],
 	};
 }
@@ -348,15 +341,15 @@ export type ODSFlowMapDeadline = {
 
 function answerOf(answer: Answer): ODSFlowMapAnswer {
 	return {
-		operation: identityKeyOf(answer.operation),
+		operation: answer.operation.ref,
 		outcome: answer.completion
 			? "completes"
 			: answer.rejection
 				? "rejects"
 				: "returns",
-		...(answer.schema && { schema: identityKeyOf(answer.schema) }),
+		...(answer.schema && { schema: answer.schema.ref }),
 		...(answer.reason && { reason: answer.reason }),
-		ref: identityKeyOf(answer),
+		ref: answer.ref,
 		name: answer.name,
 		origin: triggerReading(answer, "origin"),
 		context: triggerReading(answer, "context"),
@@ -376,7 +369,7 @@ function anchorOf(
 
 function deadlineOf(deadline: Deadline): ODSFlowMapDeadline {
 	return {
-		ref: identityKeyOf(deadline),
+		ref: deadline.ref,
 		id: deadline.id,
 		name: deadline.name,
 		after: deadline.after,

@@ -28,14 +28,13 @@ import {
 	pathToContextMapSvg,
 	pathToFlowMapSvg,
 	pathToIndexMd,
-	placed,
 } from "./lib/paths";
 import type { Options } from "./options";
 import { strategicPositionMd } from "./strategic-position.md";
 import { teamLinkMd } from "./team.md";
 
 const aggregateSection = (aggregate: Aggregate) => `
-### [${aggregate.name}](${pathToIndexMd(placed(aggregate), placed(aggregate.boundedcontext))})
+### [${aggregate.name}](${pathToIndexMd(aggregate.path, aggregate.boundedcontext.path)})
 ${aggregate.description}
 
 `;
@@ -112,10 +111,10 @@ const usedByMd = (
 			// context's page.
 			const href =
 				kind === "consumable"
-					? pathToIndexMd(placed(owner.provider), placed(declaring))
+					? pathToIndexMd(owner.provider.path, declaring.path)
 					: kind === "aggregate"
-						? pathToIndexMd(placed(owner), placed(declaring))
-						: `${pathToIndexMd(placed(boundedcontext), placed(declaring))}#${kind === "schema" ? "schemas" : "value-objects"}`;
+						? pathToIndexMd(owner.path, declaring.path)
+						: `${pathToIndexMd(boundedcontext.path, declaring.path)}#${kind === "schema" ? "schemas" : "value-objects"}`;
 			const kindMark =
 				kind === "consumable" ? owner.type : kind === "aggregate" ? "" : kind;
 			const identityMark =
@@ -141,7 +140,7 @@ const usedByMd = (
 const schemaSection = (schema: DataSchema) => [
 	schema.name,
 	schema.description ?? "-",
-	attributeListMd(schema.attributes, placed(schema.boundedcontext)),
+	attributeListMd(schema.attributes, schema.boundedcontext.path),
 	usedByMd(schema.boundedcontext, usersOfSchema(schema)),
 ];
 
@@ -154,7 +153,7 @@ const valueObjectSection = (valueObject: ValueObject) => [
 	valueObject.description,
 	attributeListMd(
 		valueObject.attributes,
-		placed(valueObject.boundedcontext),
+		valueObject.boundedcontext.path,
 		valueObject.inheritedAttributes,
 	),
 	// A value's own rules, which hold by construction: no save keeps them and
@@ -182,10 +181,10 @@ const invariantSection = (invariant: Invariant) => [
  * second section names its rows and leaves the picture where it is.
  */
 const flowMapMd = (boundedcontext: BoundedContext) =>
-	`![flowmap](${pathToFlowMapSvg(placed(boundedcontext), placed(boundedcontext))})\n\n`;
+	`![flowmap](${pathToFlowMapSvg(boundedcontext.path, boundedcontext.path)})\n\n`;
 
 const serviceSection = (service: Service) => `
-### [${service.name}](${pathToIndexMd(placed(service), placed(service.boundedcontext))})
+### [${service.name}](${pathToIndexMd(service.path, service.boundedcontext.path)})
 ${service.description}
 
 `;
@@ -205,13 +204,13 @@ ${
 		? Array.from(boundedcontext.subdomains)
 				.map(
 					(subdomain) =>
-						`- [${subdomain.domain.name} / ${subdomain.name}](${pathToIndexMd(placed(subdomain), placed(boundedcontext))}) (${subdomain.type})`,
+						`- [${subdomain.domain.name} / ${subdomain.name}](${pathToIndexMd(subdomain.path, boundedcontext.path)}) (${subdomain.type})`,
 				)
 				.join("\n")
 		: "> No subdomains."
 }
 
-![contextmap](${pathToContextMapSvg(placed(boundedcontext), placed(boundedcontext))})
+![contextmap](${pathToContextMapSvg(boundedcontext.path, boundedcontext.path)})
 
 ## Glossary
 ${glossaryTableMd(boundedcontext)}
@@ -305,7 +304,7 @@ ${consumptionsTableMd(
 		"Provided As",
 	],
 	(it) => [
-		`[${it.consumer.name}](${pathToIndexMd(placed(it.consumer), placed(boundedcontext))})`,
+		`[${it.consumer.name}](${pathToIndexMd(it.consumer.path, boundedcontext.path)})`,
 		// Absent means the whole consumer, which is the common case.
 		it.by.map((by) => by.name).join(", ") || "-",
 		it.pattern ?? "-",

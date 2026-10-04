@@ -10,7 +10,6 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import { identityKeyOf } from "@open-domain-specification/core";
 import {
 	Answer,
 	Deadline,
@@ -19,7 +18,7 @@ import {
 	type Process,
 	type ProcessTrigger,
 } from "@open-domain-specification/core";
-import { anchorOf, problemsUnder, useModel } from "../model";
+import { problemsUnder, useModel } from "../model";
 import { flowGraph } from "../flow/graph";
 import { FLOW_MAP_EMPTY, flowMapCaption } from "../flow/flow-graph";
 import Comments from "../atoms/Comments.svelte";
@@ -34,7 +33,7 @@ import ConsumableKeywords from "../molecules/ConsumableKeywords.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
 import {
 	answerKeyword,
-	answerTarget,
+	answerRef,
 	kindOf,
 } from "../molecules/element-kind";
 import DiagramFigure from "../organisms/DiagramFigure.svelte";
@@ -71,15 +70,15 @@ const sourceOf = (trigger: ProcessTrigger) => {
 
 /**
  * What the name in the first column links to. An answer links to what
- * {@link answerTarget} says: the shape it came back as, or the call itself where
+ * {@link answerRef} says: the shape it came back as, or the call itself where
  * it came back as nothing, with the Provider column naming the call either
  * way. A deadline has no page of its own either, and links to the process that
  * declares it.
  */
 const linkOf = (trigger: ProcessTrigger) => {
-	if (trigger instanceof Answer) return answerTarget(trigger);
-	if (trigger instanceof Deadline) return trigger.process;
-	return trigger;
+	if (trigger instanceof Answer) return answerRef(trigger);
+	if (trigger instanceof Deadline) return trigger.process.ref;
+	return trigger.ref;
 };
 
 
@@ -122,7 +121,7 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 
 {#snippet consumables(rows: ProcessTrigger[], label: string, withKind: boolean, empty: string)}
 	{@const names = namesOf(rows)}
-	<DataTable columns={columnsFor(label, withKind)} {rows} {empty} rowId={(c) => anchorOf(model, c)} rowKey={(c) => identityKeyOf(c)}>
+	<DataTable columns={columnsFor(label, withKind)} {rows} {empty} rowId={(c) => c.ref}>
 		{#snippet cell(c, col)}
 			{#if col.key === "name"}
 				{@const told = names(c) !== rowReading(c)}
@@ -131,9 +130,9 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 				{#if c instanceof Answer}<Keyword text={answerKeyword(c)} />{:else if c instanceof Deadline}<Keyword text="deadline" title="A time limit this process keeps on its own instances; it needs no clock outside the model." />{:else}<ConsumableKeywords consumable={c} />{/if}
 			{:else if col.key === "provider"}
 				{@const source = sourceOf(c)}
-				<Lockup kind={kindOf(source)} name={source.name} ref={source} />
+				<Lockup kind={kindOf(source)} name={source.name} ref={source.ref} />
 			{:else if col.key === "context"}
-				<Lockup kind="boundedcontext" name={c.boundedcontext.name} ref={c.boundedcontext} />
+				<Lockup kind="boundedcontext" name={c.boundedcontext.name} ref={c.boundedcontext.ref} />
 			{:else}
 				{c.description}
 			{/if}
@@ -146,7 +145,7 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 	{#snippet meta()}<Keyword text="stateful" title="A process remembers which of its events have arrived, which is what a policy may not do." />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
-			<Definition term="Lives in"><Lockup kind="boundedcontext" name={bc.name} ref={bc} /></Definition>
+			<Definition term="Lives in"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
 			{#if p.disposition && p.disposition !== "by-design"}
 				<Definition term="Disposition"><Disposition disposition={p.disposition} /></Definition>
 			{/if}
@@ -194,7 +193,7 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 	<DiagramFigure
 		caption={flowMapCaption(bc.name)}
 		emptyText={FLOW_MAP_EMPTY}
-		graph={flowGraph(flowMap, identityKeyOf(p))}
+		graph={flowGraph(flowMap, p.ref)}
 	/>
 </Section>
 

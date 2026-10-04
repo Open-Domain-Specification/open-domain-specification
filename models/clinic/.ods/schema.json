@@ -54,8 +54,17 @@
                     "type": "string"
                 },
                 "identifies": {
-                    "$ref": "#/definitions/RefSchema",
-                    "description": "What this attribute holds the identity of, when it is an identity of\nsomething else: `Order.petId` identifies Catalog's `Pet`. The target may\nbe in another bounded context — that is the point, since an identity is\nthe only thing that crosses a boundary (decision 14) — and there it may\nbe a child rather than a root, since a session holds the id of a profile\ninside a household; the child is reached through its own root. The same\ngoes inside one context: a shipment holds an order's id and its line's id\nbeside it, which is how the model points at a child without the relation\n`cross-aggregate-reference` refuses (`identifies-entity`).\n\nIt may also be a bounded context flagged `external`, `bigBallOfMud` or\n`boundaryOnly`: a card scheme's authorisation id belongs to a system\nwhose entities are not ours to state, a legacy account key to one nobody\ncan read well enough to say which entity it is of, and a customer id\ninto our own CRM to one of ours nobody has interviewed yet (decision 28,\nsecond and sixth amendments), so the attribute names the system instead\nof an entity inside it.\n\nOr a schema an `external` or `boundaryOnly` context publishes, where that\nsystem documents the kind the id names: a processor's Customer, Payment,\nRefund and Dispute are distinct kinds with distinct ids, and the identity\nsays which of them it holds while still reading as an identity into that\ncontext (decision 28, third and sixth amendments). A big ball of mud's\nschemas are not a route: what it emits it emits, but it publishes no\ncatalogue of kinds anyone can rely on. Any other context is refused, and\nso is a schema of one, because there the entity exists and is what the id\nis of."
+                    "additionalProperties": false,
+                    "description": "What this attribute holds the identity of, when it is an identity of\nsomething else: `Order.petId` identifies Catalog's `Pet`. The target may\nbe in another bounded context — that is the point, since an identity is\nthe only thing that crosses a boundary (decision 14) — and there it may\nbe a child rather than a root, since a session holds the id of a profile\ninside a household; the child is reached through its own root. The same\ngoes inside one context: a shipment holds an order's id and its line's id\nbeside it, which is how the model points at a child without the relation\n`cross-aggregate-reference` refuses (`identifies-entity`).\n\nIt may also be a bounded context flagged `external`, `bigBallOfMud` or\n`boundaryOnly`: a card scheme's authorisation id belongs to a system\nwhose entities are not ours to state, a legacy account key to one nobody\ncan read well enough to say which entity it is of, and a customer id\ninto our own CRM to one of ours nobody has interviewed yet (decision 28,\nsecond and sixth amendments), so the attribute names the system instead\nof an entity inside it.\n\nOr a schema an `external` or `boundaryOnly` context publishes, where that\nsystem documents the kind the id names: a processor's Customer, Payment,\nRefund and Dispute are distinct kinds with distinct ids, and the identity\nsays which of them it holds while still reading as an identity into that\ncontext (decision 28, third and sixth amendments). A big ball of mud's\nschemas are not a route: what it emits it emits, but it publishes no\ncatalogue of kinds anyone can rely on. Any other context is refused, and\nso is a schema of one, because there the entity exists and is what the id\nis of.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "identity": {
                     "description": "True when this attribute is (part of) the identity of an entity: the\nthing that tells one instance from another that holds the same values,\nand what `root-identity` and `entity-identity` look for.\n\nOn a value object it is refused (`value-object-shape`): a value is what\nit holds and has nothing to be identified by. On a schema it says which\nfield of the payload is the key a reader correlates on — the order number\nin an `OrderPlaced`, the instruction id in a settlement message — which is\na fact about the payload and not a claim that the publishing context holds\nanything. That is why an identity on a schema attribute draws no edge on\nthe context map and asks for no relationship: the payload carries the id\nfor its reader, and the context owes the other nothing for it (decision\n14, second amendment). Where the id belongs to another context, say so\nwith `identifies` beside it.",
@@ -69,16 +78,34 @@
                     "type": "boolean"
                 },
                 "schema": {
-                    "$ref": "#/definitions/RefSchema",
-                    "description": "The schema that models this attribute's type, when the attribute is a\nshape of its own: the lines of an order, the address inside a customer.\nMutually exclusive with `valueobject`; a collection stays in the type\nstring (`OrderLine[]`)."
+                    "additionalProperties": false,
+                    "description": "The schema that models this attribute's type, when the attribute is a\nshape of its own: the lines of an order, the address inside a customer.\nMutually exclusive with `valueobject`; a collection stays in the type\nstring (`OrderLine[]`).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "type": {
                     "description": "Free-form type name, e.g. `string`, `Money`, `Date`.",
                     "type": "string"
                 },
                 "valueobject": {
-                    "$ref": "#/definitions/RefSchema",
-                    "description": "The value object that models this attribute's type, when there is one."
+                    "additionalProperties": false,
+                    "description": "The value object that models this attribute's type, when there is one.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 }
             },
             "required": [
@@ -159,13 +186,31 @@
                 "subdomains": {
                     "description": "The subdomains this context serves; a context may serve several.\nOptional, like every list in this schema: an absent list is an empty\none, and `context-serves-subdomain` says so as a warning rather than the\nloader refusing the file.",
                     "items": {
-                        "$ref": "#/definitions/RefSchema"
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
                     },
                     "type": "array"
                 },
                 "team": {
-                    "$ref": "#/definitions/RefSchema",
-                    "description": "The team that owns this context."
+                    "additionalProperties": false,
+                    "description": "The team that owns this context.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "valueobjects": {
                     "additionalProperties": {
@@ -264,24 +309,75 @@
                 "raises": {
                     "description": "For operations: the event consumables this operation may raise.",
                     "items": {
-                        "$ref": "#/definitions/RefSchema"
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
                     },
                     "type": "array"
                 },
                 "rejects": {
                     "description": "For operations: the shapes the operation answers with when it refuses,\neach one its context may carry under `schema-context`, as `schema` and\n`returns` are: its own, or one borrowed over a shared kernel, as a\nconformist or as a customer. A rejection is not an event, because\nnothing happened, and not a transport error, which stays outside the\nmodel. Absent means the operation either always succeeds or refuses\nwithout a domain-meaningful shape. Never valid on an event.\n\n`many` says the refusal is a list of that shape rather than one of it: a\nvalidation failure answered as a root array of field errors is the\ncommonest shape on the wire, and a wrapper around it would say the call\ncomes back as an object it does not come back as. The argument that gave\n`returns` and `schema` their `many` is the same one here (decision 13,\nsecond amendment of 2026-09-10).\n\n`reasons` are the enumerated outcomes of that shape as the contract\nstates them — an acquirer's decline codes, ISO 8583 response codes —\neach one an answer a reactor may wait on, `<operation ref>/rejects/<schema\ncontext id>/<schema id>/<reason>`, alongside the shape-level answer that\nhears them all. A\nreason is a named outcome the contract states and not a condition on\ndata, which stays out of the model (decisions 25, amended, and 15).",
                     "items": {
-                        "$ref": "#/definitions/RejectionRefSchema"
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            },
+                            "many": {
+                                "type": "boolean"
+                            },
+                            "reasons": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
                     },
                     "type": "array"
                 },
                 "returns": {
-                    "$ref": "#/definitions/ShapeRefSchema",
-                    "description": "For operations: the payload shape the caller gets back, one of the\ncontext's schemas. Absent means the operation returns nothing worth\nnaming, which is honest for commands. Never valid on an event.\n\n`many` says the answer is a list of that shape rather than one of it: a\nsearch answers with the matches it found. A named collection and an\nobject holding one are different shapes, and a wrapper schema said the\nwrong one — a consumer of `Pets { pets: PetSummary[] }` could not tell\nthat the call really answers with a root array (decision 13, amended).\nA wrapper stays where the answer really is an object with a list among\nits attributes, as search results with a total and hits are."
+                    "additionalProperties": false,
+                    "description": "For operations: the payload shape the caller gets back, one of the\ncontext's schemas. Absent means the operation returns nothing worth\nnaming, which is honest for commands. Never valid on an event.\n\n`many` says the answer is a list of that shape rather than one of it: a\nsearch answers with the matches it found. A named collection and an\nobject holding one are different shapes, and a wrapper schema said the\nwrong one — a consumer of `Pets { pets: PetSummary[] }` could not tell\nthat the call really answers with a root array (decision 13, amended).\nA wrapper stays where the answer really is an object with a list among\nits attributes, as search results with a total and hits are.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        },
+                        "many": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "schema": {
-                    "$ref": "#/definitions/ShapeRefSchema",
-                    "description": "The payload the caller sends, one of the context's schemas.\n\n`many` says the request is a list of that shape rather than one of it:\nSwagger's `createUsersWithList` takes a root array of users. A named\ncollection and an object holding one are different shapes, and the\nargument that gave `returns` its `many` is the same one here (decision\n13, amended). A wrapper stays where the request really is an object with\na list among its attributes."
+                    "additionalProperties": false,
+                    "description": "The payload the caller sends, one of the context's schemas.\n\n`many` says the request is a list of that shape rather than one of it:\nSwagger's `createUsersWithList` takes a root array of users. A named\ncollection and an object holding one are different shapes, and the\nargument that gave `returns` its `many` is the same one here (decision\n13, amended). A wrapper stays where the request really is an object with\na list among its attributes.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        },
+                        "many": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "type": {
                     "$ref": "#/definitions/ConsumableType"
@@ -309,7 +405,16 @@
                 "by": {
                     "description": "What of the consumer is behind this exchange, when only some of it is.\nWhich kind of thing that may be follows the consumable: on a consumption\nof an operation it is the consumer's own operations that make the call —\na subscription service calls a payment gateway when it renews, not when\nit lists entitlements — and on a consumption of an event it is the\npolicies and processes of the consumer's context that react to it,\nbecause a subscription is not made but woken. `consumption-by-operation`\nand `consumption-by-reactor` say so, one each way round.\n\nAbsent means the whole consumer, which is fine only for a consumer that\nprovides exactly one operation, because there is nothing to choose\nbetween. A consumer with two or more names which of them makes the call,\nand one with none at all has nothing that could — either way\n`consumption-by-required` asks for it, except of an external or\nbig-ball-of-mud consumer: `by` is the one causal link the model has from\none operation to the next, so without it the reaction walk and the flow\nmap stop at the boundary and an answer reaches nobody (decision 21,\ncorrected 2026-09-10, widened to the zero-operation case in the second\namendment of 2026-09-10).",
                     "items": {
-                        "$ref": "#/definitions/RefSchema"
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
                     },
                     "type": "array"
                 },
@@ -321,7 +426,16 @@
                     "type": "array"
                 },
                 "consumable": {
-                    "$ref": "#/definitions/RefSchema"
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "disposition": {
                     "$ref": "#/definitions/Disposition",
@@ -332,8 +446,17 @@
                     "description": "The downstream role the consumer adopts for this consumable."
                 },
                 "relationship": {
-                    "$ref": "#/definitions/RefSchema",
-                    "description": "The directed relationship this exchange belongs to, where the pair holds\nmore than one agreement in that direction: a call made under the\nnegotiated fulfilment API rather than under the tolerated legacy feed\nbeside it.\n\nAbsent is the common case, one agreement between the pair, and the\nexchange belongs to it. Where the pair holds two, an exchange that names\nneither belongs to nothing a rule can read, and `consumption-agreement`\nsays so (decision 15's amendment of 2026-09-10)."
+                    "additionalProperties": false,
+                    "description": "The directed relationship this exchange belongs to, where the pair holds\nmore than one agreement in that direction: a call made under the\nnegotiated fulfilment API rather than under the tolerated legacy feed\nbeside it.\n\nAbsent is the common case, one agreement between the pair, and the\nexchange belongs to it. Where the pair holds two, an exchange that names\nneither belongs to nothing a rule can read, and `consumption-agreement`\nsays so (decision 15's amendment of 2026-09-10).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 }
             },
             "required": [
@@ -390,8 +513,17 @@
                     "type": "string"
                 },
                 "from": {
-                    "$ref": "#/definitions/RefSchema",
-                    "description": "The trigger the interval counts from: one of the process's own `starts`\nor `on` entries, named the same way those name one. Absent means from the\nmoment the instance began.\n\nA clock has an anchor as well as a length, and which fact starts it is\nthe business's own rule: a statutory decision window runs from the\napplication's receipt, a delivery window from the dispatch, a chaser from\nthe last time anybody wrote. Pausing a clock stays prose in the\ndescription — the model says when a clock starts and how long it runs,\nnot the conditions that stop it (decision 23, fifth amendment)."
+                    "additionalProperties": false,
+                    "description": "The trigger the interval counts from: one of the process's own `starts`\nor `on` entries, named the same way those name one. Absent means from the\nmoment the instance began.\n\nA clock has an anchor as well as a length, and which fact starts it is\nthe business's own rule: a statutory decision window runs from the\napplication's receipt, a delivery window from the dispatch, a chaser from\nthe last time anybody wrote. Pausing a clock stays prose in the\ndescription — the model says when a clock starts and how long it runs,\nnot the conditions that stop it (decision 23, fifth amendment).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "name": {
                     "type": "string"
@@ -424,7 +556,16 @@
                     "description": "What the architecture thinks of this relationship. Absent means `by-design`."
                 },
                 "downstream": {
-                    "$ref": "#/definitions/RefSchema"
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "downstreamRoles": {
                     "items": {
@@ -440,7 +581,16 @@
                     "$ref": "#/definitions/DirectedRelationshipType"
                 },
                 "upstream": {
-                    "$ref": "#/definitions/RefSchema"
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "upstreamRoles": {
                     "items": {
@@ -526,7 +676,16 @@
                     "$ref": "#/definitions/EntityRelationType"
                 },
                 "target": {
-                    "$ref": "#/definitions/RefSchema"
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 }
             },
             "required": [
@@ -571,8 +730,17 @@
                     "type": "boolean"
                 },
                 "specialises": {
-                    "$ref": "#/definitions/RefSchema",
-                    "description": "The entity this one is a kind of: it has every attribute and relation of\nthat entity, plus its own. The target is an entity of the same\naggregate, and a subtype is never itself the root, because the aggregate\nhas one root and a kind of it is reached through it (decision 22)."
+                    "additionalProperties": false,
+                    "description": "The entity this one is a kind of: it has every attribute and relation of\nthat entity, plus its own. The target is an entity of the same\naggregate, and a subtype is never itself the root, because the aggregate\nhas one root and a kind of it is reached through it (decision 22).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 }
             },
             "required": [
@@ -596,8 +764,17 @@
                     "type": "string"
                 },
                 "embodiedBy": {
-                    "$ref": "#/definitions/RefSchema",
-                    "description": "The model element that embodies this term, when there is one."
+                    "additionalProperties": false,
+                    "description": "The model element that embodies this term, when there is one.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "name": {
                     "type": "string"
@@ -617,7 +794,16 @@
                 "constrains": {
                     "description": "What this invariant is a rule about: the entities, value objects and\nattributes it holds over, and the operations it constrains, for a rule\nabout what an operation may do. A value object's invariant reaches its\nown and inherited attributes and the attributes of values it composes,\ntransitively, but nothing outside that composition path. An aggregate's\nreaches inside its own aggregate, values it holds including borrowed ones,\nand operations of services in its context. A modelled context's reaches\nits own held model and the contracts of its operations. Only an external\ncontext may state a published event-payload postcondition.\nNo modelled invariant may name an event as a guard (`invariant-guards-are-operations`).\n\nAn aggregate's invariant naming a value object means that aggregate's\ninstances of it — the amounts this payment holds, not every Money in the\ncontext — because what is saved with an aggregate is the value, not the\ndefinition. A rule about every instance of a value wherever it is held is\nthe value's own invariant, and a rule across the instances of several\naggregates is the context's (decisions 16 and 27).\n\nNaming an operation says which operation keeps the rule, not what kind of\nrule it is: `precondition` says that.\n\nA precondition may name attributes of the request its guarded operation\ntakes, of an answer the guard or a front on its local call chain already\nfetched, of an event or answer payload that triggered its issuing policy,\nor of a process start-event payload. A policy's immediate `on` event or\nreturned or rejected answer is a completed occurrence before the command\nthat reaction issues, even when the same event or operation is named on a\nlater chain. The current guarded invocation's future answer or raised event\nalone supplies no fact. A process's `on` or `ends` triggers and a starting\noperation's later answer are not guaranteed before its command. A fact must\nbe held on every finite admitted entry-to-guard caller or reactor walk;\nsequential local fronts retain it. Recursive callers keep facts from\ninformed real entries, but an uninformed alternate entry removes them,\nand a closed internal caller cycle with no entry supplies none. A local\nconsumption whose caller cannot be identified adds an independent entry\nwith no held facts, even beside known callers or reactors. Omitted `by`\nstill infers a sole operation; zero or several possible callers identify\nnone and do not invent a causal edge. Fact reach does not decide whether\na reaction can bootstrap or cycles. A postcondition may\nrelate the guarded operation's request to the shapes it returns or\nrejects with; it guarantees what comes back. When several operations are\nnamed, the postcondition's shape must be reachable from each of them.\nEither timing may follow\ncomposition: an attribute of any schema reachable from those\nthrough `attribute.schema` is one of the fields the call carries, so a\nrule about the amount of an order line is a rule about the request that\nholds the lines. An invariant that is neither may name no schema\nattribute at all, because a rule kept true on every save is a rule about\nthe model and not about a transport shape (decision 19, amended).",
                     "items": {
-                        "$ref": "#/definitions/RefSchema"
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
                     },
                     "type": "array"
                 },
@@ -657,14 +843,32 @@
                 "on": {
                     "description": "What triggers this policy: an event consumable, or an answer of an\noperation this context consumes, which means \"when that answer comes\nback\". An answer is named by its origin — `<operation ref>/returns`,\n`<operation ref>/rejects/<schema context id>/<schema id>`, that with a\nfurther `/<reason>` for one enumerated outcome of the refusal, or\n`<operation ref>/completed` for an operation that returns nothing and\nwhose completion is all there is to wait on — and never by the shape\nalone, so two operations refusing with one schema wake only whoever\nnamed the call that was made (decision 23). The shape is named by its\ncontext as well as its id, because an id is unique only inside its\ncontext; each of those segments and the reason is escaped as a JSON\nPointer segment is, `~` as `~0` and `/` as `~1`.",
                     "items": {
-                        "$ref": "#/definitions/RefSchema"
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
                     },
                     "type": "array"
                 },
                 "then": {
                     "description": "The operation consumables this policy issues. Optional, like every list in this schema: an absent list is an empty one.",
                     "items": {
-                        "$ref": "#/definitions/RefSchema"
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
                     },
                     "type": "array"
                 }
@@ -704,7 +908,16 @@
                 "ends": {
                     "description": "What completes an instance: an event consumable, an answer, or a deadline\nnamed the same way `on` names one. Optional, like every list in this\nschema: an absent list is an empty one.",
                     "items": {
-                        "$ref": "#/definitions/RefSchema"
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
                     },
                     "type": "array"
                 },
@@ -714,21 +927,48 @@
                 "on": {
                     "description": "Further event consumables the process waits for or reacts to while an\ninstance is alive, and the answers it waits to come back: an answer of an\noperation this context consumes, named by its origin the way a policy's\n`on` names one — including the bare completion of an operation that\nreturns nothing — means \"when that answer comes back\", which is the\ncall-and-branch a process manager is usually made of. Like a policy's\n`on`, one of these may belong to another context: subscribing to a\npublished fact, or calling out and waiting, is how contexts integrate\n(decision 23).",
                     "items": {
-                        "$ref": "#/definitions/RefSchema"
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
                     },
                     "type": "array"
                 },
                 "starts": {
                     "description": "What begins an instance of this process: an event consumable, or an\noperation of the process's own context — the command that creates one.\n\nA command starts a saga as often as an event does: \"open a claim\", \"start\nan onboarding\", \"submit an application for a decision\". The earlier\nreading allowed only an event, on the argument that something was already\nwaiting for whatever starts an instance; that argument is about answers,\nwhere a caller has to have made the call, and it was overapplied to\ncommands, which nobody has to be waiting for (decision 23, third\namendment).\n\nA starting command belongs to this process's own context, for the reason\n`then` does: a process that claimed a neighbour's operation created its\ninstances would be acting through somebody else's model. An answer and a\ndeadline still start nothing, because in both cases the instance had to\nexist before to have been waiting.\n\nOptional, like every list in this schema: an absent list is an empty\none. `process-starts` still asks for at least one, and reports it as a\nvalidation error rather than a schema one, so a file that omits `starts`\nloads and is then told what it is missing.",
                     "items": {
-                        "$ref": "#/definitions/RefSchema"
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
                     },
                     "type": "array"
                 },
                 "then": {
                     "description": "The operation consumables of this process's own context that it issues. Optional, like every list in this schema: an absent list is an empty one.",
                     "items": {
-                        "$ref": "#/definitions/RefSchema"
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
                     },
                     "type": "array"
                 }
@@ -738,49 +978,6 @@
                 "name"
             ],
             "title": "Process",
-            "type": "object"
-        },
-        "RefSchema": {
-            "additionalProperties": false,
-            "description": "A reference to another element of the model: a JSON Pointer into a workspace, optionally led by the relative path of the workspace file it points into. `#/boundedcontexts/orders` names an element of the file that writes it and never of another. `billing.json#/boundedcontexts/billing` names one of the file `billing.json`, resolved against the directory of the file that writes it. The path is percent-encoded UTF-8, forward-slash separated, ends in a `.json` file name other than `schema.json`, and may use `.` and `..` segments so long as the result stays inside the folder that holds the set. Anything else, a path that names no file of the set, a pointer that names nothing there, or an element of the wrong kind for the field, is an `unresolved-ref` diagnostic on the file that wrote it.",
-            "properties": {
-                "$ref": {
-                    "description": "The pointer, led by the relative path of its file when it is another file's.",
-                    "pattern": "^((?:[A-Za-z0-9._~-]|%[0-9A-Fa-f]{2})+(?:/(?:[A-Za-z0-9._~-]|%[0-9A-Fa-f]{2})+)*)?#/.*$",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "$ref"
-            ],
-            "title": "Ref",
-            "type": "object"
-        },
-        "RejectionRefSchema": {
-            "additionalProperties": false,
-            "description": "A {@link ShapeRefSchema } to a schema an operation refuses with, with the outcomes the contract enumerates for it.",
-            "properties": {
-                "$ref": {
-                    "description": "The pointer, led by the relative path of its file when it is another file's.",
-                    "pattern": "^((?:[A-Za-z0-9._~-]|%[0-9A-Fa-f]{2})+(?:/(?:[A-Za-z0-9._~-]|%[0-9A-Fa-f]{2})+)*)?#/.*$",
-                    "type": "string"
-                },
-                "many": {
-                    "description": "True when the shape is a list of the referenced schema rather than one of it.",
-                    "type": "boolean"
-                },
-                "reasons": {
-                    "description": "The enumerated outcomes of the refusal, as the contract states them.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "type": "array"
-                }
-            },
-            "required": [
-                "$ref"
-            ],
-            "title": "RejectionRef",
             "type": "object"
         },
         "RelationCardinality": {
@@ -849,26 +1046,6 @@
             ],
             "type": "string"
         },
-        "ShapeRefSchema": {
-            "additionalProperties": false,
-            "description": "A {@link RefSchema } to a schema, with whether the call carries a list of it rather than one.",
-            "properties": {
-                "$ref": {
-                    "description": "The pointer, led by the relative path of its file when it is another file's.",
-                    "pattern": "^((?:[A-Za-z0-9._~-]|%[0-9A-Fa-f]{2})+(?:/(?:[A-Za-z0-9._~-]|%[0-9A-Fa-f]{2})+)*)?#/.*$",
-                    "type": "string"
-                },
-                "many": {
-                    "description": "True when the shape is a list of the referenced schema rather than one of it.",
-                    "type": "boolean"
-                }
-            },
-            "required": [
-                "$ref"
-            ],
-            "title": "ShapeRef",
-            "type": "object"
-        },
         "SubdomainSchema": {
             "additionalProperties": false,
             "description": "Represents a subdomain in the Open Domain Specification (ODS).",
@@ -925,10 +1102,28 @@
                 "participants": {
                     "items": [
                         {
-                            "$ref": "#/definitions/RefSchema"
+                            "additionalProperties": false,
+                            "properties": {
+                                "$ref": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "$ref"
+                            ],
+                            "type": "object"
                         },
                         {
-                            "$ref": "#/definitions/RefSchema"
+                            "additionalProperties": false,
+                            "properties": {
+                                "$ref": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "$ref"
+                            ],
+                            "type": "object"
                         }
                     ],
                     "maxItems": 2,
@@ -1015,8 +1210,17 @@
                     "type": "array"
                 },
                 "specialises": {
-                    "$ref": "#/definitions/RefSchema",
-                    "description": "The value object this one is a kind of: it has every attribute and\nrelation of that value object, plus its own. The target belongs to this\ncontext, or to a context this one borrows from — over a shared kernel,\nas a conformist, or as a customer-supplier downstream of it (decision\n22; decision 16's second amendment of 2026-09-10 widened borrowing to\nthe customer-supplier case)."
+                    "additionalProperties": false,
+                    "description": "The value object this one is a kind of: it has every attribute and\nrelation of that value object, plus its own. The target belongs to this\ncontext, or to a context this one borrows from — over a shared kernel,\nas a conformist, or as a customer-supplier downstream of it (decision\n22; decision 16's second amendment of 2026-09-10 widened borrowing to\nthe customer-supplier case).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 }
             },
             "required": [

@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { Subdomain } from "@open-domain-specification/core";
-import { identityKeyOf } from "@open-domain-specification/core";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Keyword from "../atoms/Keyword.svelte";
@@ -41,7 +40,7 @@ const columns = $derived<Column[]>([
 >
 	{#snippet cell(s, col)}
 		{#if col.key === "name"}
-			<Lockup kind="subdomain" name={s.name} ref={s} />
+			<Lockup kind="subdomain" name={s.name} ref={s.ref} />
 		{:else if col.key === "type"}
 			<Keyword text={s.type} title={SUBDOMAIN_TYPE[s.type]} />
 		{:else if col.key === "servedBy"}

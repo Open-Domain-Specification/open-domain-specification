@@ -21,7 +21,7 @@ const { rejections }: { rejections: Rejection[] } = $props();
 <Joined>
 	{#each rejections as { schema, many }, index (`${schema.ref}:${index}`)}
 		<span class="rejection">{#if many}{"many "}{/if}<Ref
-				ref={schema}
+				ref={schema.ref}
 				label={schema.name}
 				icon={ICONS.schema}
 				kind="schema"

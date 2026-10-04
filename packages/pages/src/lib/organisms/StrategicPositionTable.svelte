@@ -2,11 +2,9 @@
 import {
 	type BoundedContext,
 	type ContextRelationship,
-	counterpartOf,
 	hasAuthoredDescription,
 	narrativeText,
 	relationshipNarrative,
-	scopeAround,
 } from "@open-domain-specification/core";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
@@ -15,6 +13,7 @@ import EmptyState from "../atoms/EmptyState.svelte";
 import Keyword from "../atoms/Keyword.svelte";
 import Modal from "../atoms/Modal.svelte";
 import {
+	counterpartOf,
 	type EvidenceRow,
 	hasEvidence,
 	positionGroups,
@@ -49,9 +48,7 @@ import RelationshipDetail from "./RelationshipDetail.svelte";
 const { context }: { context: BoundedContext } = $props();
 
 const model = useModel();
-const groups = $derived(
-	positionGroups(context, scopeAround(model.workspace).relationships),
-);
+const groups = $derived(positionGroups(context, model.workspace.relationships));
 const withEvidence = $derived(
 	groups.some((g) => g.rows.some((row) => hasEvidence(row.relationship))),
 );

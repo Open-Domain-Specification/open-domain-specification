@@ -14,7 +14,7 @@ export const sections = [
 <script lang="ts">
 import type { ContextRelationship } from "@open-domain-specification/core";
 import { useModel } from "../model";
-import Crumbs, { type Crumb } from "../molecules/Crumbs.svelte";
+import Crumbs from "../molecules/Crumbs.svelte";
 import RelationshipDetail from "../organisms/RelationshipDetail.svelte";
 
 /**
@@ -26,10 +26,10 @@ import RelationshipDetail from "../organisms/RelationshipDetail.svelte";
  */
 const { relationship: r }: { relationship: ContextRelationship } = $props();
 const model = useModel();
-const crumbs = $derived<Crumb[]>([
+const crumbs = $derived<[string, string][]>([
 	["#", model.workspace.name],
-	[r.source, r.source.name],
-	[r.target, r.target.name],
+	[r.source.ref, r.source.name],
+	[r.target.ref, r.target.name],
 ]);
 </script>
 

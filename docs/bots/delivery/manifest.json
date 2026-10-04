@@ -2,17 +2,17 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 2,
-  "closed": 52,
-  "closed_implemented": 44,
+  "current_open": 3,
+  "closed": 51,
+  "closed_implemented": 43,
   "closed_not_planned": 8,
   "new": 0,
-  "reopened": 0,
-  "active_milestone": 10,
-  "integration_batch": "milestone-10-informed-authoring",
+  "reopened": 1,
+  "active_milestone": 8,
+  "integration_batch": "owner-review-first-separation",
   "owner": "lead",
-  "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "Top-level candidate/approval retain historicalM1; M9 fully delivered and recorded; M10 complete source/native quality ready for exact clean existing landing gates",
+  "candidate": "5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9",
+  "candidate_state": "M1-8 review handoff candidate; M8 record gate passed and published. M9/#59 and M10/#54/#63 deferred outside develop/main on codex/epic-63-team-authoring; #59 reopened for owner-requested deferral; rollback publication awaits root.",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -1469,7 +1469,7 @@
         94
       ],
       "owner": "lead",
-      "state": "complete: three individual closures; own-gated closingrecords5120fd54 published",
+      "state": "complete: source delivered (PR139 importer, PR140 copy), #92/#93/#94 individually closed; closing records own gate/publication pending",
       "expected_remaining": 3,
       "entry_scope": "Import refinements and editorial slice independently accepted.",
       "exit_acceptance": "Themed native focus target, file name, Problems-style error and exact two copy corrections.",
@@ -1667,17 +1667,14 @@
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/closing-records/quality/root-acceptance.json"
         },
         {
-          "at": "2026-10-04T03:59:54.750456+00:00",
-          "scope": "closingrecords own gate accepted andpublished",
-          "head": "5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9",
-          "gate_exit": 0,
-          "gate_seconds": 188,
-          "browser": 689,
-          "existing_optional_captures_skipped": 20,
-          "pages_unit": 1323,
-          "coverage": 100,
-          "remote_verified": true,
-          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/closing-records/publication.json"
+          "at": "2026-10-04",
+          "scope": "owner-requested review-first separation checkpoint",
+          "review_candidate": "5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9",
+          "m8_records_gate": "passed exit 0 in 188 seconds; published to develop",
+          "rollback": "three no-commit reverts restore the exact accepted M8 tree before these record updates",
+          "external_state": "52 closed / 2 open pending root reopening #59; #54/#63 open",
+          "epic_preservation": "codex/epic-63-team-authoring at 88cb0f610e9e5c164acaf0c69362469108f33fb9",
+          "root_owns": "review, rollback gate/publication and #59 reopen"
         }
       ],
       "closed_issues": [
@@ -1693,7 +1690,7 @@
         59
       ],
       "owner": "lead",
-      "state": "complete: PR141 identical-tree merge; exact pre/postCI passed;59closed",
+      "state": "deferred for M1-8 owner review; #59 reopened; M9 implementation and exact approval remain preserved on codex/epic-63-team-authoring",
       "expected_remaining": 2,
       "entry_scope": "Reconcile decision08/current29 and settle identity/linking/diagnostics/persistence/reader packaging before code.",
       "exit_acceptance": "Split substantial reference model equivalent to single-file including pins; missing/ambiguous/cyclic refs, lossless owning-file save and four readers.",
@@ -1708,90 +1705,9 @@
           "required_next": "A bounded contract correction: linked complete-workspace design with an explicit finite duplicate-local-id, identity, round-trip, owning-write and four-reader matrix, accepted by root before any source.",
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/foundation-survey/root-readiness-finding.json",
           "limits": "Static inspection only; no builds, tests or hosts; worker time ledger missing, raw tool record archived without invented times."
-        },
-        {
-          "at": "2026-10-04T03:59:54.750456+00:00",
-          "scope": "contract correction activation only",
-          "base": "5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9",
-          "branch": "codex/m9-multifile",
-          "card": "boards/project-backlog/190-team-owned-model-files.md",
-          "source_authorized": false,
-          "proposal_approved": false,
-          "basis": "current08/29 and actual source map; flatproposal rejected, repeatedlocalids counterexample"
-        },
-        {
-          "at": "2026-10-04T04:33:54.379237+00:00",
-          "scope": "Contract accepted for source implementation, not runtime acceptance",
-          "proposal_approved": true,
-          "source_authorized": "bounded A0 core foundation",
-          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/contract-closure/root-acceptance.json",
-          "rules": {
-            "total": 72,
-            "workspace": 4,
-            "set_scope": 22,
-            "object_crossing": 21,
-            "local": 25,
-            "key_hazards": 9
-          },
-          "ref_fields": 27,
-          "runtime_limits": "No tests/hosts in contract phase; complete reader/ownership/model acceptance remains pending"
-        },
-        {
-          "at": "2026-10-04T04:57:42.272104+00:00",
-          "scope": "Accepted real core identity/resolver API, not full #59",
-          "core_tests": 1721,
-          "root_probe_cases": 5,
-          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/core-A0-bom/root-acceptance.json",
-          "source_authorized": "remaining core A1; readers await actual JSON API",
-          "limits": "No linked JSON/set-validator/maps/readers/writer/model split, final reviewer/gate/CI yet"
-        },
-        {
-          "at": "2026-10-04T09:09:37.829011+00:00",
-          "scope": "C1/C2 actual terminal source completion with independent coordinator checks; not final M9 acceptance",
-          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/C-readers-surfaces/coordinator-summary.md",
-          "required_next": "D mandatoryreportguard/docs/history/regeneration/order/importproof, wholequality/readiness/finalmodel/gates/CI/merge/closure"
-        },
-        {
-          "at": "2026-10-04T13:09:55.062277+00:00",
-          "pr": 141,
-          "reviewed_head": "8b98b6e6812b04b31cd9e5adb6c2f87787d16035",
-          "merge": "dc040764e4b9565fc023f6725de26c40caf02a8e",
-          "identical_tree": "9735e2fc5a7618c5456da7f3b0da7377ea2028b8",
-          "approvals": [
-            "Astra Low APPROVE",
-            "Claude Opus5.5 medium APPROVE"
-          ],
-          "clean_unmodified_gate": 0,
-          "native": 34,
-          "keyboard": 32,
-          "pre_ci": 37202757756,
-          "pre_ci_failedjob_only_retry": 1,
-          "post_ci": 37203798923,
-          "actual_required_steps": "all success",
-          "publish": "skipped",
-          "closed_issues": [
-            59
-          ],
-          "remaining": [
-            54,
-            63
-          ],
-          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/root-requirements-matrix.json",
-          "records_gate": "pending"
-        },
-        {
-          "at": "2026-10-04T14:08:58.018370+00:00",
-          "scope": "M9 separate records closeout evidence reconciled",
-          "records_head": "eb6707b31b5dabc5754b4e5a1ebb8e59081a88cc",
-          "records_gate": 0,
-          "published_remote_verified": true,
-          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/records-gate-eb6707b3/result.json",
-          "note": "Earlier pending entry was written before own records gate; retained as historical state."
         }
       ],
-      "closed_issues": [
-        59
-      ]
+      "closed_issues": []
     },
     {
       "id": 10,
@@ -1801,7 +1717,7 @@
         63
       ],
       "owner": "lead",
-      "state": "active: complete source/native quality accepted; exact landing gates/CI/merge/closure outstanding",
+      "state": "deferred for M1-8 review; #54 and #63 remain open; M10 delivery is preserved on codex/epic-63-team-authoring",
       "expected_remaining": 0,
       "entry_scope": "Forms consume accepted assembled-workspace resolver; epic #63 last.",
       "exit_acceptance": "Legal target options, stale choice diagnostics, own-file writes preserving unrelated edits and complete authoring journey.",
@@ -1812,75 +1728,6 @@
           "scope": "#54 premise gap noted by root; not activated",
           "finding": "The current-commands-none survey result is a premise gap, not scope zero or vacuous completion. The next step is an intentional, complete add/update authoring inventory in M10. No card or ticket is opened for it.",
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/foundation-survey/root-readiness-finding.json"
-        },
-        {
-          "at": "2026-10-04T13:09:55.062277+00:00",
-          "families": 20,
-          "add_update_operations": 39,
-          "scope": "Realforms legaldropdowns/save/stale; safecreate; parentauditlast",
-          "plan": "/Users/jonathanturnock/.codex/ods-delivery/milestone-10/A-inventory/technical-plan-v2.md",
-          "additional_guard": "Formerly legal baseline choice becoming illegal during form must be refused even unchanged ref string."
-        },
-        {
-          "at": "2026-10-04T14:08:58.018370+00:00",
-          "event": "M10-C-writer-source-accepted-for-forms",
-          "scope": "Atomic edit/save and supplied precise LegalChecks only; no complete forms/native/issue acceptance",
-          "evidence": [
-            "terminal coordinator0 and actual Opus5.5/Sonnet5.5 end_turn",
-            "102 writer cases actual unmasked exits0; owning types/format/build0",
-            "all17 foundation/root source pins unchanged",
-            "NorthBank same exact diagnostic rules/severities, owner-only save other11bytes preserved; same formerly legal ref refused after foreign relationship removal",
-            "coordinator scoped eight-lens/PANIC and actual interface handoff"
-          ],
-          "binding_forms_obligations": [
-            "Every reference field on saved holder gets checks/providers including unchanged refs",
-            "openedIllegal originates only host open set; grandfather only unrelated edits, never changed ref/governing fields",
-            "Consumable type editable; true keys/relationship identity and consumption consumedref readonly honestly",
-            "Use actual post-state holder facts for root/attribute sibling/relation draft legality"
-          ],
-          "limits": [
-            "existing detect-before-check race across foreign files, no CAS",
-            "no-op emits no writes before guard",
-            "unknown field canonicalization limit retained from M9",
-            "all required full gates/native remain at complete batch"
-          ]
-        },
-        {
-          "at": "2026-10-04T15:12:23.035634+00:00",
-          "event": "M10-host-form-contract-source-accepted-for-real-UI",
-          "scope": "D/D2/D3 actual 39operations20families host descriptors/choices/session/intents only; no complete54/native/landing claim",
-          "evidence": [
-            "D3 terminal0 actualOpus5.5/Sonnet5.5 end_turn",
-            "26authoringtests actualdirectexit0/source types/format0",
-            "D2 core18 and build0; D/C/NorthBank diagnostic preservation cases retained; full unchanged gate later",
-            "All13protectedsource+8rootrecord hashes unchanged D3; only5allowedauthoring files changed",
-            "Both directed/symmetric relationship checks/providers and cross-filequalifiedholder writer proof, preserved baselineinvalid unrelatededit",
-            "Draftpolicy/processtrigger refresh follows pending authoredJSON through existing loader; failures visible/refused and unrelated editing preserved",
-            "DirectdeadlineUPDATE plus19ADD/20UPDATE coverage/schema classifications proved in combined D/D2/D3 cases"
-          ],
-          "decisions": [
-            "Accept scoped fromSchemas spy as a focused error-path test seam, not production mutation/testing campaign.",
-            "No coverage tooling or additional branch permutations needed for UI handoff; meaningfulcases/source path + existingrequired finalgates sufficient.",
-            "E must visibly render disabledReason and keep draft values; all39operation/identity/answers support unchanged."
-          ],
-          "limits": [
-            "No native/UI proof yet",
-            "Full gate/core/modelpins/CI deferred to completebatch",
-            "Draft canonical model reload cost grows with modelsize, not benchmarked; uses existing loader, no newresolver",
-            "Existing canonical unknownfield/drop and detect-before-check prices retained",
-            "Masked iterationpipeline failures retained, not acceptance; finaldirectworker/coordinator results are proof"
-          ]
-        },
-        {
-          "at": "2026-10-04T16:10:17.913482+00:00",
-          "event": "M10-complete-source-native-quality-readiness",
-          "scope": "20families39ops; scopedFactualDOM/native, G8principles/G2 confirmedcorrections; no full54acceptance",
-          "evidence": [
-            "/Users/jonathanturnock/.codex/ods-delivery/milestone-10/F-native-authoring/root-source-acceptance.json",
-            "/Users/jonathanturnock/.codex/ods-delivery/milestone-10/G2-confirmed-corrections/root-source-acceptance.json"
-          ],
-          "next": "Exactcleanunmodifiedgate+existingnative5configs/keyboard/resultguard then necessary prepostCI,sametreemerge,54closure,63auditlast,all10goal audit",
-          "cadence": "No mutation scripts/campaigns/harnesses or addedlong-running suites/slowgates; existingrequiredchecks only"
         }
       ],
       "closed_issues": []
@@ -1918,251 +1765,68 @@
     "updated": "2026-10-03T19:41:52.900949+00:00"
   },
   "active_delivery": {
-    "milestone": 10,
-    "issues": [
-      54,
-      63
-    ],
-    "state": "Complete20families39operations source/representativeactualnative/integratedquality accepted; clean candidate gates/CI/merge/closure outstanding",
-    "card": "boards/project-backlog/191-informed-authoring-forms.md",
-    "sprint": "docs/bots/sprints/2026-10-04-sprint-11.md"
+    "milestone": 8,
+    "issues": [],
+    "branch": "codex/model-extension-review",
+    "base": "5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9",
+    "state": "M1-8 review first; M9/M10 excluded and preserved on codex/epic-63-team-authoring. #59 reopened; rollback gate/publication await root."
   },
   "previous_delivery": {
-    "milestone": 9,
-    "issues": [
-      59
-    ],
-    "branch": "codex/m9-multifile",
-    "base": "5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9",
-    "state": "bounded linkedcontract correction only, no approved M9design/source"
-  },
-  "m9_core_A1_acceptance": {
-    "at": "2026-10-04T05:41:31.160877+00:00",
-    "decision": "Accept scoped core A1 API/behavior; not final whole model or #59 completion",
-    "coordinator": "e238318c-7981-406c-9279-7b6e3ff9cb8b",
-    "worker": "ad40271df27786087",
-    "actual_models": [
-      "claude-opus-5-5",
-      "claude-sonnet-5-5"
-    ],
-    "terminal_exit": 0,
-    "core_tests": 2330,
-    "core_test_files": 44,
-    "type_format_build_coverage": "actual final exit0 inspected; coordinator independently reran type/format/fullcore/build",
-    "root_probe": "root-candidate-retention.json: preserved A0 lost consumption and relationship now exact JSON retained with two owning-file diagnostics",
-    "gaps": [
-      "M6 mutation aborted exit143 is not red proof",
-      "Early draft failures not raw-file archived; preserved worker attribution",
-      "Generated skill/petstore schema drift must regenerate in later owning lane",
-      "Non-workspace inputs violate typed WorkspaceSchema API: hosts must shape-check each fresh document and diagnose it; no core malformed-input completion claim",
-      "Reader/writer/NorthBank/full model/gate/CI pending"
-    ],
-    "decisions": [
-      "Stable set-key IDs including set-of-one accepted; reader route mapping explicit",
-      "Workspace.validate set-aware; validateWorkspace standalone accepted",
-      "Four-holder retention scope as accepted contract; do not extend unrelated cost",
-      "SET_RULE_CATALOG documented/generated alongside 72 base rules in docs lane",
-      "A0 foreign ref programmer throw and rejects-in grammar already accepted; no re-review"
-    ]
-  },
-  "m9_B_acceptance": {
-    "at": "2026-10-04T06:44:35.168213+00:00",
-    "decision": "Accept B writer and substantive team-owned NorthBank within scoped stages; #59/readers/final model/gates incomplete",
-    "actual_runtime": {
-      "coordinator": "9aa7041d-1775-4380-a832-1a2fe2258313",
-      "model": "claude-opus-5-5",
-      "workers": [
-        "aa30c7add2183de62",
-        "af8352d9e12392490"
-      ],
-      "worker_model": "claude-sonnet-5-5",
-      "foreground_endturn_verified": true,
-      "actual_terminal_exit": 0
-    },
-    "writer": {
-      "tests": 163,
-      "native_tests": 10,
-      "root_probe": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/B-writer-northbank/writer/root-independent-writer-check.json",
-      "limits": "Disk/editor/dependency post-read races; no atomic guarantee. Native1.96.4; full-host26predates two test-only edits, integration rerun required."
-    },
-    "northbank": {
-      "tests": 51,
-      "files": 12,
-      "contexts": 19,
-      "relationships": 34,
-      "exact_diagnostics": 3,
-      "root_probe": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/B-writer-northbank/northbank/root-independent-json-check.json",
-      "frozen_fixture_bytes_equal_committed_original": true,
-      "discovery_original_prefix_preserved": true,
-      "source_order_and_leaf_equivalence": "51-test report/raw proof plus source review;2323leafbijection/615objects/461refs/128foreignrefs/37sectionorders/34relationshiptable",
-      "differences": "In-file order preserved. 13/14 aggregate lists and8position-row lists depend on file input order;12headings/qualifiedkeys/12relationshiplists explicit. Scope acceptance includes these inherent grouping/file-order differences, never all-order-equivalence."
-    },
-    "routine_decisions": [
-      "Keep deterministic host-defined file order, no schema order hint/rootmanifest; preserve actual host-order differences and test them. No universal original aggregate ordering claim.",
-      "ISO13616 stays payments as already accepted explicit one-entry assignment; no invented domain reason.",
-      "Use explicit workspace.addRelationship in team modules to choose downstream owner. Existing downstreamOf/upstreamOf helper placement is upstream, a DSL behavior to document accurately; no unrelated helper rewrite now.",
-      "Typed core loader assumes WorkspaceSchema; all fresh reader imports must shape-check/exclude with owning errors. No speculative total-loader/root-ref/private-readings tooling refactor.",
-      "Make all four readers genuinely set-aware and regenerate NorthBank Markdown; original frozen fixture may test standalone regressions but must not replace actual NorthBank in live/shared coverage."
-    ],
-    "remaining": [
-      "Actual extension pages/tree/search/reveal/export and native keyboard proofs",
-      "Viewer complete-set URL/form/upload/example and discovery limitations",
-      "Static nested-set packaging/navigation",
-      "Markdown and Graphviz set render",
-      "Shared/model/source consumer adaptations",
-      "Skill/docs/decisions/schema references agreement and generated integrity",
-      "Whole quality/rootreadiness/final whole-modelgate, exactclean landinggate, necessary exact prepostCI/merge/59closure"
-    ]
-  },
-  "m9_C_source_checkpoint": {
-    "at": "2026-10-04T09:09:37.829011+00:00",
-    "coordinator_summary": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/C-readers-surfaces/coordinator-summary.md",
-    "terminal_exit": 0,
-    "root_complete_acceptance": false
-  },
-  "m9_D_integration": {
-    "run": "/Users/jonathanturnock/.codex/ods-delivery/coordination/2026-10-04-m9-D-integration",
-    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/D-integration",
-    "status": "prepared; not dispatched yet"
-  },
-  "m9_complete_source_checkpoint": {
-    "at": "2026-10-04T09:46:38.004847+00:00",
-    "state": "Complete source accepted; whole quality and final landing/signoff pending",
-    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/E2-agreement-tests/root-acceptance.json",
-    "source_base": "5120fd54",
-    "open_issues": [
-      59,
-      54,
-      63
-    ],
-    "source_complete_is_not_delivered": true
-  },
-  "m9_final_source_acceptance": {
-    "at": "2026-10-04T10:29:33.546860+00:00",
-    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/G-final-corrections/root-acceptance.json",
-    "state": "Accepted for freeze/localgate; final wholemodelreviews/native/CI/merge pending",
-    "quality": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/F-whole-quality/coordinator-summary.md",
-    "source_base": "5120fd54",
-    "open_issues": [
-      59,
-      54,
-      63
-    ]
-  },
-  "m9_precommit_corrections": {
-    "at": "2026-10-04T11:04:11.646799+00:00",
-    "H_evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/H-marker",
-    "I_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/I-marker/root-acceptance.json",
-    "core_tests": 2339,
-    "pages_tests": 1541,
-    "remaining_markers": 0,
-    "state": "Accepted source, finalfreeze/gate/native/reviews/CI/merge pending"
-  },
-  "m9_final_model_gate": {
-    "at": "2026-10-04T11:26:37.108286+00:00",
-    "candidate": "9267c824d2ce54a921a32b004f5355c65139b320",
-    "astra": "BLOCK two confirmeddefectclasses",
-    "claude": "APPROVE withlimits/advisories",
-    "root_disposition": "BLOCK until completeclass correction and renewed fullreadiness",
-    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/final-review-9267c824",
-    "next": "K Opus/Sonnet classcorrection+readonlytriage; noautomaticfinalreview"
-  },
-  "m9_K_scoped_acceptance": {
-    "at": "2026-10-04T11:56:54.623082+00:00",
-    "accepted_scope": "Qualifiedconsumptionrelationship retention B1 and allkindclassificationB2, not fullM9readiness",
-    "coordinator_exit": 0,
-    "coordinator_actual_endturn": "2026-10-04T11:53:08.038Z",
-    "actual_models": [
-      "claude-opus-5-5",
-      "claude-sonnet-5-5"
-    ],
-    "core_worker_actual_endturn": "2026-10-04T11:47:08.377Z",
-    "core_tests": 2902,
-    "extension_tests": 212,
-    "root_key_repros_exit": 0,
-    "qualified_causes_retained": [
-      "missing-file",
-      "missing-target",
-      "wrong-kind",
-      "invalid-path"
-    ],
-    "wrongkind_expected": [
-      "relationship",
-      "consumption",
-      "answer",
-      "team"
-    ],
-    "rootpins_match": true,
-    "model_generated_drift": false,
-    "remaining": "D1localrelationship + approvedreader/artifact/agreement corrections K2 beforewholefreeze/gate/native/readiness",
-    "owner_cadence": "No furthermutation scripts/campaigns ornewslow suites; completedprior evidence retained, futurefocusedtests only"
-  },
-  "verification_cadence_policy": {
-    "owner_instruction": "No mutationtesting scripts/campaigns; no newlong-running test suites",
-    "verification": "Focusedmeaningful regressions andexistingrequiredgates; no optionalbroadreplay",
-    "survives_compaction": true
-  },
-  "m9_K2_complete_source_acceptance": {
-    "at": "2026-10-04T12:14:42.304754+00:00",
-    "coordinator_exit": 0,
-    "actual_models": [
-      "claude-opus-5-5",
-      "claude-sonnet-5-5"
-    ],
-    "worker_actual_endturns": {
-      "local": "2026-10-04T12:00:05.973Z",
-      "readers": "2026-10-04T12:02:30.795Z",
-      "agreement": "2026-10-04T12:05:31.508Z"
-    },
-    "accepted": "All K2 local singularref/URLcodec/staticrawexport/folderboundary/agreement corrections, combined withK acceptedclass",
-    "root_reader_tests": 54,
-    "root_reader_exit": 0,
-    "focused_local_tests": 297,
-    "focused_extension_tests": 104,
-    "validator_drift_tests": 150,
-    "root_supplied_K2_pins_match": true,
-    "pin_disposition": "Coordinator read stale11:27 K pin, not suppliedK2run map. Root independent checkedactualK2suppliedmap before/after and all5match. No unauthorizedrootrecorddrift.",
-    "scope_disposition": "reader.ts/reader.test helper is narrow internal selectedfolderbinding dependency; decision29append is narrowly required samehandclaim boundary. Accepted appropriatechanges, no extra features.",
-    "quality": "F whole8lens plus G/H/I/K/K2 correction8lens complete, no introduced >.5markers; gate unchanged",
-    "coverage_limit": "ScopedK2coverage exited1 on oldurl-set line220 unexercised byfocusedfiles; changedK2branches covered, full existinggate mustprovewholethreshold. Do not callscopedcoverage green.",
-    "cadence": "No newmutation scripts/campaigns orslow suites K2; focusedexistingchecks. Wholeexistinggate/native aftercompletefreeze only.",
-    "remaining": "Clean completecandidate freeze/gate/currentnative/rootwholemodelreadiness/finalreviews/necessaryexactCI/merge/59closure; M10forms/create safety/parentaudit stillrequired"
-  },
-  "m9_delivery": {
-    "at": "2026-10-04T13:09:55.062277+00:00",
-    "pr": 141,
-    "reviewed_head": "8b98b6e6812b04b31cd9e5adb6c2f87787d16035",
-    "merge": "dc040764e4b9565fc023f6725de26c40caf02a8e",
-    "identical_tree": "9735e2fc5a7618c5456da7f3b0da7377ea2028b8",
-    "approvals": [
-      "Astra Low APPROVE",
-      "Claude Opus5.5 medium APPROVE"
-    ],
-    "clean_unmodified_gate": 0,
-    "native": 34,
-    "keyboard": 32,
-    "pre_ci": 37202757756,
-    "pre_ci_failedjob_only_retry": 1,
-    "post_ci": 37203798923,
-    "actual_required_steps": "all success",
+    "scope": "M6 merged accepted closeout",
+    "at": "2026-10-03T21:51:45+00:00",
+    "candidate": "c83ec6efc663cdc8714be371477a3f7e022990ce",
+    "merge": "edbbbd7f475b8dc65e814ad2fe617bbc6abde3e0",
+    "merged_at": "2026-10-03T21:36:26Z",
+    "tree_equals_gated_candidate": true,
+    "pr": 137,
+    "original_pr": 136,
+    "local_gate_exit": 0,
+    "browser_passed": 652,
+    "documented_baseline_skips": 20,
+    "pages_unit_passed": 1283,
+    "pages_coverage_percent": 100,
+    "premerge_ci": 37154961207,
+    "postmerge_ci": 37155696421,
+    "required_jobs": "test/e2e/real-vscode success on exact respective heads",
+    "release_input": false,
     "publish": "skipped",
-    "closed_issues": [
-      59
+    "closures": [
+      {
+        "number": 91,
+        "state": "CLOSED",
+        "closedAt": "2026-10-03T21:46:24Z",
+        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/91"
+      },
+      {
+        "number": 77,
+        "state": "CLOSED",
+        "closedAt": "2026-10-03T21:46:28Z",
+        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/77"
+      }
     ],
-    "remaining": [
-      54,
-      63
-    ],
-    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/root-requirements-matrix.json",
-    "records_gate": "pending"
+    "actual_remaining": 7,
+    "new": 0,
+    "reopened": 0,
+    "record_closeout": {
+      "at": "2026-10-03T22:11:35.582298+00:00",
+      "remote_develop": "ef0a82eb45fffd67412e3b67cbd93262d2e6254f",
+      "gate_exit": 0,
+      "published": true,
+      "source_changed": false,
+      "additionalCI": 0,
+      "release": false
+    },
+    "retrospective": "docs/bots/sprints/2026-10-03-retro-07.md"
   },
-  "m9_records_closeout": {
-    "at": "2026-10-04T14:08:58.018370+00:00",
-    "scope": "M9 separate records closeout evidence reconciled",
-    "records_head": "eb6707b31b5dabc5754b4e5a1ebb8e59081a88cc",
-    "records_gate": 0,
-    "published_remote_verified": true,
-    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/records-gate-eb6707b3/result.json",
-    "note": "Earlier pending entry was written before own records gate; retained as historical state."
+  "owner_deferral": {
+    "at": "2026-10-04",
+    "reason": "Owner requested review of model and extension without epic #63.",
+    "review_candidate": "5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9",
+    "rollback_candidate_branch": "codex/defer-epic-63",
+    "epic_preserved_branch": "codex/epic-63-team-authoring",
+    "scope": "M9 #59, M10 #54/#63 deferred; #59 reopened for the owner-requested delivery sequence.",
+    "github_snapshot": "51 closed (43 completed, 8 not planned) / 3 open (#59, #54, #63), one deliberate reopening.",
+    "github_snapshot_at": "2026-10-04T18:46:16.117142+00:00",
+    "reopening_comment": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/59#issuecomment-5983205690"
   }
 }

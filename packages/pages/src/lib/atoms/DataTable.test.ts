@@ -116,32 +116,6 @@ describe("DataTable", () => {
 		);
 	});
 
-	it("keeps rows apart by their key where their anchors would be the same, and gives a row of another file no anchor", () => {
-		const columns: Column[] = [{ key: "name", label: "Name" }];
-		const cell = createRawSnippet((row: () => unknown) => ({
-			render: () => `<span>${(row() as { name: string }).name}</span>`,
-		}));
-		// Two rows whose local ref is one: a key that is the anchor would be a duplicate key.
-		const rows = [
-			{ name: "Ledger of a", ref: "#/x", key: "a.json#/x", own: true },
-			{ name: "Ledger of b", ref: "#/x", key: "b.json#/x", own: false },
-		];
-		const { container } = render(DataTable, {
-			columns,
-			rows,
-			cell,
-			rowId: (r: unknown) => {
-				const row = r as (typeof rows)[number];
-				return row.own ? row.ref : undefined;
-			},
-			rowKey: (r: unknown) => (r as (typeof rows)[number]).key,
-		});
-		const drawn = container.querySelectorAll("tbody tr");
-		expect(drawn).toHaveLength(2);
-		expect(drawn[0]).toHaveAttribute("id", "#/x");
-		expect(drawn[1]).not.toHaveAttribute("id");
-	});
-
 	it("renders a sortable header with no label as an empty button rather than throwing", () => {
 		const cell = createRawSnippet(() => ({ render: () => "<span>x</span>" }));
 		const { container } = render(DataTable, {

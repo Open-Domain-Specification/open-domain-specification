@@ -4,7 +4,6 @@ import {
 	Deadline,
 	type ProcessTrigger,
 } from "./workspace";
-import { identityKeyOf } from "./workspace-set";
 
 /**
  * How far a reading goes to tell one trigger from another that would read the
@@ -43,7 +42,7 @@ function readTrigger(
 	level: TriggerDistinction,
 	includeAnchor: boolean,
 ): string {
-	if (level === "ref") return identityKeyOf(trigger);
+	if (level === "ref") return trigger.ref;
 	if (trigger instanceof Answer) {
 		if (level === "origin") return trigger.origin;
 		const shape = trigger.schema

@@ -6,8 +6,6 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import { scopeAround } from "@open-domain-specification/core";
-import { identityKeyOf } from "@open-domain-specification/core";
 import {
 	ODSContextMap,
 	type Subdomain,
@@ -93,6 +91,6 @@ const columns: Column[] = [
 	<DiagramFigure
 		caption={mapCaption}
 		emptyText="No bounded context serves this subdomain yet."
-		graph={contextGraph(contextMap, scopeAround(model.workspace).relationships)}
+		graph={contextGraph(contextMap, model.workspace.relationships)}
 	/>
 </Section>

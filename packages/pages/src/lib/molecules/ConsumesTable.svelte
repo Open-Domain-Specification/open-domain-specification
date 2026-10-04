@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { Consumption } from "@open-domain-specification/core";
-import { identityKeyOf } from "@open-domain-specification/core";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Keyword from "../atoms/Keyword.svelte";
@@ -52,15 +51,15 @@ const columns: Column[] = $derived([
 >
 	{#snippet cell(x, col)}
 		{#if col.key === "consumable"}
-			<Ref ref={x.consumable} label={x.consumable.name} icon={ICONS.consumption} />
+			<Ref ref={x.consumable.ref} label={x.consumable.name} icon={ICONS.consumption} />
 		{:else if col.key === "provider"}
-			<Ref ref={x.consumable.provider} label={x.consumable.provider.name} />
+			<Ref ref={x.consumable.provider.ref} label={x.consumable.provider.name} />
 		{:else if col.key === "context"}
 			<ContextLockup context={x.consumable.provider.boundedcontext} />
 		{:else if col.key === "agreement"}
 			{#if x.relationship}
 				<Ref
-					ref={x.relationship}
+					ref={x.relationship.ref}
 					label={x.relationship.name ?? x.relationship.type}
 					icon={ICONS.relationship}
 					title={AGREEMENT_TITLE}
@@ -68,7 +67,7 @@ const columns: Column[] = $derived([
 			{/if}
 		{:else if col.key === "madeBy"}
 			{#if x.by.length}
-				{#each x.by as made (identityKeyOf(made))}<Ref ref={made} label={made.name} />{/each}
+				{#each x.by as made (made.ref)}<Ref ref={made.ref} label={made.name} />{/each}
 			{:else}
 				<Keyword text="whole consumer" />
 			{/if}

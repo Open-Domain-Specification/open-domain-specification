@@ -26,9 +26,8 @@ export const sectionsFor = (c: Consumable) => {
 </script>
 
 <script lang="ts">
-import { identityKeyOf } from "@open-domain-specification/core";
 import { reachedEvents } from "@open-domain-specification/core";
-import { anchorOf, problemsUnder, useModel } from "../model";
+import { problemsUnder, useModel } from "../model";
 import { consumablesOf, policiesOf, processesOf } from "../elements";
 import Comments from "../atoms/Comments.svelte";
 import type { Column } from "../atoms/DataTable.svelte";
@@ -136,12 +135,12 @@ const processColumns: Column[] = [
 	{#snippet meta()}<ConsumableKeywords consumable={c} />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
-			<Definition term="Provided by"><Lockup kind={kindOf(provider)} name={provider.name} ref={provider} /></Definition>
+			<Definition term="Provided by"><Lockup kind={kindOf(provider)} name={provider.name} ref={provider.ref} /></Definition>
 			<Definition term={c.schemaMany ? "Payload, many" : "Payload"}>
-				{#if c.schema}<Lockup kind="schema" name={c.schema.name} ref={c.schema} />{:else}<Keyword text="no schema" />{/if}
+				{#if c.schema}<Lockup kind="schema" name={c.schema.name} ref={c.schema.ref} />{:else}<Keyword text="no schema" />{/if}
 			</Definition>
 			{#if c.returns}
-				<Definition term={c.returnsMany ? "Returns many" : "Returns"}><Lockup kind="schema" name={c.returns.name} ref={c.returns} /></Definition>
+				<Definition term={c.returnsMany ? "Returns many" : "Returns"}><Lockup kind="schema" name={c.returns.name} ref={c.returns.ref} /></Definition>
 			{/if}
 			{#if c.rejections.length}
 				<Definition term="Rejects with"><RejectionList rejections={c.rejections} /></Definition>
@@ -194,7 +193,7 @@ const processColumns: Column[] = [
 		{#each c.rejections as { schema, many, reasons }, rejectionIndex (`${schema.ref}:${rejectionIndex}`)}
 			<div class="subsection">
 				<Heading level={3} id={`${schema.ref}-${rejectionIndex}`}>
-					<Lockup kind="schema" name={schema.name} ref={schema} />
+					<Lockup kind="schema" name={schema.name} ref={schema.ref} />
 					<!-- A refusal answered as a root array of that shape rather
 					     than one of it, said beside the shape because only some
 					     of an operation's refusals may be lists. -->
@@ -260,14 +259,13 @@ const processColumns: Column[] = [
 		empty={isEvent
 			? "No policy reacts to this event."
 			: "No policy issues this operation."}
-		rowId={(p) => anchorOf(model, p)}
-		rowKey={(p) => identityKeyOf(p)}
+		rowId={(p) => p.ref}
 	>
 		{#snippet cell(p, col)}
 			{#if col.key === "name"}
-				<Lockup kind="policy" name={p.name} ref={p} />
+				<Lockup kind="policy" name={p.name} ref={p.ref} />
 			{:else if col.key === "context"}
-				<Lockup kind="boundedcontext" name={p.boundedcontext.name} ref={p.boundedcontext} />
+				<Lockup kind="boundedcontext" name={p.boundedcontext.name} ref={p.boundedcontext.ref} />
 			{:else}
 				{p.description}
 			{/if}
@@ -289,16 +287,15 @@ const processColumns: Column[] = [
 		empty={isEvent
 			? "No process starts, waits for or ends on this event."
 			: "No process issues this operation."}
-		rowId={(row) => anchorOf(model, row.process)}
-		rowKey={(row) => identityKeyOf(row.process)}
+		rowId={(row) => row.process.ref}
 	>
 		{#snippet cell(row, col)}
 			{#if col.key === "name"}
-				<Lockup kind="process" name={row.process.name} ref={row.process} />
+				<Lockup kind="process" name={row.process.name} ref={row.process.ref} />
 			{:else if col.key === "role"}
 				<Joined>{#each row.roles as role (role)}<Keyword text={role} />{/each}</Joined>
 			{:else if col.key === "context"}
-				<Lockup kind="boundedcontext" name={row.process.boundedcontext.name} ref={row.process.boundedcontext} />
+				<Lockup kind="boundedcontext" name={row.process.boundedcontext.name} ref={row.process.boundedcontext.ref} />
 			{:else}
 				{row.process.description}
 			{/if}

@@ -29,8 +29,7 @@ Decide once, state it in one line, and do not re-detect every turn. The first ma
    that runs such a file. Emitted JSON is also recognisable: two-space indent and the key order
    `id, name, description, version, odsVersion, ...`.
 2. **JSON mode.** A `.ods/` folder (or the folder named by the VS Code setting `ods.folder`)
-   holds `*.json` workspace files, at any depth, next to a `schema.json`, and no generator
-   matches. Several files are one set of workspaces, each file complete in itself.
+   holds `*.json` workspace files next to a `schema.json`, and no generator matches.
 3. **Neither.** Ask one question: keep the model as JSON files the VS Code extension edits, or
    as TypeScript that generates them? Recommend JSON when there is no Node toolchain, and the
    DSL when the model will be large or generated documentation is wanted.
@@ -40,8 +39,7 @@ introduce a generator unless asked. Details: `references/json-mode.md`, `referen
 
 ## Step 1: read what exists
 
-Load every workspace file (or the DSL source) before proposing anything, all the files of a
-folder together as one set, since a file may refer to another and a rule may need both. Summarise it in the
+Load every workspace file (or the DSL source) before proposing anything. Summarise it in the
 user's words: the business areas, the parts of the system and who owns them, the main things
 each part manages, how the parts talk to each other, and how many validation problems there
 are. Then ask what they want to change or add.
@@ -82,13 +80,6 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
 - Every `$ref` should resolve to an element that exists. Loading never throws on a dangling
   one: the link is left unset, `unresolved-ref` (error) reports it at the referencing element,
   and every other rule still runs, so fix it as you would any other diagnostic.
-- A folder of several files is a set with no root file. A `$ref` that starts `#/` stays in its
-  own file, so two files may both have a `ledger` context. A ref to another file writes that
-  file's relative path, percent-encoded, in front of the pointer
-  (`../payments/team.json#/boundedcontexts/ledger`); `..` is fine inside the folder. A file
-  boundary changes no permission: another file's element may be named exactly where another
-  context's may, and a context lives wholly in one file. Give every file a workspace id of its
-  own. Details: `references/json-mode.md`, grammar in `references/model-reference.md`.
 - Consumables (events and operations) live only under `provides` of an aggregate or a
   service. Policies, processes and consumptions point at them by ref.
 - A value object belongs to the context, not to an aggregate: declare it once there and any
@@ -158,9 +149,9 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
 
 Validate after every edit.
 
-- JSON mode: run the script in `examples/validate.mjs` against the `.ods` folder, so the files
-  are judged together (or the one-liner in `references/json-mode.md` for a folder of one file).
-  The VS Code Problems panel shows the same results per file, source `ods`, code = rule id.
+- JSON mode: run the script in `examples/validate.mjs` (or the one-liner in
+  `references/json-mode.md`) against each file. The VS Code Problems panel shows the same
+  results, source `ods`, code = rule id.
 - DSL mode: run the generator script. It prints `[severity] rule: message (ref)` lines and
   rewrites the JSON.
 
@@ -228,6 +219,4 @@ correctly. Say "command" in conversation if it helps, but the model's word is `o
   `customer-supplier`. A customer-supplier downstream writes no role: `conformist` is the
   downstream with no say, which is the opposite of a customer, and `anti-corruption-layer` is a
   translation it does not do.
-- Split a bounded context across files, or write a local `#/` ref and expect it to reach another
-  file's element.
 - Skip validation because the change was small.

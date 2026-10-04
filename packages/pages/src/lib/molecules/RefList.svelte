@@ -1,5 +1,4 @@
 <script lang="ts">
-import { identityKeyOf } from "@open-domain-specification/core";
 import type { Kind } from "../atoms/kinds";
 import Ref from "../atoms/Ref.svelte";
 import { ICONS, nameOf } from "../model";
@@ -28,8 +27,8 @@ const {
 } = $props();
 </script>
 
-{#snippet list()}{#each items as item, i (identityKeyOf(item))}{#if i}{", "}{/if}<Ref
-			ref={item}
+{#snippet list()}{#each items as item, i (item.ref)}{#if i}{", "}{/if}<Ref
+			ref={item.ref}
 			label={nameOf(item)}
 			icon={kind ? ICONS[kind] : undefined}
 			{kind}

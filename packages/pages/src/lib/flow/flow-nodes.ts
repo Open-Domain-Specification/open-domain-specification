@@ -55,8 +55,7 @@ export type FlowNodeOptions = {
  * there. Enter and Space do the same, so this one test decides both what the
  * node is announced as and what the keys do.
  */
-export const opensPage = (id: string) =>
-	id.startsWith("#") || /^[^#]+#\//.test(id);
+export const opensPage = (id: string) => id.startsWith("#");
 
 /** How many groups sit above a group; the shade lightens with it. */
 export const depthOf = (positioned: Positioned, id: string | undefined) => {
