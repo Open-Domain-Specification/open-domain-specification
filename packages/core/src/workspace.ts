@@ -155,7 +155,7 @@ export type UnknownField = {
  *
  * The miss is recorded where the diagnostic belongs, which is not always the
  * element that writes the ref: a consumption's `relationship` is reported at
- * its consumer, so the consumption keeps its own qualified one (see
+ * its consumer, so the consumption keeps its own local or qualified ref (see
  * {@link Consumption.unresolvedWrites}).
  *
  * A ref of a list comes back at the end of that list rather than where it was
@@ -2732,9 +2732,8 @@ export class Consumption
 	/** The agreement this exchange belongs to, where the model has named one. */
 	relationship?: ContextRelationship;
 	/**
-	 * The agreement ref a file wrote that names another file and did not
-	 * resolve, kept beside the field it was written in; see
-	 * {@link UnresolvedWrites}. A ref that names no file is not kept here.
+	 * The local or file-qualified agreement ref that did not resolve, kept
+	 * beside the field it was written in; see {@link UnresolvedWrites}.
 	 */
 	readonly unresolvedWrites = new UnresolvedWrites();
 	comments: ods.Comment[];
