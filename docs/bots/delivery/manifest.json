@@ -2,9 +2,9 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 7,
-  "closed": 47,
-  "closed_implemented": 39,
+  "current_open": 6,
+  "closed": 48,
+  "closed_implemented": 40,
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
@@ -12,7 +12,7 @@
   "integration_batch": "milestone-07-phone-reading",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M7 reader and complete quality accepted; exact local gate and CI pending",
+  "candidate_state": "M7 source delivered: #82 closed completed; this records change quality, gate and publication pending; M8 next after publication",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -1180,7 +1180,7 @@
         82
       ],
       "owner": "lead",
-      "state": "M7 reader and complete quality accepted; exact local gate and CI pending",
+      "state": "source delivered, #82 closed; closing-records gate and publication pending",
       "expected_remaining": 6,
       "entry_scope": "Page-first phone layout and accessible tree access.",
       "exit_acceptance": "All9reported families fit 390\u00d7844 without page-level horizontal overflow; desktop preserved.",
@@ -1360,9 +1360,87 @@
           "at": "2026-10-04T00:23:15.024620+00:00",
           "scope": "Complete8lensquality accepted, highest0.3; root metadata status corrected",
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-07/quality/root-acceptance.json"
+        },
+        {
+          "at": "2026-10-04T00:45:36Z",
+          "scope": "M7 source delivered: unmodified whole gate, PR138 merge, pre/post-merge CI and #82 closure",
+          "source_candidate": "d8e3c831e0ffce4f48ec502db915558369e57511",
+          "gated_tree": "292a756ca11916744905b5323464cf3a49e2d6b8",
+          "merge": "7599eef89672646a3daa861485ebf26322968556",
+          "merged_at": "2026-10-04T00:45:36Z",
+          "merge_tree": "292a756ca11916744905b5323464cf3a49e2d6b8",
+          "tree_equals_gated_candidate": true,
+          "pr": 138,
+          "local_gate": {
+            "started": "00:26:39",
+            "finished": "00:29:54",
+            "runtime_seconds": 195,
+            "attempt": "first attempt pass, source unmodified",
+            "pages_unit_passed": 1313,
+            "pages_coverage_percent": 100,
+            "browser_passed": 665,
+            "existing_optin_capture_skips": 20,
+            "failed": 0,
+            "flaky": 0,
+            "retried": 0,
+            "other_checks": "all model pins, schema, ESM entries and typechecks passed"
+          },
+          "ci": [
+            {
+              "id": 37165358953,
+              "role": "pre-merge, exact head",
+              "conclusion": "success",
+              "jobs": "test/e2e/real-vscode success; publish skipped"
+            },
+            {
+              "id": 37166004365,
+              "role": "post-merge, exact head 7599eef8",
+              "conclusion": "success",
+              "jobs": "test/e2e/real-vscode success; publish skipped"
+            }
+          ],
+          "manual_ci_runs": 2,
+          "automatic_ci_runs": 0,
+          "releases": 0,
+          "quota_events": 0,
+          "native_witnesses_note": "The four native prose witnesses remain measurements on the older CC-XAeTH bundle, retained by unchanged CSS, shared RefList and embedded source; they are not new-bundle measurements. The current-head real-vscode CI job and its checker succeeded as a separate proof.",
+          "closure": {
+            "number": 82,
+            "state": "CLOSED",
+            "reason": "completed",
+            "closedAt": "2026-10-04T00:58:54Z",
+            "comment": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/82#issuecomment-5975194249",
+            "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/82"
+          },
+          "actual_open": [
+            94,
+            93,
+            92,
+            63,
+            59,
+            54
+          ],
+          "actual_remaining": 6,
+          "closed": 48,
+          "closed_implemented": 40,
+          "closed_not_planned": 8,
+          "new": 0,
+          "reopened": 0,
+          "model_approval": "unchanged: Astra e5cda126, merge 5a624128 (identical tree); no new UI approval, no Astra review, no Claude retrospective approval claimed",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-07/publication/closure.json",
+          "retrospective": "docs/bots/sprints/2026-10-04-retro-08.md"
+        },
+        {
+          "scope": "closing-record quality, gate and publication",
+          "status": "pending",
+          "note": "These six closing records have not yet had their own quality review, clean-head unmodified gate or push; nothing here claims they have. active_milestone stays 7 until they are published; M8 begins only after that.",
+          "base": "7599eef89672646a3daa861485ebf26322968556",
+          "branch": "codex/m7-closeout-records"
         }
       ],
-      "closed_issues": []
+      "closed_issues": [
+        82
+      ]
     },
     {
       "id": 8,
@@ -1373,12 +1451,19 @@
         94
       ],
       "owner": "lead",
-      "state": "waiting",
+      "state": "waiting; read-only preparation exists, no source until M7 closing records are gated and published",
       "expected_remaining": 3,
       "entry_scope": "Import refinements and editorial slice independently accepted.",
       "exit_acceptance": "Themed native focus target, file name, Problems-style error and exact two copy corrections.",
       "investigation_limit": "No import architecture rewrite or wording sweep; unrelated slices use separate PRs.",
-      "evidence": [],
+      "evidence": [
+        {
+          "scope": "M8 read-only preparation noted; not activation",
+          "slices": "Importer #92 and #93 go together; #94 is unrelated copy and takes a separate PR",
+          "source_changes_authorized": false,
+          "starts_after": "M7 closing records are gated and published"
+        }
+      ],
       "closed_issues": []
     },
     {
@@ -1448,9 +1533,13 @@
     "milestone": 7,
     "base": "ef0a82eb45fffd67412e3b67cbd93262d2e6254f",
     "branch": "codex/m7-phone-reading",
-    "state": "M7 reader and complete quality accepted; exact local gate and CI pending",
+    "state": "M7 source delivered: #82 closed completed; this records change quality, gate and publication pending; M8 next after publication",
+    "source_merged": "7599eef89672646a3daa861485ebf26322968556",
+    "records_branch": "codex/m7-closeout-records",
+    "records_base": "7599eef89672646a3daa861485ebf26322968556",
+    "records_gate_publication": "pending",
     "source_changes_authorized": false,
-    "feature_accepted": false,
+    "feature_accepted": true,
     "expected_remaining": 6,
     "card": "boards/project-backlog/187-phone-reading.md",
     "sprint": "docs/bots/sprints/2026-10-03-sprint-08.md"

@@ -1,13 +1,13 @@
 ---
-column: review
+column: done
 labels: [frontend, bug]
 priority: high
 agent: opus-coordinator
-live: true
-status: Reader and quality accepted; exact local gate next
-progress: 75
+live: false
+status: Delivered and closed; #82 closed as completed 2026-10-04T00:58:54Z after PR138 and post-merge CI
+progress: 100
 clean-code-swept: true
-updatedAt: 2026-10-04T00:11:51.516315+00:00
+updatedAt: 2026-10-04
 ---
 # Read the page on a phone and reach its tree
 
@@ -20,16 +20,16 @@ Milestone7, existing GitHub #82. The viewer and exports fit phone widths, show t
 - [x] Root accepts baseline and one bounded mobile layout before implementation
 - [x] Readable content fits phone widths without masking whole-page overflow
 - [x] Tree control/current location/pointer/keyboard/page focus and desktop behavior
-- [ ] Four readers, reference diagnostic pins and generated integrity preserved
+- [x] Four readers, reference diagnostic pins and generated integrity preserved (gate: all model pins, schema, ESM and typechecks; current-head real-vscode CI)
 
 ## Gates
 
 - [x] Meaningful red/green, owning coverage/typecheck and focused regressions
 - [x] Actual candidate host/phone/control matrix and desktop preservation
 - [x] Complete proportional quality once ready, root integrated acceptance
-- [ ] Unmodified whole gate on exact clean final commit
-- [ ] Necessary exact-head pre/postCI releasefalse, identical merge tree
-- [ ] Individual issue closure after required postmerge verification
+- [x] Unmodified whole gate on exact clean final commit (d8e3c831, 195 s, first attempt)
+- [x] Necessary exact-head pre/postCI releasefalse, identical merge tree (37165358953, 37166004365; tree 292a756c)
+- [x] Individual issue closure after required postmerge verification (#82, 2026-10-04T00:58:54Z)
 
 ## Comments
 
@@ -48,3 +48,5 @@ Milestone7, existing GitHub #82. The viewer and exports fit phone widths, show t
 - **lead** (2026-10-04T00:11:51.516315+00:00): Correction canonicalterminal/endturn verified; root independently13browsergreen.1313unit100coverage/packagecheck0/0; all6reduceactualhostsequences,6narrow320,4defaultmotionwideninggreen onDlLvKl9K. Localariahiddenicon fixesactualname; actualnavlayouttransitionfinishedawait fixesearlyreveal4pxclip. CSS/RefList/embedded/model/coreunchanged; native4oldCC-XAeTHproof retainedbyexplicit equivalence, no newserved-byteidentity claim. Root authorizesonecomplete8lensquality; no landing/CI yet. R2falsegreenmotionunapplied thenR2b3actualreduce reds,13labelredtimeouts andadhoctscpreexistingerrors preserved.
 
 - **lead** (2026-10-04T00:23:15.024620+00:00): Complete8lensquality actualcanonical8endturn/terminal/hash12preservation accepted, highest0.3/nointroducedblock. RootdeclinesPANICnamedhostreplacementtrigger: hostmessagehandledonlyvscode/embedded, SiteNavonly!embedded. Stale candidate_state corrected inroot3-path metadata delta; nooptional sourcecleanup. Rootindependent13browser andsource/recordintegratedreview accepted. Exactcleancommit+unmodifiedgate+necessarypre/postCI stillpending; no issueclosure/release.
+
+- **lead** (2026-10-04): Delivered. The source candidate d8e3c831e0ffce4f48ec502db915558369e57511 passed the unmodified whole gate on its first attempt (00:26:39 to 00:29:54, 195 s): 1313 pages tests at 100% coverage, 665 browser tests passed, 20 existing opt-in capture skips, zero failed, flaky or retried, and all model pins, schema, ESM and typechecks passed. PR138 merged as 7599eef8 at 00:45:36Z with tree 292a756ca11916744905b5323464cf3a49e2d6b8, identical to the gated tree. Pre-merge CI 37165358953 and post-merge CI 37166004365 each passed test, e2e and real-vscode on the exact heads, with publish skipped and no release. #82 closed as completed at 00:58:54Z (comment 5975194249). Open issues are now six: #94, #93, #92, #63, #59, #54, from the 54 baseline: 48 closed (40 implemented, 8 not planned), none new or reopened. Progress 100 rests on the product gate plus post-merge CI. The four native prose witnesses remain old-bundle (CC-XAeTH) measurements kept by unchanged CSS, RefList and embedded source; the current-head real-vscode CI is separate proof. The closing records for this card have not yet had their own quality, gate or publication. See docs/bots/sprints/2026-10-04-retro-08.md.

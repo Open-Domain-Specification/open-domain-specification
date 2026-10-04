@@ -8,13 +8,15 @@ The coordinator alone may dispatch Sonnet workers within the assigned batch; wor
 
 Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.md`, `FINAL-REVIEW-POLICY.md` and `CURRENT.json`. This paragraph supersedes older execution-model defaults, while preserving historical evidence.
 
-## Current position — 2026-10-03
+## Current position — 2026-10-04
 
-Actual 7 open / 47 closed from 54: 39 implemented, 8 not planned, 0 new/reopened. Milestones 1–6 delivered; exact original model approval (Astra e5cda126, merged 5a624128) unchanged. M5 PR135 merge f2069a34 matches gated f3ff556d tree, pre/postCI 37142462656/37142959185 all 3 jobs green, publish skipped, three individual closures; closing-record head 8606b282 passed its own unchanged gate and is published/remote verified.
+Actual 6 open / 48 closed from 54: 40 implemented, 8 not planned, 0 new/reopened. Open: #94, #93, #92, #63, #59, #54. Milestones 1–6 delivered; exact original model approval (Astra e5cda126, merged 5a624128) unchanged. M5 PR135 merge f2069a34 matches gated f3ff556d tree, pre/postCI 37142462656/37142959185 all 3 jobs green, publish skipped, three individual closures; closing-record head 8606b282 passed its own unchanged gate and is published/remote verified.
 
 M6 #91/#77 is delivered. Original PR136 (merge 5bfdb713, gated b757fd2e) passed the local gate and preCI 37152204246, but postCI 37152866652 failed its `test` job (one new App history-availability unit assertion; browser and native jobs green), so the issues stayed open. Corrective PR137 (one test, two records; gated c83ec6ef, local gate exit 0: 652 browser/20 baseline skips/0 flaky, 1283 pages tests/100% coverage) passed preCI 37154961207 and postCI 37155696421, all 3 jobs each, publish skipped; merge edbbbd7f (2026-10-03T21:36:26Z) has a tree identical to the gated head. #91 closed 21:46:24Z and #77 closed 21:46:28Z individually. Four necessary CI runs, two successful local source gates, no duplicate runs, no release, no quota response. Native 32 keyboard/0 failed/0 skips/checker 0; static 36, history 6, bypass 6; quality highest 0.4. The failure cause is a sufficient deadline-straddle mechanism reproduced under a controlled stall; the actual CI occurrence is unproven. Card186 done; see [retrospective 07](sprints/2026-10-03-retro-07.md).
 
-**M6 records published:** clean `ef0a82eb` passed its own unmodified gate (181 s; 1283 pages/100%, 652 browser/20 existing baseline skips/zero flaky), and remote develop equals that head. M7 #82 reader outcome is accepted for final quality (card187, sprint08); full landing and CI remain pending. Expected next closure 7→6, followed by import/copy, multifile and forms. Preserve source/model approval and all existing controls.
+**M6 records published:** clean `ef0a82eb` passed its own unmodified gate (181 s; 1283 pages/100%, 652 browser/20 existing baseline skips/zero flaky), and remote develop equals that head. **M7 source delivered:** #82 phone reading is closed as completed (00:58:54Z, comment 5975194249). Source candidate `d8e3c831` passed the unmodified gate on the first attempt (195 s; 1313 pages/100%, 665 browser/20 existing opt-in capture skips/0 failed, flaky or retried). PR138 merged as `7599eef8` (00:45:36Z) with a tree identical to the gated tree `292a756c`. Pre-merge CI 37165358953 and post-merge CI 37166004365 passed test/e2e/real-vscode on exact heads, publish skipped, no release. One source PR, one source gate, two necessary manual CI runs, no quota event. Card187 done; see [retrospective 08](sprints/2026-10-04-retro-08.md).
+
+**M7 records pending:** the six closing records need their own quality review, unmodified clean-head gate and publication; none has happened. That is additional to the source gate. Only after publication does Milestone 8 start (importer #92 and #93 together, #94 copy as a separate PR; read-only preparation exists, no source yet), then multifile and forms. Preserve source/model approval and all existing controls.
 
 **Binding reviewer policy:** Astra low is the one final complete-model quality gate, only after lead review and explicit readiness. It is never a default or per-change reviewer. After a BLOCK, correct and locally verify the complete defect class before the lead declares readiness again. Claude weekly quota exhaustion activates the owner-authorized OpenAI-only exception for this final gate; no Claude approval is claimed. Preserve the actual reviewed SHA and require product-tree equivalence at merge.
 
@@ -25,9 +27,9 @@ M6 #91/#77 is delivered. Original PR136 (merge 5bfdb713, gated b757fd2e) passed 
 | 3. Diagrams and reliable drag checks | #102, #86, #89, #90, #103 | 16 | complete: all five individually accepted closures; records 000f5a7f gate-green and published |
 | 4. Readable tables | #105, #87, #88, #80 | 12 | complete: four closures and gate-green published records |
 | 5. Accessible reading | #78, #79, #83 | 9 | complete: three closures; own-gated closing records8606b282 published |
-| 6. Location and return paths | #91, #77 | 7 | complete: PR137 merged edbbbd7f, two individual closures; closing records pending own gate and publication |
-| 7. Phone reading | #82 | 6 | active: reader outcome accepted; final quality, landing and CI next |
-| 8. Import and copy finish | #92, #93, #94 | 3 | waiting |
+| 6. Location and return paths | #91, #77 | 7 | complete: PR137 merged edbbbd7f, two individual closures; closing records ef0a82eb published |
+| 7. Phone reading | #82 | 6 | source delivered: PR138 merged 7599eef8, #82 closed; closing records pending own quality, gate and publication |
+| 8. Import and copy finish | #92, #93, #94 | 3 | next after M7 records are published; #92/#93 together, #94 separate PR |
 | 9. Team-owned model files | #59 | 2 | waiting |
 | 10. Informed forms and authoring epic | #54, #63 | 0 | waiting |
 
@@ -54,6 +56,10 @@ The [full retrospective](delivery/retrospectives/2026-10-03-milestone-03.md) rec
 ## Milestone 6 delivery retrospective (2026-10-03)
 
 Open issues went from 9 to 7 with two implemented closures (#91, #77), no new/reopened issues. The original merged PR failed one new unit assertion post-merge while browser and real-VS-Code jobs passed; closures were held and a corrective test-only PR137 was gated, merged with an identical tree, verified by pre/post CI, and only then were the issues closed. The failure mechanism is reproduced under a controlled stall; its actual CI occurrence is unproven. The [full retrospective](sprints/2026-10-03-retro-07.md) records actual failures, process errors and limits. No Astra review, Claude retrospective approval, release or new ticket.
+
+## Milestone 7 delivery retrospective (2026-10-04)
+
+Open issues went from 7 to 6 with one implemented closure (#82), no new or reopened issues; cumulatively 48 closed (40 implemented, 8 not planned) from the 54 baseline. One source PR (#138), one unmodified source gate, and two necessary manual CI runs, both successful with publish skipped. The records' own gate is additional and pending. The [full retrospective](sprints/2026-10-04-retro-08.md) records what was productive, what was inefficient and the process limits. The four native prose witnesses are old-bundle measurements retained by unchanged CSS, RefList and embedded source, not new-bundle measurements. No Astra review, release or new ticket.
 
 ## Historical roadmap and retrospective records
 
