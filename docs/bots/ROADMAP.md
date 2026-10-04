@@ -28,8 +28,8 @@ M6 #91/#77 is delivered. Original PR136 (merge 5bfdb713, gated b757fd2e) passed 
 | 4. Readable tables | #105, #87, #88, #80 | 12 | complete: four closures and gate-green published records |
 | 5. Accessible reading | #78, #79, #83 | 9 | complete: three closures; own-gated closing records8606b282 published |
 | 6. Location and return paths | #91, #77 | 7 | complete: PR137 merged edbbbd7f, two individual closures; closing records ef0a82eb published |
-| 7. Phone reading | #82 | 6 | source delivered: PR138 merged 7599eef8, #82 closed; closing records pending own quality, gate and publication |
-| 8. Import and copy finish | #92, #93, #94 | 3 | next after M7 records are published; #92/#93 together, #94 separate PR |
+| 7. Phone reading | #82 | 6 | complete: source delivered; closing records de8354b7 own-gated and published |
+| 8. Import and copy finish | #92, #93, #94 | 3 | active: #92/#93 reader outcome ready for final quality; #94 separate subsequent PR |
 | 9. Team-owned model files | #59 | 2 | waiting |
 | 10. Informed forms and authoring epic | #54, #63 | 0 | waiting |
 
@@ -60,6 +60,10 @@ Open issues went from 9 to 7 with two implemented closures (#91, #77), no new/re
 ## Milestone 7 delivery retrospective (2026-10-04)
 
 Open issues went from 7 to 6 with one implemented closure (#82), no new or reopened issues; cumulatively 48 closed (40 implemented, 8 not planned) from the 54 baseline. One source PR (#138), one unmodified source gate, and two necessary manual CI runs, both successful with publish skipped. The records' own gate is additional and pending. The [full retrospective](sprints/2026-10-04-retro-08.md) records what was productive, what was inefficient and the process limits. The four native prose witnesses are old-bundle measurements retained by unchanged CSS, RefList and embedded source, not new-bundle measurements. No Astra review, release or new ticket.
+
+## Milestone 8 activation — 2026-10-04T01:27:12.592019+00:00
+
+M7 closing records `de8354b7ba28c371bdd60242e4473dd404ecbb5c` passed their own unmodified gate (227 s; 1313 pages/100%, 665 browser/20 existing captures/zero failed or flaky) and are published/remote verified. This supersedes the earlier pending checkpoint without rewriting its history. Six open issues remain. M8 begins with importer #92/#93 baseline only; implementation waits for root acceptance of four width/theme cells and finite acceptance matrix. #94 remains a separate copy PR. Opus/Sonnet execute, Luna only on actual quota; root owns goal/acceptance/publication. No source changes yet.
 
 ## Historical roadmap and retrospective records
 
@@ -129,3 +133,7 @@ Model checkpoint 2026-10-01T22:21:03Z: final24 BLOCK on ad6 after fullgate. Exis
 ## Final24 integration readiness (2026-10-01T22:36:01Z)
 
 Both final24 correction classes are integrated. Root full-core suite passes 1,568/1,568; independent reviewer artifacts now report one exact separate-ways diagnostic each, and the 78,029-character malformed external ref loads with one unresolved-ref and survives serialization unchanged. New 21-case borrowing matrix proves source/JSON exact negatives, fully clean permitted twins and permission contradictions; two resolver regressions prove short/deep invalid structures without recursion. All eight scoped quality reports /tmp/ods-final24-quality-*.md are clear by static inspection, read and reconciled by lead; no introduced finding above0.5. Core/graphviz/doc/skill and all five reference outputs/fixture regenerated; skill154, allfive48/shared13 and Biome/diff pass. Reference pins unchanged0/2/4/3/0; no pin or DISCOVERY edits. Card exits doing to review with clean-code-swept true. Fresh actualhosts, unmodified clean committed-head whole gate and final25 remain pending; old ad6 evidence is historical. Zero closures/newtickets/CI.
+
+- 2026-10-04T01:37:06.626987+00:00: M8 importer actual four-cell baseline rootaccepted. Bounded one source/test lane authorized, localstaticbutton tokens with existing theme/contrast contract; no globalrestyle. Problems reference read-only. Preserve nativefocus/load/errorannouncements/phone/navigation; automatefilechooser and cancellation/reset state with limits explicit. #94separatePR. Evidence `/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/baseline/root-acceptance.json`.
+
+- 2026-10-04T02:06:21.647656+00:00: M8 importer #92/#93 reader outcome rootready for one complete10pathquality. Caption font compared with actual Load/URL, one returned mismatch corrected;1323unit100/check0/0/current24browser/root24/fouractualcells, allfourcaptures inspected collectively. Prior127focusedpass explicit103unaffected retained; nativefilechooser/resetstate proof no trueOScancel/samefilededupe claim. Completequality, exactwholegate/CI/merge/closures pending. #94copy separatePR. Evidence `/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/font-correction/root-acceptance.json`.

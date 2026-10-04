@@ -306,6 +306,34 @@ describe("where the text colour roles are written", () => {
 	});
 });
 
+describe("the import screen's file control", () => {
+	const css = read("src/app/ImportScreen.svelte");
+
+	it("draws the Choose a file… face in the VS Code button colours and the interface font", () => {
+		const face = ruleBody(css, ".face");
+		expect(face).toMatch(/background:\s*var\(--vscode-button-background\)/);
+		expect(face).toMatch(/color:\s*var\(--vscode-button-foreground\)/);
+		// Interface caption, like URL and Load: inherited, never the code font.
+		expect(face).toMatch(/font-family:\s*inherit/);
+		expect(face).not.toMatch(/editor-font-family/);
+	});
+
+	it("shows the focus ring on the face when the hidden native input has keyboard focus", () => {
+		expect(ruleBody(css, "input:focus-visible + .face")).toMatch(
+			/outline:[^;]*var\(--vscode-focusBorder\)/,
+		);
+	});
+
+	for (const { name, tokens } of themes)
+		it(`reads the button label at 4.5:1 on the button fill in ${name}`, () => {
+			const bg = tokens.get("--vscode-button-background");
+			const fg = tokens.get("--vscode-button-foreground");
+			if (!bg || !fg)
+				throw new Error(`button tokens missing from the ${name} theme`);
+			expect(contrast(hex(fg), hex(bg))).toBeGreaterThanOrEqual(AA_TEXT);
+		});
+});
+
 describe("the shared contrast maths", () => {
 	it("reads the colour forms a browser reports", () => {
 		expect(parseColor("rgb(59, 59, 59)")).toEqual({

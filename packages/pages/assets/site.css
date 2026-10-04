@@ -19,6 +19,8 @@
 	--vscode-panel-border: #e5e5e5;
 	--vscode-widget-border: #e5e5e5;
 	--vscode-textLink-foreground: #005fb8;
+	--vscode-button-background: #005fb8;
+	--vscode-button-foreground: #ffffff;
 	--vscode-badge-background: #cccccc;
 	--vscode-badge-foreground: #3b3b3b;
 	--vscode-toolbar-hoverBackground: rgba(184, 184, 184, 0.31);
@@ -60,6 +62,8 @@
 		--vscode-panel-border: #2b2b2b;
 		--vscode-widget-border: #313131;
 		--vscode-textLink-foreground: #4daafc;
+		--vscode-button-background: #0078d4;
+		--vscode-button-foreground: #ffffff;
 		--vscode-badge-background: #616161;
 		--vscode-badge-foreground: #f8f8f8;
 		--vscode-toolbar-hoverBackground: #5a5d5e50;

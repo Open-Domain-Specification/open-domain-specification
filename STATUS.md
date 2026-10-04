@@ -14,17 +14,13 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-Milestone 7 (#82 phone reading) source is delivered. The unmodified whole gate on source candidate `d8e3c831` passed on the first attempt (00:26:39 to 00:29:54, 195 s): 1,313 pages tests at 100% coverage, 665 browser tests passed, 20 existing opt-in capture skips, zero failed, flaky or retried, and all model pins, schema, ESM entries and typechecks passed. PR #138 merged as `7599eef8` at 00:45:36Z with a tree (`292a756c`) identical to the gated tree. Pre-merge CI 37165358953 and post-merge CI 37166004365 each passed test, e2e and real-vscode on the exact heads, with publish skipped and no release. #82 was closed as completed at 00:58:54Z. Eight quality lenses had no blocker (highest 0.3).
+M7 is complete: #82 closed, own-gated closing records de8354b7 published and remote verified. M8 importer #92/#93 has an accepted reader outcome and complete scoped quality audit (highest0.3, no introduced blocker). The native input remains the pointer/keyboard focus target under a themed interface-font caption; selected filename is secondary, a Problems-style error icon occupies its gutter and the message/URL are foreground plain text. Four actual 1300/390 × Light/Dark cells fit; all four captures were inspected collectively. Root independently reran the 24 affected browser checks. Full unit coverage: 1323 tests, 100% all metrics; package check 0 errors/warnings; formatting/scoped typing clean.
 
-The four native prose witnesses remain measurements on the older bundle, kept by unchanged CSS, shared RefList and embedded source; they are not new-bundle measurements. The current-head real-vscode CI job is the separate proof. See [retrospective 08](docs/bots/sprints/2026-10-04-retro-08.md).
-
-The six M7 closing records (this status, the roadmap, the manifest, card 187, sprint 08 and retrospective 08) are written on `codex/m7-closeout-records` but have not had their own quality review, unmodified gate or publication. Those are pending.
-
-M6 is fully delivered: #91/#77 individually closed after corrective PR137 postCI37155696421 passed all three jobs. Six closing records in `ef0a82eb` passed their own unmodified gate (181 s, 1283 pages/100% coverage, 652 browser/20 baseline-capture skips/zero flaky) and are published and verified on remote develop. Exact model approval unchanged.
+The prior 127 focused-browser pass remains prior evidence: the final caption-font correction reran its 24 affected tests, not all unrelated 103. Real OS chooser/Cancel and native same-file dedupe are not directly measured; proof is the native filechooser event, real pointer/keyboard target, empty selection/retained display and actual cleared native files after reading. See `/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/font-correction/root-acceptance.json`. The whole gate, exact-head CI, merge and issue closures remain pending. #94 copy remains a separate PR.
 
 ## Next
 
-Review these M7 closing records, run their own unmodified clean-head gate and publish them. Then Milestone 8 (import and copy finish): importer #92 and #93 go together, and #94 (unrelated copy) takes a separate PR. Read-only M8 preparation exists, but no M8 source starts until these records are gated and published. No Astra UI review or release.
+Freeze the reviewed clean final commit and run the unmodified whole gate. Only after acceptance: necessary exact-head pre/postCI with releasefalse, identical merged tree and individual #92/#93 closure. No Astra UI review or release. Then separate #94 copy, followed by multifile #59 and forms #54/#63.
 
 ## Later
 
@@ -32,12 +28,16 @@ Follow the remaining [roadmap](docs/bots/ROADMAP.md): import and copy finish (#9
 
 ## Outcomes / blockers
 
-Six actual open issues / 48 closed from 54 (40 implemented, eight not planned, no new/reopened issues). M1–6 and M6 records published; M7 source delivered, M7 records pending. No external blocker or Claude quota response. Foreground terminal/model checks, fail-fast host bootstrap, unique invocation logs, two-correction reassessment, 30-minute changed probe and 60-minute stop remain binding.
+Six actual open issues / 48 closed from 54 (40 implemented, eight not planned, no new/reopened issues). M1–7 and their closing records published; M8 baseline active. No external blocker or Claude quota response. Foreground terminal/model checks, fail-fast host bootstrap, unique invocation logs, two-correction reassessment, 30-minute changed probe and 60-minute stop remain binding.
 
 ## Working state
 
-Updated 2026-10-04. Branch `codex/m7-closeout-records`, base `7599eef89672646a3daa861485ebf26322968556` (the PR #138 merge). Six records are changed; nothing is committed or published. Card 187 is done (progress 100, live false). Models, core, generated references and exact model approval (Astra e5cda126, merged 5a624128) are unchanged; no new UI approval is claimed. The records' own quality, gate and publication are pending.
-
-Earlier checkpoint (historical, kept as written): the M7 reader outcome and final quality were accepted on the `codex/m7-phone-reading` branch from base `ef0a82eb45fffd67412e3b67cbd93262d2e6254f` before landing.
+Updated 2026-10-04T02:07:34.532874+00:00. Branch `codex/m8-import-screen`, base `de8354b7ba28c371bdd60242e4473dd404ecbb5c`. Five source/test paths and five root records changed; reader outcome and final quality accepted, no clean candidate, gate, CI, merge or closure yet. Core/models/generated references and exact model approval are unchanged. Earlier M7 and baseline checkpoints below remain historical.
 
 M7 baseline checkpoint 2026-10-03T22:38:51.874000+00:00: actual54valid phone cells and6desktop; source/bundle unchanged. Two invariant pages overflow152/104px, allfamilies fulltreebeforepage. Root authorizes bounded narrowdisclosure and localprose wrap; product acceptance remains pending. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-07/baseline/root-acceptance.json.
+
+M8 baseline checkpoint 2026-10-04T01:37:06.626987+00:00: all4cellsactual1300/390×Light/Dark; native file button unthemed and erroriconabsent/allred confirmed. Existing chooser/load/h1focus and nooverflow preserved. Root addslocalstaticbuttontokens authorization consistentdefaulttheme/contrast, notglobalrestyle. ActualOScancel/samefilededupe notproved by setInputFiles; candidate must cover state/reset behavior and keep limits. Two setup failures/rawwrongtimestamp retained; fullgate/CI notstarted. Evidence baseline/root-acceptance.json.
+
+M8 readiness checkpoint 2026-10-04T02:06:21.647656+00:00: caption code-font mismatch returned by root and corrected to the existing interface font; one unit and four actualbrowser reds then green. Nativefocus/chooser/errorrow behavior and token values unchanged. 1323unit100/check0/0/current24browser/root24/actual4cells accepted for onequalityphase. Preserve all setup/assertion/chooser/type/format failures and limits, no landingclaim.
+
+M8 quality checkpoint 2026-10-04T02:15:22.719636+00:00: all8canonicalSonnetendturns viaOpus verified;10frozenhashesunchanged, highest0.3/nointroducedblock. SmalllocalProblems-row duplication accepted, no extraction/followupissue. Unevenrecord/skillreaddepth and SRPoverstatedfileread preserved. Rootbounded3pathstate delta inline8principles accepted;5producthashesunchanged. Exactcleancommit+unmodifiedgate+necessarypre/postCI next.
