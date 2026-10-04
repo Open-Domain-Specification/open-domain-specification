@@ -492,3 +492,102 @@ describe("ImportScreen examples", () => {
 		expect(screen.getByLabelText("From a URL")).toHaveValue(expected);
 	});
 });
+
+describe("ImportScreen file control", () => {
+	const input = () => document.getElementById("file") as HTMLInputElement;
+	const choose = async (file: File) =>
+		fireEvent.change(input(), { target: { files: [file] } });
+
+	it("keeps the native single-file input as the labelled control and draws a themed Choose a file… face over it", () => {
+		render(ImportScreen, { onload: vi.fn() });
+		const native = screen.getByLabelText("From a file");
+		expect(native).toBe(input());
+		expect(native).toHaveAttribute("type", "file");
+		expect(native).toHaveAttribute("accept", ".json,application/json");
+		expect(native).not.toHaveAttribute("multiple");
+		const face = screen.getByText("Choose a file…");
+		expect(face).toHaveAttribute("aria-hidden", "true");
+		expect(face.previousElementSibling).toBe(native);
+	});
+
+	it("shows no file name until one is chosen", () => {
+		render(ImportScreen, { onload: vi.fn() });
+		expect(document.querySelector(".chosen")?.textContent).toBe("");
+	});
+
+	it("names the chosen file beside the control, also when the file fails, and keeps naming it on an empty selection", async () => {
+		render(ImportScreen, { onload: vi.fn() });
+		await choose(new File(["nope"], "notes.json"));
+		await waitFor(() =>
+			expect(screen.getByRole("alert")).toHaveTextContent(
+				"notes.json is not valid JSON",
+			),
+		);
+		expect(document.querySelector(".chosen")).toHaveTextContent("notes.json");
+
+		await fireEvent.change(input(), { target: { files: [] } });
+		expect(document.querySelector(".chosen")).toHaveTextContent("notes.json");
+		expect(screen.getByRole("alert")).toHaveTextContent(
+			"notes.json is not valid JSON",
+		);
+	});
+
+	it("clears the native selection once it is read, so choosing the same file again fires change in a real browser", async () => {
+		const reset = vi.fn();
+		render(ImportScreen, { onload: vi.fn() });
+		Object.defineProperty(input(), "value", {
+			configurable: true,
+			get: () => "C:\\fakepath\\notes.json",
+			set: reset,
+		});
+		await choose(new File(["nope"], "notes.json"));
+		expect(reset).toHaveBeenCalledWith("");
+	});
+
+	it("tries the same failing file again, and then loads a different valid one", async () => {
+		const schema = { name: "petstore" };
+		const onload = vi.fn();
+		render(ImportScreen, { onload });
+		const bad = new File(["nope"], "notes.json");
+		await choose(bad);
+		await waitFor(() =>
+			expect(screen.getByRole("alert")).toHaveTextContent("notes.json"),
+		);
+		await choose(bad);
+		await waitFor(() =>
+			expect(screen.getByRole("alert")).toHaveTextContent(
+				"notes.json is not valid JSON",
+			),
+		);
+		expect(onload).not.toHaveBeenCalled();
+		await choose(new File([JSON.stringify(schema)], "petstore.json"));
+		await waitFor(() =>
+			expect(onload).toHaveBeenCalledWith(schema, "petstore.json"),
+		);
+		expect(screen.getByRole("alert")).toBeEmptyDOMElement();
+	});
+});
+
+describe("ImportScreen load error", () => {
+	it("draws the message in an alert as a Problems row: an aria-hidden error codicon, then plain message text", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockResolvedValue({ ok: false, status: 404 }),
+		);
+		render(ImportScreen, { onload: vi.fn() });
+		await fireEvent.input(screen.getByLabelText("From a URL"), {
+			target: { value: "https://example.com/missing.json" },
+		});
+		await fireEvent.click(screen.getByRole("button", { name: /load/i }));
+		const alert = await screen.findByRole("alert");
+		await waitFor(() => expect(alert).toHaveTextContent("404"));
+		const row = alert.querySelector("p.error") as HTMLElement;
+		const icon = row.querySelector("i.codicon.codicon-error");
+		expect(icon).toHaveAttribute("aria-hidden", "true");
+		expect(icon).toBeEmptyDOMElement();
+		const message = row.querySelector(".message") as HTMLElement;
+		expect(message).toHaveTextContent("https://example.com/missing.json");
+		expect(row.querySelector("a")).toBeNull();
+		expect(row.children).toHaveLength(2);
+	});
+});

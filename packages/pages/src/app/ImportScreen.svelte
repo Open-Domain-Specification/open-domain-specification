@@ -31,6 +31,8 @@ let url = $state(
 );
 let error = $state<string | undefined>();
 let loading = $state(false);
+/** The last file the reader picked, shown beside the control; it outlives a failed load and a cancelled or empty pick. */
+let chosen = $state("");
 
 function remembered(): string {
 	try {
@@ -100,8 +102,12 @@ function open(schema: unknown, label: string, asked: boolean) {
 }
 
 async function fromFile(e: Event) {
-	const file = (e.target as HTMLInputElement).files?.[0];
+	const input = e.target as HTMLInputElement;
+	const file = input.files?.[0];
 	if (!file) return;
+	// A browser fires no change when the reader picks the file the input already holds, so a failed file could never be tried again; emptying the input once the file is in hand lets the same pick count as a new one. The File stays readable.
+	input.value = "";
+	chosen = file.name;
 	error = undefined;
 	try {
 		let schema: unknown;
@@ -147,9 +153,15 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 			<p class="dim">The file is fetched directly from the URL by your browser, so it must allow cross-origin requests.</p>
 		</form>
 		<label for="file">From a file</label>
-		<input id="file" type="file" accept=".json,application/json" onchange={fromFile} />
+		<div class="picker">
+			<span class="choose">
+				<input id="file" type="file" accept=".json,application/json" onchange={fromFile} />
+				<span class="face" aria-hidden="true">Choose a file…</span>
+			</span>
+			<span class="chosen dim">{chosen}</span>
+		</div>
 		<div role="status" class="status dim">{#if loading}Loading the workspace…{/if}</div>
-		<div role="alert">{#if error}<p class="problems error">{error}</p>{/if}</div>
+		<div role="alert">{#if error}<p class="problems error"><i class="codicon codicon-error" aria-hidden="true"></i><span class="message">{error}</span></p>{/if}</div>
 		{#if examples.length}
 			<h2 class="examples-title">Or try an example</h2>
 			<div class="grid examples">
@@ -172,7 +184,18 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 	label { display: block; margin: 16px 0 6px; font-weight: 600; }
 	input, button { font: inherit; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: inherit; }
 	button { cursor: pointer; }
-	.error { color: var(--error); }
+	/* The load error is a Problems row: the error codicon in the error colour in a 16px gutter, the message in the foreground colour. */
+	.problems.error { display: grid; grid-template-columns: 16px minmax(0, 1fr); column-gap: 8px; line-height: 22px; }
+	.problems .codicon { font-size: 1em; line-height: inherit; text-align: center; color: var(--error); }
+	.problems .message { color: var(--fg); overflow-wrap: anywhere; }
+	.picker { display: flex; align-items: center; gap: 10px; }
+	.choose { position: relative; display: inline-flex; flex: none; }
+	/* The native input stays the control: the keyboard focus target and what the pointer lands on, with the picker it opens. It only stops being seen; the face under it is what is drawn. */
+	.choose input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+	.choose input::file-selector-button { cursor: pointer; }
+	.face { display: inline-flex; align-items: center; padding: 6px 10px; border: 1px solid transparent; border-radius: var(--radius); background: var(--vscode-button-background); color: var(--vscode-button-foreground); font-family: inherit; }
+	input:focus-visible + .face { outline: 1px solid var(--vscode-focusBorder); outline-offset: 2px; }
+	.chosen { min-width: 0; overflow-wrap: anywhere; }
 	.examples-title { margin: 28px 0 10px; font-size: 1rem; font-weight: 600; }
 	.examples { gap: 10px; }
 	.example { --tint: var(--accent); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; margin: 0; padding: 12px 14px; border-left: 3px solid var(--tint); cursor: pointer; }

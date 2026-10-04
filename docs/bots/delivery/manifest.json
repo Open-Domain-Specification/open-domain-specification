@@ -8,11 +8,11 @@
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
-  "active_milestone": 7,
-  "integration_batch": "milestone-07-phone-reading",
+  "active_milestone": 8,
+  "integration_batch": "milestone-08-importer",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M7 source delivered: #82 closed completed; this records change quality, gate and publication pending; M8 next after publication",
+  "candidate_state": "M8 importer reader and complete quality accepted; exact clean local gate/CI/merge/closures pending",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -1180,7 +1180,7 @@
         82
       ],
       "owner": "lead",
-      "state": "source delivered, #82 closed; closing-records gate and publication pending",
+      "state": "complete: #82 delivered/closed; own-gated records de8354b7 published and remote verified",
       "expected_remaining": 6,
       "entry_scope": "Page-first phone layout and accessible tree access.",
       "exit_acceptance": "All9reported families fit 390\u00d7844 without page-level horizontal overflow; desktop preserved.",
@@ -1436,6 +1436,24 @@
           "note": "These six closing records have not yet had their own quality review, clean-head unmodified gate or push; nothing here claims they have. active_milestone stays 7 until they are published; M8 begins only after that.",
           "base": "7599eef89672646a3daa861485ebf26322968556",
           "branch": "codex/m7-closeout-records"
+        },
+        {
+          "at": "2026-10-04T01:27:12.592019+00:00",
+          "event": "m7_records_published_m8_activated",
+          "head": "de8354b7ba28c371bdd60242e4473dd404ecbb5c",
+          "remote_develop": "de8354b7ba28c371bdd60242e4473dd404ecbb5c",
+          "gate": "227 seconds exit0,1313pages100%,665browser20existingbaselinecaptures/0failedflakyretry",
+          "quality": "eight actual Sonnet endturns via Opus, highest.3/no blocker",
+          "current_open": [
+            94,
+            93,
+            92,
+            63,
+            59,
+            54
+          ],
+          "active_milestone": 8,
+          "source_changes_authorized": false
         }
       ],
       "closed_issues": [
@@ -1451,7 +1469,7 @@
         94
       ],
       "owner": "lead",
-      "state": "waiting; read-only preparation exists, no source until M7 closing records are gated and published",
+      "state": "active: importer reader and quality accepted; exact local gate next; #94 separatePR",
       "expected_remaining": 3,
       "entry_scope": "Import refinements and editorial slice independently accepted.",
       "exit_acceptance": "Themed native focus target, file name, Problems-style error and exact two copy corrections.",
@@ -1462,6 +1480,53 @@
           "slices": "Importer #92 and #93 go together; #94 is unrelated copy and takes a separate PR",
           "source_changes_authorized": false,
           "starts_after": "M7 closing records are gated and published"
+        },
+        {
+          "at": "2026-10-04T01:27:12.592019+00:00",
+          "scope": "importer baseline activation",
+          "base": "de8354b7ba28c371bdd60242e4473dd404ecbb5c",
+          "branch": "codex/m8-import-screen",
+          "source_changes_authorized": false,
+          "card": "boards/project-backlog/188-import-screen.md",
+          "sprint": "docs/bots/sprints/2026-10-04-sprint-09.md"
+        },
+        {
+          "at": "2026-10-04T01:37:06.626987+00:00",
+          "scope": "four actual viewer importer baseline cells accepted; bounded source/test authorized",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/baseline/root-acceptance.json",
+          "limits": "Filechooser/emptyfiles automation only; no actual OS cancel or native samefile dedupe claimed. Preserve two setup failures and wrong handwritten ledger timestamp.",
+          "source_changes_authorized": true,
+          "copy_issue_94": "separatePR"
+        },
+        {
+          "at": "2026-10-04T02:06:21.647656+00:00",
+          "scope": "#92/#93 reader outcome ready for one complete scoped quality",
+          "unit": 1323,
+          "coverage": [
+            100,
+            100,
+            100,
+            100
+          ],
+          "package_check_errors": 0,
+          "package_check_warnings": 0,
+          "current_browser_affected": 24,
+          "root_independent_browser": 24,
+          "prior_focused_browser": 127,
+          "actual_candidate_cells": 4,
+          "all_four_captures_inspected_collectively": true,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/font-correction/root-acceptance.json",
+          "limits": "Prior103 unaffected browser checks not rerun after caption correction. Nativefilechooser event/resetstate proven, not actual OSdialogCancel/samefilededupe. Raw failures/process slips retained. Allreader preservation/fullgate/CI/closures pending.",
+          "copy_94": "separate subsequentPR",
+          "final_model_approval": "unchanged e5c/5a6; no AstraUI"
+        },
+        {
+          "at": "2026-10-04T02:15:22.719636+00:00",
+          "scope": "complete8lensquality accepted; bounded3pathstate update inline8principles accepted",
+          "highest_score": 0.3,
+          "introduced_blockers": 0,
+          "actual_workers": 8,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/quality/root-acceptance.json"
         }
       ],
       "closed_issues": []
@@ -1530,19 +1595,22 @@
     "updated": "2026-10-03T19:41:52.900949+00:00"
   },
   "active_delivery": {
-    "milestone": 7,
-    "base": "ef0a82eb45fffd67412e3b67cbd93262d2e6254f",
-    "branch": "codex/m7-phone-reading",
-    "state": "M7 source delivered: #82 closed completed; this records change quality, gate and publication pending; M8 next after publication",
-    "source_merged": "7599eef89672646a3daa861485ebf26322968556",
-    "records_branch": "codex/m7-closeout-records",
-    "records_base": "7599eef89672646a3daa861485ebf26322968556",
-    "records_gate_publication": "pending",
+    "milestone": 8,
+    "base": "de8354b7ba28c371bdd60242e4473dd404ecbb5c",
+    "branch": "codex/m8-import-screen",
+    "state": "M8 importer reader and complete quality accepted; exact clean local gate/CI/merge/closures pending",
     "source_changes_authorized": false,
-    "feature_accepted": true,
-    "expected_remaining": 6,
-    "card": "boards/project-backlog/187-phone-reading.md",
-    "sprint": "docs/bots/sprints/2026-10-03-sprint-08.md"
+    "feature_accepted": false,
+    "issues": [
+      92,
+      93
+    ],
+    "separate_copy_issue": 94,
+    "expected_remaining": 3,
+    "card": "boards/project-backlog/188-import-screen.md",
+    "sprint": "docs/bots/sprints/2026-10-04-sprint-09.md",
+    "reader_outcome_ready": true,
+    "quality_accepted": true
   },
   "previous_delivery": {
     "scope": "M6 merged accepted closeout",
