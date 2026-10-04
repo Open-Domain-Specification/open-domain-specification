@@ -129,13 +129,48 @@ html.modal-open .site > .site-nav {
 }
 @media (max-width: 900px) {
 	.site {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 	}
+	/* The nav comes first in the document and on screen: a disclosure button
+	   above the page. Collapsed it is one control tall; opened, the one tree
+	   scrolls inside its own bounded box so the page stays beneath it. */
 	.site > .site-nav {
 		position: static;
 		height: auto;
+		overflow: visible;
+		padding: 4px 8px;
 		border-right: 0;
 		border-bottom: 1px solid var(--vscode-panel-border);
+	}
+	.tree-toggle {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		width: 100%;
+		min-height: 40px;
+		padding: 0 8px;
+		border: 0;
+		background: transparent;
+		color: var(--vscode-foreground);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+	.tree-toggle:hover {
+		background: var(--vscode-list-hoverBackground);
+	}
+	.tree-toggle:focus-visible {
+		outline: 1px solid var(--vscode-focusBorder);
+		outline-offset: -1px;
+	}
+	.site-tree {
+		max-height: 50vh;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 4px 0 8px;
+	}
+	html.modal-open .site-tree {
+		overflow: hidden;
 	}
 }
 

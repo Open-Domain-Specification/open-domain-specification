@@ -14,20 +14,13 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-Milestone 6 (#91/#77) is delivered. Original PR136 (`5bfdb713`, gated `b757fd2e`) passed the unmodified local gate and pre-merge CI 37152204246, but its post-merge CI 37152866652 failed the `test` job on one new App history-availability unit assertion (browser and real-VS-Code jobs green), so both issues stayed open. Corrective PR137 changed only `packages/pages/src/app/App.test.ts` plus two records: gated head `c83ec6ef` passed the unmodified local gate once (183 s, 652 browser passes, 20 baseline capture skips, 0 flaky, 1283 pages tests/100% coverage), pre-merge run 37154961207 and post-merge run 37155696421 each passed all three required jobs with publish skipped, and merge `edbbbd7f` (2026-10-03T21:36:26Z) has a tree identical to the gated head. Issue #91 closed 21:46:24Z and #77 closed 21:46:28Z, individually and only after the corrective post-merge CI. The census was proven by REST (the first GraphQL list request returned HTTP 504; no closure was repeated).
+Milestone 7 (#82 phone reading) has an accepted reader outcome and complete scoped quality audit. All 82 original geometry cells fit; four native invariant witnesses remain applicable by unchanged shared prose/embedded source. Local icon hiding gives the exact name Workspace tree; measured layout transitions now settle before current-row reveal. New proof: 1,313 unit tests at 100% coverage, zero package type errors/warnings, 13 focused browser tests independently rerun by root, six reduced-motion host sequences, six 320px representatives and four default-motion widening witnesses all green. The eight quality lenses have no blocker (highest0.3); landing and CI remain pending.
 
-Delivery counts: two successful local source gates; four necessary CI runs (original pre pass, original post test failure, corrective pre pass, corrective post pass); no duplicate automatic runs, no releases, no new or reopened issues, no usage-limit response. Native proof: 32 keyboard tests with 0 failures/0 skips and checker 0; main native 16 passes plus four optional screenshot-capture skips; static 36 cells, history 6, bypass 6; stock-theme witnesses observed separately (N6). Quality: eight Sonnet lenses through Opus, highest score 0.4, no blockers. Card186 is done. The model's exact Astra low approval (`e5cda126`, merged `5a624128`) is unchanged; no Astra review and no retrospective Claude approval is claimed.
-
-Diagnosis outcome: a controlled event-loop stall reproduces the failure symptom, so the deadline-straddle mechanism is sufficient, but the actual CI occurrence remains unproven; other probed hypotheses are not claimed refuted in general. Process errors recorded in [retrospective 07](docs/bots/sprints/2026-10-03-retro-07.md): a diagnosis that used two probes plus an aborted macOS `timeout` (exit 127) where one was allowed, one root heading assertion that failed on leading whitespace (then trimmed, 27 pass), one monitor print syntax error (fixed, no CI action), and a handoff preparation syntax error followed by a runner abort on a missing prompt before any Claude launch (static prompt and dependency check now used).
-
-M5 remains complete (PR135 `f2069a34`, closing records `8606b282` verified on remote develop).
+M6 is fully delivered: #91/#77 individually closed after corrective PR137 postCI37155696421 passed all three jobs. Six closing records in `ef0a82eb` passed their own unmodified gate (181 s, 1283 pages/100% coverage, 652 browser/20 baseline-capture skips/zero flaky) and are published and verified on remote develop. Exact model approval unchanged.
 
 ## Next
 
-1. Review these closing records (this record candidate: STATUS, roadmap, manifest, card186, sprint-07 and retro-07).
-2. Run the closing records' own clean-head unmodified gate (`bash scripts/verify-all.sh`). **PENDING: it has not run on this record candidate.**
-3. Push the records to develop. **PENDING: publication has not happened.** The manifest keeps `active_milestone` at 6 until then.
-4. Only after publication, start the Milestone 7 baseline (#82, phone reading): immutable baseline and bounded design first, no card or activation yet.
+Freeze the reviewed clean candidate, run the unmodified gate and then necessary pre/post CI. Keep the raw failures and retained-native equivalence limits explicit. No Astra UI review or release.
 
 ## Later
 
@@ -35,8 +28,10 @@ Follow the remaining [roadmap](docs/bots/ROADMAP.md): phone reading #82, import 
 
 ## Outcomes / blockers
 
-No product blocker. The records are unpublished until their own gate passes. Limits: the CI occurrence of the diagnosed mechanism is unproven; the first failing root heading-test output was truncated with no standalone first log; the final-host capture ledger lacks server start/cleanup entries for the historic run; the full local gate ran in 183 s, far under the documented twelve to fifteen minutes; the corrective candidate's CI was dispatched manually with `release=false`. No quota response occurred.
+Seven actual open issues / 47 closed from 54 (39 implemented, eight not planned, no new/reopened issues). M1–6 and M6 records published. No external blocker or Claude quota response. Foreground terminal/model checks, fail-fast host bootstrap, unique invocation logs, two-correction reassessment, 30-minute changed probe and 60-minute stop remain binding.
 
 ## Working state
 
-Updated 2026-10-03T21:51:45+00:00. Branch `codex/m6-closeout-records`, base `edbbbd7f475b8dc65e814ad2fe617bbc6abde3e0` (merge of PR137, tree identical to gated `c83ec6ef`). Six record paths only; uncommitted record candidate; no source change. Closing-record gate and publication pending. Exact identities remain in `/Users/jonathanturnock/.codex/ods-delivery/CURRENT.json`.
+Updated 2026-10-04T00:11:51.516315+00:00. Branch `codex/m7-phone-reading`, base `ef0a82eb45fffd67412e3b67cbd93262d2e6254f`. Five root records and seven source/test paths changed; no commit/publication. Card187 doing, sprint08. Models, core, generated references and exact model approval unchanged. Reader outcome and final quality accepted; full landing/publication acceptance remains pending.
+
+M7 baseline checkpoint 2026-10-03T22:38:51.874000+00:00: actual54valid phone cells and6desktop; source/bundle unchanged. Two invariant pages overflow152/104px, allfamilies fulltreebeforepage. Root authorizes bounded narrowdisclosure and localprose wrap; product acceptance remains pending. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-07/baseline/root-acceptance.json.
