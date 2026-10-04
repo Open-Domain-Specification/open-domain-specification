@@ -1,6 +1,6 @@
 import type { Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
-import { workspace as northbank } from "../../northbank/src/workspace";
+import { buildNorthbankSet } from "../../northbank/src/northbank-set";
 import { workspace as petstore } from "../../petstore/src/workspace";
 import { workspace as rivermart } from "../../rivermart/src/workspace";
 import { workspace as streamline } from "../../streamline/src/workspace";
@@ -20,21 +20,28 @@ const ALL_TYPES = [
 ];
 
 /**
- * The four reference workspaces, imported by relative path rather than by
- * package name on purpose: the model packages depend on this one, so naming
- * them in its `dependencies` would make the workspace graph a cycle and leave
- * the build with no order to run in.
+ * The four reference models, imported by relative path rather than by package
+ * name on purpose: the model packages depend on this one, so naming them in its
+ * `dependencies` would make the workspace graph a cycle and leave the build
+ * with no order to run in.
+ *
+ * A model is the workspaces it is: NorthBank is the twelve files of its set,
+ * each team declaring the relationships whose downstream context it owns, and
+ * the others are one workspace each.
  */
-const models: Array<[string, Workspace]> = [
-	["NorthBank", northbank],
-	["Petstore", petstore],
-	["RiverMart", rivermart],
-	["StreamLine", streamline],
+const northbank = buildNorthbankSet();
+const models: Array<[string, ReadonlyArray<Workspace>]> = [
+	["NorthBank", northbank.workspaces],
+	["Petstore", [petstore]],
+	["RiverMart", [rivermart]],
+	["StreamLine", [streamline]],
 ];
 
-/** The relationship types `workspace` declares, sorted and deduplicated. */
-function typesOf(workspace: Workspace): string[] {
-	return [...new Set(workspace.relationships.map((r) => r.type))].sort();
+/** The relationship types a model declares in any of its files, sorted and deduplicated. */
+function typesOf(workspaces: ReadonlyArray<Workspace>): string[] {
+	return [
+		...new Set(workspaces.flatMap((w) => w.relationships.map((r) => r.type))),
+	].sort();
 }
 
 /**
@@ -60,5 +67,19 @@ describe("the reference models together", () => {
 
 	it.each(models)("%s shows at least three relationship types", (_, w) => {
 		expect(typesOf(w).length).toBeGreaterThanOrEqual(3);
+	});
+});
+
+/**
+ * NorthBank's coverage has to come from the set. A relationship is declared in
+ * the file of the context it is about, so a count taken from one NorthBank file
+ * would be a different, smaller claim than the one made above.
+ */
+describe("NorthBank's relationships", () => {
+	it("are declared in more than one file of the set", () => {
+		const declaring = northbank.workspaces.filter(
+			(w) => w.relationships.length > 0,
+		);
+		expect(declaring.length).toBeGreaterThan(1);
 	});
 });

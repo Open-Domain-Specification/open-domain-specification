@@ -1,20 +1,24 @@
+import assert from "node:assert/strict";
 import {
+	type Consumable,
 	callsOut,
 	ODSFlowMap,
-	Workspace,
+	usersOfValueObject,
+	type WorkspaceSet,
 } from "@open-domain-specification/core";
-import {
-	assertDocSite,
-	assertStressTestWorkspace,
-} from "@open-domain-specification/model-tools";
+import { assertDocSite } from "@open-domain-specification/model-tools";
 import { describe, expect, it } from "vitest";
-import { workspace } from "./workspace";
+import { loadMonolith, loadSet } from "./equivalence.support.ts";
+import { buildNorthbankSet } from "./northbank-set.ts";
 
 /**
  * NorthBank plants exactly three structural problems, chosen so that it,
  * RiverMart and StreamLine together exercise every rule in the validation
- * catalog; see the DELIBERATE comments in workspace.ts and section 7 of
+ * catalog; see the DELIBERATE comments in the team modules and section 7 of
  * DISCOVERY.md.
+ *
+ * The list is the one the single-workspace model pinned, unchanged. Each
+ * finding now also names the file it is about (see equivalence.test.ts).
  */
 const deliberate: Array<{ rule: string; severity: "error" | "warning" }> = [
 	// Channels calls Credit Decisioning across a declared separate ways. One
@@ -26,15 +30,67 @@ const deliberate: Array<{ rule: string; severity: "error" | "warning" }> = [
 	{ rule: "context-serves-subdomain", severity: "warning" },
 ];
 
-describe("NorthBank reference workspace", () => {
-	it("builds with its id and enough contexts to stress the pages", () => {
-		expect(workspace.id).toBe("northbank");
-		expect(workspace.boundedcontexts.size).toBeGreaterThanOrEqual(12);
-		expect(workspace.relationships.length).toBeGreaterThan(12);
+const set = buildNorthbankSet();
+const contexts = (s: WorkspaceSet) =>
+	s.workspaces.flatMap((w) => [...w.boundedcontexts.values()]);
+const relationships = (s: WorkspaceSet) =>
+	s.workspaces.flatMap((w) => w.relationships);
+
+/**
+ * What `assertStressTestWorkspace` asserts of a single workspace (models/_shared),
+ * asserted of the set: it takes one workspace and the set has twelve. Nothing is
+ * weakened: every clause of the helper is here, read across the files.
+ */
+function assertStressTestSet(
+	s: WorkspaceSet,
+	expected: Array<{ rule: string; severity: "error" | "warning" }>,
+): void {
+	const types = new Set(relationships(s).map((r) => r.type));
+	assert.ok(
+		types.size >= 3,
+		`NorthBank shows only ${types.size} relationship type(s): ${[...types].sort().join(", ")}`,
+	);
+	const legacy = contexts(s).filter((bc) => bc.bigBallOfMud);
+	assert.strictEqual(legacy.length, 1);
+
+	for (const bc of contexts(s)) {
+		if (bc.external) continue;
+		assert.notStrictEqual(bc.team, undefined, `${bc.name} has no team`);
+	}
+
+	assert.ok(contexts(s).some((bc) => bc.glossary.size > 0));
+	assert.ok(contexts(s).reduce((n, bc) => n + bc.policies.size, 0) > 5);
+	assert.ok(
+		contexts(s).reduce((n, bc) => n + bc.processes.size, 0) > 0,
+		"NorthBank names no process",
+	);
+	const diagnostics = s
+		.validate()
+		.map(({ rule, severity }) => ({ rule, severity }))
+		.sort((a, b) => a.rule.localeCompare(b.rule));
+	assert.deepStrictEqual(
+		diagnostics,
+		[...expected].sort((a, b) => a.rule.localeCompare(b.rule)),
+	);
+
+	const schemas = s.toSchemas();
+	const rebuilt = loadSet([
+		...JSON.parse(JSON.stringify([...schemas.entries()])),
+	]);
+	assert.deepStrictEqual(rebuilt.toSchemas(), schemas);
+	assert.deepStrictEqual(rebuilt.validate(), s.validate());
+}
+
+describe("NorthBank reference set", () => {
+	it("builds twelve workspaces and enough contexts to stress the pages", () => {
+		expect(set.workspaces).toHaveLength(12);
+		expect(new Set(set.workspaces.map((w) => w.id)).size).toBe(12);
+		expect(contexts(set).length).toBeGreaterThanOrEqual(12);
+		expect(relationships(set).length).toBeGreaterThan(12);
 	});
 
-	it("passes the shared stress-test assertions", () => {
-		assertStressTestWorkspace(workspace, deliberate);
+	it("passes the stress-test assertions, read across the set", () => {
+		assertStressTestSet(set, deliberate);
 	});
 
 	// The interview names two owners of Money and AccountNumber: "one shared
@@ -44,28 +100,26 @@ describe("NorthBank reference workspace", () => {
 	it("names Accounts and Ledger as the kernel's only co-owners, and the other users borrow over directed relationships", () => {
 		const names = (xs: Iterable<{ name: string }>) =>
 			[...xs].map((x) => x.name);
-		expect(names(workspace.boundedcontexts.values())).not.toContain(
-			"Shared Kernel",
-		);
-		expect(names(workspace.teams.values())).not.toContain("Shared Kernel Team");
+		expect(names(contexts(set))).not.toContain("Shared Kernel");
+		expect(
+			names(set.workspaces.flatMap((w) => [...w.teams.values()])),
+		).not.toContain("Shared Kernel Team");
 
-		const kernels = workspace.relationships.filter(
+		const kernels = relationships(set).filter(
 			(r) => r.type === "shared-kernel",
 		);
 		expect(kernels.map((r) => [r.source.name, r.target.name])).toEqual([
 			["Accounts", "Ledger"],
 		]);
 
-		const ledger = [...workspace.boundedcontexts.values()].find(
-			(bc) => bc.name === "Ledger",
-		);
+		const ledger = contexts(set).find((bc) => bc.name === "Ledger");
 		const money = ledger?.valueobjects.get("money");
 		const accountNumber = ledger?.valueobjects.get("account_number");
 		expect(money?.name).toBe("Money");
 		expect(accountNumber?.name).toBe("AccountNumber");
 
 		const holders = new Map<string, Set<string>>();
-		for (const bc of workspace.boundedcontexts.values()) {
+		for (const bc of contexts(set)) {
 			if (bc === ledger) continue;
 			const attributes = [
 				...[...bc.aggregates.values()].flatMap((a) =>
@@ -78,9 +132,9 @@ describe("NorthBank reference workspace", () => {
 			for (const attribute of attributes) {
 				const held = attribute.valueobject;
 				if (held !== money && held !== accountNumber) continue;
-				const set = holders.get(bc.name) ?? new Set<string>();
-				set.add(held?.name ?? "");
-				holders.set(bc.name, set);
+				const names = holders.get(bc.name) ?? new Set<string>();
+				names.add(held?.name ?? "");
+				holders.set(bc.name, names);
 			}
 		}
 		expect(
@@ -100,7 +154,7 @@ describe("NorthBank reference workspace", () => {
 		const users = [...holders.keys()].filter((name) => name !== "Accounts");
 		expect(users).toHaveLength(4);
 		for (const user of users) {
-			const routes = workspace.relationships.filter(
+			const routes = relationships(set).filter(
 				(r) =>
 					r.source === ledger &&
 					r.target.name === user &&
@@ -116,8 +170,8 @@ describe("NorthBank reference workspace", () => {
 	// to the scorecard. The model records that run as a local consumption of the
 	// internal `ScoreApplication`, made by `Decide`, with no contract the source
 	// does not give: no pattern, no schema, no answer (card 158).
-	it("records Decide's run of the scorecard as a structured local call", async () => {
-		const context = [...workspace.boundedcontexts.values()].find(
+	it("records Decide's run of the scorecard as a structured local call", () => {
+		const context = contexts(set).find(
 			(bc) => bc.name === "Credit Decisioning",
 		);
 		const app = context?.services.get("decisioning_app");
@@ -134,17 +188,18 @@ describe("NorthBank reference workspace", () => {
 		expect(score.internal).toBe(true);
 		expect(score.returns).toBeUndefined();
 		expect(score.schema).toBeUndefined();
-		expect(callsOut(decide).map((c) => c.name)).toEqual([
+		expect(callsOut(decide).map((c: Consumable) => c.name)).toEqual([
 			"PullBureauReport",
 			"ScoreApplication",
 			"GetCustomer",
 		]);
 
-		// It survives the JSON the surfaces read.
-		const rebuilt = Workspace.fromSchema(
-			JSON.parse(JSON.stringify(workspace.toSchema())),
-		);
-		const again = [...rebuilt.boundedcontexts.values()]
+		// It survives the JSON the surfaces read: the files written and loaded
+		// back as a set.
+		const rebuilt = loadSet([
+			...JSON.parse(JSON.stringify([...set.toSchemas().entries()])),
+		]);
+		const again = contexts(rebuilt)
 			.find((bc) => bc.name === "Credit Decisioning")
 			?.services.get("decisioning_app");
 		expect(
@@ -155,15 +210,89 @@ describe("NorthBank reference workspace", () => {
 		).toContainEqual(["ScoreApplication", ["Decide"]]);
 
 		// The flow map draws the step between the two operations.
-		const edges = [...ODSFlowMap.fromWorkspace(workspace).edges.values()];
+		const edges = [...ODSFlowMap.fromSet(set).edges.values()];
 		expect(
 			edges.some(
 				(e) =>
 					e.source.name === "Decide" && e.target.name === "ScoreApplication",
 			),
 		).toBe(true);
+	});
 
-		// And it reaches Markdown, on the front's page and the context's table.
+	// A value object's "Used by" promises every user in the workspace, as the
+	// viewer's value-object page does, not only the home context's (issue 110).
+	// Ledger declares Money, and Accounts, Payments Hub, Cards, Lending and
+	// Regulatory Reporting borrow it. Nested value objects and schemas typed by
+	// it are users too, each saying which it is. Across files the users are
+	// still all there: they live in five other files than Ledger's.
+	it("lists every user of Money across the files, qualified by context", () => {
+		const ledger = contexts(set).find((bc) => bc.name === "Ledger");
+		const money = ledger?.valueobjects.get("money");
+		expect(money).toBeTruthy();
+		if (!ledger || !money) return;
+
+		const users = usersOfValueObject(money);
+		const label = (u: (typeof users)[number]) =>
+			`${u.boundedcontext.name} / ${u.owner.name} (${u.kind})`;
+		const labels = users.map(label);
+		expect(labels).toContain("Cards / Card (aggregate)");
+		expect(labels).toContain("Accounts / OverdraftLimit (value object)");
+		expect(labels).toContain("Payments Hub / InitiatePayment (schema)");
+		const files = new Set(
+			users.map((u) => u.boundedcontext.workspace.file as string),
+		);
+		expect(files.size).toBeGreaterThanOrEqual(6);
+		expect(files.has(ledger.workspace.file as string)).toBe(true);
+		// The same users as in the single workspace, as a set.
+		const mono = loadMonolith();
+		const monoMoney = [...mono.boundedcontexts.values()]
+			.find((bc) => bc.name === "Ledger")
+			?.valueobjects.get("money");
+		expect(monoMoney).toBeTruthy();
+		if (!monoMoney) return;
+		expect([...labels].sort()).toEqual(
+			usersOfValueObject(monoMoney).map(label).sort(),
+		);
+	});
+
+	// A schema's "Used by" promises every user, not only the consumables that
+	// carry it (issue 114). Ledger's PostingLine is sent and answered by no
+	// consumable: PostEntry and EntryPosted nest it, and those are what carry it.
+	// The old column read the carrier-only list and printed "-".
+	it("lists nested schema users and the users of ledger account kinds across the set", async () => {
+		const ledger = contexts(set).find((bc) => bc.name === "Ledger");
+		const postingLine = ledger?.schemas.get("posting_line");
+		expect(postingLine).toBeTruthy();
+		if (!postingLine) return;
+		expect(postingLine.consumables.map((c) => c.name)).toEqual([]);
+		const nested = [...(ledger?.schemas.values() ?? [])]
+			.filter((s) =>
+				[...s.attributes.values()].some((a) => a.schema === postingLine),
+			)
+			.map((s) => s.name);
+		expect(nested).toEqual(["PostEntry", "EntryPosted"]);
+
+		const ledgerAccount = ledger?.valueobjects.get("ledger_account");
+		expect(ledgerAccount?.kinds.map((k) => k.name)).toEqual([
+			"CustomerLedgerAccount",
+			"NominalLedgerAccount",
+		]);
+	}, 60_000);
+});
+
+/**
+ * This block checks the Markdown pages of the frozen single-workspace
+ * fixture, with the assertions the model has always carried, so a regression
+ * of the standalone doc generator on this model is caught. It does not check
+ * the set's own site. packages/doc does have a set-aware entry point,
+ * `toDocSet`, which generate.ts calls to write the set's docs/ folder, and
+ * `toDocSet` itself is tested in packages/doc (set.test.ts). No assertion in
+ * this file reads the set's generated pages (see DISCOVERY.md).
+ */
+describe("NorthBank's pages, on the frozen single workspace", () => {
+	const workspace = loadMonolith();
+
+	it("lists Decide's run of the scorecard on the front's page and the context's table", async () => {
 		const docs = await assertDocSite(workspace);
 		expect(
 			docs[

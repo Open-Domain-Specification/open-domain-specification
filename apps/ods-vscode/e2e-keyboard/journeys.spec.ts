@@ -1271,7 +1271,9 @@ test.describe("history in the page toolbar", () => {
 		test(`#77 ${name} walks Back from the third page to the first and Forward again, from the workspace`, async () => {
 			const frame = await openFirst("Cross surface", "Cross surface");
 			const p1 = await where(frame);
-			expect(p1.hash).toBe("");
+			// The folder holds two files, so the app is a reader of a set and the
+			// workspace's route names its file.
+			expect(p1.hash).toBe("#/workspaces/cross_surface.json");
 			await expectAt(
 				frame,
 				p1,
@@ -1435,48 +1437,44 @@ test.describe("history in the page toolbar", () => {
 		expect(await headingArrivals(frame), "forward arrivals").toEqual([p2, p3]);
 	});
 
-	test("#77 a page of a different workspace file starts the history over", async () => {
+	test("#77 a page of another file of the same folder continues the history; only another folder would start it over", async () => {
 		const frame = await openFirst("Cross surface", "Cross surface");
 		const first = await where(frame);
 		const second = await follow(frame, [first]);
 		await openPageByKeyboard(host.window, "Zebra Model");
 		await expect(frame.locator("main h1")).toContainText("Zebra Model");
 		const zebra = await where(frame);
-		expect(zebra.hash).toBe("");
-		await expect.poll(() => ends(frame)).toEqual({ back: true, forward: true });
-		const box = await frame.locator('[data-action="back"]').boundingBox();
-		if (!box) throw new Error("no back button box");
-		await host.window.mouse.click(
-			box.x + box.width / 2,
-			box.y + box.height / 2,
+		// Both files are in the one set the webview holds: another file is a page
+		// of what it already shows, so Back still reaches the page the reader left.
+		expect(zebra.hash).toBe("#/workspaces/zebra.json");
+		await expect
+			.poll(() => ends(frame))
+			.toEqual({ back: false, forward: true });
+		await use(frame, "back", "click");
+		await expectAt(
+			frame,
+			second,
+			{ back: false, forward: false },
+			"back from the other file",
+			false,
 		);
+		await use(frame, "forward", "click");
 		await expect.poll(() => where(frame)).toEqual(zebra);
-		// Its own pages are reached and left as usual, and Back stops at its workspace.
-		await expect.poll(async () => (await active(frame)).tag).toBe("BODY");
-		const inZebra = await follow(frame, [zebra, first, second]);
+		// Its own pages are reached and left as usual.
+		const inZebra = await follow(frame, [first, second, zebra]);
 		await use(frame, "back", "enter");
 		await expectAt(
 			frame,
 			zebra,
-			{ back: true, forward: false },
-			"back in the second workspace",
+			{ back: false, forward: false },
+			"back in the second file",
 		);
-		await host.window.mouse.click(
-			box.x + box.width / 2,
-			box.y + box.height / 2,
-		);
-		await expect.poll(() => where(frame)).toEqual(zebra);
-		// The click on a disabled button leaves focus on the body, so the reader's
-		// next Tab starts from the top of the page and meets Forward going forward.
-		await expect.poll(async () => (await active(frame)).tag).toBe("BODY");
-		const stop = await tabToLabel(host, frame, "Forward");
-		expect(stop.tag).toBe("BUTTON");
-		await host.window.keyboard.press("Enter");
+		await use(frame, "forward", "enter");
 		await expectAt(
 			frame,
 			inZebra,
 			{ back: false, forward: true },
-			"forward in the second workspace",
+			"forward in the second file",
 		);
 	});
 });

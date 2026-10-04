@@ -1,13 +1,16 @@
 import type { DownstreamRole } from "./schema";
-import {
-	type BoundedContext,
-	isDirectedRelationshipType,
-	type Workspace,
-} from "./workspace";
+import type { Scope } from "./scope";
+import { type BoundedContext, isDirectedRelationshipType } from "./workspace";
+
+/**
+ * Where a borrowing is looked for: anything that lists relationships, which is
+ * a workspace read alone or a {@link Scope} across a set.
+ */
+type Relating = Pick<Scope, "relationships">;
 
 /** Whether the two contexts declare a shared kernel with one another. */
 export function sharesKernelWith(
-	workspace: Workspace,
+	workspace: Relating,
 	one: BoundedContext,
 	other: BoundedContext,
 ): boolean {
@@ -27,7 +30,7 @@ export function sharesKernelWith(
  * downstream nothing and must not be shaped by it.
  */
 export function downstreamRoleToward(
-	workspace: Workspace,
+	workspace: Relating,
 	downstream: BoundedContext,
 	upstream: BoundedContext,
 	role: DownstreamRole,
@@ -43,7 +46,7 @@ export function downstreamRoleToward(
 
 /** Whether `downstream` has declared itself a conformist of `upstream`. */
 function conformsTo(
-	workspace: Workspace,
+	workspace: Relating,
 	downstream: BoundedContext,
 	upstream: BoundedContext,
 ): boolean {
@@ -58,7 +61,7 @@ function conformsTo(
  * customer to declare itself a conformist, the downstream with no say.
  */
 function isCustomerOf(
-	workspace: Workspace,
+	workspace: Relating,
 	customer: BoundedContext,
 	supplier: BoundedContext,
 ): boolean {
@@ -83,7 +86,7 @@ function isCustomerOf(
  * The validator and derived usage lists share this answer.
  */
 export function mayBorrowFrom(
-	workspace: Workspace,
+	workspace: Relating,
 	borrower: BoundedContext,
 	owner: BoundedContext,
 ): boolean {

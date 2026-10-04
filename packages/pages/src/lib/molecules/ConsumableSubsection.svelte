@@ -29,16 +29,16 @@ const {
 
 <div class="subsection">
 	<Heading level={3} id={c.ref}>
-		<Lockup kind={kindOf(c)} name={c.name} ref={c.ref} />
+		<Lockup kind={kindOf(c)} name={c.name} ref={c} />
 		<ConsumableKeywords consumable={c} />
 	</Heading>
 	{#if c.description}<p class="description">{c.description}</p>{/if}
 	<DefinitionList>
 		<Definition term={c.schemaMany ? "Payload, many" : "Payload"}>
-			{#if c.schema}<Lockup kind="schema" name={c.schema.name} ref={c.schema.ref} />{:else}<Keyword text="no schema" />{/if}
+			{#if c.schema}<Lockup kind="schema" name={c.schema.name} ref={c.schema} />{:else}<Keyword text="no schema" />{/if}
 		</Definition>
 		{#if c.returns}
-			<Definition term={c.returnsMany ? "Returns many" : "Returns"}><Lockup kind="schema" name={c.returns.name} ref={c.returns.ref} /></Definition>
+			<Definition term={c.returnsMany ? "Returns many" : "Returns"}><Lockup kind="schema" name={c.returns.name} ref={c.returns} /></Definition>
 		{/if}
 		{#if c.rejections.length}
 			<Definition term="Rejects with"><RejectionList rejections={c.rejections} /></Definition>

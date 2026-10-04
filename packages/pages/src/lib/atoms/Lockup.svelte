@@ -22,7 +22,7 @@ const {
 }: {
 	kind: Kind;
 	name: string;
-	ref?: string;
+	ref?: string | { ref: string };
 	id?: string;
 	detail?: string;
 	size?: "row" | "title";

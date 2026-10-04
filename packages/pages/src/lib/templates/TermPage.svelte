@@ -6,6 +6,7 @@ export const sections = [
 </script>
 
 <script lang="ts">
+import { identityKeyOf } from "@open-domain-specification/core";
 import type { GlossaryTerm } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
 import { termsOf } from "../elements";
@@ -51,7 +52,7 @@ const columns: Column[] = [
 	{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
-			<Definition term="Language of"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
+			<Definition term="Language of"><Lockup kind="boundedcontext" name={bc.name} ref={bc} /></Definition>
 		</DefinitionList>
 	{/snippet}
 </PageHeader>
@@ -63,7 +64,7 @@ const columns: Column[] = [
 	problems={problemsUnder(model, t.ref)}
 >
 	{#if embodied}
-		<p class="embodied"><Lockup kind={kindOf(embodied)} name={embodied.name ?? embodied.ref} ref={embodied.ref} /> <span class="description">{embodied.description ?? ""}</span></p>
+		<p class="embodied"><Lockup kind={kindOf(embodied)} name={embodied.name ?? embodied.ref} ref={embodied} /> <span class="description">{embodied.description ?? ""}</span></p>
 	{:else}
 		<EmptyState text="Not modelled. Either the word is not needed, or the model is missing something." />
 	{/if}
@@ -78,9 +79,9 @@ const columns: Column[] = [
 	<DataTable {columns} rows={sameWord} empty="Only this context uses the word." rowId={(x) => x.ref}>
 		{#snippet cell(x, col)}
 			{#if col.key === "context"}
-				<Lockup kind="boundedcontext" name={x.boundedcontext.name} ref={x.boundedcontext.ref} />
+				<Lockup kind="boundedcontext" name={x.boundedcontext.name} ref={x.boundedcontext} />
 			{:else}
-				<Ref ref={x.ref} label={x.definition} />
+				<Ref ref={x} label={x.definition} />
 			{/if}
 		{/snippet}
 	</DataTable>

@@ -1,5 +1,5 @@
 import type { Attribute } from "@open-domain-specification/core";
-import { pathToIndexMd } from "./lib/paths";
+import { pathToIndexMd, placed } from "./lib/paths";
 
 /**
  * One attribute as `name: \`type\``, identity attributes in bold. An attribute
@@ -26,7 +26,7 @@ const attributeMd = (
 ) => {
 	const name = attribute.identity ? `**${attribute.name}**` : attribute.name;
 	const type = attribute.schema
-		? `[\`${attribute.type}\`](${pathToIndexMd(attribute.schema.boundedcontext.path, fromPath)}#schemas)`
+		? `[\`${attribute.type}\`](${pathToIndexMd(placed(attribute.schema.boundedcontext), fromPath)}#schemas)`
 		: `\`${attribute.type}\``;
 	const identified = attribute.identifies;
 	// An entity links to its aggregate's page, where a child is written up
@@ -39,10 +39,10 @@ const attributeMd = (
 	const identifiesHref = !identified
 		? ""
 		: "aggregate" in identified
-			? pathToIndexMd(identified.aggregate.path, fromPath)
+			? pathToIndexMd(placed(identified.aggregate), fromPath)
 			: "boundedcontext" in identified
-				? `${pathToIndexMd(identified.boundedcontext.path, fromPath)}#schemas`
-				: pathToIndexMd(identified.path, fromPath);
+				? `${pathToIndexMd(placed(identified.boundedcontext), fromPath)}#schemas`
+				: pathToIndexMd(placed(identified), fromPath);
 	const identifies = identified
 		? ` (identifies [${identified.name}](${identifiesHref}))`
 		: "";

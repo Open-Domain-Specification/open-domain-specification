@@ -52,7 +52,7 @@ test("pressing Load with the keyboard does the same", async ({ page }) => {
 
 test("choosing a file does the same", async ({ page }) => {
 	await page.goto("/");
-	await page.locator("input[type=file]").setInputFiles({
+	await page.locator("#file").setInputFiles({
 		name: "petstore.json",
 		mimeType: "application/json",
 		buffer: Buffer.from(JSON.stringify(PETSTORE_SCHEMA)),

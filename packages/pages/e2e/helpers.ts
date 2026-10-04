@@ -194,13 +194,28 @@ export const REFERENCE_MODELS = [
 	"petstore",
 	"rivermart",
 	"streamline",
-	"northbank",
+	"northbank-monolith",
 ] as const;
 
 export type ReferenceModel = (typeof REFERENCE_MODELS)[number];
 
-const modelPath = (name: ReferenceModel) =>
-	join(__dirname, `../../../models/${name}/.ods/${name}.json`);
+/**
+ * Where a reference model's workspace file is. `northbank-monolith` is the
+ * frozen single-file original of NorthBank, kept as a standalone-workspace
+ * baseline: the one-workspace pages are held to what they always did on the
+ * biggest model there is. It is not NorthBank, which is the twelve-file set in
+ * `northbank-set.ts`, and no assertion about NorthBank as it ships may be made
+ * against it.
+ */
+export const referenceModelFile = (name: ReferenceModel) =>
+	name === "northbank-monolith"
+		? join(
+				__dirname,
+				"../../../models/northbank/src/fixtures/northbank.monolith.json",
+			)
+		: join(__dirname, `../../../models/${name}/.ods/${name}.json`);
+
+const modelPath = referenceModelFile;
 
 /** Fulfils every request for that model's workspace from the repository file. */
 export async function serveModel(

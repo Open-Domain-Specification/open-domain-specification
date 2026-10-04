@@ -1,0 +1,629 @@
+{
+  "$schema": "./schema.json",
+  "id": "northbank_financial_crime",
+  "name": "NorthBank Financial Crime",
+  "description": "NorthBank's Financial Crime Team: sanctions screening and fraud scoring, the screening vendor behind them, and the Risk & Compliance domain.",
+  "version": "1.0.0",
+  "odsVersion": "3.0.0",
+  "primaryColor": "#1d4ed8",
+  "domains": {
+    "risk_&_compliance": {
+      "name": "Risk & Compliance",
+      "description": "Financial crime and the regulator",
+      "subdomains": {
+        "fraud": {
+          "name": "Fraud",
+          "type": "core",
+          "description": "Every missed flag is the bank's money"
+        },
+        "sanctions_screening": {
+          "name": "Sanctions Screening",
+          "type": "generic",
+          "description": "Bought lists, bought engine"
+        },
+        "regulatory_reporting": {
+          "name": "Regulatory Reporting",
+          "type": "supporting",
+          "description": "Returns to the PCA, reconciled to the ledger"
+        }
+      }
+    }
+  },
+  "boundedcontexts": {
+    "sanctions_screening": {
+      "name": "Sanctions Screening",
+      "description": "Names against lists, with a match score",
+      "subdomains": [
+        {
+          "$ref": "#/domains/risk_&_compliance/subdomains/sanctions_screening"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/financial_crime_team"
+      },
+      "aggregates": {
+        "screening_result": {
+          "name": "ScreeningResult",
+          "description": "One name checked against the lists",
+          "provides": {
+            "party_matched": {
+              "name": "PartyMatched",
+              "description": "The name matched a list; the caller stops",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/sanctions_screening/schemas/party_matched"
+              }
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "screening_result": {
+              "name": "ScreeningResult",
+              "description": "The outcome for one party",
+              "root": true,
+              "attributes": {
+                "result_id": {
+                  "name": "resultId",
+                  "type": "string",
+                  "identity": true
+                },
+                "vendor_match_ref": {
+                  "name": "vendorMatchRef",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/screening_vendor"
+                  }
+                },
+                "party_name": {
+                  "name": "partyName",
+                  "type": "string"
+                },
+                "score": {
+                  "name": "score",
+                  "type": "MatchScore",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/sanctions_screening/valueobjects/match_score"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/sanctions_screening/valueobjects/match_score"
+                  },
+                  "relation": "uses",
+                  "label": "scored",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "invariants": {}
+        }
+      },
+      "invariants": {},
+      "services": {
+        "screening_app": {
+          "name": "ScreeningApp",
+          "description": "Sanctions Screening's application service: the boundary the bank screens names through",
+          "type": "application",
+          "provides": {
+            "screen_party": {
+              "name": "ScreenParty",
+              "description": "Check a name, date of birth and country against the lists",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/screening_vendor/schemas/list_match_query"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/party_matched"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/screening_vendor/services/screening_engine_api/provides/match_against_lists"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sanctions_screening/services/screening_app/provides/screen_party"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "policies": {},
+      "processes": {},
+      "glossary": {},
+      "valueobjects": {
+        "match_score": {
+          "name": "MatchScore",
+          "description": "0 to 100; above the threshold is a match",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int 0..100"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
+      "schemas": {
+        "party_matched": {
+          "name": "PartyMatched",
+          "attributes": {
+            "result_id": {
+              "name": "resultId",
+              "type": "string",
+              "identity": true
+            },
+            "score": {
+              "name": "score",
+              "type": "MatchScore",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/sanctions_screening/valueobjects/match_score"
+              }
+            }
+          }
+        }
+      }
+    },
+    "fraud": {
+      "name": "Fraud",
+      "description": "The transaction scorer and fraud cases",
+      "subdomains": [
+        {
+          "$ref": "#/domains/risk_&_compliance/subdomains/fraud"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/financial_crime_team"
+      },
+      "aggregates": {
+        "fraud_case": {
+          "name": "FraudCase",
+          "description": "A suspected fraud and the alerts behind it",
+          "provides": {
+            "fraud_case_opened": {
+              "name": "FraudCaseOpened",
+              "description": "An investigation began; the account is frozen",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/fraud/schemas/fraud_case_opened"
+              }
+            },
+            "open_case": {
+              "name": "OpenCase",
+              "description": "Open a case with the flagged transaction as its first alert",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/provides/fraud_case_opened"
+                }
+              ]
+            },
+            "close_case": {
+              "name": "CloseCase",
+              "description": "Confirm or dismiss",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "fraud_case": {
+              "name": "FraudCase",
+              "description": "One investigation",
+              "root": true,
+              "attributes": {
+                "case_id": {
+                  "name": "caseId",
+                  "type": "string",
+                  "identity": true
+                },
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  }
+                },
+                "account_id": {
+                  "name": "accountId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "accounts.json#/boundedcontexts/accounts/aggregates/account/entities/account"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "CaseStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/case_status"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/entities/alert"
+                  },
+                  "relation": "includes",
+                  "label": "raised-by",
+                  "cardinality": "1..*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/case_status"
+                  },
+                  "relation": "uses",
+                  "label": "has-status",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "alert": {
+              "name": "Alert",
+              "description": "One flagged transaction with its score",
+              "root": false,
+              "attributes": {
+                "alert_id": {
+                  "name": "alertId",
+                  "type": "string",
+                  "identity": true
+                },
+                "transaction_ref": {
+                  "name": "transactionRef",
+                  "type": "string"
+                },
+                "score": {
+                  "name": "score",
+                  "type": "RiskScore",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
+                  },
+                  "relation": "uses",
+                  "label": "scored",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "invariants": {
+            "case_has_alert": {
+              "name": "CaseHasAlert",
+              "description": "A case always has at least one alert",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/entities/fraud_case"
+                },
+                {
+                  "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/entities/alert"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "invariants": {},
+      "services": {
+        "transaction_scorer": {
+          "name": "TransactionScorer",
+          "description": "The bank's own model; a domain service because it reads across every customer's history",
+          "type": "domain",
+          "provides": {
+            "transaction_flagged": {
+              "name": "TransactionFlagged",
+              "description": "Above threshold; a case is opened and the card is blocked",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/fraud/schemas/transaction_verdict"
+              }
+            }
+          },
+          "consumes": []
+        },
+        "fraud_app": {
+          "name": "FraudApp",
+          "description": "Fraud's application service: the boundary other contexts ask for a verdict through, in front of the scorer",
+          "type": "application",
+          "provides": {
+            "score_transaction": {
+              "name": "ScoreTransaction",
+              "description": "Score synchronously; the caller waits and is answered with the verdict, and a flag is published as well because other contexts act on it",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/fraud/schemas/score_transaction"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/fraud/schemas/transaction_verdict"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
+                }
+              ]
+            },
+            "record_card_authorisation": {
+              "name": "RecordCardAuthorisation",
+              "description": "File an approved card authorisation in the history the scorer reads, in Fraud's own words",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "cards.json#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/policies/file_a_card_authorisation"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "policies": {
+        "open_case_on_flag": {
+          "name": "Open case on flag",
+          "description": "Every flag becomes a case with the alert attached",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/provides/open_case"
+            }
+          ]
+        },
+        "file_a_card_authorisation": {
+          "name": "File a card authorisation",
+          "description": "Every approved authorisation joins the history the scorer reads; nothing else happens on one",
+          "on": [
+            {
+              "$ref": "cards.json#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/record_card_authorisation"
+            }
+          ]
+        }
+      },
+      "processes": {},
+      "glossary": {
+        "alert": {
+          "name": "Alert",
+          "definition": "One flagged transaction and its score",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/entities/alert"
+          }
+        },
+        "app_scam": {
+          "name": "APP scam",
+          "definition": "An authorised push payment the customer was tricked into making; reimbursable, so every missed flag costs the bank",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/fraud/services/transaction_scorer"
+          }
+        }
+      },
+      "valueobjects": {
+        "risk_score": {
+          "name": "RiskScore",
+          "description": "0 to 1000 with the reasons that produced it",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int 0..1000"
+            },
+            "reasons": {
+              "name": "reasons",
+              "type": "string[]"
+            }
+          },
+          "relations": [],
+          "invariants": {
+            "score_explained": {
+              "name": "ScoreExplained",
+              "description": "A score carries its reasons, because the customer may be entitled to them",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score/attributes/reasons"
+                }
+              ]
+            }
+          }
+        },
+        "case_status": {
+          "name": "CaseStatus",
+          "description": "open, confirmed, dismissed",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'open' | 'confirmed' | 'dismissed'"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
+      "schemas": {
+        "score_transaction": {
+          "name": "ScoreTransaction",
+          "description": "What the scorer needs: the transaction, its channel, amount and payee",
+          "attributes": {
+            "transaction_ref": {
+              "name": "transactionRef",
+              "type": "string",
+              "identity": true
+            },
+            "channel": {
+              "name": "channel",
+              "type": "'payment' | 'card'"
+            },
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "payee_iban": {
+              "name": "payeeIban",
+              "type": "string"
+            }
+          }
+        },
+        "transaction_verdict": {
+          "name": "TransactionVerdict",
+          "description": "What the scorer answers with: the transaction and its score, reasons and all; above the threshold is a flag",
+          "attributes": {
+            "transaction_ref": {
+              "name": "transactionRef",
+              "type": "string",
+              "identity": true
+            },
+            "channel": {
+              "name": "channel",
+              "type": "'payment' | 'card'"
+            },
+            "score": {
+              "name": "score",
+              "type": "RiskScore",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
+              }
+            }
+          }
+        },
+        "fraud_case_opened": {
+          "name": "FraudCaseOpened",
+          "attributes": {
+            "case_id": {
+              "name": "caseId",
+              "type": "string",
+              "identity": true
+            },
+            "account_id": {
+              "name": "accountId",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "screening_vendor": {
+      "name": "Screening Vendor",
+      "description": "The bought sanctions lists and the bought screening engine, behind a documented API. Not the bank's",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "screening_engine_api": {
+          "name": "Screening Engine API",
+          "description": "The vendor's documented interface, and all the bank can see",
+          "type": "application",
+          "provides": {
+            "match_against_lists": {
+              "name": "MatchAgainstLists",
+              "description": "Score a name against the bought lists",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/screening_vendor/schemas/list_match_query"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "processes": {},
+      "glossary": {},
+      "valueobjects": {},
+      "schemas": {
+        "list_match_query": {
+          "name": "ListMatchQuery",
+          "description": "The vendor's query format, which the bank does not negotiate",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "date_of_birth": {
+              "name": "dateOfBirth",
+              "type": "date"
+            },
+            "country": {
+              "name": "country",
+              "type": "ISO 3166 code"
+            }
+          }
+        }
+      }
+    }
+  },
+  "relationships": [
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/screening_vendor"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/sanctions_screening"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "The engine's API is the vendor's; Screening calls it as documented and reshapes nothing"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "cards.json#/boundedcontexts/cards"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/fraud"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Post-authorisation monitoring"
+    }
+  ],
+  "teams": {
+    "financial_crime_team": {
+      "name": "Financial Crime Team",
+      "description": "Sanctions screening, fraud scoring, cases"
+    }
+  }
+}

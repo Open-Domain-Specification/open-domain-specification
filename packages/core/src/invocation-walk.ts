@@ -1,5 +1,6 @@
 import type { ReactionChain, ReactionStep, Reactor } from "./reaction-walk";
 import { Consumable, Policy, Process } from "./workspace";
+import { identityKeyOf } from "./workspace-set";
 
 /**
  * One node of the reaction chain as one invocation reaches it: the node, and
@@ -70,7 +71,10 @@ export class InvocationWalk {
 
 	/** A stable key for a state, for ordering and de-duplicating rings. */
 	keyOf(state: Invocation): string {
-		return JSON.stringify([state.node.ref, state.caller?.ref]);
+		return JSON.stringify([
+			identityKeyOf(state.node),
+			state.caller && identityKeyOf(state.caller),
+		]);
 	}
 
 	private at(node: Reactor, caller?: Policy | Process): Invocation {

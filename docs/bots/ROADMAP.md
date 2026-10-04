@@ -153,3 +153,57 @@ Both final24 correction classes are integrated. Root full-core suite passes 1,56
 ## Current M8 checkpoint — 2026-10-04T02:54:19.462022+00:00
 
 Importer PR139 delivered: gated23c281af, identical mergeaf913078; pre/postCI37170929768/37171695891 all required jobs success, publish skipped. #92/#93 closed individually, actual4open/50closed (42implemented,8notplanned,zero new/reopened). M7 closing records de8354b7 own-gated/published. #94 separate branchcodex/m8-copy now baseline accepted; RefList comma-space and ConsumablePage contents label only, existing list assertion strengthened. No ConsumesTable expansion/new ticket. Actual desktop anchor proof; narrow contents hidden. Opus5.5medium→Sonnet5.5 foreground, root delivery; no quota/Astra. Exact candidate quality/local whole gate/prepostCI remain pending.
+
+## M8 records published / M9 contract activation — 2026-10-04T03:59:54.750456+00:00
+
+M8 complete: closingrecords5120fd54 own unmodified gate188s,1323pages100/689browser20existingcaptures/zero failed/flaky/retried; remote develop verified. This supersedes earlier pendingrecord snapshots. Three open59/54/63,51closed43implemented8notplanned0new/reopened. M9#59picked: reuse acceptedsource map, correct rejectedflatdesign toward current08completeworkspaces/current29diagnostics/repeatedlocalididentity. Finite sharedcontract/owningwrite/all4reader matrix before source; no M9design/sourceapproval or newreviewclaimed. #54completeauthoringinventory and63wholepromiseaudit follow.
+
+## M9 contract accepted / core implementation — 2026-10-04T04:33:54.379237+00:00
+
+Three issues remain. #59 now has an accepted finite linked-workspace contract, an exact rule/carrier inventory and explicit runtime acceptance. One bounded core foundation lane starts before readers and forms consume its APIs. Local IDs remain workspace-scoped; set keys remain stable as files join or leave. Nested sibling references use a canonical encoded path resolved inside the explicit set root. No new permissions, modules, shared assets or compatibility machinery. Historical final model approval remains tied to its exact M1 head; a new final whole-model gate is reserved for complete model implementation and root readiness. All four readers and the actual NorthBank team split remain required.
+
+## A0 foundation accepted / A1 core — 2026-10-04T04:57:42.272104+00:00
+
+The actual foundation is accepted: source-local and qualified resolution, complete workspace ownership, cardinality-independent set keys and composite identities. Root caught a valid Unicode filename alias after 1,713 green tests; the bounded correction preserves U+FEFF in every path segment, passes 1,721 core tests and five fresh-build root probes. Existing malformed-UTF-8 refusal remains. Core JSON loading/dumping, qualified-invalid retention, set diagnostics, rule scope and derived readers are not yet delivered. One core lane proceeds before dependent hosts consume the JSON API. Final model review remains reserved for complete implementation/checks and root readiness; no reviewer or CI was used here.
+
+## A1 accepted / next bounded lanes — 2026-10-04T05:41:31.160877+00:00
+
+Core linked JSON, set-aware diagnostics/rules/maps/getters and raw qualified-invalid retention are accepted within this stage: 2,330 core tests and actual type/format/build/coverage, five unchanged model suites, root fresh-build exact JSON baseline replay. Preserve failed/aborted probes and generated drift. Opus 5.5 coordinates Sonnet 5.5 persistence and twelve-team NorthBank work next, with disjoint ownership and serial builds; hosts shape-check fresh inputs. Four-reader/native/doc agreement and complete-candidate final gates remain pending. No tickets, review or CI added.
+
+## B accepted / all readers and plugin surfaces next — 2026-10-04T06:44:35.168213+00:00
+
+Actual Opus5.5/Sonnet5.5 terminal/end-turn proof: writer163/type/format, ten native checks; NorthBank51/type/format/build/deterministicregeneration. Root independently proved owner-only retention and refusals plus12file/19context/34relationship exactpin/JSONreload; frozen originalbytes and DISCOVERYprefix intact. Accept scoped work, keep59open. Deterministic host file order, no schema orderhint; aggregated ordering/8position tables may differ with file order and remain explicit. Disk/editor/dependency races documented, no atomicclaim. Teammodules explicitly choose downstream declaration; existingDSLhelpers upstreamplacement documented, no adjacent rewrite. C1 real pages/extension/viewer/static adapters and C2 real Graphviz/Markdown/skill/docs/decisions/sharedconsumers next. Frozen monolith forstandalone regressions only; no stopgap replacing actual set coverage. Full quality/final whole-model/landing/necessaryCI remain reserved.
+
+## M9 C checked / D integration — 2026-10-04T09:09:37.829011+00:00
+
+C1 readers and C2 diagrams/Markdown/skill/docs completed and independently checked within ownership. Keep #59/#54/#63 open. D1 closes native report guard and README/discovery/history gaps; D2 regenerates outputs and proves other-model doc order/normal import map contents. Opus5.5medium delegates sequential foreground Sonnet5.5; actualquota Luna fallback. Source remains one candidate, no partial finalreview or CI. Full eight-lens quality only after D source complete, root wholemodel readiness then final model signoff/exact gates/publication. Current e5c/5a6 approval remains historical.
+
+
+### M9 complete-source checkpoint — 2026-10-04T09:46:38.004847+00:00
+
+C and D source/integration reports are complete. E2 corrected the normal-generator content agreement tests; root independently reran shared28/28. All five schema copies are generated and current, NorthBank remains12files with exact three diagnostic tuples, and ordinary packaged ESM/CJS produce214files/19contextnodes/37edges/420cross-filelinks. The DSL-versus-JSON consumption sequence cost is pre-existing at5120fd54; the earlier stale-artifact/candidate-order attribution is withdrawn. M9/#59 remains open: whole eight-lens source quality, clean-head landing gate, final whole-model signoff, native acceptance/necessary exact CI and publication are pending. No final Astra review has been requested. #54 real forms and #63 parent audit remain after #59.
+
+
+### M9 final-source acceptance — 2026-10-04T10:29:33.546860+00:00
+
+Whole-source eight-lens F is complete. G corrected actual diagnostic location/wording, malformed URL feedback and host-scoped navigation claims, with owning core2334/extension207/pages1541 green,100%pages coverage/types/format. Root replayed locate34 andURL39. Source accepted for freeze; no model final-review or delivery claim. Next exact clean-head unmodified gate, serial current native/keyboard, then root readiness/final model signoff, required exact pre/postCI and merge. Three issues remain.
+
+
+### M9 mandatory precommit corrections accepted — 2026-10-04T11:04:11.646799+00:00
+
+H shared relationship grouping in packages/core/src/relationship.ts:85 preserves662 generated files and162 page rows; core2339/doc106/pages1541 green. I removes duplicated typography in packages/pages/src/lib/organisms/PageHeader.svelte:54 while preserving868 actual browser measurements, with a real failed spacing mutation and13focused browser tests. Both actual canonical foreground Sonnet5.5 end-turns and terminal Opus5.5 checks retained. Numeric score scan now finds0markers. Old regex missed0.55; five-whys/control saved outside repository. Candidate94897c24 was never pushed or gated; final correction freeze and unmodified wholegate are next. Native/current-candidate acceptance, final-model reviews, CI, merge and59closure remain pending. Low-score optional advisories declined; no newtickets or scope.
+
+
+### M9 final quality gate BLOCK — 2026-10-04T11:26:37.108286+00:00
+
+Exact9267c824 passed unmodifiedlocal201s/native34/keyboard32/guard0 but AstraLow finalmodelreview established two real gaps: unresolved qualified consumptionrelationship refs lost by packages/core/src/workspace-from-schema.ts:748 / workspace.ts:2802; specialized wrongkind targets misclassified by ref-kinds.ts:123. ClaudeOpus5.5 approvedwithlimits/sixadvisories; root does not override reproduced defects. Core source completion checklist reopened. Opus/Sonnet K owns fullretention/resolution classes and readonlyadvisory truth/scope triage, no newtickets or additionalfixscope yet. Five-whys saved: happycarrier and fourholdernegative matrices missed ordinarychildoptional failure retention. Exactcompletecandidatechecks/rootreadiness required before any further finalgate; not automaticafterfix. Threeissuesopen; noCI/push/merge/closure.
+
+
+### M9 K scoped core acceptance and owner cadence — 2026-10-04T11:56:54.623082+00:00
+
+TerminalcanonicalOpus/Sonnet K corrected qualified consumption.relationship persistence in packages/core/src/workspace-from-schema.ts:748 and typedwrongkind existence classification in workspace-set.ts:328. Actualcore2902/extension212 green; rootreplayed reviewerrepros0,4qualifiedcauses retained afterreload and4typedkinds wrongkind. No modelgenerated/pin drift. D1local singularagreement remains sameclassgap and rootauthorised focusedK2continuation; approvedURLidentity/staticexport/folderboundary/agreementtruth fixes follow in samebatch. No freeze/wholegate/finalreview/CI/closure betweenphases. Latestownerprohibits mutationtesting scripts/campaigns andnewlong-running suites; futureproof focusedregressions+existingrequiredgates. Completedpriorrawproof retained, noreplay. Fullcompletecandidateacceptance/readiness remainsunproven;3issuesopen.
+
+
+### M9 complete K/K2 correction acceptance — 2026-10-04T12:14:42.304754+00:00
+
+All canonical foregroundSonnet phases and terminalOpus verification finished. Local samefieldretention in packages/core/src/workspace-from-schema.ts:748 completesKclass; URLcodec in packages/pages/src/lib/url-set.ts:147, staticrawartifactintegrity in packages/pages/src/site.ts:103 and selectedfolderbinding in apps/ods-vscode/src/reader.ts:1 corrected; appendonly08/29truth notes and NorthBankcomment preservehistory/pins. Rootfocusedreader54pass; local297/extension104/drift150 sourceproof retained. Scopedcoverage1 is honestlyolduncoveredfetchbranch, not a wholecoveragepass; requiredwholegate next. Originalroot K2pinmap independently matches5records; coor old11:27pinclaim is source-mapmisread, no actualdrift. No mutation/newslow-suite work inK2. Completebatch source acceptedforfreeze, notfinalmodelapproval/delivery. Next exactclean unmodifiedgate/currentnative, thenrootreadiness/finalgates/necessaryCI/merge59close. No newticket/release,3open; M10safeCreateWorkspace integratedauthoring54andparent63last.

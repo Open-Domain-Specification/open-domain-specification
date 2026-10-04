@@ -1,8 +1,9 @@
-import type {
-	ContextRelationship,
-	ODSContextMap,
-	ODSContextMapEdge,
-	ODSContextMapNode,
+import {
+	type ContextRelationship,
+	identityKeyOf,
+	type ODSContextMap,
+	type ODSContextMapEdge,
+	type ODSContextMapNode,
 } from "@open-domain-specification/core";
 import {
 	DOWNSTREAM_ROLE_LABELS,
@@ -90,15 +91,17 @@ function contextNode(n: ODSContextMapNode): ContextNodeData {
  */
 const intentOf = (
 	e: ODSContextMapEdge,
-	relationships: ContextRelationship[],
+	relationships: ReadonlyArray<ContextRelationship>,
 ): ContextRelationship | undefined =>
 	e.implied
 		? undefined
 		: relationships.find(
 				(r) =>
 					r.name === e.name &&
-					((r.source.ref === e.source.id && r.target.ref === e.target.id) ||
-						(r.source.ref === e.target.id && r.target.ref === e.source.id)),
+					((identityKeyOf(r.source) === e.source.id &&
+						identityKeyOf(r.target) === e.target.id) ||
+						(identityKeyOf(r.source) === e.target.id &&
+							identityKeyOf(r.target) === e.source.id)),
 			);
 
 /**
@@ -116,7 +119,7 @@ const intentOf = (
  */
 export function contextGraph(
 	map: ODSContextMap,
-	relationships: ContextRelationship[] = [],
+	relationships: ReadonlyArray<ContextRelationship> = [],
 ): Graph {
 	const edges: GraphEdge[] = [...map.edges.entries()].map(([id, e]) => {
 		const directed = !isSymmetricRelationship(e.type);

@@ -1,0 +1,321 @@
+{
+  "$schema": "./schema.json",
+  "id": "northbank_finance_systems",
+  "name": "NorthBank Finance Systems",
+  "description": "NorthBank's Finance Systems Team: regulatory reporting.",
+  "version": "1.0.0",
+  "odsVersion": "3.0.0",
+  "primaryColor": "#1d4ed8",
+  "domains": {},
+  "boundedcontexts": {
+    "regulatory_reporting": {
+      "name": "Regulatory Reporting",
+      "description": "Returns assembled from events and reconciled to the ledger",
+      "subdomains": [
+        {
+          "$ref": "financial_crime.json#/domains/risk_&_compliance/subdomains/regulatory_reporting"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/finance_systems_team"
+      },
+      "aggregates": {
+        "regulatory_return": {
+          "name": "RegulatoryReturn",
+          "description": "One report code for one period and its lines",
+          "provides": {
+            "return_filed": {
+              "name": "ReturnFiled",
+              "description": "Sent to the regulator",
+              "type": "event",
+              "internal": true
+            },
+            "accumulate_line": {
+              "name": "AccumulateLine",
+              "description": "Add an event's amount to the right line",
+              "type": "operation",
+              "internal": true
+            },
+            "file_return": {
+              "name": "FileReturn",
+              "description": "File a closed period's return",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/provides/return_filed"
+                }
+              ]
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "regulatory_return": {
+              "name": "RegulatoryReturn",
+              "description": "A return to the PCA",
+              "root": true,
+              "attributes": {
+                "return_id": {
+                  "name": "returnId",
+                  "type": "string",
+                  "identity": true
+                },
+                "report_code": {
+                  "name": "reportCode",
+                  "type": "string"
+                },
+                "filed_at": {
+                  "name": "filedAt",
+                  "type": "date-time"
+                },
+                "period": {
+                  "name": "period",
+                  "type": "ReportingPeriod",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/reporting_period"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/entities/report_line"
+                  },
+                  "relation": "includes",
+                  "label": "made-of",
+                  "cardinality": "1..*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/reporting_period"
+                  },
+                  "relation": "uses",
+                  "label": "for-period",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "report_line": {
+              "name": "ReportLine",
+              "description": "One line code and its amount",
+              "root": false,
+              "attributes": {
+                "line_code": {
+                  "name": "lineCode",
+                  "type": "string",
+                  "identity": true
+                },
+                "amount": {
+                  "name": "amount",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "core_banking.json#/boundedcontexts/ledger/valueobjects/money"
+                  }
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "period_closed_before_filing": {
+              "name": "PeriodClosedBeforeFiling",
+              "description": "A return is filed only for a closed period",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/reporting_period"
+                }
+              ]
+            },
+            "filed_once_only": {
+              "name": "FiledOnceOnly",
+              "description": "A return is filed once; corrections are a new return",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/entities/regulatory_return"
+                }
+              ]
+            },
+            "lines_reconcile_to_ledger": {
+              "name": "LinesReconcileToLedger",
+              "description": "A return is filed only when every line has been reconciled to the ledger postings for its period; FileReturn refuses an unreconciled line",
+              "precondition": true,
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/provides/file_return"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "invariants": {},
+      "services": {
+        "reporting_app": {
+          "name": "ReportingApp",
+          "description": "Regulatory Reporting's application service: the boundary through which the postings, openings and disbursements a return is built from arrive",
+          "type": "application",
+          "provides": {},
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "core_banking.json#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "accounts.json#/boundedcontexts/accounts/aggregates/account/provides/account_opened"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "lending.json#/boundedcontexts/lending/aggregates/loan/provides/loan_disbursed"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "core_banking.json#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
+        }
+      },
+      "policies": {
+        "accumulate_on_posting": {
+          "name": "Accumulate on posting",
+          "description": "Ledger postings, account openings and disbursements each add to a line as they happen, and Sovereign's nightly batch adds the savings movements",
+          "on": [
+            {
+              "$ref": "core_banking.json#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+            },
+            {
+              "$ref": "accounts.json#/boundedcontexts/accounts/aggregates/account/provides/account_opened"
+            },
+            {
+              "$ref": "lending.json#/boundedcontexts/lending/aggregates/loan/provides/loan_disbursed"
+            },
+            {
+              "$ref": "core_banking.json#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/provides/accumulate_line"
+            }
+          ]
+        }
+      },
+      "processes": {},
+      "glossary": {
+        "return": {
+          "name": "Return",
+          "definition": "A report to the regulator. The branches' 'return' is a returned payment",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return"
+          }
+        },
+        "reporting_period": {
+          "name": "Reporting period",
+          "definition": "The month or quarter a return covers",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/reporting_period"
+          }
+        }
+      },
+      "valueobjects": {
+        "reporting_period": {
+          "name": "ReportingPeriod",
+          "description": "Month or quarter; closed before filing",
+          "attributes": {
+            "from": {
+              "name": "from",
+              "type": "date"
+            },
+            "to": {
+              "name": "to",
+              "type": "date"
+            },
+            "closed": {
+              "name": "closed",
+              "type": "boolean"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
+      "schemas": {}
+    }
+  },
+  "relationships": [
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "core_banking.json#/boundedcontexts/ledger"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/regulatory_reporting"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "accounts.json#/boundedcontexts/accounts"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/regulatory_reporting"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "lending.json#/boundedcontexts/lending"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/regulatory_reporting"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "core_banking.json#/boundedcontexts/sovereign_core_(legacy)"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/regulatory_reporting"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    }
+  ],
+  "teams": {
+    "finance_systems_team": {
+      "name": "Finance Systems Team",
+      "description": "Regulatory reporting"
+    }
+  }
+}

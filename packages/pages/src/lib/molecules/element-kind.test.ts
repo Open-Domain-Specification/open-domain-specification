@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
-import { kindOf } from "./element-kind";
+import { side } from "../set-fixture";
+import { answerTarget, kindOf } from "./element-kind";
 
 const ws = petstoreModel().workspace;
 const bc = ws.boundedcontexts.get("catalog_bc");
@@ -48,5 +49,22 @@ describe("kindOf", () => {
 
 	it("falls back to the neutral consumable glyph for anything else", () => {
 		expect(kindOf({ ref: "#/something/new" })).toBe("consumable");
+	});
+});
+
+describe("answerTarget", () => {
+	it("is the shape an answer came back as, and the call itself where it came back as nothing", () => {
+		const { post, decline, receipt } = side("Team");
+		const rejected = post.rejected(decline);
+		const returned = post.returned();
+		expect(answerTarget(rejected)).toBe(decline);
+		expect(answerTarget(returned)).toBe(receipt);
+		const { posted, payments } = side("Other");
+		const done = payments.provides("Done", {
+			description: "",
+			type: "operation",
+		});
+		expect(answerTarget(done.completed())).toBe(done);
+		expect(posted.type).toBe("event");
 	});
 });

@@ -57,6 +57,7 @@ const ref = $derived(
 );
 </script>
 
+<!-- The element itself, as a page passes it: a term embodies an element, not a ref. -->
 {#key ref}
-	<ModelProvider {model}><LanguageSection target={{ ref }} /></ModelProvider>
+	<ModelProvider {model}><LanguageSection target={model.workspace.getByRef(ref) ?? { ref }} /></ModelProvider>
 {/key}

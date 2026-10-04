@@ -28,11 +28,17 @@ const SCREEN = { width: 1300, height: 900 };
 
 const CASES = [
 	// Dense: nineteen contexts, fitted at the floor inline.
-	["NorthBank's workspace map", "northbank", "#", "Context map", "NorthBank"],
+	[
+		"NorthBank's workspace map",
+		"northbank-monolith",
+		"#",
+		"Context map",
+		"NorthBank",
+	],
 	// Sparse and wide: the map the inline report was about.
 	[
 		"OnboardingApp's consumable map",
-		"northbank",
+		"northbank-monolith",
 		"#/boundedcontexts/customer_&_kyc/services/onboarding_app",
 		"consumable map",
 		"OnboardingApp",
@@ -102,7 +108,7 @@ test.describe("fullscreen after the reader has moved the map", () => {
 	test("hands the view back to the fit, which fits the new canvas", async ({
 		page,
 	}) => {
-		const url = await serveModel(page, "northbank");
+		const url = await serveModel(page, "northbank-monolith");
 		await page.goto(`/?url=${encodeURIComponent(url)}`);
 		await expect(page.locator("main h1")).toContainText("NorthBank");
 		const figure = page.locator("figure.diagram", { hasText: "Context map" });
@@ -120,7 +126,7 @@ test.describe("fullscreen after the reader has moved the map", () => {
 	test("a window resized while fitted refits, and one the reader moved stays theirs", async ({
 		page,
 	}) => {
-		const url = await serveModel(page, "northbank");
+		const url = await serveModel(page, "northbank-monolith");
 		await page.goto(
 			`/?url=${encodeURIComponent(url)}${modelHash("#/boundedcontexts/customer_&_kyc/services/onboarding_app")}`,
 		);

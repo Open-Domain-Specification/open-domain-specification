@@ -498,7 +498,7 @@ test("on a context map a node that is alone in its cluster stays under a held po
 	// The probe records after auto-pan's frame callback, so this fails when a stale parent measurement holds the
 	// drag state back (store and DOM state read before the resize observer runs), even though the paint is correct.
 	await page.setViewportSize({ width: 1600, height: 1200 });
-	const url = await serveModel(page, "northbank");
+	const url = await serveModel(page, "northbank-monolith");
 	await page.goto(`/?url=${encodeURIComponent(url)}`);
 	const figure = page.locator("figure.diagram", { hasText: "Context map" });
 	await figure.scrollIntoViewIfNeeded();

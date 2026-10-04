@@ -24,6 +24,8 @@ export const VSCODE_TEST_CONFIGS = [
 	"petstore",
 	"hostile-links",
 	"cross-surface",
+	"multi",
+	"writer",
 ];
 
 /**

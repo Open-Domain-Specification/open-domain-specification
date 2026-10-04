@@ -32,6 +32,7 @@ export const sectionsFor = (i: Rule) => [
 </script>
 
 <script lang="ts">
+import { identityKeyOf } from "@open-domain-specification/core";
 import {
 	Aggregate,
 	BoundedContext,
@@ -229,11 +230,11 @@ const columns: Column[] = [
 		<DefinitionList>
 			<Definition term="Enforced by">
 				{#if inAggregate}
-					<Lockup kind="aggregate" name={owner.name} ref={owner.ref} />
+					<Lockup kind="aggregate" name={owner.name} ref={owner} />
 				{:else if inContext}
-					<Lockup kind="boundedcontext" name={owner.name} ref={owner.ref} />
+					<Lockup kind="boundedcontext" name={owner.name} ref={owner} />
 				{:else}
-					<Lockup kind="valueobject" name={owner.name} ref={owner.ref} />
+					<Lockup kind="valueobject" name={owner.name} ref={owner} />
 				{/if}
 			</Definition>
 		</DefinitionList>
@@ -259,7 +260,7 @@ const columns: Column[] = [
 	>
 		{#snippet cell(t, col)}
 			{#if col.key === "name"}
-				<Lockup kind={kindOf(t)} name={nameOf(t)} ref={t.ref} />
+				<Lockup kind={kindOf(t)} name={nameOf(t)} ref={t} />
 			{:else}
 				{t.description}
 			{/if}

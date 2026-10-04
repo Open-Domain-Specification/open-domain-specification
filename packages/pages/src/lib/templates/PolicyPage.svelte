@@ -7,6 +7,7 @@ export const sections = [
 </script>
 
 <script lang="ts">
+import { identityKeyOf } from "@open-domain-specification/core";
 import {
 	Answer,
 	distinguish,
@@ -14,7 +15,7 @@ import {
 	type Policy,
 	type ReactionTrigger,
 } from "@open-domain-specification/core";
-import { problemsUnder, useModel } from "../model";
+import { anchorOf, problemsUnder, useModel } from "../model";
 import { flowGraph } from "../flow/graph";
 import { FLOW_MAP_EMPTY, flowMapCaption } from "../flow/flow-graph";
 import type { Column } from "../atoms/DataTable.svelte";
@@ -27,7 +28,7 @@ import ConsumableKeywords from "../molecules/ConsumableKeywords.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
 import {
 	answerKeyword,
-	answerRef,
+	answerTarget,
 	kindOf,
 } from "../molecules/element-kind";
 import DiagramFigure from "../organisms/DiagramFigure.svelte";
@@ -54,11 +55,11 @@ const sourceOf = (trigger: ReactionTrigger) =>
 
 /**
  * What the name in the first column links to. An answer links to what
- * {@link answerRef} says: the shape it came back as, or the call itself where
+ * {@link answerTarget} says: the shape it came back as, or the call itself where
  * it came back as nothing. The Provider column says which call either way.
  */
 const linkOf = (trigger: ReactionTrigger) =>
-	trigger instanceof Answer ? answerRef(trigger) : trigger.ref;
+	trigger instanceof Answer ? answerTarget(trigger) : trigger;
 
 
 /**
@@ -87,7 +88,7 @@ const columnsFor = (label: string): Column[] => [
 
 {#snippet consumables(rows: ReactionTrigger[], label: string, empty: string)}
 	{@const names = namesOf(rows)}
-	<DataTable columns={columnsFor(label)} {rows} {empty} rowId={(c) => c.ref}>
+	<DataTable columns={columnsFor(label)} {rows} {empty} rowId={(c) => anchorOf(model, c)} rowKey={(c) => identityKeyOf(c)}>
 		{#snippet cell(c, col)}
 			{#if col.key === "name"}
 				{@const told = names(c) !== rowReading(c)}
@@ -96,9 +97,9 @@ const columnsFor = (label: string): Column[] => [
 				{#if c instanceof Answer}<Keyword text={answerKeyword(c)} />{:else}<ConsumableKeywords consumable={c} />{/if}
 			{:else if col.key === "provider"}
 				{@const source = sourceOf(c)}
-				<Lockup kind={kindOf(source)} name={source.name} ref={source.ref} />
+				<Lockup kind={kindOf(source)} name={source.name} ref={source} />
 			{:else if col.key === "context"}
-				<Lockup kind="boundedcontext" name={c.boundedcontext.name} ref={c.boundedcontext.ref} />
+				<Lockup kind="boundedcontext" name={c.boundedcontext.name} ref={c.boundedcontext} />
 			{:else}
 				{c.description}
 			{/if}
@@ -110,7 +111,7 @@ const columnsFor = (label: string): Column[] => [
 	{#snippet title()}<Lockup kind="policy" name={p.name} id={p.id} detail="Policy" size="title" />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
-			<Definition term="Lives in"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
+			<Definition term="Lives in"><Lockup kind="boundedcontext" name={bc.name} ref={bc} /></Definition>
 		</DefinitionList>
 	{/snippet}
 </PageHeader>
@@ -131,7 +132,7 @@ const columnsFor = (label: string): Column[] => [
 	<DiagramFigure
 		caption={flowMapCaption(bc.name)}
 		emptyText={FLOW_MAP_EMPTY}
-		graph={flowGraph(flowMap, p.ref)}
+		graph={flowGraph(flowMap, identityKeyOf(p))}
 	/>
 </Section>
 

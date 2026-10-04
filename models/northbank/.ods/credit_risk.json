@@ -1,0 +1,451 @@
+{
+  "$schema": "./schema.json",
+  "id": "northbank_credit_risk",
+  "name": "NorthBank Credit Risk",
+  "description": "NorthBank's Credit Risk Team: credit decisioning, the scorecard, affordability and the bureau it pulls reports from.",
+  "version": "1.0.0",
+  "odsVersion": "3.0.0",
+  "primaryColor": "#1d4ed8",
+  "domains": {},
+  "boundedcontexts": {
+    "credit_decisioning": {
+      "name": "Credit Decisioning",
+      "description": "Bureau data, the scorecard and affordability",
+      "subdomains": [
+        {
+          "$ref": "lending.json#/domains/credit/subdomains/credit_decisioning"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/credit_risk_team"
+      },
+      "aggregates": {
+        "credit_decision": {
+          "name": "CreditDecision",
+          "description": "One decision and the evidence behind it, kept so it can be explained",
+          "provides": {
+            "decision_made": {
+              "name": "DecisionMade",
+              "description": "Yes or no, with reasons",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/credit_decisioning/schemas/decision_made"
+              }
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "credit_decision": {
+              "name": "CreditDecision",
+              "description": "The outcome for one application",
+              "root": true,
+              "attributes": {
+                "decision_id": {
+                  "name": "decisionId",
+                  "type": "string",
+                  "identity": true
+                },
+                "application_id": {
+                  "name": "applicationId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "lending.json#/boundedcontexts/lending/aggregates/loan_application/entities/loan_application"
+                  }
+                },
+                "outcome": {
+                  "name": "outcome",
+                  "type": "'approved' | 'declined'"
+                },
+                "bureau_report": {
+                  "name": "bureauReport",
+                  "type": "BureauReport",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/bureau_report"
+                  }
+                },
+                "affordability": {
+                  "name": "affordability",
+                  "type": "Affordability",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/affordability"
+                  }
+                },
+                "score": {
+                  "name": "score",
+                  "type": "CreditScore",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/credit_score"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/bureau_report"
+                  },
+                  "relation": "uses",
+                  "label": "based-on",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/affordability"
+                  },
+                  "relation": "uses",
+                  "label": "assessed",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/credit_score"
+                  },
+                  "relation": "uses",
+                  "label": "scored",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "invariants": {
+            "affordability_ratio_cap": {
+              "name": "AffordabilityRatioCap",
+              "description": "Commitments over income at most forty-five percent for an approval",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/affordability"
+                }
+              ]
+            },
+            "decision_explained": {
+              "name": "DecisionExplained",
+              "description": "Every decision carries reason codes; the customer is entitled to them",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/credit_score"
+                }
+              ]
+            },
+            "bureau_report_fresh": {
+              "name": "BureauReportFresh",
+              "description": "The bureau report is no older than thirty days",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/bureau_report"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "invariants": {},
+      "services": {
+        "decisioning_app": {
+          "name": "DecisioningApp",
+          "description": "Credit Decisioning's application service: the boundary Lending and the channels ask for a decision through",
+          "type": "application",
+          "provides": {
+            "decide": {
+              "name": "Decide",
+              "description": "Pull the bureau report and hand it to the scorecard, run it, then check affordability",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/credit_decisioning/schemas/decision_request"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decision_made"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/credit_bureau/services/bureau_api/provides/pull_bureau_report"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/credit_decisioning/services/scorecard/provides/score_application"
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
+                }
+              ]
+            }
+          ]
+        },
+        "scorecard": {
+          "name": "Scorecard",
+          "description": "The bank's own model; a domain service because it is tuned across the whole book",
+          "type": "domain",
+          "provides": {
+            "score_application": {
+              "name": "ScoreApplication",
+              "description": "Run the scorecard over an application and its bureau report",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "processes": {},
+      "glossary": {
+        "scorecard": {
+          "name": "Scorecard",
+          "definition": "The bank's own credit model",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/credit_decisioning/services/scorecard"
+          }
+        },
+        "decline_reason": {
+          "name": "Decline reason",
+          "definition": "A code the customer is entitled to see when refused",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/credit_score"
+          }
+        }
+      },
+      "valueobjects": {
+        "bureau_report": {
+          "name": "BureauReport",
+          "description": "The external credit file at a moment in time",
+          "attributes": {
+            "bureau": {
+              "name": "bureau",
+              "type": "string"
+            },
+            "score": {
+              "name": "score",
+              "type": "int"
+            },
+            "pulled_at": {
+              "name": "pulledAt",
+              "type": "date-time"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "affordability": {
+          "name": "Affordability",
+          "description": "Monthly income, commitments and their ratio",
+          "attributes": {
+            "monthly_income_minor": {
+              "name": "monthlyIncomeMinor",
+              "type": "int64"
+            },
+            "monthly_commitments_minor": {
+              "name": "monthlyCommitmentsMinor",
+              "type": "int64"
+            },
+            "ratio": {
+              "name": "ratio",
+              "type": "decimal"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "credit_score": {
+          "name": "CreditScore",
+          "description": "The scorecard's output with the reason codes",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int"
+            },
+            "reason_codes": {
+              "name": "reasonCodes",
+              "type": "string[]"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
+      "schemas": {
+        "decision_request": {
+          "name": "DecisionRequest",
+          "attributes": {
+            "application_id": {
+              "name": "applicationId",
+              "type": "string",
+              "identity": true,
+              "identifies": {
+                "$ref": "lending.json#/boundedcontexts/lending/aggregates/loan_application/entities/loan_application"
+              }
+            },
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identifies": {
+                "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+              }
+            },
+            "requested_minor": {
+              "name": "requestedMinor",
+              "type": "int64"
+            },
+            "term_months": {
+              "name": "termMonths",
+              "type": "int"
+            }
+          }
+        },
+        "decision_made": {
+          "name": "DecisionMade",
+          "attributes": {
+            "application_id": {
+              "name": "applicationId",
+              "type": "string",
+              "identity": true,
+              "identifies": {
+                "$ref": "lending.json#/boundedcontexts/lending/aggregates/loan_application/entities/loan_application"
+              }
+            },
+            "outcome": {
+              "name": "outcome",
+              "type": "'approved' | 'declined'"
+            },
+            "score": {
+              "name": "score",
+              "type": "CreditScore",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/credit_score"
+              }
+            }
+          }
+        }
+      }
+    },
+    "credit_bureau": {
+      "name": "Credit Bureau",
+      "description": "The credit reference agency: it holds the credit file and answers a pull with a report at a point in time. Not the bank's",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "bureau_api": {
+          "name": "Bureau API",
+          "description": "The bureau's documented interface, and all the bank can see",
+          "type": "application",
+          "provides": {
+            "pull_bureau_report": {
+              "name": "PullBureauReport",
+              "description": "Pull a fresh credit file for a customer",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/credit_bureau/schemas/bureau_pull_request"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/credit_bureau/schemas/bureau_report"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "processes": {},
+      "glossary": {},
+      "valueobjects": {},
+      "schemas": {
+        "bureau_report": {
+          "name": "BureauReport",
+          "description": "The bureau's own report format for one customer, at the moment it is pulled",
+          "attributes": {
+            "bureau": {
+              "name": "bureau",
+              "type": "string"
+            },
+            "score": {
+              "name": "score",
+              "type": "int"
+            },
+            "pulled_at": {
+              "name": "pulledAt",
+              "type": "date-time"
+            }
+          }
+        },
+        "bureau_pull_request": {
+          "name": "BureauPullRequest",
+          "description": "Who to pull the file for",
+          "attributes": {
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identifies": {
+                "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "relationships": [
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/credit_bureau"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/credit_decisioning"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The bureau's pull is the bureau's; Credit Decisioning takes the report at the edge and keeps its own BureauReport once pulled"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "customer_platform.json#/boundedcontexts/customer_&_kyc"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/credit_decisioning"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    }
+  ],
+  "teams": {
+    "credit_risk_team": {
+      "name": "Credit Risk Team",
+      "description": "Decisioning, scorecards, affordability"
+    }
+  }
+}

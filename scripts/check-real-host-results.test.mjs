@@ -24,6 +24,8 @@ const goodVscode = () => ({
 	petstore: mocha({ passes: ["p1", "p2"], pending: screenshots }),
 	"hostile-links": mocha(),
 	"cross-surface": mocha(),
+	writer: mocha(),
+	multi: mocha(),
 });
 const RESULTS = {
 	expected: [{ status: "passed" }],
@@ -52,6 +54,76 @@ const goodKeyboard = () => ({
 	errors: [],
 });
 const good = () => ({ vscode: goodVscode(), keyboard: goodKeyboard() });
+
+describe("the labels .vscode-test.mjs defines", () => {
+	it("are all required, so a config that never reports cannot pass unnoticed", () => {
+		expect([...VSCODE_TEST_CONFIGS].sort()).toEqual([
+			"cross-surface",
+			"hostile-links",
+			"multi",
+			"petstore",
+			"writer",
+		]);
+	});
+
+	for (const label of ["writer", "multi"]) {
+		it(`refuses a run in which ${label} wrote no results`, () => {
+			const input = good();
+			input.vscode[label] = undefined;
+			const r = checkResults(input);
+			expect(r.ok).toBe(false);
+			expect(r.problems).toEqual([
+				`vscode-test ${label}: no results (VS Code did not download, start or finish)`,
+			]);
+		});
+
+		it(`refuses ${label} with zero tests executed`, () => {
+			const input = good();
+			input.vscode[label] = mocha({ passes: [] });
+			expect(checkResults(input).problems).toEqual([
+				`vscode-test ${label}: zero tests executed`,
+			]);
+		});
+
+		it(`refuses ${label} with a failing test`, () => {
+			const input = good();
+			input.vscode[label] = mocha({ failures: ["a failing test"] });
+			expect(checkResults(input).problems).toEqual([
+				`vscode-test ${label}: failed: a failing test`,
+			]);
+		});
+
+		it(`refuses a skip in ${label}, which allows none`, () => {
+			const input = good();
+			input.vscode[label] = mocha({ pending: ["a skipped test"] });
+			expect(checkResults(input).problems).toEqual([
+				`vscode-test ${label}: unexpected skip: a skipped test`,
+			]);
+		});
+
+		it(`does not let a petstore screenshot title excuse a skip in ${label}`, () => {
+			const input = good();
+			input.vscode[label] = mocha({ pending: [screenshots[0]] });
+			expect(checkResults(input).problems.join("\n")).toContain(
+				`vscode-test ${label}: unexpected skip`,
+			);
+		});
+	}
+
+	it("reports writer and multi in the totals alongside the others", () => {
+		const input = good();
+		input.vscode.writer = mocha({ passes: ["w1", "w2", "w3"] });
+		input.vscode.multi = mocha({ passes: ["m1"] });
+		const r = checkResults(input);
+		expect(r.ok).toBe(true);
+		expect(r.summary.vscode.writer).toMatchObject({ executed: 3, skipped: 0 });
+		expect(r.summary.vscode.multi).toMatchObject({ executed: 1, skipped: 0 });
+		expect(r.summary.allowedSkips).toHaveLength(4);
+		const md = renderSummary(r);
+		expect(md).toContain("| vscode-test | writer | 3 | 3 | 0 | 0 |");
+		expect(md).toContain("| vscode-test | multi | 1 | 1 | 0 | 0 |");
+	});
+});
 
 describe("checkResults", () => {
 	it("passes a run that executed everything and skipped only the screenshots", () => {
@@ -276,6 +348,7 @@ describe("loadResults", () => {
 		expect(r.vscode.petstore.passes).toHaveLength(1);
 		expect(r.vscode["hostile-links"]).toBeUndefined();
 		expect(r.vscode["cross-surface"]).toBeUndefined();
+		expect(r.vscode.writer).toBeUndefined();
 		expect(r.keyboard.errors).toEqual([]);
 	});
 });

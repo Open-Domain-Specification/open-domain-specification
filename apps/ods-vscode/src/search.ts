@@ -44,7 +44,10 @@ function hit(
 		ref: el.ref,
 		label: `$(${ICONS[kind]}) ${el.name}`,
 		description: [kindLabel[kind], extra, el.id].filter(Boolean).join(" · "),
-		detail: [file.workspace?.name, ...trail].join(" › "),
+		// The file is part of the answer: two files may each have a `ledger`.
+		detail: [`${file.workspace?.name} (${file.relativePath})`, ...trail].join(
+			" › ",
+		),
 	};
 }
 

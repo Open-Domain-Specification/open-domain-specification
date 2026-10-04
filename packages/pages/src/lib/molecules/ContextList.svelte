@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { BoundedContext } from "@open-domain-specification/core";
+import { identityKeyOf } from "@open-domain-specification/core";
 import Keyword from "../atoms/Keyword.svelte";
 import ContextLockup from "./ContextLockup.svelte";
 import Joined from "./Joined.svelte";
@@ -15,5 +16,5 @@ const {
 </script>
 
 <Joined>
-	{#each contexts as bc (bc.ref)}<ContextLockup context={bc} />{:else}<Keyword text={empty} />{/each}
+	{#each contexts as bc (identityKeyOf(bc))}<ContextLockup context={bc} />{:else}<Keyword text={empty} />{/each}
 </Joined>

@@ -8,11 +8,11 @@
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
-  "active_milestone": 8,
-  "integration_batch": "milestone-08-closing-records",
+  "active_milestone": 9,
+  "integration_batch": "milestone-09-linked-workspaces",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M8 delivered and closed; six closing records quality accepted, own clean-head gate/publication pending; M9 contract correction next, source not authorized",
+  "candidate_state": "M1\u20138 delivered, M8 own-gated records5120fd54 published; M9linked completeworkspace contract correction active, no source authorization",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -1469,7 +1469,7 @@
         94
       ],
       "owner": "lead",
-      "state": "complete: source delivered (PR139 importer, PR140 copy), #92/#93/#94 individually closed; closing records own gate/publication pending",
+      "state": "complete: three individual closures; own-gated closingrecords5120fd54 published",
       "expected_remaining": 3,
       "entry_scope": "Import refinements and editorial slice independently accepted.",
       "exit_acceptance": "Themed native focus target, file name, Problems-style error and exact two copy corrections.",
@@ -1665,6 +1665,19 @@
           "highest_score": 0.3,
           "introduced_blockers": 0,
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/closing-records/quality/root-acceptance.json"
+        },
+        {
+          "at": "2026-10-04T03:59:54.750456+00:00",
+          "scope": "closingrecords own gate accepted andpublished",
+          "head": "5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9",
+          "gate_exit": 0,
+          "gate_seconds": 188,
+          "browser": 689,
+          "existing_optional_captures_skipped": 20,
+          "pages_unit": 1323,
+          "coverage": 100,
+          "remote_verified": true,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/closing-records/publication.json"
         }
       ],
       "closed_issues": [
@@ -1680,7 +1693,7 @@
         59
       ],
       "owner": "lead",
-      "state": "waiting: not activated; survey facts accepted but the flat design was rejected, bounded contract correction needed before any source",
+      "state": "active: core/writer/team split accepted; C reader/spec sources checked; D integration and final gates pending",
       "expected_remaining": 2,
       "entry_scope": "Reconcile decision08/current29 and settle identity/linking/diagnostics/persistence/reader packaging before code.",
       "exit_acceptance": "Split substantial reference model equivalent to single-file including pins; missing/ambiguous/cyclic refs, lossless owning-file save and four readers.",
@@ -1695,6 +1708,48 @@
           "required_next": "A bounded contract correction: linked complete-workspace design with an explicit finite duplicate-local-id, identity, round-trip, owning-write and four-reader matrix, accepted by root before any source.",
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/foundation-survey/root-readiness-finding.json",
           "limits": "Static inspection only; no builds, tests or hosts; worker time ledger missing, raw tool record archived without invented times."
+        },
+        {
+          "at": "2026-10-04T03:59:54.750456+00:00",
+          "scope": "contract correction activation only",
+          "base": "5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9",
+          "branch": "codex/m9-multifile",
+          "card": "boards/project-backlog/190-team-owned-model-files.md",
+          "source_authorized": false,
+          "proposal_approved": false,
+          "basis": "current08/29 and actual source map; flatproposal rejected, repeatedlocalids counterexample"
+        },
+        {
+          "at": "2026-10-04T04:33:54.379237+00:00",
+          "scope": "Contract accepted for source implementation, not runtime acceptance",
+          "proposal_approved": true,
+          "source_authorized": "bounded A0 core foundation",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/contract-closure/root-acceptance.json",
+          "rules": {
+            "total": 72,
+            "workspace": 4,
+            "set_scope": 22,
+            "object_crossing": 21,
+            "local": 25,
+            "key_hazards": 9
+          },
+          "ref_fields": 27,
+          "runtime_limits": "No tests/hosts in contract phase; complete reader/ownership/model acceptance remains pending"
+        },
+        {
+          "at": "2026-10-04T04:57:42.272104+00:00",
+          "scope": "Accepted real core identity/resolver API, not full #59",
+          "core_tests": 1721,
+          "root_probe_cases": 5,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/core-A0-bom/root-acceptance.json",
+          "source_authorized": "remaining core A1; readers await actual JSON API",
+          "limits": "No linked JSON/set-validator/maps/readers/writer/model split, final reviewer/gate/CI yet"
+        },
+        {
+          "at": "2026-10-04T09:09:37.829011+00:00",
+          "scope": "C1/C2 actual terminal source completion with independent coordinator checks; not final M9 acceptance",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/C-readers-surfaces/coordinator-summary.md",
+          "required_next": "D mandatoryreportguard/docs/history/regeneration/order/importproof, wholequality/readiness/finalmodel/gates/CI/merge/closure"
         }
       ],
       "closed_issues": []
@@ -1755,15 +1810,13 @@
     "updated": "2026-10-03T19:41:52.900949+00:00"
   },
   "active_delivery": {
-    "milestone": 8,
+    "milestone": 9,
     "issues": [
-      92,
-      93,
-      94
+      59
     ],
-    "branch": "codex/m8-closeout-records",
-    "base": "a7552b961e5421d6c1bb96c5d5ef46381ca08bb7",
-    "state": "M8 source delivered and all three issues closed; six closing records final quality accepted, own clean-head gate/publication pending"
+    "branch": "codex/m9-multifile",
+    "base": "5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9",
+    "state": "bounded linkedcontract correction only, no approved M9design/source"
   },
   "previous_delivery": {
     "scope": "M6 merged accepted closeout",
@@ -1811,5 +1864,197 @@
       "release": false
     },
     "retrospective": "docs/bots/sprints/2026-10-03-retro-07.md"
+  },
+  "m9_core_A1_acceptance": {
+    "at": "2026-10-04T05:41:31.160877+00:00",
+    "decision": "Accept scoped core A1 API/behavior; not final whole model or #59 completion",
+    "coordinator": "e238318c-7981-406c-9279-7b6e3ff9cb8b",
+    "worker": "ad40271df27786087",
+    "actual_models": [
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "terminal_exit": 0,
+    "core_tests": 2330,
+    "core_test_files": 44,
+    "type_format_build_coverage": "actual final exit0 inspected; coordinator independently reran type/format/fullcore/build",
+    "root_probe": "root-candidate-retention.json: preserved A0 lost consumption and relationship now exact JSON retained with two owning-file diagnostics",
+    "gaps": [
+      "M6 mutation aborted exit143 is not red proof",
+      "Early draft failures not raw-file archived; preserved worker attribution",
+      "Generated skill/petstore schema drift must regenerate in later owning lane",
+      "Non-workspace inputs violate typed WorkspaceSchema API: hosts must shape-check each fresh document and diagnose it; no core malformed-input completion claim",
+      "Reader/writer/NorthBank/full model/gate/CI pending"
+    ],
+    "decisions": [
+      "Stable set-key IDs including set-of-one accepted; reader route mapping explicit",
+      "Workspace.validate set-aware; validateWorkspace standalone accepted",
+      "Four-holder retention scope as accepted contract; do not extend unrelated cost",
+      "SET_RULE_CATALOG documented/generated alongside 72 base rules in docs lane",
+      "A0 foreign ref programmer throw and rejects-in grammar already accepted; no re-review"
+    ]
+  },
+  "m9_B_acceptance": {
+    "at": "2026-10-04T06:44:35.168213+00:00",
+    "decision": "Accept B writer and substantive team-owned NorthBank within scoped stages; #59/readers/final model/gates incomplete",
+    "actual_runtime": {
+      "coordinator": "9aa7041d-1775-4380-a832-1a2fe2258313",
+      "model": "claude-opus-5-5",
+      "workers": [
+        "aa30c7add2183de62",
+        "af8352d9e12392490"
+      ],
+      "worker_model": "claude-sonnet-5-5",
+      "foreground_endturn_verified": true,
+      "actual_terminal_exit": 0
+    },
+    "writer": {
+      "tests": 163,
+      "native_tests": 10,
+      "root_probe": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/B-writer-northbank/writer/root-independent-writer-check.json",
+      "limits": "Disk/editor/dependency post-read races; no atomic guarantee. Native1.96.4; full-host26predates two test-only edits, integration rerun required."
+    },
+    "northbank": {
+      "tests": 51,
+      "files": 12,
+      "contexts": 19,
+      "relationships": 34,
+      "exact_diagnostics": 3,
+      "root_probe": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/B-writer-northbank/northbank/root-independent-json-check.json",
+      "frozen_fixture_bytes_equal_committed_original": true,
+      "discovery_original_prefix_preserved": true,
+      "source_order_and_leaf_equivalence": "51-test report/raw proof plus source review;2323leafbijection/615objects/461refs/128foreignrefs/37sectionorders/34relationshiptable",
+      "differences": "In-file order preserved. 13/14 aggregate lists and8position-row lists depend on file input order;12headings/qualifiedkeys/12relationshiplists explicit. Scope acceptance includes these inherent grouping/file-order differences, never all-order-equivalence."
+    },
+    "routine_decisions": [
+      "Keep deterministic host-defined file order, no schema order hint/rootmanifest; preserve actual host-order differences and test them. No universal original aggregate ordering claim.",
+      "ISO13616 stays payments as already accepted explicit one-entry assignment; no invented domain reason.",
+      "Use explicit workspace.addRelationship in team modules to choose downstream owner. Existing downstreamOf/upstreamOf helper placement is upstream, a DSL behavior to document accurately; no unrelated helper rewrite now.",
+      "Typed core loader assumes WorkspaceSchema; all fresh reader imports must shape-check/exclude with owning errors. No speculative total-loader/root-ref/private-readings tooling refactor.",
+      "Make all four readers genuinely set-aware and regenerate NorthBank Markdown; original frozen fixture may test standalone regressions but must not replace actual NorthBank in live/shared coverage."
+    ],
+    "remaining": [
+      "Actual extension pages/tree/search/reveal/export and native keyboard proofs",
+      "Viewer complete-set URL/form/upload/example and discovery limitations",
+      "Static nested-set packaging/navigation",
+      "Markdown and Graphviz set render",
+      "Shared/model/source consumer adaptations",
+      "Skill/docs/decisions/schema references agreement and generated integrity",
+      "Whole quality/rootreadiness/final whole-modelgate, exactclean landinggate, necessary exact prepostCI/merge/59closure"
+    ]
+  },
+  "m9_C_source_checkpoint": {
+    "at": "2026-10-04T09:09:37.829011+00:00",
+    "coordinator_summary": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/C-readers-surfaces/coordinator-summary.md",
+    "terminal_exit": 0,
+    "root_complete_acceptance": false
+  },
+  "m9_D_integration": {
+    "run": "/Users/jonathanturnock/.codex/ods-delivery/coordination/2026-10-04-m9-D-integration",
+    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/D-integration",
+    "status": "prepared; not dispatched yet"
+  },
+  "m9_complete_source_checkpoint": {
+    "at": "2026-10-04T09:46:38.004847+00:00",
+    "state": "Complete source accepted; whole quality and final landing/signoff pending",
+    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/E2-agreement-tests/root-acceptance.json",
+    "source_base": "5120fd54",
+    "open_issues": [
+      59,
+      54,
+      63
+    ],
+    "source_complete_is_not_delivered": true
+  },
+  "m9_final_source_acceptance": {
+    "at": "2026-10-04T10:29:33.546860+00:00",
+    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/G-final-corrections/root-acceptance.json",
+    "state": "Accepted for freeze/localgate; final wholemodelreviews/native/CI/merge pending",
+    "quality": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/F-whole-quality/coordinator-summary.md",
+    "source_base": "5120fd54",
+    "open_issues": [
+      59,
+      54,
+      63
+    ]
+  },
+  "m9_precommit_corrections": {
+    "at": "2026-10-04T11:04:11.646799+00:00",
+    "H_evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/H-marker",
+    "I_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/I-marker/root-acceptance.json",
+    "core_tests": 2339,
+    "pages_tests": 1541,
+    "remaining_markers": 0,
+    "state": "Accepted source, finalfreeze/gate/native/reviews/CI/merge pending"
+  },
+  "m9_final_model_gate": {
+    "at": "2026-10-04T11:26:37.108286+00:00",
+    "candidate": "9267c824d2ce54a921a32b004f5355c65139b320",
+    "astra": "BLOCK two confirmeddefectclasses",
+    "claude": "APPROVE withlimits/advisories",
+    "root_disposition": "BLOCK until completeclass correction and renewed fullreadiness",
+    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/final-review-9267c824",
+    "next": "K Opus/Sonnet classcorrection+readonlytriage; noautomaticfinalreview"
+  },
+  "m9_K_scoped_acceptance": {
+    "at": "2026-10-04T11:56:54.623082+00:00",
+    "accepted_scope": "Qualifiedconsumptionrelationship retention B1 and allkindclassificationB2, not fullM9readiness",
+    "coordinator_exit": 0,
+    "coordinator_actual_endturn": "2026-10-04T11:53:08.038Z",
+    "actual_models": [
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "core_worker_actual_endturn": "2026-10-04T11:47:08.377Z",
+    "core_tests": 2902,
+    "extension_tests": 212,
+    "root_key_repros_exit": 0,
+    "qualified_causes_retained": [
+      "missing-file",
+      "missing-target",
+      "wrong-kind",
+      "invalid-path"
+    ],
+    "wrongkind_expected": [
+      "relationship",
+      "consumption",
+      "answer",
+      "team"
+    ],
+    "rootpins_match": true,
+    "model_generated_drift": false,
+    "remaining": "D1localrelationship + approvedreader/artifact/agreement corrections K2 beforewholefreeze/gate/native/readiness",
+    "owner_cadence": "No furthermutation scripts/campaigns ornewslow suites; completedprior evidence retained, futurefocusedtests only"
+  },
+  "verification_cadence_policy": {
+    "owner_instruction": "No mutationtesting scripts/campaigns; no newlong-running test suites",
+    "verification": "Focusedmeaningful regressions andexistingrequiredgates; no optionalbroadreplay",
+    "survives_compaction": true
+  },
+  "m9_K2_complete_source_acceptance": {
+    "at": "2026-10-04T12:14:42.304754+00:00",
+    "coordinator_exit": 0,
+    "actual_models": [
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "worker_actual_endturns": {
+      "local": "2026-10-04T12:00:05.973Z",
+      "readers": "2026-10-04T12:02:30.795Z",
+      "agreement": "2026-10-04T12:05:31.508Z"
+    },
+    "accepted": "All K2 local singularref/URLcodec/staticrawexport/folderboundary/agreement corrections, combined withK acceptedclass",
+    "root_reader_tests": 54,
+    "root_reader_exit": 0,
+    "focused_local_tests": 297,
+    "focused_extension_tests": 104,
+    "validator_drift_tests": 150,
+    "root_supplied_K2_pins_match": true,
+    "pin_disposition": "Coordinator read stale11:27 K pin, not suppliedK2run map. Root independent checkedactualK2suppliedmap before/after and all5match. No unauthorizedrootrecorddrift.",
+    "scope_disposition": "reader.ts/reader.test helper is narrow internal selectedfolderbinding dependency; decision29append is narrowly required samehandclaim boundary. Accepted appropriatechanges, no extra features.",
+    "quality": "F whole8lens plus G/H/I/K/K2 correction8lens complete, no introduced >.5markers; gate unchanged",
+    "coverage_limit": "ScopedK2coverage exited1 on oldurl-set line220 unexercised byfocusedfiles; changedK2branches covered, full existinggate mustprovewholethreshold. Do not callscopedcoverage green.",
+    "cadence": "No newmutation scripts/campaigns orslow suites K2; focusedexistingchecks. Wholeexistinggate/native aftercompletefreeze only.",
+    "remaining": "Clean completecandidate freeze/gate/currentnative/rootwholemodelreadiness/finalreviews/necessaryexactCI/merge/59closure; M10forms/create safety/parentaudit stillrequired"
   }
 }

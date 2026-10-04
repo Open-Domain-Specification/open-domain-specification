@@ -10,6 +10,7 @@ import type {
 	Subdomain,
 	Workspace,
 } from "./workspace";
+import type { WorkspaceSet } from "./workspace-set";
 
 export class ODSConsumptionGraph extends AbstractVisitor {
 	protected readonly _consumptions = new Set<Consumption>();
@@ -45,6 +46,15 @@ export class ODSConsumptionGraph extends AbstractVisitor {
 			ScopeManager.fromWorkspace(workspace),
 		);
 		odsConsumptionGraph.visitWorkspace(workspace);
+		return odsConsumptionGraph;
+	}
+
+	/** The consumptions of every workspace of a set, across its files. */
+	static fromSet(set: WorkspaceSet) {
+		const odsConsumptionGraph = new ODSConsumptionGraph(
+			ScopeManager.fromSet(set),
+		);
+		odsConsumptionGraph.visitWorkspaceSet(set);
 		return odsConsumptionGraph;
 	}
 

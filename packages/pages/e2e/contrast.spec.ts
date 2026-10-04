@@ -360,7 +360,7 @@ for (const scheme of ["light", "dark"] as const) {
 		for (const route of NORTHBANK)
 			for (const style of stylesFor(route))
 				test(`viewer: ${route.name}, ${style}`, async ({ page }) => {
-					const url = await serveModel(page, "northbank");
+					const url = await serveModel(page, "northbank-monolith");
 					await setStyle(page, style);
 					await page.goto(
 						`/?url=${encodeURIComponent(url)}${route.ref === "#" ? "" : modelHash(route.ref)}`,

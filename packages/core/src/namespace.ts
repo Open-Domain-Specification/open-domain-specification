@@ -6,6 +6,7 @@ import type {
 	Service,
 	ValueObject,
 } from "./workspace";
+import { identityKeyOf } from "./workspace-set";
 
 export type ODSNamespace = {
 	id: string;
@@ -23,8 +24,8 @@ export function boundedContextNamespace(bc: BoundedContext): ODSNamespace[] {
 	const subdomain = bc.primarySubdomain;
 	if (subdomain) {
 		namespace.push(
-			{ id: subdomain.domain.ref, name: subdomain.domain.name },
-			{ id: subdomain.ref, name: subdomain.name },
+			{ id: identityKeyOf(subdomain.domain), name: subdomain.domain.name },
+			{ id: identityKeyOf(subdomain), name: subdomain.name },
 		);
 	}
 	return namespace;
@@ -39,7 +40,10 @@ export function contextMemberNamespace(
 ): ODSNamespace[] {
 	return [
 		...boundedContextNamespace(member.boundedcontext),
-		{ id: member.boundedcontext.ref, name: member.boundedcontext.name },
+		{
+			id: identityKeyOf(member.boundedcontext),
+			name: member.boundedcontext.name,
+		},
 	];
 }
 
@@ -47,6 +51,6 @@ export function contextMemberNamespace(
 export function aggregateNamespace(aggregate: Aggregate): ODSNamespace[] {
 	return [
 		...contextMemberNamespace(aggregate),
-		{ id: aggregate.ref, name: aggregate.name },
+		{ id: identityKeyOf(aggregate), name: aggregate.name },
 	];
 }

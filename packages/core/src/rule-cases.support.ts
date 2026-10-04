@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { RULE_FAMILIES, type RuleFamily } from "./rule-cases.families";
 import {
 	type BoundedContext,
@@ -7,6 +7,7 @@ import {
 	type Service,
 	Workspace,
 } from "./workspace";
+import { WorkspaceSet } from "./workspace-set";
 
 export type { Consumable };
 
@@ -35,15 +36,32 @@ export type Case = {
 // Building blocks. Small on purpose: a case reads as the model it describes.
 // ---------------------------------------------------------------------------
 
+/**
+ * While a case is being built across two files (see {@link buildAcrossFiles}),
+ * the workspaces `world()` made and which one the next context goes to. Absent
+ * otherwise, and then `world()` is one workspace holding every context, as
+ * every case was written.
+ */
+let across: { workspaces: Workspace[] } | undefined;
+
 export function world({ commentsRequired = false } = {}) {
-	const ws = new Workspace("Cases", {
-		description: "",
-		version: "0",
-		...(commentsRequired ? { options: { rules: { commentsRequired } } } : {}),
-	});
-	const subdomain = ws
-		.addDomain("Domain", { description: "" })
-		.addSubdomain("Domain.Sub", { type: "core", description: "" });
+	const make = (name: string) => {
+		const ws = new Workspace(name, {
+			description: "",
+			version: "0",
+			...(commentsRequired ? { options: { rules: { commentsRequired } } } : {}),
+		});
+		const subdomain = ws
+			.addDomain("Domain", { description: "" })
+			.addSubdomain("Domain.Sub", { type: "core", description: "" });
+		return { ws, subdomain };
+	};
+	const first = make("Cases");
+	// Across two files the second file is made the first time a second context
+	// wants one, and contexts then take the files in turn.
+	const files = [first];
+	if (across) across.workspaces.push(first.ws);
+	let made = 0;
 	/** A context that serves the subdomain, so it is never reported unserved. */
 	const context = (
 		name: string,
@@ -56,13 +74,49 @@ export function world({ commentsRequired = false } = {}) {
 		} = {},
 	) => {
 		const { serves = true, ...rest } = flags;
-		return ws.addBoundedContext(name, {
+		if (across && made % 2 === 1 && files.length === 1) {
+			files.push(make(`${first.ws.name} B`));
+			across.workspaces.push(files[1].ws);
+		}
+		const home = across ? files[made % 2] : first;
+		made++;
+		return home.ws.addBoundedContext(name, {
 			description: "",
-			subdomains: serves ? [subdomain] : [],
+			subdomains: serves ? [home.subdomain] : [],
 			...rest,
 		});
 	};
-	return { ws, context };
+	return { ws: first.ws, context };
+}
+
+/**
+ * Builds a case with its contexts shared out over two files in turn, the first
+ * context in the first file, the second in the second, and so on, and joins
+ * them into one set. Nothing else about the case changes: the same builder
+ * runs, the same rules are asked, and what is declared across the two files is
+ * what the case declared across two contexts.
+ */
+export function buildAcrossFiles(
+	build: (hostile: boolean) => Workspace,
+	hostile: boolean,
+): WorkspaceSet {
+	const session = { workspaces: [] as Workspace[] };
+	across = session;
+	let built: Workspace;
+	try {
+		built = build(hostile);
+	} finally {
+		across = undefined;
+	}
+	// A case that loads its model from a file never shared contexts out, and is
+	// the one file of its set.
+	const files = session.workspaces.includes(built)
+		? session.workspaces
+		: [built];
+	if (files.length > 1) GENERATED_EXECUTIONS["over more than one file"]++;
+	return WorkspaceSet.fromWorkspaces(
+		files.map((workspace, i) => [`case-${i}.json`, workspace]),
+	);
 }
 
 export const application = (bc: BoundedContext, name = `${bc.name} App`) =>
@@ -142,6 +196,28 @@ export function subscription() {
 
 const diagnosticsOf = (ws: Workspace) => ws.validate().map((d) => `${d.rule}`);
 
+/** A diagnostic without its ref, which a file qualifies differently from one file. */
+const reading = ({
+	rule,
+	severity,
+	message,
+}: {
+	rule: string;
+	severity: string;
+	message: string;
+}) => JSON.stringify([rule, severity, message]);
+
+/**
+ * How many generated set executions ran, by kind, so a report can say what
+ * ran and not what was assumed. Counted as each one runs.
+ */
+export const GENERATED_EXECUTIONS = {
+	"set of one": 0,
+	"across two files": 0,
+	/** Of those, the ones whose set really held more than one file. */
+	"over more than one file": 0,
+};
+
 /**
  * Runs every pair of a family: the hostile model trips exactly the rules in
  * `fires`, the near-miss validates with no diagnostic at all, and the family's
@@ -149,6 +225,14 @@ const diagnosticsOf = (ws: Workspace) => ws.validate().map((d) => `${d.rule}`);
  */
 export function runCases(title: string, families: RuleFamily[], cases: Case[]) {
 	describe(title, () => {
+		// Asked for by a report of what ran, so it can say what ran rather than
+		// what was assumed; silent otherwise.
+		afterAll(() => {
+			if (process.env.ODS_REPORT_GENERATED)
+				console.log(
+					`[generated] ${title}: cases=${cases.length} ${JSON.stringify(GENERATED_EXECUTIONS)}`,
+				);
+		});
 		for (const c of cases) {
 			describe(`${c.rules.join(", ")}: ${c.name}`, () => {
 				it("trips", () => {
@@ -159,6 +243,33 @@ export function runCases(title: string, families: RuleFamily[], cases: Case[]) {
 				it("stays clean at the nearest valid model", () => {
 					expect(c.build(false).validate()).toEqual([]);
 				});
+				// The same pair, asked of a set. As the only file of one, every
+				// diagnostic comes back in the order the workspace gives it, each
+				// attributed to the file; across two files, the same rules fire
+				// with the same words, for the contexts kept apart by file.
+				for (const hostile of [true, false]) {
+					const model = hostile ? "hostile model" : "nearest valid model";
+					it(`gives a set of one file the answer it gives alone: ${model}`, () => {
+						GENERATED_EXECUTIONS["set of one"]++;
+						const alone = c.build(hostile).validate();
+						const set = WorkspaceSet.fromWorkspaces([
+							["case.json", c.build(hostile)],
+						]);
+						const answered = set.validate();
+						expect(answered.every((d) => d.file === "case.json")).toBe(true);
+						expect(
+							answered.map(({ file: _file, ...diagnostic }) => diagnostic),
+						).toEqual(alone);
+					});
+					it(`gives the same answer across two files: ${model}`, () => {
+						GENERATED_EXECUTIONS["across two files"]++;
+						const alone = c.build(hostile).validate();
+						const answered = buildAcrossFiles(c.build, hostile).validate();
+						expect(answered.map(reading).sort()).toEqual(
+							alone.map(reading).sort(),
+						);
+					});
+				}
 			});
 		}
 

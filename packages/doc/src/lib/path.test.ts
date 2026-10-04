@@ -4,6 +4,7 @@ import {
 	getRelativePath,
 	physicalPath,
 	physicalPathUrl,
+	setFolder,
 } from "./path";
 
 describe("getRelativePath", () => {
@@ -108,5 +109,63 @@ describe("getRelativePath", () => {
 		expect(physicalPathUrl("domains/sales/index.md")).toBe(
 			"domains/sales/index.md",
 		);
+	});
+});
+
+describe("setFolder", () => {
+	it("keeps a plain file name and its folders readable, and ends the folder in .json", () => {
+		expect(setFolder("accounts.json")).toBe("accounts.json");
+		expect(setFolder("teams/core_banking.json")).toBe(
+			"teams/core_banking.json",
+		);
+	});
+
+	it("projects a space, a #, a % and Unicode in every segment the way every other path is", () => {
+		expect(setFolder("my team/ü#%.json")).toBe(
+			`${physicalPath("my team")}/${physicalPath("ü#%")}.json`,
+		);
+		expect(setFolder("my team/ü#%.json")).toBe(
+			"_ods_006d00790020007400650061006d/_ods_00fc00230025.json",
+		);
+	});
+
+	it("cannot name a folder like anything the model writes inside a workspace folder", () => {
+		// A model path is built of components with no dot; every folder of a
+		// set ends in .json.
+		for (const file of [
+			"domains.json",
+			"boundedcontexts.json",
+			"a/index.md.json",
+		])
+			expect(setFolder(file).split("/").pop()).toMatch(/\.json$/);
+		// A directory and the folder of a file of the same stem stay two things.
+		expect(setFolder("a/b.json")).not.toBe(setFolder("a.json"));
+		expect(setFolder("a/b.json")).toBe("a/b.json");
+		// ... and a stem that already ends in .json is escaped, not folded.
+		expect(setFolder("x.json.json")).not.toBe(setFolder("x.json"));
+	});
+
+	it("bounds every component, however long the name", () => {
+		const folder = setFolder(`${"é".repeat(300)}.json`);
+		for (const part of folder.split("/"))
+			expect(part.length).toBeLessThanOrEqual(255);
+		expect(folder.endsWith(".json")).toBe(true);
+	});
+});
+
+describe("a placed path", () => {
+	it("projects only what follows the folder, and leaves the folder as it is", () => {
+		expect(physicalPath(`a.json\u0000domains/Tëam`)).toBe(
+			`a.json/domains/${physicalPath("Tëam")}`,
+		);
+	});
+
+	it("relates two paths in different folders by the .. between them", () => {
+		expect(
+			getRelativePath(
+				"b.json\u0000boundedcontexts/ledger",
+				"a.json\u0000boundedcontexts/ledger",
+			),
+		).toBe("../../../b.json/boundedcontexts/ledger");
 	});
 });

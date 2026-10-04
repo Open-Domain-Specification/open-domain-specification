@@ -1,5 +1,7 @@
 <script lang="ts">
+import { localRoute, maybeModel } from "../model";
 import { modelRefToHash } from "../ref-transport";
+import { routeOf } from "../route";
 import { iconColor, type Kind } from "./kinds";
 
 /**
@@ -10,6 +12,12 @@ import { iconColor, type Kind } from "./kinds";
  * the focus ring in `focusBorder`. An icon, when given, takes the kind's
  * symbol colour rather than the link colour so the glyph reads as a kind
  * mark and the text as the link.
+ *
+ * `ref` is either an element, which links to the page of the exact file that
+ * owns it, or a string: a route, or a ref of the workspace on screen. Inside a
+ * set of more than one file that string is read in the file on screen, so a
+ * ref to something that may live in another file is always passed as the
+ * element itself.
  *
  * With an icon the link is a lockup, and a lockup never breaks inside itself
  * (design language, principle 6): a narrow table cell may wrap between it and
@@ -25,7 +33,7 @@ const {
 	current,
 	prose = false,
 }: {
-	ref: string;
+	ref: string | { ref: string };
 	label: string;
 	icon?: string;
 	kind?: Kind;
@@ -40,13 +48,21 @@ const {
 	 */
 	prose?: boolean;
 } = $props();
+const model = maybeModel();
+const route = $derived(
+	external
+		? (ref as string)
+		: typeof ref === "string"
+			? localRoute(model, ref)
+			: routeOf(ref),
+);
 </script>
 
 <a
 	class="ref"
 	class:prose
-	href={external ? ref : modelRefToHash(ref)}
-	data-ref={external ? undefined : ref}
+	href={external ? route : modelRefToHash(route)}
+	data-ref={external ? undefined : route}
 	rel={external ? "external noreferrer" : undefined}
 	{title}
 	aria-current={current}

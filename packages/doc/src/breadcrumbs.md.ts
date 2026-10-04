@@ -4,7 +4,7 @@ import type {
 	Subdomain,
 	Workspace,
 } from "@open-domain-specification/core";
-import { pathToIndexMd } from "./lib/paths";
+import { pathToIndexMd, placed } from "./lib/paths";
 
 /** Breadcrumbs for a context, shown under its primary subdomain. */
 export const contextBreadcrumbsMd = (boundedcontext: BoundedContext) =>
@@ -23,28 +23,28 @@ export const breadcrumbsMd = (
 ) => {
 	const breadcrumbs = [];
 
-	const currentPath =
-		boundedcontext?.path || subdomain?.path || domain?.path || workspace.path;
+	const current = boundedcontext ?? subdomain ?? domain ?? workspace;
+	const currentPath = placed(current);
 
 	breadcrumbs.push(
-		`[${workspace.name}](${pathToIndexMd(workspace.path, currentPath)})`,
+		`[${workspace.name}](${pathToIndexMd(placed(workspace), currentPath)})`,
 	);
 
 	if (domain) {
 		breadcrumbs.push(
-			`[${domain.name}](${pathToIndexMd(domain.path, currentPath)})`,
+			`[${domain.name}](${pathToIndexMd(placed(domain), currentPath)})`,
 		);
 	}
 
 	if (subdomain) {
 		breadcrumbs.push(
-			`[${subdomain.name}](${pathToIndexMd(subdomain.path, currentPath)})`,
+			`[${subdomain.name}](${pathToIndexMd(placed(subdomain), currentPath)})`,
 		);
 	}
 
 	if (boundedcontext) {
 		breadcrumbs.push(
-			`[${boundedcontext.name}](${pathToIndexMd(boundedcontext.path, currentPath)})`,
+			`[${boundedcontext.name}](${pathToIndexMd(placed(boundedcontext), currentPath)})`,
 		);
 	}
 

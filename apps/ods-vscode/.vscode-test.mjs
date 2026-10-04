@@ -63,4 +63,24 @@ export default defineConfig([
 		files: "out/test/cross-surface.test.js",
 		workspaceFolder: "src/test/fixtures/cross-surface",
 	},
+	// A folder of three team files read as one set: file names that need
+	// encoding, one local id in every file, and consumptions through all three.
+	{
+		...shared,
+		label: "multi",
+		mocha: mocha("multi"),
+		files: "out/test/multi.test.js",
+		workspaceFolder: "src/test/fixtures/multi",
+	},
+	// The editor half of the write port: dirty and clean buffers, versions and
+	// saves in a real window. The window opens on an empty folder; the test
+	// makes its own files in a temp folder and, for the Problems rows, a
+	// throwaway `.ods` it removes again.
+	{
+		...shared,
+		label: "writer",
+		mocha: mocha("writer"),
+		files: "out/test/writer.test.js",
+		workspaceFolder: "src/test/fixtures/writer",
+	},
 ]);

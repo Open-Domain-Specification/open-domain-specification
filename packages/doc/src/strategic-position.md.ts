@@ -1,24 +1,18 @@
 import {
 	type BoundedContext,
 	type ContextRelationship,
+	counterpartOf,
 	hasAuthoredDescription,
-	isSymmetricRelationship,
 	narrativeText,
+	type PositionGroup,
 	relationshipNarrative,
+	scopeAround,
+	strategicPositionOf,
 	withAgreementName,
 } from "@open-domain-specification/core";
 import { commentsMd } from "./comments.md";
 import { patternNotesMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
-
-// TODO: clean-code - 0.6 - DRY: `counterpartOf` and the three-way grouping in
-// `strategicPositionMd` below restate what `positionGroups` and `counterpartOf`
-// already say in packages/pages/src/lib/evidence/derive.ts:28-79. Neither is
-// UI-specific, so one definition belongs in core beside `relationship.ts` and
-// both packages should read it. Pre-existing; left for the lead to schedule.
-/** The context on the other side of a relationship from `bc`. */
-const counterpartOf = (r: ContextRelationship, bc: BoundedContext) =>
-	r.source === bc ? r.target : r.source;
 
 /**
  * What the author wrote, or the sentence core generates from the same
@@ -57,11 +51,9 @@ const commentTitle = (r: ContextRelationship, bc: BoundedContext) =>
 	`**${counterpartOf(r, bc).name}** (${withAgreementName(r.type, r.name)})`;
 
 const group = (
-	label: string,
-	rows: ContextRelationship[],
+	{ label, relationships: rows }: PositionGroup,
 	bc: BoundedContext,
 ) => {
-	if (!rows.length) return "";
 	const table = markdownTable(
 		HEADERS,
 		rows.map((r) => row(r, bc)),
@@ -82,23 +74,14 @@ const group = (
  * what it merely works alongside. A group with no rows is left out.
  */
 export const strategicPositionMd = (boundedcontext: BoundedContext): string => {
-	const mine = boundedcontext.workspace.relationships.filter(
-		(r) => r.source === boundedcontext || r.target === boundedcontext,
+	// A relationship about this context may be declared in any file of its set,
+	// so the whole set is read; a workspace alone is its own scope.
+	const { relationships: mine, groups } = strategicPositionOf(
+		boundedcontext,
+		scopeAround(boundedcontext.workspace).relationships,
 	);
-	const dependsOn = mine.filter(
-		(r) => !isSymmetricRelationship(r.type) && r.target === boundedcontext,
-	);
-	const dependedOnBy = mine.filter(
-		(r) => !isSymmetricRelationship(r.type) && r.source === boundedcontext,
-	);
-	const worksAlongside = mine.filter((r) => isSymmetricRelationship(r.type));
-
-	const sections = [
-		group("Depends on", dependsOn, boundedcontext),
-		group("Depended on by", dependedOnBy, boundedcontext),
-		group("Works alongside", worksAlongside, boundedcontext),
-	].filter(Boolean);
-	if (!sections.length) return "> No explicit relationships.";
+	if (!groups.length) return "> No explicit relationships.";
+	const sections = groups.map((g) => group(g, boundedcontext));
 
 	// Footnote what the type and role columns above mean, in core's words.
 	const used = mine.flatMap((r) => [

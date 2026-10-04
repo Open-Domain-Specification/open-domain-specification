@@ -104,14 +104,20 @@ writeFileSync(
 	'<script type="module" src="./assets/index-abc.js"></script><link href="./assets/index-abc.css">',
 );
 
-const file = (name: string) => ({
+/** A file of the `.ods` folder `folder`, at the set path `path` (the file's name by default). */
+const file = (name: string, folder = "ws", path = `${name}.json`) => ({
 	uri: {
-		toString: () => `file:///ws/${name}.json`,
-		fsPath: `/ws/${name}.json`,
+		toString: () => `file:///${folder}/${path}`,
+		fsPath: `/${folder}/${path}`,
 	},
-	relativePath: `${name}.json`,
+	folder,
+	relativePath: path,
 	text: "{}",
-	workspace: { name, toSchema: () => ({ name }) },
+	workspace: { name, toSchema: () => ({ name }) } as
+		| { name: string; toSchema: () => unknown }
+		| undefined,
+	stale: undefined as boolean | undefined,
+	error: undefined as string | undefined,
 });
 
 type Fake = ReturnType<typeof file>;
@@ -121,6 +127,8 @@ function setup(...files: Fake[]) {
 	const project = {
 		files: new Map(files.map((f) => [f.uri.toString(), f])),
 		onDidChange: changed.event,
+		folderKey: (f: Fake) => f.folder,
+		folderFiles: (f: Fake) => files.filter((x) => x.folder === f.folder),
 	};
 	const diagnostics = { byFile: new Map() };
 	const panel = new DetailPanel(
@@ -134,7 +142,7 @@ function setup(...files: Fake[]) {
 				(m as HostMessage).type === "model",
 		);
 	const send = (msg: unknown) => fake.state.received?.(msg);
-	return { panel, project, changed, models, send };
+	return { panel, project, changed, models, send, diagnostics };
 }
 
 const open = (panel: DetailPanel, f: Fake, ref: string) =>
@@ -163,7 +171,8 @@ afterAll(() => {
 
 describe("DetailPanel history boundaries", () => {
 	const orders = file("orders");
-	const billing = file("billing");
+	// Another `.ods` folder: a different set to the webview.
+	const billing = file("billing", "other");
 
 	it("starts the history of a workspace the webview has not shown", async () => {
 		const { panel, models } = setup(orders);
@@ -189,7 +198,7 @@ describe("DetailPanel history boundaries", () => {
 		expect("reset" in models()[2]).toBe(false);
 	});
 
-	it("navigates in place within the same file, and restarts history for a different one", async () => {
+	it("navigates in place within the same folder, and restarts history for a different one", async () => {
 		const { panel, models, send } = setup(orders, billing);
 		await open(panel, orders, "#");
 		send({ type: "ready" });
@@ -202,7 +211,7 @@ describe("DetailPanel history boundaries", () => {
 		expect(models().at(-1)).toEqual(
 			expect.objectContaining({ reset: true, ref: "#" }),
 		);
-		// Going back to the first file is also a different workspace to the webview.
+		// Going back to the first folder is also a different set to the webview.
 		await open(panel, orders, "#");
 		expect(models().at(-1)?.reset).toBe(true);
 	});
@@ -249,6 +258,135 @@ describe("DetailPanel history boundaries", () => {
 		expect(fake.state.executed).toEqual([
 			["ods.revealInJson", { file: orders, ref: "#" }],
 		]);
+	});
+});
+
+describe("DetailPanel hands the app the whole folder", () => {
+	const a = file("a", "set");
+	const b = file("b", "set");
+	const nested = file("c", "set", "nested/c#%.json");
+
+	it("posts every file of the folder as one set, each at its own path, in the order the project listed them", async () => {
+		const { panel, models, diagnostics } = setup(a, b, nested);
+		diagnostics.byFile.set(b.uri.toString(), [
+			{ severity: "error", rule: "r", message: "m", ref: "#" },
+		]);
+		await open(panel, b, "#/boundedcontexts/ledger");
+		const [model] = models();
+		expect(model.workspaces.map((w) => [w.path, w.fileLabel, w.set])).toEqual([
+			["a.json", "a.json", "set"],
+			["b.json", "b.json", "set"],
+			["nested/c#%.json", "nested/c#%.json", "set"],
+		]);
+		expect(model.workspaces[1].diagnostics).toEqual([
+			{ severity: "error", rule: "r", message: "m", ref: "#" },
+		]);
+		expect(model.workspaces.map((w) => w.schema)).toEqual([
+			{ name: "a" },
+			{ name: "b" },
+			{ name: "c" },
+		]);
+	});
+
+	it("names the page by the file that owns it when the app holds more than one file", async () => {
+		const { panel, models } = setup(a, b, nested);
+		await open(panel, nested, "#/boundedcontexts/ledger");
+		// The nested path is one pointer segment (`/` is `~1`), its `#` and `%` encoded once as a wire path.
+		expect(models()[0].ref).toBe(
+			"#/workspaces/nested~1c%23%25.json/boundedcontexts/ledger",
+		);
+	});
+
+	it("keeps the unqualified route when the folder holds one file", async () => {
+		const only = file("only", "alone");
+		const { panel, models } = setup(only);
+		await open(panel, only, "#/boundedcontexts/ledger");
+		expect(models()[0].ref).toBe("#/boundedcontexts/ledger");
+	});
+
+	it("opens another file of the same folder by navigating the webview it has, not by reloading it", async () => {
+		const { panel, send } = setup(a, b);
+		await open(panel, a, "#");
+		send({ type: "ready" });
+		await open(panel, b, "#/boundedcontexts/ledger");
+		expect(fake.state.posted.at(-1)).toEqual({
+			type: "navigate",
+			ref: "#/workspaces/b.json/boundedcontexts/ledger",
+		});
+	});
+
+	it("follows the reader into another file: the tree is told the file and the local ref", async () => {
+		const { panel, send } = setup(a, b);
+		const opened: Array<[string, string]> = [];
+		panel.onDidOpen((l) => opened.push([l.file.relativePath, l.ref]));
+		await open(panel, a, "#");
+		send({
+			type: "navigated",
+			ref: "#/workspaces/b.json/boundedcontexts/ledger",
+		});
+		expect(opened.at(-1)).toEqual(["b.json", "#/boundedcontexts/ledger"]);
+		// The same ref in the other file is a different page.
+		send({
+			type: "navigated",
+			ref: "#/workspaces/a.json/boundedcontexts/ledger",
+		});
+		expect(opened.at(-1)).toEqual(["a.json", "#/boundedcontexts/ledger"]);
+	});
+
+	it("ignores a route that names no file of the folder, such as the set's own page", async () => {
+		const { panel, send } = setup(a, b);
+		const opened: unknown[] = [];
+		panel.onDidOpen((l) => opened.push(l));
+		await open(panel, a, "#");
+		const before = opened.length;
+		send({ type: "navigated", ref: "#" });
+		send({
+			type: "navigated",
+			ref: "#/workspaces/gone.json/boundedcontexts/x",
+		});
+		expect(opened.length).toBe(before);
+	});
+
+	it("reveals in the file the page belongs to, never in the file the webview was opened from", async () => {
+		const { panel, send } = setup(a, b);
+		await open(panel, a, "#");
+		send({
+			type: "reveal",
+			ref: "#/workspaces/b.json/boundedcontexts/ledger",
+		});
+		expect(fake.state.executed.at(-1)).toEqual([
+			"ods.revealInJson",
+			{ file: b, ref: "#/boundedcontexts/ledger" },
+		]);
+		// The set's own page belongs to no file: the reader's last file is revealed.
+		send({ type: "reveal", ref: "#" });
+		expect(fake.state.executed.at(-1)).toEqual([
+			"ods.revealInJson",
+			{ file: a, ref: "#" },
+		]);
+	});
+
+	it("gives a file that does not load as its last good load, labelled with why", async () => {
+		const broken = file("broken", "stale");
+		const fine = file("fine", "stale");
+		broken.stale = true;
+		broken.error = "x is not valid JSON";
+		const { panel, models } = setup(broken, fine);
+		await open(panel, fine, "#");
+		const [first, second] = models()[0].workspaces;
+		expect(first.stale).toContain("x is not valid JSON");
+		expect(second.stale).toBeUndefined();
+	});
+
+	it("leaves a file with no workspace to show out of the set", async () => {
+		const empty = file("empty", "gone");
+		empty.workspace = undefined;
+		const fine = file("fine", "gone");
+		const { panel, models } = setup(empty, fine);
+		await open(panel, fine, "#");
+		expect(models()[0].workspaces.map((w) => w.path)).toEqual(["fine.json"]);
+		// With one file left the route is unqualified again.
+		expect(models()[0].ref).toBe("#");
 	});
 });
 

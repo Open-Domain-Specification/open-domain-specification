@@ -19,6 +19,9 @@ job is to get the model out of their head without making them learn the vocabula
 
 - "In one or two sentences, what does this system do, and for whom?" → `name`, `description`.
 - "Is there a homepage or logo I should link?" → `homepage`, `logoUrl` (skip if none).
+- "Does one team keep this model, or does each team want a file of its own?" → one workspace, or
+  one workspace file per team in the same `.ods` folder (see `json-mode.md`, "Several workspace
+  files"). A context always stays whole in one file.
 
 ## Phase B: the problem space (produces Domains and Subdomains with a type)
 

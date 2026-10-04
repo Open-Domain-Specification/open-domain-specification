@@ -8,6 +8,8 @@ export const sections = [
 </script>
 
 <script lang="ts">
+import { scopeAround } from "@open-domain-specification/core";
+import { identityKeyOf } from "@open-domain-specification/core";
 import { ODSContextMap } from "@open-domain-specification/core";
 import Markdown from "../atoms/Markdown.svelte";
 import { contextGraph } from "../flow/graph";
@@ -85,8 +87,8 @@ const teamColumns: Column[] = [
 	count={domains.length}
 	problems={domains.flatMap((d) => problemsUnder(model, d.ref))}
 >
-	{#each domains as d (d.ref)}
-		<Heading level={3} id={d.ref}><Lockup kind="domain" name={d.name} ref={d.ref} /></Heading>
+	{#each domains as d (identityKeyOf(d))}
+		<Heading level={3} id={d.ref}><Lockup kind="domain" name={d.name} ref={d} /></Heading>
 		<Markdown text={d.description} />
 		<SubdomainTable subdomains={[...d.subdomains.values()]} empty="No subdomains yet." />
 	{:else}
@@ -104,14 +106,14 @@ const teamColumns: Column[] = [
 	<DiagramFigure
 		caption="Context map"
 		emptyText="No bounded contexts yet."
-		graph={contextGraph(contextMap, ws.relationships)}
+		graph={contextGraph(contextMap, scopeAround(ws).relationships)}
 	/>
 	<DataTable columns={contextColumns} rows={contexts} rowId={(bc) => bc.ref} empty="No bounded contexts yet.">
 		{#snippet cell(bc, col)}
 			{#if col.key === "name"}
 				<ContextLockup context={bc} />
 			{:else if col.key === "serves"}
-				<Joined>{#each [...bc.subdomains] as s (s.ref)}<Lockup kind="subdomain" name={s.name} ref={s.ref} />{:else}<Keyword text="none" />{/each}</Joined>
+				<Joined>{#each [...bc.subdomains] as s (identityKeyOf(s))}<Lockup kind="subdomain" name={s.name} ref={s} />{:else}<Keyword text="none" />{/each}</Joined>
 			{:else if col.key === "team"}
 				<TeamLockup team={bc.team} />
 			{:else if col.key === "aggregates"}
@@ -132,7 +134,7 @@ const teamColumns: Column[] = [
 	<DataTable columns={teamColumns} rows={teams} rowId={(t) => t.ref} empty="No teams recorded.">
 		{#snippet cell(t, col)}
 			{#if col.key === "name"}
-				<Lockup kind="team" name={t.name} ref={t.ref} />
+				<Lockup kind="team" name={t.name} ref={t} />
 			{:else if col.key === "owns"}
 				<ContextList contexts={contexts.filter((bc) => bc.team === t)} empty="owns no context" />
 			{:else}

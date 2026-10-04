@@ -11,17 +11,26 @@ The app takes a workspace, its diagnostics and a file label, and renders one pag
 page-owning element with hash routing. A link carries a URL-safe transport of the canonical
 model ref in its hash; the router recovers the same ref before resolving it. A leaf ref such as
 an attribute opens its entity, value object or schema owner's page and scrolls to the attribute
-row.
+row. When the host supplies more than one workspace file the app holds them as a set:
+a page for the set lists the workspaces, every page of a file in the viewer and the static
+site carries a link back to it (the extension shows the page embedded, without the site's
+sidebar that holds the link), and
+routes and links name the file first, so two files that both have a `ledger` context have two
+pages. A host that supplies one file keeps the route grammar it always had.
 
 Three hosts feed it:
 
-- **Viewer**: an import screen (URL query, URL form or file upload) in front of the app.
+- **Viewer**: an import screen (URL query, URL form, or upload of a file, several files or a
+  folder) in front of the app; see [Viewer](6-viewer.md).
 - **Static export**: the built bundle beside `index.html` with the workspaces inlined, written
   by `exportSite` from the `site` entry and by the VS Code command `ODS: Export Static Site`.
-  The output runs from a folder, a `file://` URL or any static host.
-- **VS Code webview**: the extension mounts the bundle, sends the workspace and diagnostics
-  over `postMessage`, and follows the app's navigation in its tree view. The tree replaces the
-  sidebar there.
+  The output runs from a folder, a `file://` URL or any static host. A folder of workspace files is
+  exported as a set: every file keeps its path, in code point order, and is also written as plain
+  JSON under `workspaces/`, so file-qualified refs between them keep reaching the file they name.
+- **VS Code webview**: the extension mounts the bundle, sends the whole `.ods` folder as one set
+  and its diagnostics over `postMessage`, and follows the app's navigation in its tree view. The
+  tree replaces the sidebar there. A file that does not load now is shown from its last good load,
+  labelled stale, beside the problem that is keeping it from loading.
 
 Every figure is a Svelte Flow graph rendered in the browser: pan, zoom, drag nodes, and click
 one to open its page. The graph is laid out with dagre from the core map for that element. The
@@ -135,6 +144,22 @@ import { exportSite } from "@open-domain-specification/pages/site";
 
 await exportSite({
 	sources: [{ workspace, fileLabel: "petstore.json", diagnostics: workspace.validate() }],
+	outDir: "ods-site",
+});
+```
+
+The files of a set are given the name of their set and their path, and each is exported where its
+path says:
+
+```ts
+await exportSite({
+	sources: set.workspaces.map((workspace) => ({
+		workspace,
+		fileLabel: workspace.file as string,
+		path: workspace.file,
+		set: "northbank",
+		diagnostics: workspace.validate(),
+	})),
 	outDir: "ods-site",
 });
 ```

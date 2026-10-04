@@ -1,7 +1,7 @@
 import { Workspace } from "@open-domain-specification/core";
 import { render } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import northbank from "../../../../../models/northbank/.ods/northbank.json";
+import northbank from "../../../../../models/northbank/src/fixtures/northbank.monolith.json";
 import Harness from "../evidence/WithModel.harness.svelte";
 import AggregatePage from "./AggregatePage.svelte";
 

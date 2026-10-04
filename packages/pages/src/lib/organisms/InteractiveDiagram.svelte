@@ -34,8 +34,10 @@ import { edgeTypes, nodeTypes } from "../flow/registry";
 import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 import { hostColorMode } from "../flow/theme.svelte";
 import { focusArrival } from "../focus";
+import { maybeSet } from "../model";
 import { createReducedMotion } from "../motion.svelte";
 import { modelRefToHash } from "../ref-transport";
+import { routeOfKey } from "../route";
 import DisclosureCard from "./DisclosureCard.svelte";
 
 /** Svelte Flow's own ceiling, which the diagram never overrides. */
@@ -112,10 +114,12 @@ onDestroy(disclosure.stop);
 const motion = createReducedMotion();
 onDestroy(motion.stop);
 /** What a click on a node does, and so what Enter and Space do on the focused one. */
+const set = maybeSet();
 const open = (id: string) => {
 	if (!opensPage(id)) return;
 	fullscreen.exit();
-	location.hash = modelRefToHash(id);
+	// A node is named by the key of its element, which says which file owns it.
+	location.hash = modelRefToHash(routeOfKey(set, id));
 };
 /**
  * The bypass: every node, badge and control on the map is a Tab stop, so the
