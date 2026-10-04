@@ -37,7 +37,7 @@ function snakeCase(str: string): string {
 		.toLowerCase(); // Convert to lowercase
 }
 
-function idOf(name: string, explicit: string | undefined): string {
+export function idOf(name: string, explicit?: string): string {
 	return explicit ?? snakeCase(name);
 }
 

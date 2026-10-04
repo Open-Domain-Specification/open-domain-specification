@@ -6,13 +6,14 @@ import { assemble } from "./assemble";
 import {
 	applyIntent,
 	diskTextIo,
+	type FieldChange,
 	type Intent,
 	intentProblem,
 	jsonEqual,
 	type TextIo,
 	type WriteResult,
 } from "./writer";
-import { teamSet, teamTexts } from "./writer.support";
+import { borrowSet, teamSet, teamTexts } from "./writer.support";
 
 /**
  * The write port against real temp folders and real text. Nothing here mocks
@@ -1418,5 +1419,345 @@ describe("coverage of the refusals around the edges of an edit", () => {
 			"stale-value",
 		);
 		expect(none).toMatchObject({ detail: expect.stringContaining("(absent)") });
+	});
+});
+
+// ------------------------------------------------- A2: atomic edit and legal guard
+
+type Files = Record<string, string>;
+
+async function projectOf(texts: Files): Promise<Project> {
+	const dir = await fs.mkdtemp(path.join(tmpdir(), "ods-writer-"));
+	dirs.push(dir);
+	for (const [file, text] of Object.entries(texts))
+		await fs.writeFile(path.join(dir, file), text, "utf8");
+	return {
+		dir,
+		io: diskTextIo(dir),
+		files: Object.keys(texts),
+		read: (file) => fs.readFile(path.join(dir, file), "utf8"),
+		write: (file, text) => fs.writeFile(path.join(dir, file), text, "utf8"),
+		listing: async () => (await fs.readdir(dir)).sort(),
+	};
+}
+
+const bytes = async (p: Project) =>
+	Object.fromEntries(
+		await Promise.all(p.files.map(async (f) => [f, await p.read(f)])),
+	);
+
+describe("W1 a choice that was legal when the form opened and is illegal at Save", () => {
+	const B = borrowSet();
+	const TOTAL = { ref: B.total.ref, kind: "element" } as const;
+	const MONEY = { ref: B.money, kind: "valueObject" } as const;
+	const SPARE = { ref: B.spare, kind: "valueObject" } as const;
+	const keepMoney = (opened?: string[]) =>
+		({
+			op: "edit",
+			file: "b.json",
+			target: TOTAL,
+			changes: [{ field: "description", expected: undefined, value: "gross" }],
+			providers: [MONEY],
+			checks: [
+				{
+					field: "valueobject",
+					class: "LC-VALUE-OBJECT-BORROWABLE",
+					holder: TOTAL,
+					chosen: [{ ref: B.money }],
+					openedIllegal: opened,
+				},
+			],
+		}) satisfies Intent;
+	/** The borrowing relationship is removed from the OTHER member file while the form is open. */
+	const withoutRelationship = (texts: Files): Files => {
+		const a = JSON.parse(texts["a.json"]);
+		a.relationships = [];
+		return { ...texts, "a.json": `${JSON.stringify(a, null, 2)}\n` };
+	};
+
+	it("saves while the same unchanged ref is still legal", async () => {
+		const p = await projectOf(B.texts);
+		const r = await applyIntent(p.io, p.files, keepMoney());
+		expect(r).toEqual({ ok: true, file: "b.json", wrote: "disk" });
+		expect(await p.read("a.json")).toBe(B.texts["a.json"]);
+	});
+
+	it("refuses the SAME ref, unchanged in the file, once the relationship that allowed it is gone; every byte stays", async () => {
+		const p = await projectOf(withoutRelationship(B.texts));
+		const before = await bytes(p);
+		const r = refused(
+			await applyIntent(p.io, p.files, keepMoney()),
+			"illegal-choice",
+		);
+		if (!r.ok) {
+			expect(r.illegal).toHaveLength(1);
+			expect(r.illegal?.[0]).toMatchObject({
+				field: "valueobject",
+				ref: B.money,
+				rule: "valueobject-context",
+			});
+			expect(r.illegal?.[0].label).toContain("a.json");
+		}
+		expect(await bytes(p)).toEqual(before);
+	});
+
+	it("keeps a ref the host listed illegal at opening and the file already held, but never admits a newly written one", async () => {
+		const p = await projectOf(withoutRelationship(B.texts));
+		const kept = await applyIntent(p.io, p.files, keepMoney([B.money]));
+		expect(kept).toEqual({ ok: true, file: "b.json", wrote: "disk" });
+		expect(
+			(await json(p, "b.json")).boundedcontexts.claims.aggregates.account
+				.entities.account.attributes.total,
+		).toMatchObject({
+			description: "gross",
+			valueobject: { $ref: B.money },
+		});
+
+		const q = await projectOf(withoutRelationship(B.texts));
+		const before = await bytes(q);
+		const swap: Intent = {
+			op: "edit",
+			file: "b.json",
+			target: TOTAL,
+			changes: [
+				{
+					field: "valueobject",
+					expected: { $ref: B.money },
+					value: { $ref: B.spare },
+				},
+			],
+			providers: [SPARE],
+			checks: [
+				{
+					field: "valueobject",
+					class: "LC-VALUE-OBJECT-BORROWABLE",
+					holder: TOTAL,
+					chosen: [{ ref: B.spare }],
+					openedIllegal: [B.spare],
+				},
+			],
+		};
+		refused(await applyIntent(q.io, q.files, swap), "illegal-choice");
+		expect(await bytes(q)).toEqual(before);
+	});
+
+	it("rechecks an unchanged choice when the same edit changes what governs it", async () => {
+		const p = await projectOf(B.texts);
+		const before = await bytes(p);
+		const both: Intent = {
+			op: "edit",
+			file: "b.json",
+			target: TOTAL,
+			changes: [
+				{
+					field: "schema",
+					expected: undefined,
+					value: { $ref: B.payload },
+				},
+			],
+			providers: [{ ref: B.payload, kind: "schema" }, MONEY],
+			checks: [
+				{
+					field: "valueobject",
+					class: "LC-VALUE-OBJECT-BORROWABLE",
+					holder: TOTAL,
+					chosen: [{ ref: B.money }],
+				},
+			],
+		};
+		const r = refused(await applyIntent(p.io, p.files, both), "illegal-choice");
+		if (!r.ok) expect(r.illegal?.[0].rule).toBe("attribute-one-shape");
+		expect(await bytes(p)).toEqual(before);
+	});
+
+	it("judges the context kind flags only when the written kind differs", async () => {
+		const CLAIMS = { ref: B.claims.ref, kind: "context" } as const;
+		const flags = (changes: FieldChange[]): Intent => ({
+			op: "edit",
+			file: "b.json",
+			target: CLAIMS,
+			changes,
+			checks: [{ field: "systemKind", class: "LC-BC-FLAGS", holder: CLAIMS }],
+		});
+		const p = await projectOf(B.texts);
+		const before = await bytes(p);
+		const r = refused(
+			await applyIntent(
+				p.io,
+				p.files,
+				flags([{ field: "external", expected: undefined, value: true }]),
+			),
+			"illegal-choice",
+		);
+		if (!r.ok) expect(r.illegal?.[0].rule).toBe("external-is-boundary");
+		expect(await bytes(p)).toEqual(before);
+
+		// Already external with an aggregate (a pinned defect): an edit that leaves the kind alone passes.
+		const b = JSON.parse(B.texts["b.json"]);
+		b.boundedcontexts.claims.external = true;
+		const q = await projectOf({
+			...B.texts,
+			"b.json": `${JSON.stringify(b, null, 2)}\n`,
+		});
+		const kept = await applyIntent(
+			q.io,
+			q.files,
+			flags([{ field: "description", expected: "claims", value: "claims v2" }]),
+		);
+		expect(kept.ok).toBe(true);
+	});
+});
+
+describe("W2 deliberately pinned NorthBank defects survive an unrelated write", () => {
+	const nbDir = path.resolve(__dirname, "../../../models/northbank/.ods");
+	const POLICY = "#/boundedcontexts/lending/policies/escalate_arrears";
+	const ARREARS =
+		"#/boundedcontexts/lending/aggregates/loan/provides/arrears_notice_issued";
+	const rulesOf = (texts: Files) => {
+		const a = assemble(
+			Object.entries(texts).map(([file, text]) => ({ file, text })),
+		);
+		return [...a.diagnostics.values()]
+			.flat()
+			.map((d) => `${d.rule}:${d.severity}`)
+			.sort();
+	};
+	const describePolicy = (opened: string[]): Intent => ({
+		op: "edit",
+		file: "lending.json",
+		target: { ref: POLICY, kind: "element" },
+		changes: [
+			{
+				field: "description",
+				expected: "A missed installment triggers the arrears notice",
+				value: "A missed installment triggers the arrears notice, reworded",
+			},
+		],
+		providers: [{ ref: ARREARS, kind: "consumable" }],
+		checks: [
+			{
+				field: "then",
+				class: "LC-OPERATION-OWN-CONTEXT",
+				holder: { ref: POLICY, kind: "element" },
+				chosen: [{ ref: ARREARS }],
+				openedIllegal: opened,
+			},
+		],
+	});
+	const northbank = async () => {
+		const files = (await fs.readdir(nbDir)).filter(
+			(f) => f.endsWith(".json") && f !== "schema.json",
+		);
+		const texts: Files = {};
+		for (const f of files)
+			texts[f] = await fs.readFile(path.join(nbDir, f), "utf8");
+		return projectOf(texts);
+	};
+
+	it("edits the owner alone, keeps the pinned illegal ref, and the other 11 files and the pinned diagnostics are unchanged", async () => {
+		const p = await northbank();
+		const before = await bytes(p);
+		const rules = rulesOf(before);
+		expect(rules).toEqual(
+			expect.arrayContaining([
+				"separate-ways:error",
+				"consumable-kind:error",
+				"context-serves-subdomain:warning",
+			]),
+		);
+		const r = await applyIntent(p.io, p.files, describePolicy([ARREARS]));
+		expect(r).toEqual({ ok: true, file: "lending.json", wrote: "disk" });
+		const after = await bytes(p);
+		const changed = Object.keys(after).filter((f) => after[f] !== before[f]);
+		expect(changed).toEqual(["lending.json"]);
+		expect(p.files).toHaveLength(12);
+		expect(rulesOf(after)).toEqual(rules);
+		expect(after["lending.json"]).toContain("reworded");
+		expect(after["lending.json"]).toContain("arrears_notice_issued");
+	});
+
+	it("does not trust a missing host exemption: the pinned ref is refused when the host did not list it", async () => {
+		const p = await northbank();
+		const before = await bytes(p);
+		const r = refused(
+			await applyIntent(p.io, p.files, describePolicy([])),
+			"illegal-choice",
+		);
+		if (!r.ok) expect(r.illegal?.[0].rule).toBe("consumable-kind");
+		expect(await bytes(p)).toEqual(before);
+	});
+});
+
+describe("W3 an edit is atomic and owner-only", () => {
+	const edit = (
+		changes: Array<{ field: string; expected?: string; value: string }>,
+	): Intent => ({
+		op: "edit",
+		file: "a.json",
+		target: LEDGER,
+		changes: changes.map((c) => ({ expected: undefined, ...c })),
+	});
+
+	it("applies every field in one write", async () => {
+		const p = await project();
+		const { io, log } = watched(p.io);
+		const r = await applyIntent(
+			io,
+			p.files,
+			edit([
+				{ field: "description", expected: "ledger", value: "ledger v2" },
+				{ field: "name", expected: "Ledger", value: "Ledger two" },
+			]),
+		);
+		expect(r).toEqual({ ok: true, file: "a.json", wrote: "disk" });
+		expect(log.checks).toBe(1);
+		const ledger = (await json(p, "a.json")).boundedcontexts.ledger;
+		expect([ledger.description, ledger.name]).toEqual([
+			"ledger v2",
+			"Ledger two",
+		]);
+	});
+
+	it("half-apply is impossible: a stale second field refuses the whole edit and no file changes", async () => {
+		const p = await project();
+		const before = await bytes(p);
+		const r = refused(
+			await applyIntent(
+				p.io,
+				p.files,
+				edit([
+					{ field: "description", expected: "ledger", value: "ledger v2" },
+					{ field: "name", expected: "Not what it was", value: "Ledger two" },
+				]),
+			),
+			"stale-value",
+		);
+		if (!r.ok) expect(r.detail).toContain("name");
+		expect(await bytes(p)).toEqual(before);
+	});
+
+	it("is a defect to name a field twice or none, and to check a chosen ref that is not a provider", () => {
+		expect(intentProblem(edit([]))).toMatch(/at least one/);
+		expect(
+			intentProblem(
+				edit([
+					{ field: "name", value: "a" },
+					{ field: "name", value: "b" },
+				]),
+			),
+		).toMatch(/twice/);
+		expect(
+			intentProblem({
+				...edit([{ field: "name", value: "a" }]),
+				checks: [
+					{
+						field: "f",
+						class: "LC-TEAM",
+						holder: LEDGER,
+						chosen: [{ ref: "#/x" }],
+					},
+				],
+			}),
+		).toMatch(/not declared in providers/);
 	});
 });

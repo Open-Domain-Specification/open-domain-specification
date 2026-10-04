@@ -2,11 +2,17 @@ import { createHash, randomBytes } from "node:crypto";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import {
+	BoundedContext,
+	holderOf,
+	isLegalTarget,
+	type LegalClassId,
+	type LegalHolder,
 	parseRef,
 	REF_KINDS,
 	type RefKind,
 	resolveWirePath,
 	type SetPath,
+	systemKindProblem,
 	validateSetPath,
 	type Workspace,
 	type WorkspaceSchema,
@@ -70,7 +76,61 @@ type Common = {
 	 * invalid intent, so nothing is ever dropped silently on load.
 	 */
 	providers?: ReadonlyArray<TypedRef>;
+	/**
+	 * What the change selects that must still be legal when it is written. Judged
+	 * on the set the write would produce, so a sibling, root or relation edited
+	 * in the same intent is seen. Absent means nothing is judged.
+	 */
+	checks?: ReadonlyArray<LegalCheck>;
 };
+
+/** One reference the form selected for a field, as the owning file writes it. */
+export type ChosenRef = {
+	ref: string;
+	/** Only for a relation target chosen beside a new relation: the relation type, used when the holder is not itself a relation. */
+	relation?: NonNullable<LegalHolder["relation"]>;
+};
+
+/**
+ * A reference field whose selected choices are judged at write time with
+ * `isLegalTarget`. The forms phase supplies one for EVERY selected-ref field of
+ * the holder, not only the ones it changed: the writer evaluates what it is
+ * given and cannot tell which fields a sibling edit or another file affected.
+ */
+export type RefCheck = {
+	/** The descriptor field, for messages. */
+	field: string;
+	class: LegalClassId;
+	/**
+	 * The element whose field this is, resolvable in the changed file: an update
+	 * or edit's target, a new record's own ref, or for an entity relation its
+	 * owning entity.
+	 */
+	holder: TypedRef;
+	/** Every ref the field holds after the save. Each must also be a typed provider. */
+	chosen: ReadonlyArray<ChosenRef>;
+	/**
+	 * Refs of this field the HOST found illegal when it opened the form, read by
+	 * the host from its own fresh set. Never take it from a webview message. It
+	 * only keeps a ref that is also already in the file's field before this
+	 * write (a deliberately pinned or inherited defect); it can never admit a
+	 * ref this save newly writes.
+	 */
+	openedIllegal?: ReadonlyArray<string>;
+};
+
+/**
+ * The context kind flags, judged with `systemKindProblem` only when the kind
+ * the changed file would carry differs from the kind it carries now.
+ */
+export type KindCheck = {
+	field: string;
+	class: "LC-BC-FLAGS";
+	/** The bounded context whose `external`, `boundaryOnly` and `bigBallOfMud` flags change. */
+	holder: TypedRef;
+};
+
+export type LegalCheck = RefCheck | KindCheck;
 
 /** Sets (or, with `value: undefined`, removes) one field of an element the owner holds. */
 export type UpdateIntent = Common & {
@@ -80,6 +140,24 @@ export type UpdateIntent = Common & {
 	/** The value the form saw; `undefined` means it saw the field absent. A different fresh value is `stale-value`. */
 	expected: Json | undefined;
 	value: Json | undefined;
+};
+
+/** One field of an {@link EditIntent}; the stale-value rule of an {@link UpdateIntent} applies to each. */
+export type FieldChange = {
+	field: string;
+	expected: Json | undefined;
+	value: Json | undefined;
+};
+
+/**
+ * Sets (or removes) several fields of one element the owner holds, all in one
+ * emit and one write, or none: any stale field, field the schema would drop,
+ * or illegal choice refuses the whole intent before any file or editor changes.
+ */
+export type EditIntent = Common & {
+	op: "edit";
+	target: TypedRef;
+	changes: ReadonlyArray<FieldChange>;
 };
 
 /** Adds an element under a parent the owner holds. */
@@ -101,7 +179,7 @@ export type RemoveIntent = Common & {
 	expected?: Json;
 };
 
-export type Intent = UpdateIntent | AddIntent | RemoveIntent;
+export type Intent = UpdateIntent | EditIntent | AddIntent | RemoveIntent;
 
 export type RefusalCause =
 	| "stale-target"
@@ -113,7 +191,18 @@ export type RefusalCause =
 	| "dependency-unreadable"
 	| "file-changed"
 	| "invalid-intent"
+	| "illegal-choice"
 	| "write-failed";
+
+/** A selected choice the changed file would hold but the model does not allow. */
+export type IllegalChoice = {
+	field: string;
+	ref: string;
+	/** The target and its file, to show beside the field. */
+	label: string;
+	rule: string;
+	reason: string;
+};
 
 export type WriteResult =
 	| {
@@ -128,6 +217,8 @@ export type WriteResult =
 			detail: string;
 			/** What the person can do next. Always present. */
 			action: string;
+			/** Present exactly when `cause` is `illegal-choice`. */
+			illegal?: ReadonlyArray<IllegalChoice>;
 	  };
 
 export type TextRead =
@@ -167,7 +258,14 @@ const refuse = (
 	cause: RefusalCause,
 	detail: string,
 	action: string,
-): WriteResult => ({ ok: false, cause, detail, action });
+	illegal?: ReadonlyArray<IllegalChoice>,
+): WriteResult => ({
+	ok: false,
+	cause,
+	detail,
+	action,
+	...(illegal ? { illegal } : {}),
+});
 
 // ---------------------------------------------------------------- JSON helpers
 
@@ -274,6 +372,28 @@ export function intentProblem(intent: unknown): string | undefined {
 	}
 	let payload: unknown;
 	switch (intent.op) {
+		case "edit": {
+			const bad = typedRefProblem(intent.target, "target");
+			if (bad) return bad;
+			if (!Array.isArray(intent.changes) || intent.changes.length === 0)
+				return "an edit states at least one change";
+			const seen = new Set<string>();
+			for (const change of intent.changes as unknown[]) {
+				if (!isPlain(change) || !safeName(change.field))
+					return "each change names a field (a property name)";
+				if (seen.has(change.field))
+					return `the field ${change.field} is changed twice`;
+				seen.add(change.field);
+				if (!("expected" in change) || !("value" in change))
+					return "each change states both expected and value (undefined means absent)";
+				if (change.expected !== undefined && !isJson(change.expected))
+					return `expected of ${change.field} is not JSON`;
+				if (change.value !== undefined && !isJson(change.value))
+					return `value of ${change.field} is not JSON`;
+			}
+			payload = (intent.changes as FieldChange[]).map((c) => c.value);
+			break;
+		}
 		case "update": {
 			const bad = typedRefProblem(intent.target, "target");
 			if (bad) return bad;
@@ -307,7 +427,7 @@ export function intentProblem(intent: unknown): string | undefined {
 			break;
 		}
 		default:
-			return `op must be update, add or remove, not ${show(intent.op)}`;
+			return `op must be update, edit, add or remove, not ${show(intent.op)}`;
 	}
 	const declared = new Set(
 		((providers as TypedRef[] | undefined) ?? []).map((p) => p.ref),
@@ -315,6 +435,44 @@ export function intentProblem(intent: unknown): string | undefined {
 	for (const ref of embeddedRefs(payload))
 		if (!declared.has(ref))
 			return `the change writes the ref ${JSON.stringify(ref)} without declaring it in providers`;
+	return checksProblem(intent.checks, declared);
+}
+
+const RELATIONS = new Set(["includes", "references", "uses"]);
+
+/** What is wrong with the legal checks as values; a chosen ref needs a provider because that is what gives it its kind. */
+function checksProblem(
+	checks: unknown,
+	declared: ReadonlySet<string>,
+): string | undefined {
+	if (checks === undefined) return undefined;
+	if (!Array.isArray(checks)) return "checks must be a list of legal checks";
+	for (const check of checks as unknown[]) {
+		if (!isPlain(check) || !safeName(check.field) || !safeName(check.class))
+			return "a legal check names its field and class";
+		const bad = typedRefProblem(check.holder, "a legal check holder");
+		if (bad) return bad;
+		if (check.class === "LC-BC-FLAGS") continue;
+		if (!Array.isArray(check.chosen))
+			return `the legal check of ${check.field} lists the refs it chose`;
+		for (const chosen of check.chosen as unknown[]) {
+			if (!isPlain(chosen) || typeof chosen.ref !== "string")
+				return `a chosen ref of ${check.field} must be { ref }`;
+			if (
+				chosen.relation !== undefined &&
+				!RELATIONS.has(chosen.relation as string)
+			)
+				return `a chosen ref of ${check.field} names an unknown relation`;
+			if (!declared.has(chosen.ref))
+				return `the chosen ref ${JSON.stringify(chosen.ref)} of ${check.field} is not declared in providers`;
+		}
+		const opened = check.openedIllegal;
+		if (
+			opened !== undefined &&
+			(!Array.isArray(opened) || opened.some((r) => typeof r !== "string"))
+		)
+			return `openedIllegal of ${check.field} must be a list of refs`;
+	}
 	return undefined;
 }
 
@@ -433,6 +591,7 @@ async function attemptOnce(
 	const canonical = clone(
 		assembled.set.toSchemas().get(owner),
 	) as unknown as Plain;
+	const priorRefs = priorRefsOf(canonical, intent, resolved.pointer);
 	const mutation = mutate(canonical, intent, resolved.pointer);
 	if ("refusal" in mutation) return { done: mutation.refusal };
 	if (mutation.noop) return { done: { ok: true, file: owner, wrote: "noop" } };
@@ -450,7 +609,18 @@ async function attemptOnce(
 	if (text === ownerText)
 		return { done: { ok: true, file: owner, wrote: "noop" } };
 
-	// 5. Detect-before-check write.
+	// 5. Every selected choice must be legal in the set this write produces.
+	const illegal = legalProblems(
+		assembled,
+		ownerWorkspace,
+		emitted.set,
+		owner,
+		intent,
+		priorRefs,
+	);
+	if (illegal) return { done: illegal };
+
+	// 6. Detect-before-check write.
 	const outcome = await io.writeIfUnchanged(owner, text, ownerRead);
 	if (outcome.status === "changed") return { changed: true };
 	if (outcome.status === "failed")
@@ -581,6 +751,18 @@ function resolveRefs(
 	return { pointer };
 }
 
+/** An update is an edit of one field. */
+const changesOf = (intent: UpdateIntent | EditIntent): FieldChange[] =>
+	intent.op === "edit"
+		? [...intent.changes]
+		: [
+				{
+					field: intent.field,
+					expected: intent.expected,
+					value: intent.value,
+				},
+			];
+
 type Mutation =
 	| { refusal: WriteResult }
 	| { noop: true }
@@ -600,22 +782,29 @@ function mutate(canonical: Plain, intent: Intent, pointer: string): Mutation {
 			),
 		};
 
-	if (intent.op === "update") {
+	if (intent.op === "update" || intent.op === "edit") {
 		const target = node as Plain;
-		const fresh = Object.hasOwn(target, intent.field)
-			? target[intent.field]
-			: undefined;
-		if (jsonEqual(fresh, intent.value)) return { noop: true };
-		if (!jsonEqual(fresh, intent.expected))
-			return {
-				refusal: refuse(
-					"stale-value",
-					`${intent.field} of ${intent.target.ref} is now ${show(fresh)}, not ${show(intent.expected)} as the form saw it`,
-					"Reload the form to see the current value, then apply your change again.",
-				),
-			};
-		if (intent.value === undefined) delete target[intent.field];
-		else target[intent.field] = clone(intent.value);
+		const pending: FieldChange[] = [];
+		// Judge every field before touching any, so a stale second field leaves the first unapplied.
+		for (const change of changesOf(intent)) {
+			const fresh = Object.hasOwn(target, change.field)
+				? target[change.field]
+				: undefined;
+			if (jsonEqual(fresh, change.value)) continue;
+			if (!jsonEqual(fresh, change.expected))
+				return {
+					refusal: refuse(
+						"stale-value",
+						`${change.field} of ${intent.target.ref} is now ${show(fresh)}, not ${show(change.expected)} as the form saw it`,
+						"Reload the form to see the current value, then apply your change again.",
+					),
+				};
+			pending.push(change);
+		}
+		if (pending.length === 0) return { noop: true };
+		for (const change of pending)
+			if (change.value === undefined) delete target[change.field];
+			else target[change.field] = clone(change.value);
 		return { schema: canonical, path: at };
 	}
 
@@ -704,14 +893,16 @@ function emit(
 	changed: WorkspaceSchema,
 	intent: Intent,
 	at: JsonPath,
-): { refusal: WriteResult } | { schema: WorkspaceSchema } {
+): { refusal: WriteResult } | { schema: WorkspaceSchema; set: WorkspaceSet } {
 	const entries: Array<[SetPath, WorkspaceSchema]> = [];
 	for (const [file, entry] of assembled.files)
 		if (file === owner) entries.push([file, changed]);
 		else if (entry.schema) entries.push([file, entry.schema]);
 	let out: WorkspaceSchema | undefined;
+	let set: WorkspaceSet;
 	try {
-		out = WorkspaceSet.fromSchemas(entries).toSchemas().get(owner);
+		set = WorkspaceSet.fromSchemas(entries);
+		out = set.toSchemas().get(owner);
 	} catch (e) {
 		return {
 			refusal: refuse(
@@ -730,7 +921,7 @@ function emit(
 				"This is a defect in the form that sent it; report it. Nothing was changed.",
 			),
 		};
-	return { schema: out };
+	return { schema: out, set };
 }
 
 function changeSurvived(
@@ -744,15 +935,16 @@ function changeSurvived(
 		const after = valueAtPath(out, at);
 		return jsonEqual(before, after);
 	}
-	if (intent.op === "update") {
+	if (intent.op === "update" || intent.op === "edit") {
 		const node = valueAtPath(out, at);
 		// Removing a field has nothing to preserve: core may restore a default
 		// (an empty description), which is its answer, not a dropped change.
-		return (
-			intent.value === undefined ||
-			(isPlain(node) &&
-				Object.hasOwn(node, intent.field) &&
-				jsonContains(node[intent.field], intent.value))
+		return changesOf(intent).every(
+			(change) =>
+				change.value === undefined ||
+				(isPlain(node) &&
+					Object.hasOwn(node, change.field) &&
+					jsonContains(node[change.field], change.value)),
 		);
 	}
 	if (intent.id !== undefined)
@@ -760,6 +952,165 @@ function changeSurvived(
 	const list = valueAtPath(out, at);
 	return (
 		Array.isArray(list) && list.some((it) => jsonContains(it, intent.element))
+	);
+}
+
+// -------------------------------------------------------------- legal checks
+
+/**
+ * The `$ref`s the holder's field carries in the owner's JSON before this
+ * write, as the owner writes them. Only an update, edit or remove of the
+ * element a check names can have a field to read; for an add, or a holder that
+ * is another element, the answer is the empty set, which can only make the
+ * guard stricter.
+ */
+function priorRefsOf(
+	canonical: Plain,
+	intent: Intent,
+	pointer: string,
+): (check: RefCheck) => ReadonlySet<string> {
+	const at =
+		intent.op === "add" ? undefined : jsonPathOfRef(canonical, pointer);
+	const node = at && valueAtPath(canonical, at);
+	const held = isPlain(node)
+		? new Map(
+				Object.entries(node).map(([k, v]) => [k, new Set(embeddedRefs(v))]),
+			)
+		: new Map<string, Set<string>>();
+	return (check) =>
+		intent.op !== "add" && check.holder.ref === intent.target.ref
+			? (held.get(check.field) ?? new Set())
+			: new Set();
+}
+
+const kindOfContext = (context: BoundedContext) =>
+	context.external
+		? "external"
+		: context.boundaryOnly
+			? "boundaryOnly"
+			: context.bigBallOfMud
+				? "bigBallOfMud"
+				: "modelled";
+
+const ILLEGAL_ACTION =
+	"Open the form again and pick from the refreshed list; nothing was changed.";
+
+/**
+ * Judges every selected choice against `post`, the set the write would
+ * produce, so a sibling, root or relation edited in the same intent counts.
+ * The holder is read from `post`, never from the form. A ref is exempt only
+ * when the host listed it as illegal at opening AND the field already held it
+ * before this write. No rule is run and no diagnostics are compared: an
+ * unrelated or pinned defect elsewhere is invisible here.
+ */
+function legalProblems(
+	assembled: Assembled,
+	ownerBefore: Workspace,
+	post: WorkspaceSet,
+	owner: SetPath,
+	intent: Intent,
+	priorRefs: (check: RefCheck) => ReadonlySet<string>,
+): WriteResult | undefined {
+	const ownerAfter = post.byPath(owner);
+	const defect = (detail: string) =>
+		refuse(
+			"invalid-intent",
+			detail,
+			"This is a defect in the form that sent it; report it. Nothing was changed.",
+		);
+	if (!ownerAfter) return defect(`${owner} is not in the changed set`);
+	const illegal: IllegalChoice[] = [];
+	for (const check of intent.checks ?? []) {
+		const holder = post.resolve(
+			ownerAfter,
+			check.holder.ref,
+			kindFor(check.holder.kind),
+		);
+		if (!holder.ok)
+			return defect(
+				`the legal check of ${check.field} names ${check.holder.ref}, which is not in the changed ${owner}`,
+			);
+		try {
+			if (check.class === "LC-BC-FLAGS") {
+				const after = holder.target;
+				if (!(after instanceof BoundedContext))
+					return defect(`${check.holder.ref} is not a bounded context`);
+				const written = kindOfContext(after);
+				const before = assembled.set.resolve(
+					ownerBefore,
+					check.holder.ref,
+					kindFor(check.holder.kind),
+				);
+				if (
+					before.ok &&
+					kindOfContext(before.target as BoundedContext) === written
+				)
+					continue;
+				const reason = systemKindProblem(after, written);
+				if (reason)
+					illegal.push({
+						field: check.field,
+						ref: check.holder.ref,
+						label: `${after.name} (${holder.workspace.file})`,
+						rule:
+							written === "external"
+								? "external-is-boundary"
+								: "boundary-only-is-boundary",
+						reason,
+					});
+				continue;
+			}
+			const exempt = new Set(
+				(check.openedIllegal ?? []).filter((ref) => priorRefs(check).has(ref)),
+			);
+			const facts = holderOf(post, holder.target);
+			for (const chosen of check.chosen) {
+				if (exempt.has(chosen.ref)) continue;
+				const provider = (intent.providers ?? []).find(
+					(p) => p.ref === chosen.ref,
+				) as TypedRef;
+				const target = post.resolve(
+					ownerAfter,
+					chosen.ref,
+					kindFor(provider.kind),
+				);
+				if (!target.ok) {
+					illegal.push({
+						field: check.field,
+						ref: chosen.ref,
+						label: chosen.ref,
+						rule: "stale-choice",
+						reason: `${chosen.ref} no longer names ${describeKind(provider.kind)} (${target.detail})`,
+					});
+					continue;
+				}
+				const verdict = isLegalTarget(
+					post,
+					check.class,
+					{ ...facts, relation: facts.relation ?? chosen.relation },
+					target.target,
+				);
+				if (!verdict.ok)
+					illegal.push({
+						field: check.field,
+						ref: chosen.ref,
+						label: `${(target.target as { name?: string }).name ?? chosen.ref} (${target.workspace.file})`,
+						rule: verdict.rule,
+						reason: verdict.reason,
+					});
+			}
+		} catch (e) {
+			return defect(
+				`the legal check of ${check.field} could not be evaluated: ${messageOf(e)}`,
+			);
+		}
+	}
+	if (illegal.length === 0) return undefined;
+	return refuse(
+		"illegal-choice",
+		illegal.map((it) => `${it.field}: ${it.reason}`).join("; "),
+		ILLEGAL_ACTION,
+		illegal,
 	);
 }
 

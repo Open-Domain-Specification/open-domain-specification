@@ -4,10 +4,15 @@ import {
 	type SetDiagnostic,
 	type SetPath,
 	Workspace,
-	type WorkspaceSchema,
 } from "@open-domain-specification/core";
 import * as vscode from "vscode";
 import { type Assembled, assemble } from "./assemble";
+import {
+	type CreateRefusal,
+	createWorkspaceFile,
+	type FreshRead,
+	readFreshSet,
+} from "./create";
 import { editorFirstIo } from "./editor-io";
 import { vscodeEditorHost } from "./vscode-host";
 import {
@@ -269,30 +274,6 @@ export class OdsProject implements vscode.Disposable {
 		);
 	}
 
-	/** Serialises the in-memory workspace and writes it atomically, with $schema pointing at the sibling schema.json. Used for a workspace that was just created; edits go through {@link applyIntent}. */
-	async dump(file: WorkspaceFile): Promise<void> {
-		if (!file.workspace) return;
-		const ods = this.isInOdsFolder(file.uri);
-		const schemaRel = ods
-			? path
-					.relative(
-						path.dirname(file.uri.fsPath),
-						path.join(ods.fsPath, SCHEMA_FILE),
-					)
-					.split(path.sep)
-					.join("/")
-			: SCHEMA_FILE;
-		const schema: WorkspaceSchema = {
-			$schema: schemaRel.startsWith(".") ? schemaRel : `./${schemaRel}`,
-			...file.workspace.toSchema(),
-		};
-		const text = `${JSON.stringify(schema, null, 2)}\n`;
-		await this.writeOwn(file.uri, text);
-		file.text = text;
-		if (ods) await this.ensureSchema(ods);
-		this.changed.fire();
-	}
-
 	private async writeOwn(uri: vscode.Uri, text: string): Promise<void> {
 		const tmp = `${uri.fsPath}.${process.pid}.tmp`;
 		await fs.mkdir(path.dirname(uri.fsPath), { recursive: true });
@@ -314,27 +295,53 @@ export class OdsProject implements vscode.Disposable {
 		if (current !== text) await this.writeOwn(target, text);
 	}
 
-	/** Creates a new workspace file in the folder's .ods directory and returns it. */
+	/**
+	 * Creates a new workspace file in the folder's .ods directory, or refuses
+	 * and changes nothing, on disk or in memory (see {@link createWorkspaceFile}).
+	 * The caller shows a refusal's message.
+	 */
 	async create(
 		folder: vscode.WorkspaceFolder,
 		name: string,
 		description: string,
-	): Promise<WorkspaceFile> {
-		const workspace = new Workspace(name, {
-			description,
-			version: "0.1.0",
-		});
+	): Promise<{ ok: true; file: WorkspaceFile } | CreateRefusal> {
 		const ods = odsFolderOf(folder);
-		const uri = vscode.Uri.joinPath(ods, `${workspace.id}.json`);
+		const created = await createWorkspaceFile(
+			ods.fsPath,
+			editorFirstIo(diskTextIo(ods.fsPath), vscodeEditorHost(ods)),
+			await this.memberPaths(ods),
+			name,
+			description,
+		);
+		if (!created.ok) return created;
+		const uri = vscode.Uri.joinPath(ods, created.file);
 		const file: WorkspaceFile = {
 			uri,
-			relativePath: `${workspace.id}.json`,
-			text: "",
-			workspace,
+			relativePath: created.file,
+			text: created.text,
+			workspace: new Workspace(name, { description, version: "0.1.0" }),
 		};
 		this.files.set(uri.toString(), file);
-		await this.dump(file);
-		return file;
+		await this.ensureSchema(ods);
+		this.changed.fire();
+		return { ok: true, file };
+	}
+
+	/**
+	 * The set of the `.ods` folder `ods` read now: the file list from the
+	 * folder, every file's text from the open editor when there is one, else the
+	 * disk. Never `WorkspaceFile.workspace` or {@link sets}, which are display
+	 * caches. `members` are the set paths that own a workspace of the set.
+	 */
+	async readFresh(ods: vscode.Uri): Promise<FreshRead> {
+		return readFreshSet(
+			editorFirstIo(diskTextIo(ods.fsPath), vscodeEditorHost(ods)),
+			await this.memberPaths(ods),
+		);
+	}
+
+	private async memberPaths(ods: vscode.Uri): Promise<SetPath[]> {
+		return (await this.listJsonFiles(ods)).map((uri) => setPathOf(ods, uri));
 	}
 
 	dispose(): void {

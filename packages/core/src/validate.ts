@@ -200,7 +200,7 @@ function subscribedTriggers(reactor: Policy | Process): ProcessTrigger[] {
  * that is neither a subscription nor something the reactor issues, so it is
  * separated here and every rule about subscriptions is told to ignore it.
  */
-function startingCommands(reactor: Policy | Process): Consumable[] {
+export function startingCommands(reactor: Policy | Process): Consumable[] {
 	return reactor instanceof Process
 		? reactor.startEvents.filter((it) => it.type === "operation")
 		: [];
@@ -279,6 +279,84 @@ function reachedAsRoot(member: Entity | ValueObject): boolean {
 }
 
 /**
+ * What a relation says, as the relation rules read it: its two ends and its
+ * kind. A host that has not made the relation yet can ask the same questions
+ * of a proposed one.
+ */
+export type RelationShape = Pick<
+	EntityRelation,
+	"source" | "relation" | "target"
+>;
+
+/**
+ * What `cross-aggregate-reference` objects to in one relation, if anything:
+ * across two aggregates only `references` is allowed (`not-references`), and
+ * only to a root or a kind of one (`not-root`). The aggregate the target sits
+ * in comes back with it, since the rule names it. A value object at either end
+ * sits in no aggregate, so it is never objected to here.
+ */
+function acrossAggregates(
+	relation: RelationShape,
+): { problem: "not-references" | "not-root"; target: Aggregate } | undefined {
+	const source = aggregateOfEnd(relation.source);
+	const target = aggregateOfEnd(relation.target);
+	if (!source || !target || source === target) return undefined;
+	if (relation.relation !== "references")
+		return { problem: "not-references", target };
+	return reachedAsRoot(relation.target)
+		? undefined
+		: { problem: "not-root", target };
+}
+
+/**
+ * Whether `cross-context-relation` refuses this relation: it crosses a bounded
+ * context and is not a `uses` of a value object the source's context may
+ * borrow.
+ */
+function refusedAcrossContexts(scope: Scope, relation: RelationShape): boolean {
+	const source = relation.source.boundedcontext;
+	const target = relation.target.boundedcontext;
+	if (source === target) return false;
+	return !(
+		relation.target instanceof ValueObject &&
+		relation.relation === RelationType.Uses &&
+		mayBorrowFrom(scope, source, target)
+	);
+}
+
+/**
+ * What `aggregate-tree` objects to in one relation it reads, if anything: a
+ * `uses` of an entity (`uses-entity`), or an `includes` or `references` from
+ * an entity that lands on a value object (`value-target`). A value object that
+ * includes or references anything is `value-object-shape`'s, not this rule's.
+ */
+function aggregateTreeProblem(
+	relation: RelationShape,
+): "uses-entity" | "value-target" | undefined {
+	if (!saysWhatItPointsAt(relation)) return undefined;
+	if (relation.relation === "uses")
+		return relation.target instanceof ValueObject ? undefined : "uses-entity";
+	if (!(relation.source instanceof Entity)) return undefined;
+	return relation.target instanceof Entity ? undefined : "value-target";
+}
+
+/**
+ * Whether the model lets one thing hold this relation to another: none of
+ * `cross-aggregate-reference`, `cross-context-relation`, the error half of
+ * `aggregate-tree` and `value-object-shape` objects to it. The reachability warning of `aggregate-tree`
+ * is about an entity nothing reaches, not about the relation, so it is not
+ * asked.
+ */
+export function mayRelate(scope: Scope, relation: RelationShape): boolean {
+	return (
+		!acrossAggregates(relation) &&
+		!refusedAcrossContexts(scope, relation) &&
+		!aggregateTreeProblem(relation) &&
+		!valueObjectRelationProblem(relation)
+	);
+}
+
+/**
  * A relation into another aggregate may only reference that aggregate's root,
  * and may not include or use its members directly. A value object at either
  * end crosses no aggregate boundary: it belongs to the context, and every
@@ -299,10 +377,10 @@ function reachedAsRoot(member: Entity | ValueObject): boolean {
 const crossAggregateReference: Rule = (scope) => {
 	const diagnostics: Finding[] = [];
 	for (const relation of relationsOf(scope)) {
-		const source = aggregateOfEnd(relation.source);
-		const target = aggregateOfEnd(relation.target);
-		if (!source || !target || source === target) continue;
-		if (relation.relation !== "references") {
+		const crossing = acrossAggregates(relation);
+		if (!crossing) continue;
+		const { target } = crossing;
+		if (crossing.problem === "not-references") {
 			diagnostics.push({
 				severity: "error",
 				rule: "cross-aggregate-reference",
@@ -310,7 +388,7 @@ const crossAggregateReference: Rule = (scope) => {
 				ref: relation.source.ref,
 				at: relation.source,
 			});
-		} else if (!reachedAsRoot(relation.target)) {
+		} else {
 			diagnostics.push({
 				severity: "error",
 				rule: "cross-aggregate-reference",
@@ -350,16 +428,10 @@ const crossAggregateReference: Rule = (scope) => {
 const crossContextRelation: Rule = (scope) => {
 	const diagnostics: Finding[] = [];
 	for (const relation of relationsOf(scope)) {
+		if (!refusedAcrossContexts(scope, relation)) continue;
 		const source = relation.source.boundedcontext;
 		const target = relation.target.boundedcontext;
-		if (source === target) continue;
 		const value = relation.target instanceof ValueObject;
-		if (
-			value &&
-			relation.relation === RelationType.Uses &&
-			mayBorrowFrom(scope, source, target)
-		)
-			continue;
 		const fix = value
 			? `a relation reaches another context's value object only where the borrowing does, so declare a shared kernel with "${target.name}", a conformist relationship toward it, or a customer-supplier relationship under which you are the customer, and type an attribute by "${relation.target.name}"`
 			: `a relation never crosses a bounded context, so hold "${relation.target.name}"'s identity in an attribute of "${relation.source.name}" with \`identifies\`; where what you need is a value rather than an entity, borrow it through a shared kernel, as a conformist, or as a customer of a supplier`;
@@ -373,6 +445,30 @@ const crossContextRelation: Rule = (scope) => {
 	}
 	return diagnostics;
 };
+
+/**
+ * Whether an attribute may hold the identity of `target`: the one question
+ * `identifies-entity` asks, asked of one target so a host can offer only the
+ * targets it would accept (the rule below says what each branch means). A
+ * context is an identity target only where the model does not state its
+ * insides, a schema only where its context publishes a kind without them, and
+ * an entity only where it is an entity of a workspace in `scope`.
+ */
+export function mayIdentify(
+	scope: Scope,
+	target: Entity | BoundedContext | DataSchema,
+): boolean {
+	if (target instanceof BoundedContext)
+		return target.external || target.bigBallOfMud || target.boundaryOnly;
+	if (target instanceof DataSchema)
+		return target.boundedcontext.external || target.boundedcontext.boundaryOnly;
+	const home = workspaceOf(target);
+	return (
+		home !== undefined &&
+		scope.workspaces.includes(home) &&
+		home.getEntityByRef(target.ref) === target
+	);
+}
 
 /**
  * An attribute that holds an identity names an entity of this workspace, root
@@ -440,8 +536,7 @@ const identifiesEntity: Rule = (scope) => {
 			const target = attribute.identifies;
 			if (!target) continue;
 			if (target instanceof BoundedContext) {
-				if (target.external || target.bigBallOfMud || target.boundaryOnly)
-					continue;
+				if (mayIdentify(scope, target)) continue;
 				diagnostics.push({
 					severity: "error",
 					rule: "identifies-entity",
@@ -452,11 +547,7 @@ const identifiesEntity: Rule = (scope) => {
 				continue;
 			}
 			if (target instanceof DataSchema) {
-				if (
-					target.boundedcontext.external ||
-					target.boundedcontext.boundaryOnly
-				)
-					continue;
+				if (mayIdentify(scope, target)) continue;
 				diagnostics.push({
 					severity: "error",
 					rule: "identifies-entity",
@@ -466,12 +557,7 @@ const identifiesEntity: Rule = (scope) => {
 				});
 				continue;
 			}
-			const home = workspaceOf(target);
-			if (
-				!home ||
-				!scope.workspaces.includes(home) ||
-				home.getEntityByRef(target.ref) !== target
-			) {
+			if (!mayIdentify(scope, target)) {
 				diagnostics.push({
 					severity: "error",
 					rule: "identifies-entity",
@@ -549,6 +635,19 @@ const entityIdentity: Rule = (scope) => {
 };
 
 /**
+ * What `value-object-shape` objects to in a relation a value object holds, if
+ * anything: it lands on an entity (`entity-target`), or it is an `includes` or
+ * a `references` rather than a `uses` (`not-uses`).
+ */
+function valueObjectRelationProblem(
+	relation: RelationShape,
+): "entity-target" | "not-uses" | undefined {
+	if (!(relation.source instanceof ValueObject)) return undefined;
+	if (relation.target instanceof Entity) return "entity-target";
+	return relation.relation === "uses" ? undefined : "not-uses";
+}
+
+/**
  * A value object is compared by its values, so it carries no identity of its
  * own, owns no lifecycle and reaches no entity: no identity attribute, and its
  * relations `uses` other values.
@@ -578,7 +677,9 @@ const valueObjectShape: Rule = (scope) => {
 				});
 			}
 			for (const relation of vo.relations) {
-				if (relation.target instanceof Entity) {
+				const problem = valueObjectRelationProblem(relation);
+				if (!problem) continue;
+				if (problem === "entity-target") {
 					diagnostics.push({
 						severity: "error",
 						rule: "value-object-shape",
@@ -588,7 +689,6 @@ const valueObjectShape: Rule = (scope) => {
 					});
 					continue;
 				}
-				if (relation.relation === "uses") continue;
 				diagnostics.push({
 					severity: "error",
 					rule: "value-object-shape",
@@ -770,7 +870,7 @@ function append<K, V>(index: Map<K, V[]>, key: K, value: V): void {
  * between two aggregates' entities is `cross-aggregate-reference`'s, and one
  * between two contexts is `cross-context-relation`'s.
  */
-function saysWhatItPointsAt(relation: EntityRelation): boolean {
+function saysWhatItPointsAt(relation: RelationShape): boolean {
 	if (relation.source.boundedcontext !== relation.target.boundedcontext)
 		return false;
 	const source = aggregateOfEnd(relation.source);
@@ -797,9 +897,9 @@ const aggregateTree: Rule = (scope) => {
 	const diagnostics: Finding[] = [];
 	for (const member of modelMembersOf(scope)) {
 		for (const relation of member.relations) {
-			if (!saysWhatItPointsAt(relation)) continue;
-			if (relation.relation === "uses") {
-				if (relation.target instanceof ValueObject) continue;
+			const problem = aggregateTreeProblem(relation);
+			if (!problem) continue;
+			if (problem === "uses-entity") {
 				diagnostics.push({
 					severity: "error",
 					rule: "aggregate-tree",
@@ -809,10 +909,6 @@ const aggregateTree: Rule = (scope) => {
 				});
 				continue;
 			}
-			// A value object that includes or references anything is
-			// value-object-shape's, and both kinds land on an entity.
-			if (!(member instanceof Entity)) continue;
-			if (relation.target instanceof Entity) continue;
 			// `includes` says whole-part inside the boundary and `references`
 			// says "that one over there", and both are about entities. A value
 			// has no identity to point at and no life of its own to be part of,
@@ -1542,7 +1638,7 @@ function heldByGuard(guard: Consumable): DataSchema[] {
  * delivered, it is the same fact in the same shape, and the third amendment of
  * 2026-09-10 says so. Either way, it must be held on every route to the guard.
  */
-function guardedSchemas(invariant: Invariant): Set<DataSchema> {
+function guardedSchemas(invariant: InvariantTiming): Set<DataSchema> {
 	const operations = invariant.guarded.filter((it) => it.type === "operation");
 	const reachable = operations.map((operation) => {
 		const roots: DataSchema[] = [];
@@ -1573,7 +1669,10 @@ function guardedSchemas(invariant: Invariant): Set<DataSchema> {
  * kept true on every save is a rule about the model, and a transport shape is
  * not the model.
  */
-function inGuardedShapes(target: Constrainable, invariant: Invariant): boolean {
+function inGuardedShapes(
+	target: Constrainable,
+	invariant: InvariantTiming,
+): boolean {
 	if (!invariant.precondition && !invariant.postcondition) return false;
 	const schema = schemaOf(target);
 	if (!schema) return false;
@@ -1699,6 +1798,99 @@ function compositionReachOf(vo: ValueObject): Set<Constrainable> {
 		}
 	}
 	return reach;
+}
+
+/**
+ * An invariant as the reach rules read it: what owns it, when it is checked
+ * and which operations guard it. A host that has not made the invariant yet
+ * can ask the same question of the one it proposes.
+ */
+export type InvariantShape = {
+	owner: Aggregate | BoundedContext | ValueObject;
+	precondition: boolean;
+	postcondition: boolean;
+	guarded: ReadonlyArray<Consumable>;
+};
+
+/** What decides which shapes of a call an invariant may reach. */
+type InvariantTiming = Pick<
+	InvariantShape,
+	"guarded" | "precondition" | "postcondition"
+>;
+
+/**
+ * Whether an aggregate's invariant may constrain `target`: the question
+ * `invariant-in-aggregate` asks of each target. `held` is
+ * {@link valueObjectsHeldIn} the aggregate, which the caller keeps so it is
+ * walked once for all the targets it asks about.
+ */
+function aggregateReaches(
+	aggregate: Aggregate,
+	held: Set<ValueObject>,
+	invariant: InvariantTiming,
+	target: Constrainable,
+): boolean {
+	// A value object is asked one question and no other: does anything inside
+	// this aggregate hold one? Its scope is the context whichever context
+	// declared it, so reading the scope first would answer "inside the
+	// boundary" for every value the context owns, held or not.
+	const vo = valueObjectOf(target);
+	if (vo) return held.has(vo);
+	const home = scopeOf(target);
+	return (
+		home === aggregate ||
+		home === aggregate.boundedcontext ||
+		guardedByService(target, aggregate.boundedcontext) ||
+		inGuardedShapes(target, invariant)
+	);
+}
+
+/**
+ * Whether a bounded context's invariant may constrain `target`: the question
+ * `invariant-in-context` asks of each target. `held` is
+ * {@link valueObjectsHeldIn} the context, kept by the caller as above.
+ */
+function contextReaches(
+	context: BoundedContext,
+	held: Set<ValueObject>,
+	invariant: InvariantTiming,
+	target: Constrainable,
+): boolean {
+	// A value object is asked one question and no other: does anything in this
+	// context hold one? Its context is whichever context declared it, so
+	// reading that first would answer "inside the boundary" for every value
+	// this context owns, held or not.
+	const vo = valueObjectOf(target);
+	if (vo) return held.has(vo);
+	return contextOf(target) === context || inGuardedShapes(target, invariant);
+}
+
+/**
+ * Whether an invariant of this kind may constrain `target`, which is what
+ * `invariant-in-value-object`, `invariant-in-aggregate` and
+ * `invariant-in-context` each ask of the targets of one invariant, asked of
+ * one candidate. Reach depends on the invariant's own timing and operations as
+ * well as its owner, because a precondition or postcondition may reach the
+ * attributes of the shapes its guard carries and no other invariant may; a
+ * host that offers targets asks again when either changes. Timing consistency
+ * (`precondition-names-operation` and the rules beside it) is not about what
+ * may be reached and is not asked. `scope` is part of the signature the other
+ * predicates share; reach is read from the invariant's own owner.
+ */
+export function mayConstrain(
+	_scope: Scope,
+	invariant: InvariantShape,
+	target: Constrainable,
+): boolean {
+	const { owner } = invariant;
+	if (owner instanceof ValueObject)
+		return compositionReachOf(owner).has(target);
+	const held = valueObjectOf(target)
+		? valueObjectsHeldIn(owner)
+		: new Set<ValueObject>();
+	return owner instanceof Aggregate
+		? aggregateReaches(owner, held, invariant, target)
+		: contextReaches(owner, held, invariant, target);
 }
 
 /**
@@ -1829,20 +2021,7 @@ const invariantInAggregate: Rule = (scope) => {
 		const held = valueObjectsHeldIn(aggregate);
 		for (const invariant of aggregate.invariants.values()) {
 			for (const target of invariant.targets) {
-				const vo = valueObjectOf(target);
-				const home = scopeOf(target);
-				// A value object is asked one question and no other: does
-				// anything inside this aggregate hold one? Its scope is the
-				// context whichever context declared it, so reading the scope
-				// first would answer "inside the boundary" for every value the
-				// context owns, held or not.
-				if (vo) {
-					if (held.has(vo)) continue;
-				} else {
-					if (home === aggregate || home === aggregate.boundedcontext) continue;
-					if (guardedByService(target, aggregate.boundedcontext)) continue;
-					if (inGuardedShapes(target, invariant)) continue;
-				}
+				if (aggregateReaches(aggregate, held, invariant, target)) continue;
 				diagnostics.push({
 					severity: "error",
 					rule: "invariant-in-aggregate",
@@ -1910,15 +2089,9 @@ const invariantInContext: Rule = (scope) => {
 			heldIn.set(bc, held);
 		}
 		for (const target of invariant.targets) {
+			if (contextReaches(bc, held, invariant, target)) continue;
 			const context = contextOf(target);
 			const vo = valueObjectOf(target);
-			// A value object is asked one question and no other: does anything
-			// in this context hold one? Its context is whichever context
-			// declared it, so reading that first would answer "inside the
-			// boundary" for every value this context owns, held or not.
-			if (vo) {
-				if (held.has(vo)) continue;
-			} else if (context === bc || inGuardedShapes(target, invariant)) continue;
 			const schema = schemaOf(target);
 			const where = vo
 				? `a value object of bounded context "${vo.boundedcontext.name}" that nothing in "${bc.name}" holds`
@@ -2178,7 +2351,7 @@ function translatesForCaller(
  * the model, where a translation has already happened or should have, so
  * attributes keep {@link mayBorrowFrom}'s narrower reading.
  */
-function mayCarrySchemaFrom(
+export function mayCarrySchemaFrom(
 	scope: Scope,
 	carrier: BoundedContext,
 	owner: BoundedContext,
