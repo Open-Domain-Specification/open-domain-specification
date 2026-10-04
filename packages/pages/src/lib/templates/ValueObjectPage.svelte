@@ -10,9 +10,8 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import { identityKeyOf } from "@open-domain-specification/core";
 import type { ValueObject } from "@open-domain-specification/core";
-import { anchorOf, problemsUnder, useModel } from "../model";
+import { problemsUnder, useModel } from "../model";
 import { type AttributeOwner, invariantsNaming, usagesOf } from "../elements";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
@@ -62,15 +61,15 @@ const relationColumns: Column[] = [
 	{#snippet title()}<Lockup kind="valueobject" name={v.name} id={v.id} detail="Value object" size="title" />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
-			<Definition term="Context"><Lockup kind="boundedcontext" name={bc.name} ref={bc} /></Definition>
+			<Definition term="Context"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
 			{#if v.specialises}
 				<Definition term="A kind of">
-					<Lockup kind="valueobject" name={v.specialises.name} ref={v.specialises} />
+					<Lockup kind="valueobject" name={v.specialises.name} ref={v.specialises.ref} />
 				</Definition>
 			{/if}
 			{#if kinds.length}
 				<Definition term="Kinds">
-					{#each kinds as k, i (identityKeyOf(k))}{#if i}, {/if}<Lockup kind="valueobject" name={k.name} ref={k} />{/each}
+					{#each kinds as k, i (k.ref)}{#if i}, {/if}<Lockup kind="valueobject" name={k.name} ref={k.ref} />{/each}
 				</Definition>
 			{/if}
 		</DefinitionList>
@@ -94,19 +93,18 @@ const relationColumns: Column[] = [
 		columns={usageColumns}
 		rows={usages}
 		empty="No declared attribute names this value object directly as its type."
-		rowId={(u) => anchorOf(model, u)}
-		rowKey={(u) => identityKeyOf(u)}
+		rowId={(u) => u.ref}
 	>
 		{#snippet cell(u, col)}
 			{@const owner = ownerOf(u)}
 			{#if col.key === "name"}
 				<Code text={u.name} />
 			{:else if col.key === "on"}
-				<Lockup kind={kindOf(owner)} name={owner.name} ref={owner} />
+				<Lockup kind={kindOf(owner)} name={owner.name} ref={owner.ref} />
 			{:else if owner.aggregate}
-				<Lockup kind="aggregate" name={owner.aggregate.name} ref={owner.aggregate} />
+				<Lockup kind="aggregate" name={owner.aggregate.name} ref={owner.aggregate.ref} />
 			{:else if owner.boundedcontext}
-				<Lockup kind="boundedcontext" name={owner.boundedcontext.name} ref={owner.boundedcontext} />
+				<Lockup kind="boundedcontext" name={owner.boundedcontext.name} ref={owner.boundedcontext.ref} />
 			{/if}
 		{/snippet}
 	</DataTable>
@@ -124,7 +122,7 @@ const relationColumns: Column[] = [
 				<Keyword text={r.relation} />
 				{#if r.source !== v} <Keyword text={`from ${r.source.name}`} />{/if}
 			{:else if col.key === "target"}
-				<Lockup kind={kindOf(r.target)} name={r.target.name} ref={r.target} />
+				<Lockup kind={kindOf(r.target)} name={r.target.name} ref={r.target.ref} />
 			{:else if r.cardinality}
 				<Keyword text={r.cardinality} mono />
 			{/if}

@@ -167,10 +167,6 @@ describe("flowNodes", () => {
 		expect(node.ariaRole).toBeUndefined();
 		expect(opensPage("plain")).toBe(false);
 		expect(opensPage("#/a")).toBe(true);
-		// The key of an element in a set: the wire path of its file, then its ref.
-		expect(opensPage("a.json#/boundedcontexts/ledger")).toBe(true);
-		expect(opensPage("a%23%25.json#/boundedcontexts/ledger")).toBe(true);
-		expect(opensPage("cluster:domain")).toBe(false);
 	});
 	it("handles a graph without groups", () => {
 		const bare = layout({ nodes: graph.nodes.slice(2, 3), edges: [] });

@@ -1,5 +1,4 @@
 <script lang="ts">
-import { identityKeyOf } from "@open-domain-specification/core";
 import EmptyState from "../atoms/EmptyState.svelte";
 import Ref from "../atoms/Ref.svelte";
 import { termsEmbodying } from "../elements";
@@ -24,7 +23,7 @@ const terms = $derived(termsEmbodying(model.workspace, target));
 	count={terms.length}
 >
 	{#if terms.length}
-		<p class="terms">{#each terms as t, n (identityKeyOf(t))}{#if n}{", "}{/if}<Ref ref={t} label={t.name} icon={ICONS.term} />{/each}</p>
+		<p class="terms">{#each terms as t, n (t.ref)}{#if n}{", "}{/if}<Ref ref={t.ref} label={t.name} icon={ICONS.term} />{/each}</p>
 	{:else}
 		<EmptyState text="No glossary term names this element." />
 	{/if}

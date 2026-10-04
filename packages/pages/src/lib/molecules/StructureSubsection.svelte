@@ -21,7 +21,7 @@ const isRoot = $derived("root" in e && e.root);
 
 <div class="subsection">
 	<Heading level={3} id={e.ref}>
-		<Lockup kind={kindOf(e)} name={e.name} ref={e} />
+		<Lockup kind={kindOf(e)} name={e.name} ref={e.ref} />
 		{#if isRoot}<Keyword
 				text="aggregate root"
 				title="Every change to the aggregate enters through the root, which keeps its persistent rules true on save."
@@ -34,7 +34,7 @@ const isRoot = $derived("root" in e && e.root);
 			{#each e.relations as r, i (`${r.relation}-${r.target.ref}-${i}`)}
 				<li>
 					<Keyword text={r.relation} />
-					<Ref ref={r.target} label={r.target.name} icon={ICONS[kindOf(r.target)]} kind={kindOf(r.target)} />
+					<Ref ref={r.target.ref} label={r.target.name} icon={ICONS[kindOf(r.target)]} kind={kindOf(r.target)} />
 					{#if r.cardinality}<Keyword text={r.cardinality} mono />{/if}
 					{#if r.label}<Keyword text={r.label} />{/if}
 				</li>

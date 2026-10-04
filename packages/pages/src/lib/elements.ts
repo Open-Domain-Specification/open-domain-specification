@@ -10,7 +10,7 @@ import type {
 	ValueObject,
 	Workspace,
 } from "@open-domain-specification/core";
-import { Attribute, scopeAround } from "@open-domain-specification/core";
+import { Attribute } from "@open-domain-specification/core";
 
 /**
  * The workspace lookups every layer asks for — which terms name an element,
@@ -37,31 +37,20 @@ export { type HealthCounts, healthCountsOf } from "./evidence/derive";
 
 /* ---------- shared lookups across the workspace ---------- */
 
-/*
- * "Across the workspace" means across everything the workspace is read with:
- * the files of its set when it is a file of one, and itself alone when it is
- * not. A ref in one file can name an element of another, so an element's
- * users, readers and embodiers may be in any file, and a list of only its own
- * file's would read as if nobody else depended on it. The objects are the
- * workspaces' own and nothing is merged: `scopeAround` lists them in the order
- * the set was given, then the order each file declares them.
- */
-const contextsAround = (ws: Workspace) => scopeAround(ws).contexts();
-
 function* aggregatesOf(ws: Workspace): Iterable<Aggregate> {
-	for (const bc of contextsAround(ws)) yield* bc.aggregates.values();
+	for (const bc of ws.boundedcontexts.values()) yield* bc.aggregates.values();
 }
 
 export function* policiesOf(ws: Workspace): Iterable<Policy> {
-	for (const bc of contextsAround(ws)) yield* bc.policies.values();
+	for (const bc of ws.boundedcontexts.values()) yield* bc.policies.values();
 }
 
 export function* processesOf(ws: Workspace): Iterable<Process> {
-	for (const bc of contextsAround(ws)) yield* bc.processes.values();
+	for (const bc of ws.boundedcontexts.values()) yield* bc.processes.values();
 }
 
 export function* consumablesOf(ws: Workspace): Iterable<Consumable> {
-	for (const bc of contextsAround(ws)) {
+	for (const bc of ws.boundedcontexts.values()) {
 		for (const m of [...bc.aggregates.values(), ...bc.services.values()])
 			yield* m.consumables.values();
 	}
@@ -78,7 +67,7 @@ export function relationsNaming(
 	target: Entity | ValueObject,
 ): NamedRelation[] {
 	const incoming: NamedRelation[] = [];
-	for (const bc of contextsAround(ws)) {
+	for (const bc of ws.boundedcontexts.values()) {
 		for (const aggregate of bc.aggregates.values()) {
 			for (const source of aggregate.entities.values()) {
 				for (const relation of source.allRelations)
@@ -104,7 +93,7 @@ export function invariantsNaming(
 		invariant.targets.some(
 			(it) => it === target || (it instanceof Attribute && attributes.has(it)),
 		);
-	for (const bc of contextsAround(ws)) {
+	for (const bc of ws.boundedcontexts.values()) {
 		for (const invariant of bc.invariants.values())
 			if (namesTarget(invariant)) named.push(invariant);
 		for (const aggregate of bc.aggregates.values()) {
@@ -116,7 +105,7 @@ export function invariantsNaming(
 }
 
 export function* termsOf(ws: Workspace): Iterable<GlossaryTerm> {
-	for (const bc of contextsAround(ws)) yield* bc.glossary.values();
+	for (const bc of ws.boundedcontexts.values()) yield* bc.glossary.values();
 }
 
 /** Attributes anywhere in the workspace whose type is this value object. */
@@ -127,7 +116,7 @@ export function usagesOf(ws: Workspace, vo: ValueObject): Attribute[] {
 			for (const attr of o.attributes.values())
 				if (attr.valueobject === vo) out.push(attr);
 	}
-	for (const bc of contextsAround(ws)) {
+	for (const bc of ws.boundedcontexts.values()) {
 		for (const o of [...bc.valueobjects.values(), ...bc.schemas.values()])
 			for (const attr of o.attributes.values())
 				if (attr.valueobject === vo) out.push(attr);
@@ -135,12 +124,11 @@ export function usagesOf(ws: Workspace, vo: ValueObject): Attribute[] {
 	return out;
 }
 
-/**
- * The terms that embody an element. The element itself is compared, not its
- * ref: two files may each have an entity at one ref, and a term embodies one.
- */
-export function termsEmbodying(ws: Workspace, target: object): GlossaryTerm[] {
-	return [...termsOf(ws)].filter((t) => t.embodiedBy === target);
+export function termsEmbodying(
+	ws: Workspace,
+	target: { ref: string },
+): GlossaryTerm[] {
+	return [...termsOf(ws)].filter((t) => t.embodiedBy?.ref === target.ref);
 }
 
 /**

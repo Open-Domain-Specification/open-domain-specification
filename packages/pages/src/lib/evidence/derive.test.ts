@@ -6,6 +6,7 @@ import {
 import { describe, expect, it } from "vitest";
 import { petstoreSales } from "../fixtures";
 import {
+	counterpartOf,
 	crossingConsumables,
 	hasEvidence,
 	health,
@@ -72,22 +73,6 @@ describe("positionGroups", () => {
 			expect(row.key.endsWith(row.relationship.ref)).toBe(true);
 	});
 
-	it("keys a row by its place among all the context's relationships, not within its group, and keys a repeated relationship once per occurrence", () => {
-		const { model, context } = petstoreSales();
-		const all = model.workspace.relationships;
-		const repeated = all.find(
-			(r) => r.source === context || r.target === context,
-		) as ContextRelationship;
-		const given = [...all, repeated];
-		const mine = given.filter(
-			(r) => r.source === context || r.target === context,
-		);
-		const keys = positionGroups(context, given).flatMap((g) =>
-			g.rows.map((r) => r.key),
-		);
-		expect(keys.sort()).toEqual(mine.map((r, i) => `${i}:${r.ref}`).sort());
-	});
-
 	it("drops empty groups and ignores relationships the context is not part of", () => {
 		const { model, context } = strategicPositionFixture(1);
 		const groups = positionGroups(context, model.workspace.relationships);
@@ -98,6 +83,15 @@ describe("positionGroups", () => {
 		expect(positionGroups(other, model.workspace.relationships)).toHaveLength(
 			1,
 		);
+	});
+});
+
+describe("counterpartOf", () => {
+	it("returns the context on the other side, whichever end it is", () => {
+		const { model, context } = petstoreSales();
+		const r = ofType(model, "customer-supplier");
+		expect(counterpartOf(r, context).id).toBe("catalog_bc");
+		expect(counterpartOf(r, r.source)).toBe(r.target);
 	});
 });
 

@@ -49,7 +49,7 @@ const {
      decision (a narrow table lets its cells wrap between tokens, so the
      warning word drops under the name instead of holding the column open),
      never this component's. -->
-<span class="context" {title}><span class="name"><Lockup kind="boundedcontext" name={context.name} ref={context} /></span>{#if context.bigBallOfMud}<Keyword text={MUD.label} tone="warn" title={MUD.title} />{/if}{#if context.external}<Keyword text={EXTERNAL.label} title={EXTERNAL.title} />{/if}{#if context.boundaryOnly}<Keyword text={BOUNDARY_ONLY.label} title={BOUNDARY_ONLY.title} />{/if}</span>
+<span class="context" {title}><span class="name"><Lockup kind="boundedcontext" name={context.name} ref={context.ref} /></span>{#if context.bigBallOfMud}<Keyword text={MUD.label} tone="warn" title={MUD.title} />{/if}{#if context.external}<Keyword text={EXTERNAL.label} title={EXTERNAL.title} />{/if}{#if context.boundaryOnly}<Keyword text={BOUNDARY_ONLY.label} title={BOUNDARY_ONLY.title} />{/if}</span>
 
 <style>
 	/* The gap sits after the name, so a warning word that wraps under it

@@ -7,11 +7,11 @@ import {
 import { breadcrumbsMd } from "./breadcrumbs.md";
 import { consumptionsTableMd } from "./consumptions.md";
 import { contextRelationshipsMd } from "./context-relationships.md";
-import { pathToContextMapSvg, pathToIndexMd, placed } from "./lib/paths";
+import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
 
 const subdomainSection = (subdomain: Subdomain) => `
-### [${subdomain.name}](${pathToIndexMd(placed(subdomain), placed(subdomain.domain))}) (${subdomain.type})
+### [${subdomain.name}](${pathToIndexMd(subdomain.path, subdomain.domain.path)}) (${subdomain.type})
 ${subdomain.description}
 
 `;
@@ -22,7 +22,7 @@ ${options?.breadcrumbs ? breadcrumbsMd(domain.workspace, domain) : ""}
 # ${domain.name}
 ${domain.description}
 
-![contextmap](${pathToContextMapSvg(placed(domain), placed(domain))})
+![contextmap](${pathToContextMapSvg(domain.path, domain.path)})
 
 ## Subdomains
 ${
@@ -41,7 +41,7 @@ ${consumptionsTableMd(
 	ODSConsumptionGraph.fromDomain(domain).consumptions,
 	["Consumer", "Consumed As", "Provider", "Consumable", "Provided As"],
 	(it) => [
-		`[${it.consumer.name}](${pathToIndexMd(placed(it.consumer), placed(domain))})`,
+		`[${it.consumer.name}](${pathToIndexMd(it.consumer.path, domain.path)})`,
 		it.pattern ?? "-",
 		it.consumable.provider.name,
 		it.consumable.name,

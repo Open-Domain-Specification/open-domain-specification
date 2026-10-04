@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { Workspace } from "@open-domain-specification/core";
 import { expect, type Locator, type Page, test } from "@playwright/test";
@@ -11,7 +12,6 @@ import {
 	modelHash,
 	PETSTORE_JSON,
 	type ReferenceModel,
-	referenceModelFile,
 	serveModel,
 	WORKSPACE_NAME,
 	wrapOf,
@@ -59,29 +59,24 @@ const PS_SALES = "#/boundedcontexts/sales_bc";
 
 /** Pages whose glossary is under test. */
 const GLOSSARIES: (Route & { term: string })[] = [
-	{
-		key: "nb-ckyc",
-		model: "northbank-monolith",
-		ref: NB_CKYC,
-		term: "Customer",
-	},
+	{ key: "nb-ckyc", model: "northbank", ref: NB_CKYC, term: "Customer" },
 	{ key: "ps-sales", model: "petstore", ref: PS_SALES, term: "Order" },
 ];
 /** Pages whose attribute tables are under test. */
 const ATTRIBUTES: Route[] = [
 	{
 		key: "nb-iddoc",
-		model: "northbank-monolith",
+		model: "northbank",
 		ref: `${NB_CKYC}/aggregates/customer/entities/identity_document`,
 	},
 	{
 		key: "nb-money",
-		model: "northbank-monolith",
+		model: "northbank",
 		ref: "#/boundedcontexts/ledger/valueobjects/money",
 	},
 	{
 		key: "nb-custverified",
-		model: "northbank-monolith",
+		model: "northbank",
 		ref: `${NB_CKYC}/schemas/customer_verified`,
 	},
 	{
@@ -92,7 +87,12 @@ const ATTRIBUTES: Route[] = [
 ];
 
 const modelJson = (model: ReferenceModel) =>
-	JSON.parse(readFileSync(referenceModelFile(model), "utf8"));
+	JSON.parse(
+		readFileSync(
+			join(__dirname, `../../../models/${model}/.ods/${model}.json`),
+			"utf8",
+		),
+	);
 
 /** The authored object at a canonical ref, read from the model file itself. */
 function authored(model: ReferenceModel, ref: string) {
@@ -717,7 +717,7 @@ const WEBVIEW = { width: 396, height: 808 };
 const NARROW_ROUTES: (Route & { heading: string; hosts: Host[] })[] = [
 	{
 		key: "nb-ckyc",
-		model: "northbank-monolith",
+		model: "northbank",
 		ref: NB_CKYC,
 		heading: "Customer & KYC",
 		hosts: ["viewer"],

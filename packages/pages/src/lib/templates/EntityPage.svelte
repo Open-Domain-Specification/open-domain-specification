@@ -8,7 +8,6 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import { identityKeyOf } from "@open-domain-specification/core";
 import { Entity } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
 import { invariantsNaming, ownerCrumbs, relationsNaming } from "../elements";
@@ -65,19 +64,19 @@ const incomingColumns: Column[] = [
 	{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
-			<Definition term="Aggregate"><Lockup kind="aggregate" name={a.name} ref={a} /></Definition>
+			<Definition term="Aggregate"><Lockup kind="aggregate" name={a.name} ref={a.ref} /></Definition>
 			{#if e.specialises}
 				<Definition term="A kind of">
-					<Lockup kind="entity" name={e.specialises.name} ref={e.specialises} />
+					<Lockup kind="entity" name={e.specialises.name} ref={e.specialises.ref} />
 				</Definition>
 			{/if}
 			{#if kinds.length}
 				<Definition term="Kinds">
-					{#each kinds as k, i (identityKeyOf(k))}{#if i}, {/if}<Lockup kind="entity" name={k.name} ref={k} />{/each}
+					{#each kinds as k, i (k.ref)}{#if i}, {/if}<Lockup kind="entity" name={k.name} ref={k.ref} />{/each}
 				</Definition>
 			{/if}
 			<Definition term="Identity">
-				{#each identity as x, i (identityKeyOf(x))}{#if i}, {/if}<Code text={x.name} />{:else}<Keyword text="no identity attribute marked" />{/each}
+				{#each identity as x, i (x.ref)}{#if i}, {/if}<Code text={x.name} />{:else}<Keyword text="no identity attribute marked" />{/each}
 			</Definition>
 		</DefinitionList>
 	{/snippet}
@@ -103,7 +102,7 @@ const incomingColumns: Column[] = [
 				<Keyword text={r.relation} />
 				{#if r.source !== e} <Keyword text={`from ${r.source.name}`} />{/if}
 			{:else if col.key === "target"}
-				<Lockup kind={kindOf(r.target)} name={r.target.name} ref={r.target} />
+				<Lockup kind={kindOf(r.target)} name={r.target.name} ref={r.target.ref} />
 			{:else if col.key === "cardinality"}
 				{#if r.cardinality}<Keyword text={r.cardinality} mono />{/if}
 			{:else if r.label}
@@ -115,12 +114,12 @@ const incomingColumns: Column[] = [
 	<DataTable columns={incomingColumns} rows={incoming} empty="No relation names this entity directly.">
 		{#snippet cell(r, col)}
 			{#if col.key === "source"}
-				<Lockup kind={kindOf(r.source)} name={r.source.name} ref={r.source} />
+				<Lockup kind={kindOf(r.source)} name={r.source.name} ref={r.source.ref} />
 			{:else if col.key === "in"}
 				{#if r.source instanceof Entity}
-					<Lockup kind="aggregate" name={r.source.aggregate.name} ref={r.source.aggregate} />
+					<Lockup kind="aggregate" name={r.source.aggregate.name} ref={r.source.aggregate.ref} />
 				{:else}
-					<Lockup kind="boundedcontext" name={r.source.boundedcontext.name} ref={r.source.boundedcontext} />
+					<Lockup kind="boundedcontext" name={r.source.boundedcontext.name} ref={r.source.boundedcontext.ref} />
 				{/if}
 			{:else if col.key === "relation"}
 				<Keyword text={r.relation.relation} />

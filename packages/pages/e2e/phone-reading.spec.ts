@@ -32,7 +32,7 @@ const toggle = (page: Page) =>
 const tree = (page: Page) => page.locator("#site-tree");
 
 async function openNorthbank(page: Page, ref: string) {
-	const url = await serveModel(page, "northbank-monolith");
+	const url = await serveModel(page, "northbank");
 	await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(ref)}`);
 	// Fail fast: a page that never rendered is a setup fault, not a finding.
 	await page.locator("main h1").waitFor({ timeout: 10_000 });

@@ -6,9 +6,8 @@ import {
 	type ContextRelationship,
 	dispositionOf,
 	type Evidenced,
+	isSymmetricRelationship,
 	relationshipsWithoutComments,
-	scopeAround,
-	strategicPositionOf,
 	type Workspace,
 } from "@open-domain-specification/core";
 
@@ -25,6 +24,12 @@ export type RowGroup = { id: string; label: string; rows: EvidenceRow[] };
 export const hasEvidence = (intent: Evidenced): boolean =>
 	intent.comments.length > 0 || dispositionOf(intent) !== "by-design";
 
+/** The context on the other side of a relationship from `bc`. */
+export const counterpartOf = (
+	r: ContextRelationship,
+	bc: BoundedContext,
+): BoundedContext => (r.source === bc ? r.target : r.source);
+
 const row = (r: ContextRelationship, index: number): EvidenceRow => ({
 	// Indexed as well as referenced: a workspace loaded from a hand-edited file
 	// can hold the same relationship twice, and a row still needs an identity.
@@ -33,29 +38,44 @@ const row = (r: ContextRelationship, index: number): EvidenceRow => ({
 });
 
 /**
- * The relationships of `bc` in core's strategic-position groups, each
- * relationship wrapped as a row keyed by its place among all of the context's
- * relationships.
+ * The relationships of `bc`, grouped by what they mean from its point of
+ * view: the contexts it depends on (it is downstream), the contexts that
+ * depend on it (it is upstream), and the contexts it merely works alongside
+ * (a symmetric type, where neither side is upstream). Empty groups are left
+ * out so a context with one relationship shows one heading.
  */
 export function positionGroups(
 	bc: BoundedContext,
-	relationships: ReadonlyArray<ContextRelationship>,
+	relationships: ContextRelationship[],
 ): RowGroup[] {
-	const position = strategicPositionOf(bc, relationships);
-	return position.groups.map((g) => {
-		// A group keeps input order, so the next occurrence is searched for after
-		// the last one: the same relationship held twice still gets two keys.
-		let from = 0;
-		return {
-			id: g.id,
-			label: g.label,
-			rows: g.relationships.map((r) => {
-				const index = position.relationships.indexOf(r, from);
-				from = index + 1;
-				return row(r, index);
-			}),
-		};
-	});
+	const mine = relationships.filter((r) => r.source === bc || r.target === bc);
+	const rows = mine.map(row);
+	const groups: RowGroup[] = [
+		{
+			id: "depends-on",
+			label: "Depends on",
+			rows: rows.filter(
+				(x) =>
+					!isSymmetricRelationship(x.relationship.type) &&
+					x.relationship.target === bc,
+			),
+		},
+		{
+			id: "depended-on-by",
+			label: "Depended on by",
+			rows: rows.filter(
+				(x) =>
+					!isSymmetricRelationship(x.relationship.type) &&
+					x.relationship.source === bc,
+			),
+		},
+		{
+			id: "works-alongside",
+			label: "Works alongside",
+			rows: rows.filter((x) => isSymmetricRelationship(x.relationship.type)),
+		},
+	];
+	return groups.filter((g) => g.rows.length > 0);
 }
 
 /** Refactor rows grouped by the context that owns the change. */
@@ -144,9 +164,7 @@ export function crossingConsumables(
 ): Crossing[] {
 	const sides = [r.source, r.target];
 	const crossings: Crossing[] = [];
-	// A relationship's two sides may be in different files, and the
-	// consumptions that cross it are written by whichever file consumes.
-	for (const bc of scopeAround(workspace).contexts()) {
+	for (const bc of workspace.boundedcontexts.values()) {
 		for (const owner of [...bc.aggregates.values(), ...bc.services.values()]) {
 			for (const consumption of owner.consumptions) {
 				const from = contextOf(consumption.consumable.provider);

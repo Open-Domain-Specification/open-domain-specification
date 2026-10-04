@@ -7,7 +7,6 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import { identityKeyOf } from "@open-domain-specification/core";
 import type { DataSchema } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
 import type { Column } from "../atoms/DataTable.svelte";
@@ -58,7 +57,7 @@ const directionOf = (c: (typeof carriers)[number]) =>
 	{#snippet title()}<Lockup kind="schema" name={s.name} id={s.id} detail="Schema" size="title" />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
-			<Definition term="Published by"><Lockup kind="boundedcontext" name={bc.name} ref={bc} /></Definition>
+			<Definition term="Published by"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
 		</DefinitionList>
 	{/snippet}
 </PageHeader>
@@ -78,13 +77,13 @@ const directionOf = (c: (typeof carriers)[number]) =>
 	<DataTable {columns} rows={carriers} empty="No consumable names this schema directly." rowId={(c) => c.ref}>
 		{#snippet cell(c, col)}
 			{#if col.key === "name"}
-				<Lockup kind={kindOf(c)} name={c.name} ref={c} />
+				<Lockup kind={kindOf(c)} name={c.name} ref={c.ref} />
 			{:else if col.key === "kind"}
 				<ConsumableKeywords consumable={c} />
 			{:else if col.key === "direction"}
 				{directionOf(c)}
 			{:else}
-				<Lockup kind={kindOf(c.provider)} name={c.provider.name} ref={c.provider} />
+				<Lockup kind={kindOf(c.provider)} name={c.provider.name} ref={c.provider.ref} />
 			{/if}
 		{/snippet}
 	</DataTable>

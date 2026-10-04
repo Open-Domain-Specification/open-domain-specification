@@ -2,7 +2,7 @@
 import type { Snippet } from "svelte";
 import Heading from "../atoms/Heading.svelte";
 import Markdown from "../atoms/Markdown.svelte";
-import Crumbs, { type Crumb } from "../molecules/Crumbs.svelte";
+import Crumbs from "../molecules/Crumbs.svelte";
 
 /**
  * The top of every page: the trail back, the title, what the thing is, and
@@ -23,7 +23,7 @@ const {
 	meta,
 	facts,
 }: {
-	crumbs?: Crumb[];
+	crumbs?: [string, string][];
 	title: Snippet;
 	description?: string;
 	meta?: Snippet;
@@ -51,9 +51,11 @@ const {
 	.page-header :global(.md) {
 		max-width: 80ch;
 	}
-	/* Unlike the page body, the description keeps its 4px above the first
-	   paragraph: the title lockup sits right over it. */
-	.page-header :global(.md p:first-child) {
-		margin-top: 4px;
+	/* TODO: clean-code - 0.55 - DRY: this restates `.md p` from assets/page.css
+	   verbatim, and its `line-height` is already the body default; the only
+	   header-specific rule is the 80ch cap above it. */
+	.page-header :global(.md p) {
+		margin: 4px 0 8px;
+		line-height: 1.5;
 	}
 </style>

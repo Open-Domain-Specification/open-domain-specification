@@ -6,7 +6,7 @@ Date: 2026-09-07
 
 Accepted (2026-09-07; the architect review raised no objection and the reasoning stands)
 
-## Current position (2026-10-04)
+## Current position (2026-10-01)
 
 `ProcessSchema` with `starts`, `on`, `then`, `ends`, the rules `process-in-context`, `process-has-ends` and `process-starts`, and a stateless any-of policy beside it; stable. The decision bullet that deadlines are prose no longer holds; see the amendment of 2026-09-09 (card 95) and its second (card 98): a process declares `deadlines`, each an event it raises to itself after an interval counted `from` a named trigger, and an aggregate holds no timer of its own (fourth amendment of 2026-09-09, card 100). Correlation and compensation stay prose. Decision 28's Clock remains for calendar events every context shares.
 
@@ -17,8 +17,6 @@ Triggers have widened. `starts` may name an operation of the process's own conte
 Since then: an answer comes back to whoever called and the model does not say when (note); a data-fixed date is not a deadline, `after` is an interval and a fixed date is a scheduled operation or a Clock event (note); the operation that starts a process is its first step, so the process hears the answers of the calls that operation made, and a ring closed by the start step is reported as spawning instances (third amendment, card 135); a saga's completion fact is raised by one internal operation it issues.
 
 Since the notes of 2026-10-01: eventual answer routing does not say an answer arrived before a process's later commands, so it lends no held fact to a precondition (note); and a ring is one invocation's steps, so an answer comes back only to the reactor whose call it was, and `reaction-cycle` closes no ring through a second reactor whose root another reactor's call merely passes through (second note, issue #108); and an exempt ring never hides a reported one, since whether one exists is decided for each part of the chain, not left to the order the walk met rings in (third note, issue #108); the rings named are the ones the drawn chain's walk meets that one invocation runs whole, so the unfolded states decide feasibility and are not printed walk by walk (fourth note, issue #108); and a flow-map edge is the step it draws, its ends, its role and the answer or timer it carries, never its label (fifth note, issue #108); and a refusal's ref names its shape by context and id, `<op>/rejects/<context>/<schema>[/<reason>]`, read back by its structure (sixth note, issue #108).
-
-Since 2026-10-04 a refusal whose schema is in another file of a set is named `<op>/rejects-in/<wire path>/<context>/<schema>[/<reason>]`, relative to the operation's file, so two schemas with one context and id in two files are two answers; a trigger may name an answer or an event of another file exactly where it may across contexts (note of 2026-10-04).
 
 ## Context
 
@@ -141,7 +139,3 @@ Until the sixth note this record's current position gave a refusal's ref as `<op
 ## Note (2026-10-01, seventh)
 
 The sixth note escaped the refusal suffix but still assumed the operation prefix was already structurally safe. It was not. In context `b`, service `h`, operation A with id `a` refusing schema `decline` for reason `completed` and operation B with raw id `a/rejects/b/decline` completing both used to be `#/boundedcontexts/b/services/h/provides/a/rejects/b/decline/completed`. Every id in the operation's complete ref is now one JSON-Pointer-escaped segment as well. A keeps that structured refusal suffix; B's completion is `#/boundedcontexts/b/services/h/provides/a~1rejects~1b~1decline/completed`. The answer suffix remains `/returns`, `/completed`, or `/rejects/<encoded context>/<encoded schema>[/<encoded reason>]`; an empty reason still names the shape-level refusal. Malformed escapes, surplus segments and the old unescaped form resolve to nothing, with no compatibility alias. This changes affected bookmarks so two different answers can never share one canonical identity.
-
-## Note (2026-10-04)
-
-An answer's ref names its shape by context and id, and the schema may be in another file of the set. Within one file the grammar is unchanged: `<op>/rejects/<context>/<schema>[/<reason>]`. When the operation's file and the schema's file differ, the segment `rejects` becomes `rejects-in` and is followed by the wire path of the schema's file, relative to the operation's file and escaped as one pointer segment: `<op>/rejects-in/<path>/<context>/<schema>[/<reason>]`. The path is part of the identity, so two schemas with the same context and id in two files are two answers, and a process or policy that waits on one of them waits on that one. `returns` and `completed` are unchanged. Both forms are read by their structure; a path that is not a wire path, a surplus segment or a schema the operation does not declare resolves to nothing and is reported as `unresolved-ref`. Triggers may name an answer or an event of another file exactly where they may across contexts (decision 08, amendment of 2026-10-04); a deadline is still only the process's own.

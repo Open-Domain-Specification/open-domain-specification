@@ -2,7 +2,6 @@ import { componentsOf, cyclesOf, leadWithLowestKey } from "./cycles";
 import { type Invocation, InvocationWalk } from "./invocation-walk";
 import { type ReactionChain, type Reactor, routesTo } from "./reaction-walk";
 import { Answer, Consumable, Policy, Process } from "./workspace";
-import { identityKeyOf } from "./workspace-set";
 
 /**
  * What a ring of the reaction chain is, read over the reactors on it.
@@ -74,7 +73,7 @@ function ringsMet(chain: ReactionChain, walk: InvocationWalk): Reactor[][] {
 	return cyclesOf(
 		chain.steps,
 		(node) => chain.after(node),
-		identityKeyOf,
+		(node) => node.ref,
 	).filter((ring) => runsAsOneInvocation(walk, entries, ring));
 }
 
@@ -398,7 +397,7 @@ function hiddenRings(
 			.flatMap((into) => passesOut(into).filter(inside));
 		const nodes = witnessIn(passes, (into) => passesOut(into).filter(inside));
 		if (nodes) {
-			const ring = leadWithLowestKey(nodes, identityKeyOf);
+			const ring = leadWithLowestKey(nodes, (node) => node.ref);
 			const verdict = verdictOf(ring);
 			if (isReported({ nodes: ring, verdict }))
 				hidden.push({ nodes: ring, verdict });
@@ -563,13 +562,7 @@ const segmentKey = (
 	open: boolean,
 	to: Reactor,
 	before: Reactor,
-) =>
-	JSON.stringify([
-		identityKeyOf(from),
-		open,
-		identityKeyOf(to),
-		identityKeyOf(before),
-	]);
+) => JSON.stringify([from.ref, open, to.ref, before.ref]);
 
 /**
  * The rings of bare calls inside one context that the depth-first walk could
@@ -613,7 +606,7 @@ function hiddenCalls(
 		);
 		if (ring)
 			hidden.push({
-				nodes: leadWithLowestKey(ring, identityKeyOf),
+				nodes: leadWithLowestKey(ring, (node) => node.ref),
 				verdict: { kind: "calls" },
 			});
 	}

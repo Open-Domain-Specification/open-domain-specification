@@ -111,7 +111,7 @@ test.describe("failures", () => {
 		page,
 	}) => {
 		await page.goto("/");
-		await page.locator("#file").setInputFiles({
+		await page.locator("input[type=file]").setInputFiles({
 			name: "notes.json",
 			mimeType: "application/json",
 			buffer: Buffer.from("this is not json"),
@@ -127,7 +127,7 @@ test.describe("failures", () => {
 		page,
 	}) => {
 		await page.goto("/");
-		await page.locator("#file").setInputFiles({
+		await page.locator("input[type=file]").setInputFiles({
 			name: "other.json",
 			mimeType: "application/json",
 			buffer: Buffer.from(JSON.stringify({ hello: "world" })),
@@ -145,7 +145,7 @@ test.describe("failures", () => {
 	test("the alert clears when a load begins again", async ({ page }) => {
 		await servePetstore(page);
 		await page.goto("/");
-		await page.locator("#file").setInputFiles({
+		await page.locator("input[type=file]").setInputFiles({
 			name: "notes.json",
 			mimeType: "application/json",
 			buffer: Buffer.from("nope"),

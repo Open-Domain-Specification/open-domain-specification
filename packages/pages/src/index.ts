@@ -11,5 +11,4 @@ export {
 	SUBDOMAIN_TYPE,
 } from "./lib/icons";
 export { HEALTH_REF, pageRefs, resolvePage } from "./lib/resolve";
-export { fileOfRoute, routeInFiles } from "./lib/route";
 export type * from "./protocol";

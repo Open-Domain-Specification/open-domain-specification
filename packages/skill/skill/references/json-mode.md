@@ -1,9 +1,7 @@
 # JSON mode
 
-The workspace files are the artefact. Each `.ods/**/*.json` file is one complete workspace. A
-lone file loads with `Workspace.fromSchema`; a folder of them loads together with
-`WorkspaceSet.fromSchemas`, which is what the VS Code extension, the viewer and the docs
-generator do. See "Several workspace files" below.
+The workspace files are the artefact. Each `.ods/*.json` file is one complete workspace, and
+the VS Code extension, the docs generator and anyone else load it with `Workspace.fromSchema`.
 
 ## Files
 
@@ -11,9 +9,7 @@ generator do. See "Several workspace files" below.
 - `.ods/schema.json`: the JSON Schema, written by the extension (`ODS: Write schema.json`).
   Never edit it. If it is missing, copy it from
   `node_modules/@open-domain-specification/core/dist/workspace.schema.json`.
-- `.ods/<workspace-id>.json`: one workspace per file, at the top of the folder or in any folder
-  below it. The file name is not part of the model, but a file's path is its address in a
-  `$ref` from another file, so renaming or moving a file breaks every ref into it. The first key is
+- `.ods/<workspace-id>.json`: one workspace per file. The first key is
   `"$schema": "./schema.json"`; the loader ignores it, editors use it for completion.
 - Keep the file's `id` equal to its basename, and `odsVersion` equal to the ODS version core
   writes: `"3.0.0"`, which is what the `minimal.ods.json` example carries. A file whose major
@@ -45,22 +41,17 @@ grow it.
 
 ## Validation
 
-There is no CLI. Run `examples/validate.mjs` from the project root. Give it the `.ods` folder, so
-every file is checked together as one set:
+There is no CLI. Run `examples/validate.mjs` from the project root:
 
 ```sh
-node .claude/skills/ods-authoring/examples/validate.mjs .ods
+node .claude/skills/ods-authoring/examples/validate.mjs .ods/petstore.json
 ```
 
-Or inline, for a folder that holds one file:
+Or inline:
 
 ```sh
 node -e 'const {Workspace}=require("@open-domain-specification/core");const f=process.argv[1];const ws=Workspace.fromSchema(JSON.parse(require("fs").readFileSync(f,"utf8")));for(const d of ws.validate())console.log(`[${d.severity}] ${d.rule}: ${d.message} (${d.ref})`)' .ods/petstore.json
 ```
-
-A single file given to the script is judged on its own: every ref it writes to another file
-reports `unresolved-ref` with the cause that the file is not in the set, which says nothing about
-the other file.
 
 If `@open-domain-specification/core` is not installed, prefix with
 `npx -p @open-domain-specification/core` or install it as a devDependency. The VS Code Problems
@@ -68,48 +59,4 @@ panel shows the same diagnostics (source `ods`, code = rule id) and updates on s
 
 ## Several workspace files
 
-A `.ods` folder may hold several files, at any depth. Each is one complete workspace with an id
-of its own, and together they are a set. There is no root file and no manifest listing them: the
-folder is the set. The grammar is at the end of `model-reference.md`; what to do with it:
-
-- **Local ids belong to the file.** A ref that starts `#/` is looked up in its own file only, so
-  two files may both have a `ledger` context and each file's refs mean its own. Never expect a
-  local ref to find an element in another file.
-- **Write a ref to another file as the path, then the pointer.** The path is relative to the file
-  that holds the ref, with forward slashes and percent-encoding, and has no `#` of its own:
-  `{ "$ref": "../payments/team.json#/boundedcontexts/ledger/services/api/provides/post" }`. A
-  space is `%20`, `#` is `%23`, `%` is `%25` and a non-ASCII character is its UTF-8 bytes, so
-  `team b/ü.json` is `team%20b/%C3%BC.json`. `..` is fine while the result stays inside the
-  `.ods` folder; a path that leaves it, is absolute or is a URL resolves to nothing.
-- **A file boundary changes no permission.** A file may name another file's value object, schema,
-  consumable, identity or subdomain exactly where a context may name another context's, and the
-  same rules refuse it where they would refuse it inside one file. Do not look for a "may cross a
-  file" list; the rules about contexts are the list.
-- **A context lives wholly in one file.** Do not split one, and do not add aggregates to another
-  file's context. A domain, a subdomain and a team may be declared in one file and served or
-  owned by contexts of others.
-- **Put a relationship in the file of the context it is about.** NorthBank's convention is the
-  file of the downstream context's team; the model accepts it in either file and the rules read
-  both. The DSL's `upstreamOf` and `downstreamOf` place it in the upstream context's file; to put
-  it in the downstream's, call `addRelationship` on the downstream's workspace.
-- **Give every file a workspace id of its own.** Two files with one id are both loaded and the
-  later one gets `workspace-id-unique`. A path the host cannot accept (not relative, not `.json`,
-  `schema.json`, given twice) leaves that file out with `file-path-invalid`.
-- **Options belong to the file that sets them.** `options.rules.commentsRequired` in one file
-  asks nothing of another.
-- **Cycles between files are legal.** Two files may refer to each other; only a cycle the model
-  forbids is diagnosed, wherever its links sit.
-- **Order is the host's.** Files are read in code point order of their path, and a list that
-  gathers across files (the consumers of a provider, a set page, a context map) follows that
-  order. There is no order hint and no manifest, so renaming a file can reorder such a list.
-- **A ref that cannot reach its file is kept, not lost.** In the four lists whose entry is the
-  pair it joins (a consumer's `consumes`, `relationships`, an entity's or value object's
-  `relations`, a consumption's `by`), an entry whose ref has a path in front of its `#` and
-  fails, however it fails, is kept as written at its index and written back untouched, and
-  `unresolved-ref` names it. A local ref that names nothing is still dropped on a save, which is
-  the cost decision 29 names; an unknown key on an entry that does resolve is still dropped and
-  reported by `unknown-field`.
-- **A file that is not a workspace is a problem of that file.** The loader takes a
-  `WorkspaceSchema` and a JSON file of another shape can make it throw, so a script of yours
-  checks the shape first and reports the file, as the extension does with a Problem on that file
-  and the rest of the set loaded. `examples/validate.mjs` does the same.
+A `.ods` folder may hold several files. Treat each as its own workspace; refs never cross files.

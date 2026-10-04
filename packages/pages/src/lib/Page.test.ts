@@ -151,18 +151,13 @@ describe("a ref pointing inside a page scrolls to and flashes the target", () =>
  * a ref falls outside every group, so no page can quietly stop being rendered.
  */
 describe("every element of the reference organisations renders its own page", () => {
-	async function expectEveryRefRenders(model: Model, refs: string[]) {
+	function expectEveryRefRenders(model: Model, refs: string[]) {
 		// An empty group would pass the loop vacuously, so it is a failure.
 		expect(refs.length).toBeGreaterThan(0);
 		for (const ref of refs) {
 			const { container, unmount } = render(Harness, { model, ref });
 			expect(container.querySelector("h1")?.textContent?.trim()).toBeTruthy();
 			unmount();
-			// Measured locally under coverage, this loop otherwise ran one ~22 s
-			// synchronous stretch with no event-loop turn, so the worker could not
-			// answer its pool's IPC. Yielding a macrotask after each page lets it.
-			// This is not a proven cause of any CI timeout.
-			await new Promise((resolve) => setTimeout(resolve, 0));
 		}
 	}
 
@@ -193,8 +188,8 @@ describe("every element of the reference organisations renders its own page", ()
 				);
 			});
 
-			it.each(groups)("%s renders", async (_name, group) => {
-				await expectEveryRefRenders(model, group);
+			it.each(groups)("%s renders", (_name, group) => {
+				expectEveryRefRenders(model, group);
 			});
 		});
 	}

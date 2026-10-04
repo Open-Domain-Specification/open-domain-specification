@@ -2,11 +2,10 @@
 import type { Kind } from "../atoms/kinds";
 import Lockup from "../atoms/Lockup.svelte";
 import Logo from "../atoms/Logo.svelte";
-import { localRoute, useModel } from "../model";
+import { useModel } from "../model";
 import { scrollBehavior } from "../motion.svelte";
 import { modelRefToHash } from "../ref-transport";
 import { resolvePage } from "../resolve";
-import { qualifies } from "../route";
 import { currentRow, revealRow, scrollContainer } from "../tree-scroll";
 
 /**
@@ -20,10 +19,7 @@ import { currentRow, revealRow, scrollContainer } from "../tree-scroll";
  */
 const { current }: { current: string } = $props();
 
-const model = useModel();
-const { workspace } = model;
-/** A reader of several files can always go up to the list of them. */
-const inSet = qualifies(model.loaded?.set);
+const { workspace } = useModel();
 type Item = { ref: string; label: string; kind: Kind; children?: Item[] };
 const items = $derived<Item[]>([
 	...[...workspace.domains.values()].map((d) => ({
@@ -103,8 +99,7 @@ $effect(() => {
 {/snippet}
 
 <nav class="tree" aria-label="Workspace elements" bind:this={tree}>
-	{#if inSet}<p class="brand up"><a href={modelRefToHash("#")}>All workspaces</a></p>{/if}
-	<p class="brand"><Logo size={16} /><a href={modelRefToHash(localRoute(model, "#"))}>{workspace.name}</a></p>
+	<p class="brand"><Logo size={16} /><a href={modelRefToHash("#")}>{workspace.name}</a></p>
 	{@render list(items)}
 </nav>
 
@@ -128,9 +123,6 @@ $effect(() => {
 	.brand a {
 		color: inherit;
 		text-decoration: none;
-	}
-	.brand.up {
-		color: var(--vscode-descriptionForeground);
 	}
 	ul {
 		list-style: none;

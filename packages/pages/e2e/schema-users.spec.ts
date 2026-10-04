@@ -23,10 +23,7 @@ let riverMartExportDir: string;
 test.beforeAll(async () => {
 	const schema = JSON.parse(
 		readFileSync(
-			join(
-				__dirname,
-				"../../../models/northbank/src/fixtures/northbank.monolith.json",
-			),
+			join(__dirname, "../../../models/northbank/.ods/northbank.json"),
 			"utf8",
 		),
 	);
@@ -73,7 +70,7 @@ const hosts: [string, (page: Page, ref: string) => Promise<void>][] = [
 	[
 		"viewer",
 		async (page, ref) => {
-			const url = await serveModel(page, "northbank-monolith");
+			const url = await serveModel(page, "northbank");
 			await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(ref)}`);
 		},
 	],

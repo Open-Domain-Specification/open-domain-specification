@@ -1,4 +1,4 @@
-import type { BoundedContext, ContextRelationship } from "./workspace";
+import type { ContextRelationship } from "./workspace";
 
 /**
  * What every surface needs to know about a relationship before it draws one.
@@ -52,64 +52,3 @@ export const relationshipTitle = (r: ContextRelationship): string =>
 		`${r.source.name} ${relationshipArrow(r.type)} ${r.target.name}`,
 		r.name,
 	);
-
-/** The context on the other side of a relationship from `bc`. */
-export const counterpartOf = (
-	r: ContextRelationship,
-	bc: BoundedContext,
-): BoundedContext => (r.source === bc ? r.target : r.source);
-
-/** A named block of one context's relationships: one of the three strategic-position groups. */
-export type PositionGroup = {
-	id: "depends-on" | "depended-on-by" | "works-alongside";
-	label: "Depends on" | "Depended on by" | "Works alongside";
-	relationships: ContextRelationship[];
-};
-
-/** A context's relationships and the groups they fall into. */
-export type StrategicPosition = {
-	/** Every relationship that touches the context, in input order. */
-	relationships: ContextRelationship[];
-	/** The non-empty groups, in the order depends-on, depended-on-by, works-alongside. */
-	groups: PositionGroup[];
-};
-
-/**
- * The relationships of `bc`, grouped by what they mean from its point of
- * view: the contexts it depends on (it is downstream), the contexts that
- * depend on it (it is upstream), and the contexts it merely works alongside
- * (a symmetric type, where neither side is upstream). Empty groups are left
- * out so a context with one relationship shows one heading, and inside a
- * group the relationships keep the order they were given in.
- */
-export function strategicPositionOf(
-	bc: BoundedContext,
-	relationships: ReadonlyArray<ContextRelationship>,
-): StrategicPosition {
-	const mine = relationships.filter((r) => r.source === bc || r.target === bc);
-	const groups: PositionGroup[] = [
-		{
-			id: "depends-on",
-			label: "Depends on",
-			relationships: mine.filter(
-				(r) => !isSymmetricRelationship(r.type) && r.target === bc,
-			),
-		},
-		{
-			id: "depended-on-by",
-			label: "Depended on by",
-			relationships: mine.filter(
-				(r) => !isSymmetricRelationship(r.type) && r.source === bc,
-			),
-		},
-		{
-			id: "works-alongside",
-			label: "Works alongside",
-			relationships: mine.filter((r) => isSymmetricRelationship(r.type)),
-		},
-	];
-	return {
-		relationships: mine,
-		groups: groups.filter((g) => g.relationships.length > 0),
-	};
-}

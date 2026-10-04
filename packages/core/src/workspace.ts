@@ -5,12 +5,10 @@ import {
 	type EvidenceOptions,
 	normaliseDisposition,
 } from "./evidence";
-import { resolveWirePath, type SetPath, type WirePath } from "./path-codec";
 import {
 	consumptionRef,
 	decodeRefSegment,
 	encodeRefSegment,
-	qualifiedRelationshipRef,
 	relationshipRef,
 } from "./reference";
 import type * as ods from "./schema";
@@ -22,13 +20,10 @@ import {
 	RelationType,
 	type UpstreamRole,
 } from "./schema";
-import { scopeAround } from "./scope";
-import { membershipOf, wirePathBetween } from "./set-membership";
 import { type Diagnostic, validateWorkspace } from "./validate";
 import type { Visitable } from "./visitable";
 import type { Visitor } from "./visitor";
 import { getWorkspaceFromSchema } from "./workspace-from-schema";
-import { setKeyOf, type WorkspaceSet } from "./workspace-set";
 
 function snakeCase(str: string): string {
 	return str
@@ -37,7 +32,7 @@ function snakeCase(str: string): string {
 		.toLowerCase(); // Convert to lowercase
 }
 
-export function idOf(name: string, explicit?: string): string {
+function idOf(name: string, explicit: string | undefined): string {
 	return explicit ?? snakeCase(name);
 }
 
@@ -99,17 +94,6 @@ export type UnresolvedReference = {
 	expected: string;
 	/** Whether anything at all in the workspace answers to the ref. */
 	present: boolean;
-	/**
-	 * Which of the four ways a ref that names a file failed: its path is not a
-	 * usable path, no such file is in the set, the file has nothing at the
-	 * pointer, or what it has is the wrong kind. Absent on a ref that names no
-	 * file, which keeps `present` and the words it has always had.
-	 */
-	cause?: "invalid-path" | "missing-file" | "missing-target" | "wrong-kind";
-	/** The file a ref that names one was looked up in, when it got that far. */
-	file?: string;
-	/** Why, in the resolver's words, for a ref that names a file. */
-	detail?: string;
 };
 
 /** A `$ref` as a file wrote it. */
@@ -153,11 +137,6 @@ export type UnknownField = {
  * relationship or a relation whose end does. Each of those is the pair it
  * joins, so an end that resolves to nothing leaves no object at all.
  *
- * The miss is recorded where the diagnostic belongs, which is not always the
- * element that writes the ref: a consumption's `relationship` is reported at
- * its consumer, so the consumption keeps its own local or qualified ref (see
- * {@link Consumption.unresolvedWrites}).
- *
  * A ref of a list comes back at the end of that list rather than where it was
  * written, because a list keeps only what it holds and the position of a link
  * that was never made is not part of the model.
@@ -192,48 +171,6 @@ export function keepsUnresolvedWrites(it: object): it is RefWriter {
 	return "unresolvedWrites" in it;
 }
 
-/**
- * An entry of a list that named something in another file this load could not
- * reach, kept exactly as written and where it was written.
- *
- * Four lists lose an entry outright when what it names is missing, because the
- * entry is the pair it joins: a consumer's `consumes`, a workspace's
- * `relationships`, an entity's or value object's `relations`, and a
- * consumption's `by`. For a ref that names a file, the missing thing is often
- * only a file that was not loaded, so the whole entry is kept raw (unknown keys
- * included) at its index and written back untouched; it resolves again as soon
- * as the file is there. A ref that names no file keeps the cost decision 29
- * names, and is dropped.
- */
-export type RetainedEntry<T> = {
-	/** The position the entry had in the list the file wrote. */
-	index: number;
-	/** The entry as the file wrote it. */
-	raw: T;
-};
-
-/**
- * The entries a list made, with the retained ones back at the index they were
- * written at, or at the end when the list is shorter than that.
- */
-export function weaveRetained<T>(
-	resolved: T[],
-	retained: ReadonlyArray<RetainedEntry<T>>,
-): T[] {
-	if (retained.length === 0) return resolved;
-	const waiting = [...retained].sort((a, b) => a.index - b.index);
-	const woven: T[] = [];
-	let made = 0;
-	let kept = 0;
-	while (made < resolved.length || kept < waiting.length) {
-		const due =
-			kept < waiting.length &&
-			(made >= resolved.length || waiting[kept].index <= woven.length);
-		woven.push(due ? waiting[kept++].raw : resolved[made++]);
-	}
-	return woven;
-}
-
 export class Workspace
 	implements Visitable, SchemaConvertible<ods.WorkspaceSchema>
 {
@@ -257,12 +194,6 @@ export class Workspace
 	domains = new Map<string, Domain>();
 	boundedcontexts = new Map<string, BoundedContext>();
 	relationships: ContextRelationship[] = [];
-	/**
-	 * The relationships a loaded file wrote with an end in a file that was not
-	 * reachable, kept raw; see {@link RetainedEntry}.
-	 */
-	readonly retainedRelationships: RetainedEntry<ods.ContextRelationshipSchema>[] =
-		[];
 	teams = new Map<string, Team>();
 	/**
 	 * The `$ref`s a loaded file wrote that resolved to nothing, or to the wrong
@@ -289,20 +220,6 @@ export class Workspace
 
 	get path(): string {
 		return encodeRefSegment(this.id);
-	}
-
-	/**
-	 * The file this workspace is in its {@link WorkspaceSet}, as the raw set
-	 * path the host holds; absent for a workspace that is not in one. Not
-	 * {@link path}, which is the pointer segment of the workspace's id.
-	 */
-	get file(): SetPath | undefined {
-		return membershipOf(this)?.file;
-	}
-
-	/** The set this workspace is a file of, if it is in one. */
-	get set(): WorkspaceSet | undefined {
-		return membershipOf(this)?.set;
 	}
 
 	constructor(name: string, attributes: WorkspaceAttributes) {
@@ -701,22 +618,8 @@ export class Workspace
 			return operation.completed();
 		if (rest.length === 1 && rest[0] === "returns")
 			return operation.returns ? operation.returned() : undefined;
-		const foreign = rest[0] === "rejects-in";
-		if (rest[0] !== "rejects" && !foreign) return undefined;
+		if (rest[0] !== "rejects") return undefined;
 		rest.shift();
-		let schemaWorkspace: Workspace = this;
-		if (foreign) {
-			const written = rest.shift();
-			const wire =
-				written === undefined ? undefined : decodeRefSegment(written);
-			const file = this.file;
-			if (wire === undefined || file === undefined) return undefined;
-			const resolved = resolveWirePath(file, wire);
-			const found = resolved.ok ? this.set?.byPath(resolved.path) : undefined;
-			// The operation's own file is spelled `rejects`, never `rejects-in`.
-			if (!found || found === this) return undefined;
-			schemaWorkspace = found;
-		}
 		if (rest.length < 2 || rest.length > 3) return undefined;
 		const [context, schema, reason] = rest.map(decodeRefSegment);
 		if (
@@ -727,9 +630,7 @@ export class Workspace
 			return undefined;
 		const rejection = operation.rejections.find(
 			(it) =>
-				it.schema.boundedcontext.id === context &&
-				it.schema.id === schema &&
-				workspaceOf(it.schema) === schemaWorkspace,
+				it.schema.boundedcontext.id === context && it.schema.id === schema,
 		);
 		if (!rejection) return undefined;
 		if (reason !== undefined && !rejection.reasons.includes(reason))
@@ -1001,10 +902,7 @@ export class Workspace
 			primaryColor: this.primaryColor,
 			domains: asRecords(this.domains),
 			boundedcontexts: asRecords(this.boundedcontexts),
-			relationships: weaveRetained(
-				asArray(this.relationships),
-				this.retainedRelationships,
-			),
+			relationships: asArray(this.relationships),
 			teams: asRecords(this.teams),
 			homepage: this.homepage,
 			logoUrl: this.logoUrl,
@@ -1017,14 +915,7 @@ export class Workspace
 
 	/** Checks the model against the DDD rules ODS can verify structurally. */
 	validate(): Diagnostic[] {
-		const set = this.set;
-		if (!set) return validateWorkspace(this);
-		// A file of a set is judged by the set, because a rule about a file may
-		// need what another file declares (a relationship, a shared kernel).
-		return set
-			.validate()
-			.filter((it) => it.file === this.file)
-			.map(({ file: _file, ...diagnostic }) => diagnostic);
+		return validateWorkspace(this);
 	}
 }
 
@@ -1092,16 +983,11 @@ export class Subdomain
 	type: ods.SubdomainType;
 	domain: Domain;
 
-	/**
-	 * The bounded contexts serving this subdomain, derived from the workspace
-	 * and, where the workspace is a file of a set, from every file of it: a
-	 * context may serve a subdomain another file declares. Keyed by context id,
-	 * or by {@link setKeyOf} in a set, where two files may share an id.
-	 */
+	/** The bounded contexts serving this subdomain, derived from the workspace. */
 	get boundedcontexts(): ReadonlyMap<string, BoundedContext> {
 		const serving = new Map<string, BoundedContext>();
-		for (const bc of scopeAround(this.domain.workspace).contexts()) {
-			if (bc.subdomains.has(this)) serving.set(setKeyOf(bc) ?? bc.id, bc);
+		for (const bc of this.domain.workspace.boundedcontexts.values()) {
+			if (bc.subdomains.has(this)) serving.set(bc.id, bc);
 		}
 		return serving;
 	}
@@ -1364,13 +1250,13 @@ export class BoundedContext
 			description: this.description,
 			subdomains: this.unresolvedWrites.list(
 				"subdomains",
-				Array.from(this.subdomains, (it) => ({ $ref: refFrom(this, it) })),
+				Array.from(this.subdomains, (it) => ({ $ref: it.ref })),
 			),
 			bigBallOfMud: this.bigBallOfMud || undefined,
 			external: this.external || undefined,
 			boundaryOnly: this.boundaryOnly || undefined,
 			team: this.team
-				? { $ref: refFrom(this, this.team) }
+				? { $ref: this.team.ref }
 				: this.unresolvedWrites.one("team"),
 			aggregates: asRecords(this.aggregates),
 			invariants: asRecords(this.invariants),
@@ -1400,8 +1286,6 @@ export class Service
 	consumables = new Map<string, Consumable>();
 	boundedcontext: BoundedContext;
 	consumptions: Consumption[] = [];
-	/** Consumptions kept raw because their consumable is in a file that was not reachable; see {@link RetainedEntry}. */
-	readonly retainedConsumes: RetainedEntry<ods.ConsumptionSchema>[] = [];
 
 	get path(): string {
 		return `${this.boundedcontext.path}/services/${encodeRefSegment(this.id)}`;
@@ -1456,10 +1340,7 @@ export class Service
 			description: this.description,
 			type: this.type,
 			provides: asRecords(this.consumables),
-			consumes: weaveRetained(
-				asArray(this.consumptions),
-				this.retainedConsumes,
-			),
+			consumes: asArray(this.consumptions),
 		};
 	}
 }
@@ -1480,8 +1361,6 @@ export class Aggregate
 	entities = new Map<string, Entity>();
 	boundedcontext: BoundedContext;
 	consumptions: Consumption[] = [];
-	/** Consumptions kept raw because their consumable is in a file that was not reachable; see {@link RetainedEntry}. */
-	readonly retainedConsumes: RetainedEntry<ods.ConsumptionSchema>[] = [];
 
 	get path(): string {
 		return `${this.boundedcontext.path}/aggregates/${encodeRefSegment(this.id)}`;
@@ -1548,10 +1427,7 @@ export class Aggregate
 			name: this.name,
 			description: this.description,
 			provides: asRecords(this.consumables),
-			consumes: weaveRetained(
-				asArray(this.consumptions),
-				this.retainedConsumes,
-			),
+			consumes: asArray(this.consumptions),
 			entities: asRecords(this.entities),
 			invariants: asRecords(this.invariants),
 		};
@@ -1716,16 +1592,7 @@ export class Consumable
 	 * twice names one object: a reaction's `on` is compared by identity, and
 	 * the walk keys what it wakes by the answer itself.
 	 */
-	private returnedAnswer?: Answer;
-	private completedAnswer?: Answer;
-	/**
-	 * Refusals are kept by the schema object and then the reason, never by a
-	 * ref string: two schemas of two workspaces may have one ref.
-	 */
-	private readonly rejectedAnswers = new Map<
-		DataSchema,
-		Map<string | undefined, Answer>
-	>();
+	private readonly answersGiven = new Map<string, Answer>();
 
 	/**
 	 * The shapes this operation refuses with, without their reasons: what a
@@ -1752,8 +1619,7 @@ export class Consumable
 			throw new Error(
 				`Operation ${this.name} returns nothing, so it has no answer to wait for; wait on ${this.name}.completed() instead`,
 			);
-		this.returnedAnswer ??= new Answer(this, this.returns, false);
-		return this.returnedAnswer;
+		return this.answerFor("returns", this.returns, false);
 	}
 
 	/**
@@ -1772,13 +1638,12 @@ export class Consumable
 		// Canonicalise before both cache lookup and construction so the first
 		// caller cannot choose a different in-memory shape-level answer.
 		const canonicalReason = reason === "" ? undefined : reason;
-		const given = this.rejectedAnswers.get(schema) ?? new Map();
-		this.rejectedAnswers.set(schema, given);
-		const existing = given.get(canonicalReason);
-		if (existing) return existing;
-		const answer = new Answer(this, schema, true, canonicalReason);
-		given.set(canonicalReason, answer);
-		return answer;
+		return this.answerFor(
+			`rejects/${schema.ref}${canonicalReason === undefined ? "" : `/${canonicalReason}`}`,
+			schema,
+			true,
+			canonicalReason,
+		);
 	}
 
 	/**
@@ -1800,8 +1665,7 @@ export class Consumable
 	 * to load and be validated.
 	 */
 	completed(): Answer {
-		this.completedAnswer ??= new Answer(this, undefined, false);
-		return this.completedAnswer;
+		return this.answerFor("completed", undefined, false);
 	}
 
 	/**
@@ -1811,10 +1675,10 @@ export class Consumable
 	 */
 	get answers(): Answer[] {
 		const answers: Answer[] = [];
-		const seen = new Set<Answer>();
+		const seen = new Set<string>();
 		const include = (answer: Answer) => {
-			if (seen.has(answer)) return;
-			seen.add(answer);
+			if (seen.has(answer.ref)) return;
+			seen.add(answer.ref);
 			answers.push(answer);
 		};
 
@@ -1831,6 +1695,19 @@ export class Consumable
 		}
 
 		return answers;
+	}
+
+	private answerFor(
+		key: string,
+		schema: DataSchema | undefined,
+		rejection: boolean,
+		reason?: string,
+	): Answer {
+		const existing = this.answersGiven.get(key);
+		if (existing) return existing;
+		const answer = new Answer(this, schema, rejection, reason);
+		this.answersGiven.set(key, answer);
+		return answer;
 	}
 
 	/** Declares an event consumable this operation may raise. */
@@ -1870,14 +1747,14 @@ export class Consumable
 		const rejects = this.unresolvedWrites.list(
 			"rejects",
 			this.rejections.map((it) => ({
-				$ref: refFrom(this, it.schema),
+				$ref: it.schema.ref,
 				many: it.many || undefined,
 				reasons: it.reasons.length ? it.reasons : undefined,
 			})),
 		);
 		const raises = this.unresolvedWrites.list(
 			"raises",
-			this.raisedEvents.map((it) => ({ $ref: refFrom(this, it) })),
+			this.raisedEvents.map((it) => ({ $ref: it.ref })),
 		);
 		return {
 			name: this.name,
@@ -1886,14 +1763,11 @@ export class Consumable
 			type: this.type,
 			internal: this.internal || undefined,
 			schema: this.schema
-				? {
-						$ref: refFrom(this, this.schema),
-						many: this.schemaMany || undefined,
-					}
+				? { $ref: this.schema.ref, many: this.schemaMany || undefined }
 				: this.unresolvedWrites.one("schema"),
 			returns: this.returns
 				? {
-						$ref: refFrom(this, this.returns),
+						$ref: this.returns.ref,
 						many: this.returnsMany || undefined,
 					}
 				: this.unresolvedWrites.one("returns"),
@@ -1986,14 +1860,7 @@ export class Answer implements Referenceable {
 		const shape = [this.schema.boundedcontext.id, this.schema.id]
 			.map(encodeRefSegment)
 			.join("/");
-		const schemaWorkspace = workspaceOf(this.schema);
-		const operationWorkspace = workspaceOf(this.operation);
-		const rejects =
-			schemaWorkspace === operationWorkspace ||
-			!operationWorkspace ||
-			!schemaWorkspace
-				? `${this.operation.ref}/rejects/${shape}`
-				: `${this.operation.ref}/rejects-in/${encodeRefSegment(wirePathBetween(operationWorkspace, schemaWorkspace))}/${shape}`;
+		const rejects = `${this.operation.ref}/rejects/${shape}`;
 		return this.reason
 			? `${rejects}/${encodeRefSegment(this.reason)}`
 			: rejects;
@@ -2126,8 +1993,6 @@ export class Entity
 	root: boolean;
 	attributes = new Map<string, Attribute>();
 	relations = [] as EntityRelation[];
-	/** Relations kept raw because their target is in a file that was not reachable; see {@link RetainedEntry}. */
-	readonly retainedRelations: RetainedEntry<ods.EntityRelationSchema>[] = [];
 	aggregate: Aggregate;
 	/**
 	 * The entity this one is a kind of, when it is one: a LoanAccount is an
@@ -2274,10 +2139,10 @@ export class Entity
 			description: this.description,
 			root: this.root,
 			specialises: this.specialises
-				? { $ref: refFrom(this, this.specialises) }
+				? { $ref: this.specialises.ref }
 				: this.unresolvedWrites.one("specialises"),
 			attributes: asRecords(this.attributes),
-			relations: weaveRetained(asArray(this.relations), this.retainedRelations),
+			relations: asArray(this.relations),
 		};
 	}
 }
@@ -2297,8 +2162,6 @@ export class ValueObject
 	description: string;
 	attributes = new Map<string, Attribute>();
 	relations = [] as EntityRelation[];
-	/** Relations kept raw because their target is in a file that was not reachable; see {@link RetainedEntry}. */
-	readonly retainedRelations: RetainedEntry<ods.EntityRelationSchema>[] = [];
 	/** The rules that hold of every instance of this value (decision 27). */
 	invariants = new Map<string, Invariant>();
 	boundedcontext: BoundedContext;
@@ -2313,13 +2176,12 @@ export class ValueObject
 
 	/**
 	 * The value objects that are a kind of this one, anywhere in the
-	 * workspace, and in every file of its set: a kernel's value object is
-	 * specialised by the contexts that borrow it, so the kinds of one are not
-	 * all in its own context, or in its own file.
+	 * workspace: a kernel's value object is specialised by the contexts that
+	 * borrow it, so the kinds of one are not all in its own context.
 	 */
 	get kinds(): ValueObject[] {
 		const out: ValueObject[] = [];
-		for (const bc of scopeAround(this.boundedcontext.workspace).contexts())
+		for (const bc of this.boundedcontext.workspace.boundedcontexts.values())
 			for (const vo of bc.valueobjects.values())
 				if (vo.specialises === this) out.push(vo);
 		return out;
@@ -2458,10 +2320,10 @@ export class ValueObject
 			name: this.name,
 			description: this.description,
 			specialises: this.specialises
-				? { $ref: refFrom(this, this.specialises) }
+				? { $ref: this.specialises.ref }
 				: this.unresolvedWrites.one("specialises"),
 			attributes: asRecords(this.attributes),
-			relations: weaveRetained(asArray(this.relations), this.retainedRelations),
+			relations: asArray(this.relations),
 			invariants: asRecords(this.invariants),
 		};
 	}
@@ -2606,7 +2468,7 @@ export class Invariant
 			postcondition: this.postcondition || undefined,
 			constrains: this.unresolvedWrites.list(
 				"constrains",
-				this.targets.map((it) => ({ $ref: refFrom(this, it) })),
+				this.targets.map((it) => ({ $ref: it.ref })),
 			),
 		};
 	}
@@ -2681,7 +2543,7 @@ export class EntityRelation
 
 	toSchema(): ods.EntityRelationSchema {
 		return {
-			target: { $ref: refFrom(this.source, this.target) },
+			target: { $ref: this.target.ref },
 			relation: this.relation,
 			label: this.label,
 			cardinality: this.cardinality,
@@ -2727,15 +2589,8 @@ export class Consumption
 	 * consumption.
 	 */
 	by: ConsumptionCaller[];
-	/** Callers kept raw because they are in a file that was not reachable; see {@link RetainedEntry}. */
-	readonly retainedBy: RetainedEntry<WrittenRef>[] = [];
 	/** The agreement this exchange belongs to, where the model has named one. */
 	relationship?: ContextRelationship;
-	/**
-	 * The local or file-qualified agreement ref that did not resolve, kept
-	 * beside the field it was written in; see {@link UnresolvedWrites}.
-	 */
-	readonly unresolvedWrites = new UnresolvedWrites();
 	comments: ods.Comment[];
 	disposition?: ods.Disposition;
 
@@ -2765,12 +2620,11 @@ export class Consumption
 		const shared = this.consumer.consumptions.some(
 			(other) => other !== this && other.consumable === this.consumable,
 		);
-		const from = this.consumer.boundedcontext.workspace;
 		const caller = this.by[0];
 		return consumptionRef(
 			this.consumer.ref,
-			refFrom(from, this.consumable),
-			shared && caller ? refFrom(from, caller) : undefined,
+			this.consumable.ref,
+			shared ? caller?.ref : undefined,
 		).slice(2);
 	}
 
@@ -2800,18 +2654,12 @@ export class Consumption
 
 	toSchema(): ods.ConsumptionSchema {
 		return {
-			consumable: { $ref: refFrom(this, this.consumable) },
+			consumable: { $ref: this.consumable.ref },
 			pattern: this.pattern,
-			by:
-				this.by.length || this.retainedBy.length
-					? weaveRetained<WrittenRef>(
-							this.by.map((it) => ({ $ref: refFrom(this, it) })),
-							this.retainedBy,
-						)
-					: undefined,
+			by: this.by.length ? this.by.map((it) => ({ $ref: it.ref })) : undefined,
 			relationship: this.relationship
-				? { $ref: refFrom(this, this.relationship) }
-				: this.unresolvedWrites.one("relationship"),
+				? { $ref: this.relationship.ref }
+				: undefined,
 			comments: this.comments.length ? this.comments : undefined,
 			disposition: this.disposition,
 		};
@@ -2924,30 +2772,12 @@ export class ContextRelationship
 	 * (decision 15, card 103).
 	 */
 	get path(): string {
-		const nameId = this.nameId || undefined;
-		if (
-			this.source.workspace === this.workspace &&
-			this.target.workspace === this.workspace
-		)
-			return relationshipRef(
-				this.source.id,
-				this.type,
-				this.target.id,
-				nameId,
-			).slice(2);
-		return qualifiedRelationshipRef(
-			{ path: this.endPath(this.source), id: this.source.id },
+		return relationshipRef(
+			this.source.id,
 			this.type,
-			{ path: this.endPath(this.target), id: this.target.id },
-			nameId,
+			this.target.id,
+			this.nameId || undefined,
 		).slice(2);
-	}
-
-	/** Where an end is, relative to the declaring file; `.` is that file. */
-	private endPath(end: BoundedContext): WirePath {
-		return end.workspace === this.workspace
-			? "."
-			: wirePathBetween(this.workspace, end.workspace);
 	}
 
 	/**
@@ -2982,8 +2812,8 @@ export class ContextRelationship
 			return {
 				type: this.type,
 				name: this.name,
-				upstream: { $ref: refFrom(this, this.source) },
-				downstream: { $ref: refFrom(this, this.target) },
+				upstream: { $ref: this.source.ref },
+				downstream: { $ref: this.target.ref },
 				upstreamRoles: this.upstreamRoles,
 				downstreamRoles: this.downstreamRoles,
 				description: this.description,
@@ -2993,10 +2823,7 @@ export class ContextRelationship
 		return {
 			type: this.type,
 			name: this.name,
-			participants: [
-				{ $ref: refFrom(this, this.source) },
-				{ $ref: refFrom(this, this.target) },
-			],
+			participants: [{ $ref: this.source.ref }, { $ref: this.target.ref }],
 			description: this.description,
 			...evidence,
 		};
@@ -3024,12 +2851,9 @@ export class Team implements SchemaConvertible<ods.TeamSchema> {
 		return `#/${this.path}`;
 	}
 
-	/**
-	 * The contexts this team owns, derived from the workspace and, where it is
-	 * a file of a set, from every file of it.
-	 */
+	/** The contexts this team owns, derived from the workspace. */
 	get boundedcontexts(): BoundedContext[] {
-		return Array.from(scopeAround(this.workspace).contexts()).filter(
+		return Array.from(this.workspace.boundedcontexts.values()).filter(
 			(bc) => bc.team === this,
 		);
 	}
@@ -3190,13 +3014,13 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 			identity: this.identity || undefined,
 			optional: this.optional || undefined,
 			valueobject: this.valueobject
-				? { $ref: refFrom(this, this.valueobject) }
+				? { $ref: this.valueobject.ref }
 				: this.unresolvedWrites.one("valueobject"),
 			schema: this.schema
-				? { $ref: refFrom(this, this.schema) }
+				? { $ref: this.schema.ref }
 				: this.unresolvedWrites.one("schema"),
 			identifies: this.identifies
-				? { $ref: refFrom(this, this.identifies) }
+				? { $ref: this.identifies.ref }
 				: this.unresolvedWrites.one("identifies"),
 		};
 	}
@@ -3248,14 +3072,14 @@ export class DataSchema
 	}
 
 	/**
-	 * Consumables across the workspace, and every file of its set, that depend
-	 * on this shape, whether they send it as their payload, answer with it or
-	 * refuse with it. All three are the same promise: removing an attribute
-	 * breaks whoever is on the other end.
+	 * Consumables across the workspace that depend on this shape, whether they
+	 * send it as their payload, answer with it or refuse with it. All three are
+	 * the same promise: removing an attribute breaks whoever is on the other
+	 * end.
 	 */
 	get consumables(): Consumable[] {
 		const out: Consumable[] = [];
-		for (const bc of scopeAround(this.boundedcontext.workspace).contexts()) {
+		for (const bc of this.boundedcontext.workspace.boundedcontexts.values()) {
 			for (const p of [...bc.aggregates.values(), ...bc.services.values()])
 				for (const c of p.consumables.values())
 					if (
@@ -3398,11 +3222,11 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 			description: this.description,
 			on: this.unresolvedWrites.list(
 				"on",
-				this.events.map((it) => ({ $ref: refFrom(this, it) })),
+				this.events.map((it) => ({ $ref: it.ref })),
 			),
 			[issuesSchemaKey]: this.unresolvedWrites.list(
 				"then",
-				this.commands.map((it) => ({ $ref: refFrom(this, it) })),
+				this.commands.map((it) => ({ $ref: it.ref })),
 			),
 		};
 	}
@@ -3554,7 +3378,7 @@ export class Deadline
 			description: this.description,
 			after: this.after,
 			from: this.from
-				? { $ref: refFrom(this, this.from) }
+				? { $ref: this.from.ref }
 				: this.unresolvedWrites.one("from"),
 		};
 	}
@@ -3702,7 +3526,7 @@ export class Process
 		const kept = (field: string, triggers: ProcessTrigger[]) =>
 			this.unresolvedWrites.list(
 				field,
-				triggers.map((it) => ({ $ref: refFrom(this, it) })),
+				triggers.map((it) => ({ $ref: it.ref })),
 			);
 		return {
 			name: this.name,
@@ -3722,56 +3546,6 @@ export class Process
 			disposition: this.disposition,
 		};
 	}
-}
-
-/**
- * The workspace an element belongs to, found through the parent it was built
- * in. Absent only for an object this model does not own.
- */
-export function workspaceOf(element: object): Workspace | undefined {
-	if (element instanceof Workspace) return element;
-	if (
-		element instanceof Domain ||
-		element instanceof BoundedContext ||
-		element instanceof Team ||
-		element instanceof ContextRelationship
-	)
-		return element.workspace;
-	if (element instanceof Subdomain) return element.domain.workspace;
-	if (
-		element instanceof Service ||
-		element instanceof Aggregate ||
-		element instanceof ValueObject ||
-		element instanceof DataSchema ||
-		element instanceof Policy ||
-		element instanceof Process ||
-		element instanceof GlossaryTerm
-	)
-		return element.boundedcontext.workspace;
-	if (element instanceof Consumable)
-		return element.provider.boundedcontext.workspace;
-	if (element instanceof Answer) return workspaceOf(element.operation);
-	if (element instanceof Entity)
-		return element.aggregate.boundedcontext.workspace;
-	if (element instanceof Invariant || element instanceof Attribute)
-		return workspaceOf(element.owner);
-	if (element instanceof Deadline)
-		return element.process.boundedcontext.workspace;
-	if (element instanceof Consumption)
-		return element.consumer.boundedcontext.workspace;
-	return undefined;
-}
-
-/**
- * What `from` (a workspace, or an element of one) writes to name `target`: its
- * own pointer within the same file, or the file-qualified one. The single
- * place a `$ref` is spelled, so every carrier writes the same grammar.
- */
-function refFrom(from: object, target: { ref: string }): string {
-	const origin = from instanceof Workspace ? from : workspaceOf(from);
-	const owner = workspaceOf(target);
-	if (!origin || !owner || owner === origin) return target.ref;
-	return `${wirePathBetween(origin, owner)}${target.ref}`;
 }
 
 /** Anything in the workspace that can be pointed at by ref. */
@@ -3840,7 +3614,7 @@ export class GlossaryTerm
 			definition: this.definition,
 			aliases: this.aliases.length ? this.aliases : undefined,
 			embodiedBy: this.embodiedBy
-				? { $ref: refFrom(this, this.embodiedBy) }
+				? { $ref: this.embodiedBy.ref }
 				: this.unresolvedWrites.one("embodiedBy"),
 		};
 	}

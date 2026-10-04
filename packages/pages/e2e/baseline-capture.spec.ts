@@ -9,7 +9,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { Workspace } from "@open-domain-specification/core";
 import { expect, type Page, test } from "@playwright/test";
 import { exportSite } from "../dist/site.js";
-import { modelHash, referenceModelFile, watchForProblems } from "./helpers";
+import { modelHash, watchForProblems } from "./helpers";
 
 /**
  * The baseline capture harness for issue #53 (docs/design/baseline/inventory.md).
@@ -47,12 +47,12 @@ const ONLY = process.env.ODS_BASELINE_ONLY;
 const ROOT = join(__dirname, "../../..");
 const APP_DIR = join(__dirname, "../app");
 
-type ModelName = "petstore" | "rivermart" | "streamline" | "northbank-monolith";
+type ModelName = "petstore" | "rivermart" | "streamline" | "northbank";
 
 /** One page family, exercised by one concrete ref on one reference model. */
 type PageCase = { id: string; family: string; model: ModelName; ref: string };
 
-const NB = "northbank-monolith" as const;
+const NB = "northbank" as const;
 const KYC = "#/boundedcontexts/customer_&_kyc";
 
 /** Keep in step with the table in docs/design/baseline/inventory.md. */
@@ -280,7 +280,7 @@ function serve(port: number): Promise<Server> {
 }
 
 const modelJson = (m: ModelName) =>
-	JSON.parse(readFileSync(referenceModelFile(m), "utf8"));
+	JSON.parse(readFileSync(join(ROOT, `models/${m}/.ods/${m}.json`), "utf8"));
 const origin = `http://localhost:${PORT}`;
 const fakeUrl = (m: ModelName) => `https://workspaces.test/.ods/${m}.json`;
 
@@ -322,7 +322,7 @@ async function serveModels(page: Page): Promise<void> {
 		"petstore",
 		"rivermart",
 		"streamline",
-		"northbank-monolith",
+		"northbank",
 	] as const) {
 		await page.route(`**/${m}.json`, (route) =>
 			route.fulfill({

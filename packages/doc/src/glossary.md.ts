@@ -5,7 +5,7 @@ import type {
 } from "@open-domain-specification/core";
 import { breadcrumbsMd } from "./breadcrumbs.md";
 import { markdownTable } from "./lib/markdown-table";
-import { pathToIndexMd, placed } from "./lib/paths";
+import { pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
 
 const termRow = (term: GlossaryTerm) => [
@@ -33,7 +33,7 @@ ${
 	Array.from(workspace.boundedcontexts.values())
 		.filter((bc) => bc.glossary.size > 0)
 		.map(
-			(bc) => `## [${bc.name}](${pathToIndexMd(placed(bc), placed(workspace))})
+			(bc) => `## [${bc.name}](${pathToIndexMd(bc.path, workspace.path)})
 
 ${glossaryTableMd(bc)}
 `,

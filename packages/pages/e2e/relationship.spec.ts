@@ -593,7 +593,7 @@ test("each of a side's two roles reads as its own item on the page and in the mo
 	page,
 }) => {
 	await page.setViewportSize(BESIDE_THE_TREE);
-	const url = await serveModel(page, "northbank-monolith");
+	const url = await serveModel(page, "northbank");
 	await page.goto(
 		`/?url=${encodeURIComponent(url)}${modelHash(NB_KYC_BRANCH)}`,
 	);

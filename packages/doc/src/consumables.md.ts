@@ -5,11 +5,11 @@ import {
 } from "@open-domain-specification/core";
 import { commentsMd } from "./comments.md";
 import { markdownTable } from "./lib/markdown-table";
-import { pathToIndexMd, placed } from "./lib/paths";
+import { pathToIndexMd } from "./lib/paths";
 
 /** Link one schema to its row in the Schemas table of its bounded context page. */
 const schemaRowLinkMd = (schema: DataSchema, fromPath: string): string =>
-	`[${schema.name}](${pathToIndexMd(placed(schema.boundedcontext), fromPath)}#schemas)`;
+	`[${schema.name}](${pathToIndexMd(schema.boundedcontext.path, fromPath)}#schemas)`;
 
 /**
  * Link to the schema's row in the Schemas table of its bounded context page,

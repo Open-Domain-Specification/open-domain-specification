@@ -1,6 +1,6 @@
 import type { Consumption } from "@open-domain-specification/core";
 import { markdownTable } from "./lib/markdown-table";
-import { pathToIndexMd, placed } from "./lib/paths";
+import { pathToIndexMd } from "./lib/paths";
 
 /**
  * The consumer's own operations or policies behind a consumption. Absent means
@@ -62,5 +62,5 @@ export const consumptionsTableMd = (
 export const consumptionSectionMd = (consumption: Consumption) => `
 ### ${consumption.consumable.name}${consumption.pattern ? ` [${consumption.pattern}]` : ""}
 ${consumption.consumable.description}
-- **Provider**: [${consumption.consumable.provider.name}](${pathToIndexMd(placed(consumption.consumable.provider), placed(consumption.consumer))})${madeByMd(consumption)}${agreementMd(consumption)}
+- **Provider**: [${consumption.consumable.provider.name}](${pathToIndexMd(consumption.consumable.provider.path, consumption.consumer.path)})${madeByMd(consumption)}${agreementMd(consumption)}
 `;

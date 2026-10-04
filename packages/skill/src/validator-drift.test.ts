@@ -40,8 +40,6 @@ const handWrittenFiles = [
 	"apps/docs/docs/3-core/2-strategic-design.md",
 	"apps/docs/docs/3-core/3-tactical-design.md",
 	"apps/docs/docs/3-core/4-validation.md",
-	"apps/docs/docs/3-core/5-workspace-sets.md",
-	"apps/docs/docs/6-viewer.md",
 	"packages/core/src/schema.ts",
 	"packages/core/src/workspace.ts",
 	// Not hand-authored prose, but a template that writes prose: the string
@@ -65,17 +63,6 @@ const corpus = handWrittenFiles.map((f) => f.text).join("\n");
  * listed so the drift cannot silently return through any of them.
  */
 const oldClaims: Array<{ claim: string; sentences: string[] }> = [
-	{
-		claim:
-			"refs never cross files, a workspace is one file until a WorkspaceSet lands (decision 08 is implemented: a ref may name another file of its set, and a file boundary changes no permission)",
-		sentences: [
-			"A `.ods` folder may hold several files. Treat each as its own workspace; refs never cross files.",
-			"A workspace is one file.** Refs never cross files until decision 08's `WorkspaceSet` lands; a project that wants several files today keeps each as its own workspace.",
-			"A workspace is one file.** Refs never cross files until decision 08's `WorkspaceSet` lands; a project that wants several files today keeps each as its own workspace (decision 08).",
-			"Refs never cross files until decision 08's `WorkspaceSet` lands",
-			"a project that wants several files today keeps each as its own workspace",
-		],
-	},
 	{
 		claim:
 			"a completed immediate trigger stays held even when a new invocation has the same identity",
@@ -616,73 +603,6 @@ const currentFacts: Array<{
 		sentences: [
 			"When it names several operations, each guarantees the target shape through composition",
 			"their shapes are not combined into a union",
-		],
-	},
-	{
-		fact: "a ref may name another file of its set, written as a percent-encoded relative path before the pointer (authoring skill)",
-		file: "packages/skill/skill/SKILL.md",
-		sentences: [
-			"A ref to another file writes that file's relative path, percent-encoded, in front of the pointer",
-			"A file boundary changes no permission",
-		],
-	},
-	{
-		fact: "a ref may name another file of its set (JSON mode)",
-		file: "packages/skill/skill/references/json-mode.md",
-		sentences: [
-			"A file boundary changes no permission.",
-			"A context lives wholly in one file.",
-			"Write a ref to another file as the path, then the pointer.",
-		],
-	},
-	{
-		fact: "a ref may name another file of its set (generated model reference)",
-		file: "packages/skill/skill/references/model-reference.md",
-		sentences: [
-			"## Refs between files",
-			"What is allowed to cross a file is exactly what is allowed to cross a context.",
-		],
-	},
-	{
-		fact: "a set has no root or order hint, and a context is one file (preferences)",
-		file: "packages/skill/skill/references/preferences.md",
-		sentences: [
-			"A set of files has no root, no manifest and no order hint, and a context is one file.",
-			"renaming a file can reorder such a list",
-		],
-	},
-	{
-		fact: "a file boundary changes no permission, and a save keeps a qualified entry raw (docs page)",
-		file: "apps/docs/docs/3-core/5-workspace-sets.md",
-		sentences: [
-			"What may cross a file is exactly what may cross a context.",
-			"the whole entry is kept as it was written, with every key it had, **at the index it had**",
-			"**This check is not atomic.**",
-			"**This is not compare-and-swap.**",
-		],
-	},
-	{
-		fact: "a set has no root or order hint, and a context is one file (tactical guide)",
-		file: "apps/docs/docs/3-core/3-tactical-design.md",
-		sentences: [
-			"A set of files has no root, no manifest and no order hint, and a context is one file.",
-			"renaming a file can reorder such a list",
-		],
-	},
-	{
-		fact: "downstreamOf stores the relationship with the upstream context's workspace (DSL reference)",
-		file: "packages/skill/skill/references/dsl-api.md",
-		sentences: [
-			"The relationship is stored with the **upstream** context's workspace",
-		],
-	},
-	{
-		fact: "two rules are asked of a set of files, beside the rest (generated rule reference)",
-		file: "packages/skill/skill/references/validation-rules.md",
-		sentences: [
-			"# Rules about a folder of files",
-			"## `file-path-invalid` (error)",
-			"## `workspace-id-unique` (error)",
 		],
 	},
 ];

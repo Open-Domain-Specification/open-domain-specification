@@ -1,36 +1,6 @@
 import { encodeRefSegment } from "./reference";
 
 /**
- * @title Ref
- * @description A reference to another element of the model: a JSON Pointer into a workspace, optionally led by the relative path of the workspace file it points into. `#/boundedcontexts/orders` names an element of the file that writes it and never of another. `billing.json#/boundedcontexts/billing` names one of the file `billing.json`, resolved against the directory of the file that writes it. The path is percent-encoded UTF-8, forward-slash separated, ends in a `.json` file name other than `schema.json`, and may use `.` and `..` segments so long as the result stays inside the folder that holds the set. Anything else, a path that names no file of the set, a pointer that names nothing there, or an element of the wrong kind for the field, is an `unresolved-ref` diagnostic on the file that wrote it.
- */
-export interface RefSchema {
-	/**
-	 * @description The pointer, led by the relative path of its file when it is another file's.
-	 * @pattern ^((?:[A-Za-z0-9._~-]|%[0-9A-Fa-f]{2})+(?:/(?:[A-Za-z0-9._~-]|%[0-9A-Fa-f]{2})+)*)?#/.*$
-	 */
-	$ref: string;
-}
-
-/**
- * @title ShapeRef
- * @description A {@link RefSchema} to a schema, with whether the call carries a list of it rather than one.
- */
-export interface ShapeRefSchema extends RefSchema {
-	/** True when the shape is a list of the referenced schema rather than one of it. */
-	many?: boolean;
-}
-
-/**
- * @title RejectionRef
- * @description A {@link ShapeRefSchema} to a schema an operation refuses with, with the outcomes the contract enumerates for it.
- */
-export interface RejectionRefSchema extends ShapeRefSchema {
-	/** The enumerated outcomes of the refusal, as the contract states them. */
-	reasons?: string[];
-}
-
-/**
  * @title Attribute
  * @description A named, typed property of an entity, value object or schema.
  */
@@ -63,14 +33,14 @@ export interface AttributeSchema {
 	 */
 	optional?: boolean;
 	/** The value object that models this attribute's type, when there is one. */
-	valueobject?: RefSchema;
+	valueobject?: { $ref: string };
 	/**
 	 * The schema that models this attribute's type, when the attribute is a
 	 * shape of its own: the lines of an order, the address inside a customer.
 	 * Mutually exclusive with `valueobject`; a collection stays in the type
 	 * string (`OrderLine[]`).
 	 */
-	schema?: RefSchema;
+	schema?: { $ref: string };
 	/**
 	 * What this attribute holds the identity of, when it is an identity of
 	 * something else: `Order.petId` identifies Catalog's `Pet`. The target may
@@ -100,7 +70,7 @@ export interface AttributeSchema {
 	 * so is a schema of one, because there the entity exists and is what the id
 	 * is of.
 	 */
-	identifies?: RefSchema;
+	identifies?: { $ref: string };
 }
 
 /**
@@ -156,7 +126,7 @@ export interface GlossaryTermSchema {
 	definition: string;
 	aliases?: string[];
 	/** The model element that embodies this term, when there is one. */
-	embodiedBy?: RefSchema;
+	embodiedBy?: { $ref: string };
 }
 
 /**
@@ -180,9 +150,9 @@ export interface PolicySchema {
 	 * context; each of those segments and the reason is escaped as a JSON
 	 * Pointer segment is, `~` as `~0` and `/` as `~1`.
 	 */
-	on?: RefSchema[];
+	on?: { $ref: string }[];
 	/** The operation consumables this policy issues. Optional, like every list in this schema: an absent list is an empty one. */
-	then?: RefSchema[];
+	then?: { $ref: string }[];
 }
 
 /**
@@ -211,7 +181,7 @@ export interface DeadlineSchema {
 	 * description — the model says when a clock starts and how long it runs,
 	 * not the conditions that stop it (decision 23, fifth amendment).
 	 */
-	from?: RefSchema;
+	from?: { $ref: string };
 }
 
 /**
@@ -244,7 +214,7 @@ export interface ProcessSchema {
 	 * validation error rather than a schema one, so a file that omits `starts`
 	 * loads and is then told what it is missing.
 	 */
-	starts?: RefSchema[];
+	starts?: { $ref: string }[];
 	/**
 	 * Further event consumables the process waits for or reacts to while an
 	 * instance is alive, and the answers it waits to come back: an answer of an
@@ -256,15 +226,15 @@ export interface ProcessSchema {
 	 * published fact, or calling out and waiting, is how contexts integrate
 	 * (decision 23).
 	 */
-	on?: RefSchema[];
+	on?: { $ref: string }[];
 	/** The operation consumables of this process's own context that it issues. Optional, like every list in this schema: an absent list is an empty one. */
-	then?: RefSchema[];
+	then?: { $ref: string }[];
 	/**
 	 * What completes an instance: an event consumable, an answer, or a deadline
 	 * named the same way `on` names one. Optional, like every list in this
 	 * schema: an absent list is an empty one.
 	 */
-	ends?: RefSchema[];
+	ends?: { $ref: string }[];
 	/**
 	 * The time limits this process keeps on its own instances, by id. A
 	 * deadline is an element of the process, so `on` and `ends` name one by
@@ -291,7 +261,7 @@ export interface BoundedContextSchema {
 	 * one, and `context-serves-subdomain` says so as a warning rather than the
 	 * loader refusing the file.
 	 */
-	subdomains?: RefSchema[];
+	subdomains?: { $ref: string }[];
 	/**
 	 * Marks a context whose model is not coherent (typically legacy) so that
 	 * neighbours know to protect themselves from it. It is still the
@@ -343,7 +313,7 @@ export interface BoundedContextSchema {
 	 */
 	external?: boolean;
 	/** The team that owns this context. */
-	team?: RefSchema;
+	team?: { $ref: string };
 	/**
 	 * The aggregates of this context, by id. Optional, and an absent map is an
 	 * empty one — as every map of elements in this schema is, so that a file
@@ -448,7 +418,7 @@ export interface ConsumableSchema {
 	 * 13, amended). A wrapper stays where the request really is an object with
 	 * a list among its attributes.
 	 */
-	schema?: ShapeRefSchema;
+	schema?: { $ref: string; many?: boolean };
 	/**
 	 * For operations: the payload shape the caller gets back, one of the
 	 * context's schemas. Absent means the operation returns nothing worth
@@ -462,7 +432,7 @@ export interface ConsumableSchema {
 	 * A wrapper stays where the answer really is an object with a list among
 	 * its attributes, as search results with a total and hits are.
 	 */
-	returns?: ShapeRefSchema;
+	returns?: { $ref: string; many?: boolean };
 	/**
 	 * For operations: the shapes the operation answers with when it refuses,
 	 * each one its context may carry under `schema-context`, as `schema` and
@@ -487,9 +457,9 @@ export interface ConsumableSchema {
 	 * reason is a named outcome the contract states and not a condition on
 	 * data, which stays out of the model (decisions 25, amended, and 15).
 	 */
-	rejects?: RejectionRefSchema[];
+	rejects?: { $ref: string; many?: boolean; reasons?: string[] }[];
 	/** For operations: the event consumables this operation may raise. */
-	raises?: RefSchema[];
+	raises?: { $ref: string }[];
 	/** Grounded statements about the real system behind this consumable. */
 	comments?: Comment[];
 	/** What the architecture thinks of this consumable. Absent means `by-design`. */
@@ -501,7 +471,7 @@ export interface ConsumableSchema {
  * @description Represents a consumption in the Open Domain Specification (ODS).
  */
 export interface ConsumptionSchema {
-	consumable: RefSchema;
+	consumable: { $ref: string };
 	/** The downstream role the consumer adopts for this consumable. */
 	pattern?: DownstreamRole;
 	/**
@@ -525,7 +495,7 @@ export interface ConsumptionSchema {
 	 * corrected 2026-09-10, widened to the zero-operation case in the second
 	 * amendment of 2026-09-10).
 	 */
-	by?: RefSchema[];
+	by?: { $ref: string }[];
 	/**
 	 * The directed relationship this exchange belongs to, where the pair holds
 	 * more than one agreement in that direction: a call made under the
@@ -537,7 +507,7 @@ export interface ConsumptionSchema {
 	 * neither belongs to nothing a rule can read, and `consumption-agreement`
 	 * says so (decision 15's amendment of 2026-09-10).
 	 */
-	relationship?: RefSchema;
+	relationship?: { $ref: string };
 	/** Grounded statements about the real system behind this consumption. */
 	comments?: Comment[];
 	/** What the architecture thinks of this consumption. Absent means `by-design`. */
@@ -587,8 +557,8 @@ export interface DirectedContextRelationshipSchema {
 	 * made twice and `relationship-duplicate` refuses them (decision 15).
 	 */
 	name?: string;
-	upstream: RefSchema;
-	downstream: RefSchema;
+	upstream: { $ref: string };
+	downstream: { $ref: string };
 	upstreamRoles: UpstreamRole[];
 	downstreamRoles: DownstreamRole[];
 	description?: string;
@@ -619,7 +589,7 @@ export interface SymmetricContextRelationshipSchema {
 	 * made twice and `relationship-duplicate` refuses them (decision 15).
 	 */
 	name?: string;
-	participants: [RefSchema, RefSchema];
+	participants: [{ $ref: string }, { $ref: string }];
 	description?: string;
 	/** Grounded statements about the real system behind this relationship. */
 	comments?: Comment[];
@@ -668,7 +638,7 @@ export interface EntitySchema {
 	 * aggregate, and a subtype is never itself the root, because the aggregate
 	 * has one root and a kind of it is reached through it (decision 22).
 	 */
-	specialises?: RefSchema;
+	specialises?: { $ref: string };
 	/**
 	 * This entity's own attributes, by id. Optional, and an absent map is an
 	 * empty one, like every map of elements in this schema: a subtype that
@@ -692,7 +662,7 @@ export enum RelationType {
 export type RelationCardinality = "1" | "0..1" | "*" | "1..*";
 
 export interface EntityRelationSchema {
-	target: RefSchema;
+	target: { $ref: string };
 	relation: EntityRelationType;
 	label?: string;
 	cardinality?: RelationCardinality;
@@ -765,7 +735,7 @@ export interface InvariantSchema {
 	 * attribute at all, because a rule kept true on every save is a rule about
 	 * the model and not about a transport shape (decision 19, amended).
 	 */
-	constrains: RefSchema[];
+	constrains: { $ref: string }[];
 	/**
 	 * Whether this rule is a precondition: checked before the operation it
 	 * names runs, without claiming it remains true afterward — enough funds at
@@ -863,7 +833,7 @@ export interface ValueObjectSchema {
 	 * 22; decision 16's second amendment of 2026-09-10 widened borrowing to
 	 * the customer-supplier case).
 	 */
-	specialises?: RefSchema;
+	specialises?: { $ref: string };
 	/** This value's own attributes, by id. An absent map is an empty one, like every map of elements in this schema. */
 	attributes?: { [attribute: string]: AttributeSchema };
 	/** What this value points at; empty when left out. */

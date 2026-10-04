@@ -55,7 +55,7 @@ const WORKSPACE_NAMES = {
 	petstore: WORKSPACE_NAME,
 	rivermart: "RiverMart",
 	streamline: "StreamLine",
-	"northbank-monolith": "NorthBank",
+	northbank: "NorthBank",
 } as const;
 
 /**
@@ -113,7 +113,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 				test(`every diagram on ${name} fills its canvas clear of every panel`, async ({
 					page,
 				}) => {
-					const url = await serveModel(page, "northbank-monolith");
+					const url = await serveModel(page, "northbank");
 					await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(ref)}`);
 					await expect(page.locator("main h1")).toContainText(title);
 					const count = await eachDiagram(page, async (flow, caption) => {
@@ -134,7 +134,7 @@ test.describe("the map #89 was reported on", () => {
 	test("OnboardingApp's consumable map reaches both sides of its frame", async ({
 		page,
 	}) => {
-		const url = await serveModel(page, "northbank-monolith");
+		const url = await serveModel(page, "northbank");
 		await page.goto(
 			`/?url=${encodeURIComponent(url)}${modelHash("#/boundedcontexts/customer_&_kyc/services/onboarding_app")}`,
 		);
@@ -185,7 +185,7 @@ async function contextMap(
 	ref: string,
 	title: string,
 ): Promise<Locator> {
-	const url = await serveModel(page, "northbank-monolith");
+	const url = await serveModel(page, "northbank");
 	await page.goto(`/?url=${encodeURIComponent(url)}${modelHash(ref)}`);
 	await expect(page.locator("main h1")).toContainText(title);
 	const figure = page.locator("figure.diagram", { hasText: "ontext map" });

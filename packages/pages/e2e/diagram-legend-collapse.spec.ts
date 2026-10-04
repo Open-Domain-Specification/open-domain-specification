@@ -12,7 +12,7 @@ test("NorthBank's legend gives way at editor size and opens on demand", async ({
 	page,
 }) => {
 	await page.setViewportSize({ width: 1150, height: 700 });
-	const url = await serveModel(page, "northbank-monolith");
+	const url = await serveModel(page, "northbank");
 	await page.goto(`/?url=${encodeURIComponent(url)}`);
 	const figure = page.locator("figure.diagram", { hasText: "Context map" });
 	await figure.scrollIntoViewIfNeeded();
@@ -38,7 +38,7 @@ test("NorthBank's legend gives way at editor size and opens on demand", async ({
 
 test("the reader opens the legend from the keyboard", async ({ page }) => {
 	await page.setViewportSize({ width: 1150, height: 700 });
-	const url = await serveModel(page, "northbank-monolith");
+	const url = await serveModel(page, "northbank");
 	await page.goto(`/?url=${encodeURIComponent(url)}`);
 	const figure = page.locator("figure.diagram", { hasText: "Context map" });
 	await figure.scrollIntoViewIfNeeded();

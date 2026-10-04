@@ -23,8 +23,6 @@ import {
 	ValueObject,
 	type Workspace,
 } from "./workspace";
-import type { WorkspaceSet } from "./workspace-set";
-import { identityKeyOf } from "./workspace-set";
 
 /** Anything the map can draw a box for. */
 type RelationMapMember = Entity | ValueObject | BoundedContext;
@@ -57,7 +55,7 @@ function relationNamespace(node: RelationMapMember): ODSNamespace[] {
 	if (node instanceof BoundedContext)
 		return [
 			...boundedContextNamespace(node),
-			{ id: identityKeyOf(node), name: node.name },
+			{ id: node.ref, name: node.name },
 		];
 	return node instanceof Entity
 		? aggregateNamespace(node.aggregate)
@@ -75,7 +73,7 @@ function relationNode(
 	borrowed = false,
 ): ODSRelationMapNode {
 	return {
-		id: identityKeyOf(node),
+		id: node.ref,
 		name: node.name,
 		description: node.description,
 		type: relationNodeType(node, borrowed),
@@ -190,12 +188,6 @@ export class ODSRelationGraph extends AbstractVisitor {
 	static fromWorkspace(workspace: Workspace) {
 		const odsConsumptionGraph = new ODSRelationGraph();
 		odsConsumptionGraph.visitWorkspace(workspace);
-		return odsConsumptionGraph;
-	}
-
-	static fromSet(set: WorkspaceSet) {
-		const odsConsumptionGraph = new ODSRelationGraph();
-		odsConsumptionGraph.visitWorkspaceSet(set);
 		return odsConsumptionGraph;
 	}
 
@@ -347,10 +339,6 @@ export class ODSRelationMap {
 			graph.subtypes,
 			graph.derivedUses,
 		);
-	}
-
-	static fromSet(set: WorkspaceSet) {
-		return ODSRelationMap.fromGraph(ODSRelationGraph.fromSet(set));
 	}
 
 	static fromWorkspace(workspace: Workspace) {

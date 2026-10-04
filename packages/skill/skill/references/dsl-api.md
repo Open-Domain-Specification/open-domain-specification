@@ -20,7 +20,7 @@ independently of the name.
 | `BoundedContext` | `serves(subdomain)` | adds a served subdomain |
 | `BoundedContext` | `ownedBy(team)` | sets the owning team |
 | `BoundedContext` | `upstreamOf(other, { type?, name?, upstreamRoles?, downstreamRoles?, description?, comments?, disposition? })` | directed relationship, this side upstream; `type` defaults to `"upstream-downstream"`, or `"customer-supplier"`. `name` is what this agreement is called, needed only where the pair holds more than one in this direction — a negotiated fulfilment API beside a tolerated legacy feed — and it is appended to the ref |
-| `BoundedContext` | `downstreamOf(other, options)` | the same, this side downstream. The relationship is stored with the **upstream** context's workspace, as `upstreamOf` stores it, not with this side's: across two workspaces it lands in the other one's file. To keep it in this side's file, call `addRelationship` on this context's workspace |
+| `BoundedContext` | `downstreamOf(other, options)` | the same, this side downstream |
 | `BoundedContext` | `partnerOf(other, { name?, description?, comments?, disposition? })` | partnership |
 | `BoundedContext` | `sharesKernelWith(other, options)` | shared kernel |
 | `BoundedContext` | `separateWaysFrom(other, options)` | separate ways |
@@ -46,34 +46,6 @@ independently of the name.
 | `Entity`, `ValueObject` | `references(target, label, cardinality?, { for? })` | a `references` relation; across aggregates target the root |
 | `Entity`, `ValueObject` | `addRelation(target, { relation, label?, cardinality?, for? })` | any relation explicitly |
 | `Entity` | `.attributes.get("name")` | look an attribute up, e.g. to constrain it |
-
-## Several workspaces
-
-One workspace per team is one file per team. Build each, declare every workspace before linking
-any, then join them in a set; link across workspaces only once the set exists:
-
-```ts
-const ledger = new Workspace("Ledger", { description: "...", version: "1.0.0" });
-const risk = new Workspace("Risk", { description: "...", version: "1.0.0" });
-// ... declare each workspace's own contexts, then link the elements one names in the other:
-const set = WorkspaceSet.fromWorkspaces([
-	["ledger.json", ledger], // a raw path relative to the set's folder, forward slashes, ending .json
-	["risk/team.json", risk],
-]);
-risk.addRelationship({ type: "upstream-downstream", upstream: ledgerBc, downstream: riskBc });
-for (const [file, schema] of set.toSchemas())
-	fs.writeFileSync(`.ods/${file}`, JSON.stringify({ $schema: "./schema.json", ...schema }, null, 2));
-```
-
-`new WorkspaceSet` does not exist; use `WorkspaceSet.fromWorkspaces` for DSL workspaces and
-`WorkspaceSet.fromSchemas` for files. `fromWorkspaces` throws on a path that is not canonical, a
-path given twice or a workspace already in a set: that is the author's code. `set.validate()`
-returns the diagnostics of every file, each with its `file`; `workspace.validate()` on a member is
-the same list for that file. `toSchemas()` writes a ref to another file as the relative,
-percent-encoded path of its file, so the files load back to the same set. The DSL asserts no
-workspace boundary: it lets an element of one workspace be handed to another's builder, and the
-set is where that becomes a file-qualified ref. An element has a `setKey` once its workspace is
-in a set (`setKeyOf(element)`).
 
 Every relationship, consumable and consumption also takes the evidence pair from
 RFC-002: `comments` is a list of `{ text, link? }`, where a link is

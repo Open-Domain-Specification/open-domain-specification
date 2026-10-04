@@ -1,7 +1,6 @@
 import {
 	cpSync,
 	mkdtempSync,
-	readdirSync,
 	readFileSync,
 	rmSync,
 	writeFileSync,
@@ -16,14 +15,10 @@ import {
 	sizeOf,
 } from "../../../packages/pages/e2e/diagram-fit";
 import {
-	answerQuickPick,
 	emulateReducedMotion,
-	formContentFrame,
-	formIsOpen,
 	type Host,
 	launchVSCode,
 	openPageByKeyboard,
-	runPaletteCommand,
 	webviewContentFrame,
 } from "./host";
 
@@ -1276,9 +1271,7 @@ test.describe("history in the page toolbar", () => {
 		test(`#77 ${name} walks Back from the third page to the first and Forward again, from the workspace`, async () => {
 			const frame = await openFirst("Cross surface", "Cross surface");
 			const p1 = await where(frame);
-			// The folder holds two files, so the app is a reader of a set and the
-			// workspace's route names its file.
-			expect(p1.hash).toBe("#/workspaces/cross_surface.json");
+			expect(p1.hash).toBe("");
 			await expectAt(
 				frame,
 				p1,
@@ -1442,289 +1435,48 @@ test.describe("history in the page toolbar", () => {
 		expect(await headingArrivals(frame), "forward arrivals").toEqual([p2, p3]);
 	});
 
-	test("#77 a page of another file of the same folder continues the history; only another folder would start it over", async () => {
+	test("#77 a page of a different workspace file starts the history over", async () => {
 		const frame = await openFirst("Cross surface", "Cross surface");
 		const first = await where(frame);
 		const second = await follow(frame, [first]);
 		await openPageByKeyboard(host.window, "Zebra Model");
 		await expect(frame.locator("main h1")).toContainText("Zebra Model");
 		const zebra = await where(frame);
-		// Both files are in the one set the webview holds: another file is a page
-		// of what it already shows, so Back still reaches the page the reader left.
-		expect(zebra.hash).toBe("#/workspaces/zebra.json");
-		await expect
-			.poll(() => ends(frame))
-			.toEqual({ back: false, forward: true });
-		await use(frame, "back", "click");
-		await expectAt(
-			frame,
-			second,
-			{ back: false, forward: false },
-			"back from the other file",
-			false,
+		expect(zebra.hash).toBe("");
+		await expect.poll(() => ends(frame)).toEqual({ back: true, forward: true });
+		const box = await frame.locator('[data-action="back"]').boundingBox();
+		if (!box) throw new Error("no back button box");
+		await host.window.mouse.click(
+			box.x + box.width / 2,
+			box.y + box.height / 2,
 		);
-		await use(frame, "forward", "click");
 		await expect.poll(() => where(frame)).toEqual(zebra);
-		// Its own pages are reached and left as usual.
-		const inZebra = await follow(frame, [first, second, zebra]);
+		// Its own pages are reached and left as usual, and Back stops at its workspace.
+		await expect.poll(async () => (await active(frame)).tag).toBe("BODY");
+		const inZebra = await follow(frame, [zebra, first, second]);
 		await use(frame, "back", "enter");
 		await expectAt(
 			frame,
 			zebra,
-			{ back: false, forward: false },
-			"back in the second file",
+			{ back: true, forward: false },
+			"back in the second workspace",
 		);
-		await use(frame, "forward", "enter");
+		await host.window.mouse.click(
+			box.x + box.width / 2,
+			box.y + box.height / 2,
+		);
+		await expect.poll(() => where(frame)).toEqual(zebra);
+		// The click on a disabled button leaves focus on the body, so the reader's
+		// next Tab starts from the top of the page and meets Forward going forward.
+		await expect.poll(async () => (await active(frame)).tag).toBe("BODY");
+		const stop = await tabToLabel(host, frame, "Forward");
+		expect(stop.tag).toBe("BUTTON");
+		await host.window.keyboard.press("Enter");
 		await expectAt(
 			frame,
 			inZebra,
 			{ back: false, forward: true },
-			"forward in the second file",
-		);
-	});
-});
-
-/**
- * Authoring forms in the real VS Code, on a temp copy of the cross-surface
- * fixture (the committed fixture is never written). The palette is driven with
- * real keys; the form is the extension's real `form[data-ods-form]` webview,
- * whose controls are filled and clicked by their labels. What is asserted is
- * the form's DOM and the model file on disk.
- */
-test.describe("authoring forms", () => {
-	let host: Host | undefined;
-	let folder = "";
-	const fixture = resolve(__dirname, "../src/test/fixtures/cross-surface");
-	const odsDir = () => join(folder, ".ods");
-	const modelPath = () => join(odsDir(), "cross_surface.json");
-	const parsed = () =>
-		JSON.parse(readFileSync(modelPath(), "utf8")) as {
-			boundedcontexts: Record<string, Record<string, unknown>>;
-		} & Record<string, unknown>;
-
-	/** Every file of the .ods folder except the model, as bytes. */
-	const othersOf = () =>
-		Object.fromEntries(
-			readdirSync(odsDir())
-				.filter((f) => f !== "cross_surface.json")
-				.sort()
-				.map((f) => [f, readFileSync(join(odsDir(), f)).toString("base64")]),
-		);
-
-	test.beforeEach(async () => {
-		folder = mkdtempSync(join(tmpdir(), "ods-authoring-"));
-		cpSync(fixture, folder, { recursive: true });
-		host = await launchVSCode({ folder });
-	});
-	test.afterEach(async () => {
-		await host?.close();
-		host = undefined;
-		if (folder) rmSync(folder, { recursive: true, force: true });
-	});
-
-	/** Picks an option of a select by its visible text's start, and returns its value. */
-	const choose = (frame: Frame, field: string, startsWith: string) =>
-		frame.evaluate(
-			([id, start]) => {
-				const select = document.querySelector<HTMLSelectElement>(`#f-${id}`);
-				const pick = [...(select?.options ?? [])].find((o) =>
-					(o.textContent ?? "").startsWith(start),
-				);
-				if (!select || !pick) throw new Error(`no ${start} option in ${id}`);
-				select.value = pick.value;
-				return pick.value;
-			},
-			[field, startsWith],
-		);
-
-	test("N1 add: a newer unfinished comment survives a host refresh and Cancel writes nothing; then a bounded context is added and saved", async () => {
-		const window = (host as Host).window;
-		const before = readFileSync(modelPath());
-		const othersBefore = othersOf();
-
-		// (a) Consumption under the warehouse service, with an unfinished comment.
-		await runPaletteCommand(window, "ODS: Add...");
-		await answerQuickPick(window, "Add under which element?", "Warehouse API", [
-			"Warehouse API",
-			"Service",
-		]);
-		await answerQuickPick(window, "What do you want to add?", "Consumption", [
-			"Consumption",
-		]);
-		const frame = await formContentFrame(window);
-		await expect(frame.locator("form[data-ods-form]")).toHaveAttribute(
-			"data-family",
-			"consumption",
-		);
-		await expect(frame.locator("#f-consumable")).toBeVisible();
-		await frame.getByRole("button", { name: "Add comment" }).click();
-		const label = frame.locator("[data-row=comment] [data-part=label]");
-		await label.fill("L");
-		expect(readFileSync(modelPath()).equals(before), "bytes before").toBe(true);
-
-		// One evaluate: pick another consumable (the host replies asynchronously),
-		// then type more into the unfinished comment before that reply can land.
-		const chosen = await frame.evaluate(() => {
-			const select = document.querySelector<HTMLSelectElement>("#f-consumable");
-			const pick = [...(select?.options ?? [])].find(
-				(o) => o.value !== "" && o.value !== select?.value && !o.disabled,
-			);
-			if (!select || !pick) throw new Error("no other consumable is offered");
-			select.setAttribute("data-stale", "1");
-			select.value = pick.value;
-			select.dispatchEvent(new Event("change", { bubbles: true }));
-			const input = document.querySelector<HTMLInputElement>(
-				"[data-row=comment] [data-part=label]",
-			);
-			if (!input) throw new Error("no comment label");
-			input.focus();
-			input.value += " TYPED-AFTER";
-			input.dispatchEvent(new Event("input", { bubbles: true }));
-			return pick.value;
-		});
-		// The host's refresh has landed once the select it replaced is a new node.
-		await expect(frame.locator("#f-consumable:not([data-stale])")).toHaveCount(
-			1,
-		);
-		await expect(frame.locator("[data-row=comment]")).toHaveCount(1);
-		await expect(label).toHaveValue("L TYPED-AFTER");
-		await expect(frame.locator("#f-consumable")).toHaveValue(chosen);
-		expect(
-			await frame.evaluate(
-				() =>
-					document.activeElement?.matches(
-						"[data-row=comment] [data-part=label]",
-					) === true,
-			),
-			"focus stays on the comment label",
-		).toBe(true);
-
-		await frame.getByRole("button", { name: "Cancel" }).click();
-		await expect.poll(() => formIsOpen(window)).toBe(false);
-		expect(readFileSync(modelPath()).equals(before), "bytes after Cancel").toBe(
-			true,
-		);
-
-		// (b) A bounded context, through the labelled controls.
-		await runPaletteCommand(window, "ODS: Add...");
-		await answerQuickPick(window, "Add under which element?", "Cross surface", [
-			"Cross surface",
-			"Workspace",
-		]);
-		await answerQuickPick(
-			window,
-			"What do you want to add?",
-			"Bounded context",
-			["Bounded context"],
-		);
-		const form = await formContentFrame(window);
-		await expect(form.locator("form[data-ods-form]")).toHaveAttribute(
-			"data-family",
-			"context",
-		);
-		await form.getByLabel("Name", { exact: true }).fill("Fulfilment Hub");
-		await form
-			.getByLabel("Description", { exact: true })
-			.fill("Picks and packs what orders ask for.");
-		await choose(form, "team", "Trade Team");
-		await form.locator("#f-team").dispatchEvent("change");
-		await form.getByRole("checkbox", { name: /Order Handling/ }).check();
-		await form.getByRole("button", { name: "Save" }).click();
-		await expect.poll(() => formIsOpen(window)).toBe(false);
-		await expect
-			.poll(() => parsed().boundedcontexts.fulfilment_hub !== undefined)
-			.toBe(true);
-
-		const after = parsed();
-		const { fulfilment_hub: added, ...rest } = after.boundedcontexts;
-		expect(added).toMatchObject({
-			name: "Fulfilment Hub",
-			description: "Picks and packs what orders ask for.",
-			team: { $ref: "#/teams/trade_team" },
-			subdomains: [{ $ref: "#/domains/trade/subdomains/order_handling" }],
-		});
-		for (const key of ["external", "bigBallOfMud", "boundaryOnly"])
-			expect(added).not.toHaveProperty(key);
-		expect({ ...after, boundedcontexts: rest }).toEqual(
-			JSON.parse(before.toString("utf8")),
-		);
-		expect(othersOf(), "the other files of the folder").toEqual(othersBefore);
-		console.log("N1 added context", JSON.stringify(added), "chosen", chosen);
-	});
-
-	test("N2 update: payment_gateway is populated with its id read-only, a refused Save writes nothing, then team and description are saved", async () => {
-		const window = (host as Host).window;
-		const before = readFileSync(modelPath());
-		const model = JSON.parse(before.toString("utf8")) as ReturnType<
-			typeof parsed
-		>;
-		const othersBefore = othersOf();
-
-		await runPaletteCommand(window, "ODS: Update...");
-		await answerQuickPick(window, "Edit which element?", "Payment Gateway", [
-			"Payment Gateway",
-			"Bounded context",
-		]);
-		const frame = await formContentFrame(window);
-		await expect(frame.locator("form[data-ods-form]")).toHaveAttribute(
-			"data-mode",
-			"update",
-		);
-		const name = frame.getByLabel("Name", { exact: true });
-		await expect(name).toHaveValue("Payment Gateway");
-		const idRow = frame.locator("dl.readonly .row").filter({ hasText: "Id" });
-		await expect(idRow.locator("dt")).toHaveText("Id");
-		await expect(idRow.locator("dd").first()).toHaveText("payment_gateway");
-		await expect(idRow.locator("dd.reason")).not.toBeEmpty();
-		const reason = await idRow.locator("dd.reason").innerText();
-
-		// Visible validation: a cleared name is refused and nothing is written.
-		await name.fill("");
-		await frame.getByRole("button", { name: "Save" }).click();
-		const alert = frame.locator("[role=alert][data-field=name]");
-		await expect(alert).toBeVisible();
-		await expect(alert).not.toBeEmpty();
-		const refusal = await alert.innerText();
-		expect(await formIsOpen(window), "form stays open").toBe(true);
-		expect(
-			readFileSync(modelPath()).equals(before),
-			"bytes after refusal",
-		).toBe(true);
-
-		await name.fill("Payment Gateway");
-		await choose(frame, "team", "Trade Team");
-		await frame.locator("#f-team").dispatchEvent("change");
-		const description =
-			"The payment provider's own system, owned for us by the trade team.";
-		await frame.getByLabel("Description", { exact: true }).fill(description);
-		await frame.getByRole("button", { name: "Save" }).click();
-		await expect.poll(() => formIsOpen(window)).toBe(false);
-		await expect
-			.poll(() => parsed().boundedcontexts.payment_gateway.team !== undefined)
-			.toBe(true);
-
-		const after = parsed();
-		expect(after.boundedcontexts.payment_gateway).toEqual({
-			...model.boundedcontexts.payment_gateway,
-			description,
-			team: { $ref: "#/teams/trade_team" },
-		});
-		expect(after.boundedcontexts.payment_gateway.external).toBe(true);
-		expect({
-			...after,
-			boundedcontexts: { ...after.boundedcontexts, payment_gateway: 0 },
-		}).toEqual({
-			...model,
-			boundedcontexts: { ...model.boundedcontexts, payment_gateway: 0 },
-		});
-		expect(othersOf(), "the other files of the folder").toEqual(othersBefore);
-		console.log(
-			"N2 id reason:",
-			reason,
-			"| refusal:",
-			refusal,
-			"| saved:",
-			JSON.stringify(after.boundedcontexts.payment_gateway),
+			"forward in the second workspace",
 		);
 	});
 });

@@ -1,59 +1,48 @@
 <script lang="ts">
+import { Workspace } from "@open-domain-specification/core";
 import { onDestroy, onMount, tick, untrack } from "svelte";
 import EmptyState from "../lib/atoms/EmptyState.svelte";
-import Notice from "../lib/atoms/Notice.svelte";
 import SkipLink from "../lib/atoms/SkipLink.svelte";
 import { focusArrival } from "../lib/focus";
-import { type Loaded, loadPayloads } from "../lib/load";
 import ModelProvider from "../lib/ModelProvider.svelte";
+import type { Model } from "../lib/model";
 import Page from "../lib/Page.svelte";
 import { modelRefToHash } from "../lib/ref-transport";
-import { routeTarget } from "../lib/route";
 import { createRouter } from "../lib/router.svelte";
-import PageLayout from "../lib/templates/PageLayout.svelte";
-import SetPage, {
-	sections as setSections,
-} from "../lib/templates/SetPage.svelte";
 import type { ShellMessage } from "../protocol";
-import { type Bootstrap, embedded, type HostMessage, vscode } from "./host";
+import {
+	type Bootstrap,
+	embedded,
+	type HostMessage,
+	vscode,
+	type WorkspacePayload,
+} from "./host";
 import ImportScreen from "./ImportScreen.svelte";
 import SiteNav from "./SiteNav.svelte";
 import WorkspacePicker from "./WorkspacePicker.svelte";
 
-/**
- * What is handed in by the host skips the import screen. One entry (a
- * workspace opened alone, or one set of files) opens at once; several show a
- * picker. A set is read through its own routes: see `lib/route.ts`.
- */
+/** Workspaces handed in by the host skip the import screen; more than one shows a picker. */
 let { initial }: { initial?: Bootstrap } = $props();
 const router = createRouter();
 onDestroy(router.destroy);
-let entries = $state<Loaded[]>(
-	untrack(() => (initial?.workspaces ? loadPayloads(initial.workspaces) : [])),
+let models = $state<Model[]>(
+	untrack(() => initial?.workspaces?.map(load) ?? []),
 );
 let chosen = $state<number | undefined>(
-	untrack(() => (entries.length === 1 ? 0 : undefined)),
+	untrack(() => (initial?.workspaces?.length === 1 ? 0 : undefined)),
 );
-const entry = $derived(chosen === undefined ? undefined : entries[chosen]);
+const model = $derived(chosen === undefined ? undefined : models[chosen]);
 
-/** What the route is, in the entry on screen: a page of one workspace, or the set's own page. */
-const view = $derived.by(() => {
-	if (!entry) return undefined;
-	if (entry.kind === "workspace")
-		return { kind: "page" as const, model: entry.model, ref: router.ref };
-	const target = entry.loaded.set.workspaces.length
-		? routeTarget(entry.loaded.set, router.ref)
-		: ({ kind: "set" } as const);
-	if (target.kind === "workspace") {
-		const model = entry.loaded.modelOf(target.workspace);
-		if (model) return { kind: "page" as const, model, ref: target.ref };
-	}
+function load(w: WorkspacePayload): Model {
+	const workspace = Workspace.fromSchema(
+		w.schema as Parameters<typeof Workspace.fromSchema>[0],
+	);
 	return {
-		kind: "set" as const,
-		loaded: entry.loaded,
-		missing: target.kind === "unknown-file" ? target.file : undefined,
+		workspace,
+		fileLabel: w.fileLabel,
+		diagnostics: w.diagnostics ?? workspace.validate(),
 	};
-});
+}
 
 /** The reader imported a workspace, whose heading names it, so focus goes there. A `?url=` deep link and the host's model message never call this. */
 function opened() {
@@ -73,7 +62,7 @@ onMount(() => {
 			else if (msg.action === "forward") router.forward();
 			else host.postMessage({ type: msg.action, ref: router.ref });
 		} else if (msg.type === "model") {
-			entries = loadPayloads(msg.workspaces);
+			models = msg.workspaces.map(load);
 			chosen = 0;
 			if (msg.reset) router.reset(msg.ref ?? "#");
 			else if (msg.ref) router.go(msg.ref);
@@ -124,32 +113,22 @@ $effect(() => {
 });
 </script>
 
-{#if view?.kind === "page"}
-	{#key view.model}
-		<ModelProvider model={view.model}>
+{#if model}
+	{#key model}
+		<ModelProvider {model}>
 			<div class="site" class:embedded={embedded}>
 				{#if !embedded}<SkipLink href={modelRefToHash(router.ref)} />{/if}
-				{#if !embedded}<SiteNav current={view.ref} />{/if}
-				<div class="site-page">
-					{#if view.model.stale}<Notice kind="stale" message={`Showing the last version of ${view.model.fileLabel} that loaded. ${view.model.stale}`} />{/if}
-					{#each view.model.loaded?.excluded ?? [] as left (left.path)}<Notice kind="excluded" message={left.message} />{/each}
-					{#each view.model.loaded?.notices ?? [] as message (message)}<Notice kind="incomplete" {message} />{/each}
-					<Page ref={view.ref} arrivals={router.arrivals} />
-				</div>
+				{#if !embedded}<SiteNav current={router.ref} />{/if}
+				<div class="site-page"><Page ref={router.ref} arrivals={router.arrivals} /></div>
 			</div>
 		</ModelProvider>
 	{/key}
-{:else if view?.kind === "set"}
-	<div class="site no-nav" class:embedded={embedded}>
-		{#if !embedded}<SkipLink href={modelRefToHash(router.ref)} />{/if}
-		<div class="site-page"><PageLayout sections={setSections}><SetPage loaded={view.loaded} missing={view.missing} /></PageLayout></div>
-	</div>
 {:else if embedded}
 	<main class="not-loaded"><EmptyState text="Workspace not loaded." /></main>
-{:else if entries.length > 1}
-	<WorkspacePicker {entries} onpick={(i) => (chosen = i)} />
+{:else if models.length > 1}
+	<WorkspacePicker {models} onpick={(i) => (chosen = i)} />
 {:else}
-	<ImportScreen examples={initial?.examples ?? []} onload={(schema, fileLabel) => { entries = loadPayloads([{ schema, fileLabel }]); chosen = 0; }} onloadset={(payloads, notices) => { entries = loadPayloads(payloads, notices); chosen = 0; }} onopened={opened} />
+	<ImportScreen examples={initial?.examples ?? []} onload={(schema, fileLabel) => { models = [load({ schema, fileLabel })]; chosen = 0; }} onopened={opened} />
 {/if}
 
 <style>
@@ -157,9 +136,5 @@ $effect(() => {
 	   else, since there is no layout worth drawing around one sentence. */
 	.not-loaded {
 		padding: 16px 24px;
-	}
-	/* The set's own page has no tree beside it (its table of workspaces is the navigation), so the page takes the whole width. */
-	.site.no-nav {
-		grid-template-columns: minmax(0, 1fr);
 	}
 </style>
