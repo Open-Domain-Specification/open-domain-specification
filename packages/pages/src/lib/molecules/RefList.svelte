@@ -27,7 +27,7 @@ const {
 } = $props();
 </script>
 
-{#snippet list()}{#each items as item, i (item.ref)}{#if i}, {/if}<Ref
+{#snippet list()}{#each items as item, i (item.ref)}{#if i}{", "}{/if}<Ref
 			ref={item.ref}
 			label={nameOf(item)}
 			icon={kind ? ICONS[kind] : undefined}

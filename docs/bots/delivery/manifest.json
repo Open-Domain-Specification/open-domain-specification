@@ -2,17 +2,17 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 6,
-  "closed": 48,
-  "closed_implemented": 40,
+  "current_open": 4,
+  "closed": 50,
+  "closed_implemented": 42,
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
   "active_milestone": 8,
-  "integration_batch": "milestone-08-importer",
+  "integration_batch": "milestone-08-reader-copy",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M8 importer reader and complete quality accepted; exact clean local gate/CI/merge/closures pending",
+  "candidate_state": "M8 importer delivered; #94 reader and complete quality accepted after bounded stale-field correction; exact clean gate/CI/merge/closure pending",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -1469,7 +1469,7 @@
         94
       ],
       "owner": "lead",
-      "state": "active: importer reader and quality accepted; exact local gate next; #94 separatePR",
+      "state": "active: importer delivered, #94 bounded source phase",
       "expected_remaining": 3,
       "entry_scope": "Import refinements and editorial slice independently accepted.",
       "exit_acceptance": "Themed native focus target, file name, Problems-style error and exact two copy corrections.",
@@ -1527,9 +1527,14 @@
           "introduced_blockers": 0,
           "actual_workers": 8,
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/quality/root-acceptance.json"
-        }
+        },
+        "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/publication/closures.json",
+        "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/copy/implementation/root-acceptance.json"
       ],
-      "closed_issues": []
+      "closed_issues": [
+        92,
+        93
+      ]
     },
     {
       "id": 9,
@@ -1596,21 +1601,12 @@
   },
   "active_delivery": {
     "milestone": 8,
-    "base": "de8354b7ba28c371bdd60242e4473dd404ecbb5c",
-    "branch": "codex/m8-import-screen",
-    "state": "M8 importer reader and complete quality accepted; exact clean local gate/CI/merge/closures pending",
-    "source_changes_authorized": false,
-    "feature_accepted": false,
     "issues": [
-      92,
-      93
+      94
     ],
-    "separate_copy_issue": 94,
-    "expected_remaining": 3,
-    "card": "boards/project-backlog/188-import-screen.md",
-    "sprint": "docs/bots/sprints/2026-10-04-sprint-09.md",
-    "reader_outcome_ready": true,
-    "quality_accepted": true
+    "branch": "codex/m8-copy",
+    "base": "af913078ad36aec3fc4bbf61721da57fd62c7143",
+    "state": "reader and complete quality accepted; clean candidate landing gate next"
   },
   "previous_delivery": {
     "scope": "M6 merged accepted closeout",

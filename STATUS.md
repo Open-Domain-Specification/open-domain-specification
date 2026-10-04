@@ -2,7 +2,7 @@
 
 ## Goal / health
 
-Clear the guarded ODS backlog. Milestones 1–7 have delivered their accepted source outcomes. The actual census is **6 remaining / 48 closed**, from 54 open: 40 implemented and eight not planned, with no new or reopened issues. Remaining open: #94, #93, #92, #63, #59, #54. No release is claimed.
+Clear the guarded backlog: **4 open / 50 closed** from54 (42 implemented, eight not planned, zero new/reopened). Open #94, #59, #54, #63. Milestones1–7 complete; M8 importer delivered. No release.
 
 ## Binding delegation policy — 2026-10-03
 
@@ -14,30 +14,24 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-M7 is complete: #82 closed, own-gated closing records de8354b7 published and remote verified. M8 importer #92/#93 has an accepted reader outcome and complete scoped quality audit (highest0.3, no introduced blocker). The native input remains the pointer/keyboard focus target under a themed interface-font caption; selected filename is secondary, a Problems-style error icon occupies its gutter and the message/URL are foreground plain text. Four actual 1300/390 × Light/Dark cells fit; all four captures were inspected collectively. Root independently reran the 24 affected browser checks. Full unit coverage: 1323 tests, 100% all metrics; package check 0 errors/warnings; formatting/scoped typing clean.
-
-The prior 127 focused-browser pass remains prior evidence: the final caption-font correction reran its 24 affected tests, not all unrelated 103. Real OS chooser/Cancel and native same-file dedupe are not directly measured; proof is the native filechooser event, real pointer/keyboard target, empty selection/retained display and actual cleared native files after reading. See `/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/font-correction/root-acceptance.json`. The whole gate, exact-head CI, merge and issue closures remain pending. #94 copy remains a separate PR.
+#94 copy correction, Opus5.5medium coordinating one Sonnet5.5 foreground source/test lane. Baseline actual Light1280/Dark390 confirms RefList comma-space loss and operation contents/heading mismatch; event branch already matches. Root authorizes RefList separator, existing meaningful list assertion and ConsumablePage contents label only. Narrow contents hidden: anchor click proven desktop only; no phone contents interaction claim. No ConsumesTable expansion/new issue.
 
 ## Next
 
-Freeze the reviewed clean final commit and run the unmodified whole gate. Only after acceptance: necessary exact-head pre/postCI with releasefalse, identical merged tree and individual #92/#93 closure. No Astra UI review or release. Then separate #94 copy, followed by multifile #59 and forms #54/#63.
+Reader matrix, owning checks and complete quality accepted; now clean commit and unmodified whole gate before push. Necessary exact-head manual pre/postCI with releasefalse; merge identical tree and close #94 after postCI. M8 retrospective/closing records then own publication gate.
 
 ## Later
 
-Follow the remaining [roadmap](docs/bots/ROADMAP.md): import and copy finish (#92, #93, #94), multi-file #59, then forms #54 and parent #63 last. Preserve all four readers, reference diagnostic pins and generated integrity. No tooling expansion, optional redesign or new tickets as substitutes for delivery.
+Multifile #59 before workspace-aware forms #54; parent #63 last after whole-promise audit. Preserve four readers, exact model pins/generated integrity and original model approval. No Astra UI/tooling/metadata review.
 
 ## Outcomes / blockers
 
-Six actual open issues / 48 closed from 54 (40 implemented, eight not planned, no new/reopened issues). M1–7 and their closing records published; M8 baseline active. No external blocker or Claude quota response. Foreground terminal/model checks, fail-fast host bootstrap, unique invocation logs, two-correction reassessment, 30-minute changed probe and 60-minute stop remain binding.
+PR139 source23c281af passed unmodified gate (1323 pages/100%,689 browser,20 existing opt-in baseline skips,zero failed/flaky/retry). Mergeaf913078 at02:38:06Z matches gated treef1991f8f. PreCI37170929768/postCI37171695891 test/e2e/real-vscode success, actual extension/keyboard/Judge success, publish skipped; no duplicate automatic merge run. #92 closed02:50:38Z and #93 closed02:50:41Z completed individually. No quota response. Evidence external milestone-08/importer/publication/closures.json.
 
 ## Working state
 
-Updated 2026-10-04T02:07:34.532874+00:00. Branch `codex/m8-import-screen`, base `de8354b7ba28c371bdd60242e4473dd404ecbb5c`. Five source/test paths and five root records changed; reader outcome and final quality accepted, no clean candidate, gate, CI, merge or closure yet. Core/models/generated references and exact model approval are unchanged. Earlier M7 and baseline checkpoints below remain historical.
+Updated 2026-10-04T02:54:19.462022+00:00. Branch codex/m8-copy based on origin/develop af913078. Root records and three one-line source/test changes have complete quality accepted; clean committed candidate gate next. Baseline models/runtime verified; actual inline worker report and timestamped raw tool ledger archived. Missing report file/thin handwritten ledger, denied browser connector and one hidden narrow-control timeout preserved. No source gate/CI/merge/closure claim for #94.
 
-M7 baseline checkpoint 2026-10-03T22:38:51.874000+00:00: actual54valid phone cells and6desktop; source/bundle unchanged. Two invariant pages overflow152/104px, allfamilies fulltreebeforepage. Root authorizes bounded narrowdisclosure and localprose wrap; product acceptance remains pending. Evidence: /Users/jonathanturnock/.codex/ods-delivery/milestone-07/baseline/root-acceptance.json.
+Reader acceptance 2026-10-04T02:59:46.402406+00:00:1323unit100/check9770/0/format3clean; Light1280/Dark390 actualsixroute matrix, exactcomma-space/links/label/eventbranch, desktopH2anchorfocus. Root independently reran existing2RefList tests. Fullgate/CI/merge/closure pending.
 
-M8 baseline checkpoint 2026-10-04T01:37:06.626987+00:00: all4cellsactual1300/390×Light/Dark; native file button unthemed and erroriconabsent/allred confirmed. Existing chooser/load/h1focus and nooverflow preserved. Root addslocalstaticbuttontokens authorization consistentdefaulttheme/contrast, notglobalrestyle. ActualOScancel/samefilededupe notproved by setInputFiles; candidate must cover state/reset behavior and keep limits. Two setup failures/rawwrongtimestamp retained; fullgate/CI notstarted. Evidence baseline/root-acceptance.json.
-
-M8 readiness checkpoint 2026-10-04T02:06:21.647656+00:00: caption code-font mismatch returned by root and corrected to the existing interface font; one unit and four actualbrowser reds then green. Nativefocus/chooser/errorrow behavior and token values unchanged. 1323unit100/check0/0/current24browser/root24/actual4cells accepted for onequalityphase. Preserve all setup/assertion/chooser/type/format failures and limits, no landingclaim.
-
-M8 quality checkpoint 2026-10-04T02:15:22.719636+00:00: all8canonicalSonnetendturns viaOpus verified;10frozenhashesunchanged, highest0.3/nointroducedblock. SmalllocalProblems-row duplication accepted, no extraction/followupissue. Unevenrecord/skillreaddepth and SRPoverstatedfileread preserved. Rootbounded3pathstate delta inline8principles accepted;5producthashesunchanged. Exactcleancommit+unmodifiedgate+necessarypre/postCI next.
+Quality checkpoint 2026-10-04T03:06:50.052282+00:00:eight actualcanonicalSonnetendturns verified viaOpus,9scopehashes unchanged. One stale currentmanifest field0.55 corrected; sourcehashes unchanged, bounded3pathrecorddelta rootinline8principles clear. Pre-existing duplication0.3 retained. No Astra/newissue/release.

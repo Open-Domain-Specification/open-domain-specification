@@ -31,7 +31,7 @@ describe("RefList", () => {
 			empty: "none",
 		});
 		expect(container.querySelectorAll("a")).toHaveLength(2);
-		expect(container.textContent).toContain(",");
+		expect(container.textContent).toContain(", ");
 		expect(container.querySelector(".empty")).toBeNull();
 	});
 });
