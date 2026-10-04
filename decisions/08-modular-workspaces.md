@@ -1,8 +1,12 @@
 ---
-status: Proposed (was Accepted; set back on 2026-09-07 because WorkspaceSet is unimplemented and decisions 14 and 17 cite it as if in force; it returns to Accepted when the set loads)
+status: Accepted
 date: 2026-09-02
 ---
 # Decision 08 — Several workspace files per project, linked by JSON References
+
+## Current position (2026-10-04, accepted)
+
+Accepted after PR #141 delivered the complete linked-workspace design, independent whole-model approvals and exact pre/post-merge verification. Issue #59 is closed. The implementation and its explicitly documented limits below now hold; rich forms remain #54. The earlier pre-acceptance position and Proposed history are preserved verbatim below.
 
 ## Current position (2026-10-04)
 
@@ -223,3 +227,8 @@ Status is Proposed: `WorkspaceSet` is not implemented (amendment of 2026-09-07),
 The crossing table is to be read as the single-file rules read today, and a crossing will be allowed across files exactly where it is allowed across contexts (amendment of 2026-09-09). Rows that no longer state the single-file rule: `AttributeSchema.valueobject` and `ConsumableSchema.schema` may cross to a shared kernel or a conformed-to upstream (decisions 16 and 03, cards 81 and 92), and `InvariantSchema.constrains` may reach a borrowed value held inside the boundary (decision 27, card 89). The `AttributeSchema.schema` row says "no (decision 18)" while decision 18 admits a shared-kernel partner's schema and `schema-context` admits a conformed-to upstream's as well (verified in `packages/core/src/validate.ts`, `schemaContext`); the amendment's general rule covers it, the row does not. `PolicySchema.on` and the process fields may also name an answer of a consumed operation (decision 23).
 
 The promised set rule that a consumption needs a matching relationship exists for one file as `relationship-declared` (card 70), narrowed since so that an identity crossing is not asked (decision 14, card 100). The `odsVersion` minor bump became the `2.0.0` constant of decision 29 (card 114). Whether `Workspace.fromSchema` still throws on a file-qualified `$ref` under decision 29's rule that loading never throws is not stated by either record.
+
+
+## Acceptance amendment — 2026-10-04T13:09:55.062277+00:00
+
+The former status was `Proposed (was Accepted; set back on 2026-09-07 because WorkspaceSet is unimplemented and decisions 14 and 17 cite it as if in force; it returns to Accepted when the set loads)`. The milestone acceptance condition is now fulfilled: complete workspace files load as a set, genuine team-owned NorthBank files preserve semantics and exact pins, owning-file saves and all four permanent readers pass the required checks. Candidate `8b98b6e6812b04b31cd9e5adb6c2f87787d16035` was independently approved by Astra Low and Claude Opus 5.5; PR #141 merged the identical tree as `dc040764e4b9565fc023f6725de26c40caf02a8e`; pre/post CI 37202757756/37203798923 passed with publishing skipped. This accepts the amended design and its stated limits, not the superseded crossing table. Forms and parent-epic completion remain separate work.

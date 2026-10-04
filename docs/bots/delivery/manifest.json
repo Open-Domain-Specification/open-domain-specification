@@ -2,17 +2,17 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 3,
-  "closed": 51,
-  "closed_implemented": 43,
+  "current_open": 2,
+  "closed": 52,
+  "closed_implemented": 44,
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
-  "active_milestone": 9,
-  "integration_batch": "milestone-09-linked-workspaces",
+  "active_milestone": 10,
+  "integration_batch": "milestone-10-informed-authoring",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M1\u20138 delivered, M8 own-gated records5120fd54 published; M9linked completeworkspace contract correction active, no source authorization",
+  "candidate_state": "Historical M1 candidate retained; M9 source delivered and approved in m9_delivery; closing records gate pending, M10 finite implementation next",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -1693,7 +1693,7 @@
         59
       ],
       "owner": "lead",
-      "state": "active: core/writer/team split accepted; C reader/spec sources checked; D integration and final gates pending",
+      "state": "complete: PR141 identical-tree merge; exact pre/postCI passed;59closed",
       "expected_remaining": 2,
       "entry_scope": "Reconcile decision08/current29 and settle identity/linking/diagnostics/persistence/reader packaging before code.",
       "exit_acceptance": "Split substantial reference model equivalent to single-file including pins; missing/ambiguous/cyclic refs, lossless owning-file save and four readers.",
@@ -1750,9 +1750,39 @@
           "scope": "C1/C2 actual terminal source completion with independent coordinator checks; not final M9 acceptance",
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/C-readers-surfaces/coordinator-summary.md",
           "required_next": "D mandatoryreportguard/docs/history/regeneration/order/importproof, wholequality/readiness/finalmodel/gates/CI/merge/closure"
+        },
+        {
+          "at": "2026-10-04T13:09:55.062277+00:00",
+          "pr": 141,
+          "reviewed_head": "8b98b6e6812b04b31cd9e5adb6c2f87787d16035",
+          "merge": "dc040764e4b9565fc023f6725de26c40caf02a8e",
+          "identical_tree": "9735e2fc5a7618c5456da7f3b0da7377ea2028b8",
+          "approvals": [
+            "Astra Low APPROVE",
+            "Claude Opus5.5 medium APPROVE"
+          ],
+          "clean_unmodified_gate": 0,
+          "native": 34,
+          "keyboard": 32,
+          "pre_ci": 37202757756,
+          "pre_ci_failedjob_only_retry": 1,
+          "post_ci": 37203798923,
+          "actual_required_steps": "all success",
+          "publish": "skipped",
+          "closed_issues": [
+            59
+          ],
+          "remaining": [
+            54,
+            63
+          ],
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/root-requirements-matrix.json",
+          "records_gate": "pending"
         }
       ],
-      "closed_issues": []
+      "closed_issues": [
+        59
+      ]
     },
     {
       "id": 10,
@@ -1762,7 +1792,7 @@
         63
       ],
       "owner": "lead",
-      "state": "waiting",
+      "state": "active preparation accepted; coding after records publication",
       "expected_remaining": 0,
       "entry_scope": "Forms consume accepted assembled-workspace resolver; epic #63 last.",
       "exit_acceptance": "Legal target options, stale choice diagnostics, own-file writes preserving unrelated edits and complete authoring journey.",
@@ -1773,6 +1803,14 @@
           "scope": "#54 premise gap noted by root; not activated",
           "finding": "The current-commands-none survey result is a premise gap, not scope zero or vacuous completion. The next step is an intentional, complete add/update authoring inventory in M10. No card or ticket is opened for it.",
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/foundation-survey/root-readiness-finding.json"
+        },
+        {
+          "at": "2026-10-04T13:09:55.062277+00:00",
+          "families": 20,
+          "add_update_operations": 39,
+          "scope": "Realforms legaldropdowns/save/stale; safecreate; parentauditlast",
+          "plan": "/Users/jonathanturnock/.codex/ods-delivery/milestone-10/A-inventory/technical-plan-v2.md",
+          "additional_guard": "Formerly legal baseline choice becoming illegal during form must be refused even unchanged ref string."
         }
       ],
       "closed_issues": []
@@ -1810,6 +1848,16 @@
     "updated": "2026-10-03T19:41:52.900949+00:00"
   },
   "active_delivery": {
+    "milestone": 10,
+    "issues": [
+      54,
+      63
+    ],
+    "state": "Finite authoring inventory and product decisions accepted; source waits closing records publication",
+    "card": "boards/project-backlog/191-informed-authoring-forms.md",
+    "sprint": "docs/bots/sprints/2026-10-04-sprint-11.md"
+  },
+  "previous_delivery": {
     "milestone": 9,
     "issues": [
       59
@@ -1817,53 +1865,6 @@
     "branch": "codex/m9-multifile",
     "base": "5120fd5487d2d172ac6dd24eaa83e8be68e0b2d9",
     "state": "bounded linkedcontract correction only, no approved M9design/source"
-  },
-  "previous_delivery": {
-    "scope": "M6 merged accepted closeout",
-    "at": "2026-10-03T21:51:45+00:00",
-    "candidate": "c83ec6efc663cdc8714be371477a3f7e022990ce",
-    "merge": "edbbbd7f475b8dc65e814ad2fe617bbc6abde3e0",
-    "merged_at": "2026-10-03T21:36:26Z",
-    "tree_equals_gated_candidate": true,
-    "pr": 137,
-    "original_pr": 136,
-    "local_gate_exit": 0,
-    "browser_passed": 652,
-    "documented_baseline_skips": 20,
-    "pages_unit_passed": 1283,
-    "pages_coverage_percent": 100,
-    "premerge_ci": 37154961207,
-    "postmerge_ci": 37155696421,
-    "required_jobs": "test/e2e/real-vscode success on exact respective heads",
-    "release_input": false,
-    "publish": "skipped",
-    "closures": [
-      {
-        "number": 91,
-        "state": "CLOSED",
-        "closedAt": "2026-10-03T21:46:24Z",
-        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/91"
-      },
-      {
-        "number": 77,
-        "state": "CLOSED",
-        "closedAt": "2026-10-03T21:46:28Z",
-        "url": "https://github.com/Open-Domain-Specification/open-domain-specification/issues/77"
-      }
-    ],
-    "actual_remaining": 7,
-    "new": 0,
-    "reopened": 0,
-    "record_closeout": {
-      "at": "2026-10-03T22:11:35.582298+00:00",
-      "remote_develop": "ef0a82eb45fffd67412e3b67cbd93262d2e6254f",
-      "gate_exit": 0,
-      "published": true,
-      "source_changed": false,
-      "additionalCI": 0,
-      "release": false
-    },
-    "retrospective": "docs/bots/sprints/2026-10-03-retro-07.md"
   },
   "m9_core_A1_acceptance": {
     "at": "2026-10-04T05:41:31.160877+00:00",
@@ -2056,5 +2057,33 @@
     "coverage_limit": "ScopedK2coverage exited1 on oldurl-set line220 unexercised byfocusedfiles; changedK2branches covered, full existinggate mustprovewholethreshold. Do not callscopedcoverage green.",
     "cadence": "No newmutation scripts/campaigns orslow suites K2; focusedexistingchecks. Wholeexistinggate/native aftercompletefreeze only.",
     "remaining": "Clean completecandidate freeze/gate/currentnative/rootwholemodelreadiness/finalreviews/necessaryexactCI/merge/59closure; M10forms/create safety/parentaudit stillrequired"
+  },
+  "m9_delivery": {
+    "at": "2026-10-04T13:09:55.062277+00:00",
+    "pr": 141,
+    "reviewed_head": "8b98b6e6812b04b31cd9e5adb6c2f87787d16035",
+    "merge": "dc040764e4b9565fc023f6725de26c40caf02a8e",
+    "identical_tree": "9735e2fc5a7618c5456da7f3b0da7377ea2028b8",
+    "approvals": [
+      "Astra Low APPROVE",
+      "Claude Opus5.5 medium APPROVE"
+    ],
+    "clean_unmodified_gate": 0,
+    "native": 34,
+    "keyboard": 32,
+    "pre_ci": 37202757756,
+    "pre_ci_failedjob_only_retry": 1,
+    "post_ci": 37203798923,
+    "actual_required_steps": "all success",
+    "publish": "skipped",
+    "closed_issues": [
+      59
+    ],
+    "remaining": [
+      54,
+      63
+    ],
+    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/root-requirements-matrix.json",
+    "records_gate": "pending"
   }
 }

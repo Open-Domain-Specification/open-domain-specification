@@ -2,7 +2,7 @@
 
 ## Goal / health
 
-Clear the guarded backlog: **3 open / 51 closed** from54 (43implemented,8notplanned,zero new/reopened). Open #59,#54,#63. Milestones1–8 and their closing records are complete and published. No release.
+Clear the guarded backlog: **2 open / 52 closed** from54 (44implemented,8notplanned,zero new/reopened). Open #54,#63. Milestones1–9 source outcomes are delivered; M9 closing records are being gated before publication. No release.
 
 ## Binding delegation policy — 2026-10-03
 
@@ -14,32 +14,23 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-M9 #59 complete K/K2 correction batch is accepted for freeze. Qualified and local consumption relationship refs survive save/reload, typed missing-target versus wrong-kind is correct, URL segments use core identity rules, static raw export copies are current/collision-safe, and selected folders exclude prefix siblings. Case/NFC, one-core-instance and failed-ref metadata limits are stated truthfully; historical records and all pins remain preserved.
+M9 multifile support is delivered in PR #141. Astra Low and Claude Opus 5.5 approved exact candidate `8b98b6e6812b04b31cd9e5adb6c2f87787d16035`; merge `dc040764e4b9565fc023f6725de26c40caf02a8e` has the identical tree. The unmodified clean-head landing gate passed. Pre-merge CI 37202757756 and post-merge CI 37203798923 passed package, browser, real VS Code, keyboard and result-guard steps; publishing was skipped. #59 is closed.
 
-Root replayed K reviewer reproductions and K2 reader54. Focused K2 local297/extension104/drift150 passed; last full K core2902/extension212 passed. No mutation scripts/campaigns or added slow suites are allowed. Whole F and all scoped correction quality checks are complete, no marker>.5 remains. The old9267 gate/native proof remains historical; current completecandidate needs its own required checks.
+The first pre-merge package job had a Vitest reporting timeout after all 1,547 page tests passed. Only that failed job was retried; the successful browser/native jobs were retained. The raw failed evidence is preserved. No testing framework or timeout change was made.
 
 ## Next
 
-Freeze the exact complete source and records, then run unmodified clean-head landing gate followed serially by current native/keyboard proof. Root reassesses the whole model and must be ready/happy before final independent gates; no automatic Astra review after small fixes. Necessary exact pre/postCI, identicaltree merge and59closure follow finalacceptance. Threeissuesremain. No release/newtickets.
+Publish these closing records after their own unmodified gate, then implement #54 against the accepted multifile resolver. The source-backed inventory covers 20 authoring families and 39 add/update operations, plus safe workspace creation. Real extension-owned forms have labelled fields, legal dropdowns, populated updates and explicit Save/Cancel. Two palette commands and context-aware tree entry points keep the command surface small.
+
+Opus coordinates bounded Sonnet subsets. Safe creation/fresh reads and core legal-choice queries come first, with disjoint ownership. The writer must reject choices that become illegal or stale during a form, while preserving unrelated or deliberately pinned diagnostics. Existing identity keys remain read-only; display names and supported mutable fields are editable. Real native add AND update journeys must interact with the actual form DOM.
 
 ## Later
 
-Workspace-aware add/update forms #54 consume the same resolver and owning-write contract. Current extension has no add/update commands: establish a complete intentional authoring inventory, not vacuous zero-command acceptance. Parent #63 last after whole-promise audit. No modules/shared-kernel assets or new expressive semantics, no backwards-compatibility aliases, no optional tooling/refactor tickets. Astra remains final whole-model only after complete implementation/checks and primary readiness; existing e5c/5a6 approval is historical, never approval for new core identity changes.
-
-## Outcomes / blockers
-
-M8source PR139/140 closed92/93/94 after exact pre/postCI success and identical gated/merged trees; source gates190s each,1323pages100/689browser20existingoptionalcaptures/zero failed/flaky/retried. M8closing records5120fd54 passed own unmodified gate188s and are published, remote verified03:57:30Z. Three local gates/fournecessarymanualCI in M8, no duplicate automatic run/release/quota/Astra. CanonicalOpus/Sonnet runtime/endturn proofs retained. Source map accepted; flat design rejected with concrete identity counterexample. No external blocker.
+Close #54 only after complete acceptance, exact gates and merge verification. Audit every promise of #63 and close it last. A zero issue count alone is not goal completion. No modules, shared assets, compatibility or release. Astra remains a final whole-model gate; no new Astra review for forms/UI or these metadata records.
 
 ## Working state
 
-Updated 2026-10-04T12:14:42.304754+00:00. Branch `codex/m9-multifile`, corrected source follows frozen9267c824 and accepted K/K2; complete batch awaits freeze/gate. Reports `/Users/jonathanturnock/.codex/ods-delivery/milestone-09/K-retention-resolution/root-acceptance.json` and `K2-readers-agreement/root-acceptance.json`. Old finalAstraBLOCK applies9267; no approval for correctedsource until finishedrequiredchecks/readiness/finalgate. Cadence instruction below binding.
-
-
-
-### M9 complete-source checkpoint — 2026-10-04T09:46:38.004847+00:00
-
-C and D source/integration reports are complete. E2 corrected the normal-generator content agreement tests; root independently reran shared28/28. All five schema copies are generated and current, NorthBank remains12files with exact three diagnostic tuples, and ordinary packaged ESM/CJS produce214files/19contextnodes/37edges/420cross-filelinks. The DSL-versus-JSON consumption sequence cost is pre-existing at5120fd54; the earlier stale-artifact/candidate-order attribution is withdrawn. M9/#59 remains open: whole eight-lens source quality, clean-head landing gate, final whole-model signoff, native acceptance/necessary exact CI and publication are pending. No final Astra review has been requested. #54 real forms and #63 parent audit remain after #59.
-
+Updated 2026-10-04T13:09:55.062277+00:00. M9 source merge `dc040764e4b9565fc023f6725de26c40caf02a8e` is accepted; this records-only change still needs its clean-head gate before publication. Next sprint: `docs/bots/sprints/2026-10-04-sprint-11.md`. Durable acceptance, controls and raw evidence: `/Users/jonathanturnock/.codex/ods-delivery`.
 
 ## Binding owner verification cadence
 
