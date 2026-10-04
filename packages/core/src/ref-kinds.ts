@@ -4,9 +4,9 @@ import {
 	BoundedContext,
 	type Constrainable,
 	Consumable,
-	type Consumption,
+	Consumption,
 	type ConsumptionCaller,
-	type ContextRelationship,
+	ContextRelationship,
 	DataSchema,
 	Deadline,
 	Entity,
@@ -122,14 +122,14 @@ export const A_CONTEXT = kind(
  */
 export const AN_AGREEMENT = kind(
 	"a relationship between two bounded contexts of this workspace",
-	(_it): _it is ContextRelationship => true,
+	(it): it is ContextRelationship => it instanceof ContextRelationship,
 	(workspace, pointer) => workspace.findRelationship(pointer),
 );
 
 /** A consumption is a pairing too, found through its consumers by its own ref. */
 export const A_CONSUMPTION = kind(
 	"a consumption of an operation or an event of this workspace",
-	(_it): _it is Consumption => true,
+	(it): it is Consumption => it instanceof Consumption,
 	(workspace, pointer) => workspace.findConsumption(pointer),
 );
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { assemble } from "./assemble";
 import {
 	exportSources,
+	isInFolder,
 	locationOfRoute,
 	type ReaderFile,
 	readerPayloads,
@@ -166,5 +167,16 @@ describe("what the export is handed", () => {
 		expect(sources.map((s) => s.path)).toEqual(["a.json", "b.json"]);
 		expect(sources[0].stale).toBe("Its current text does not load: bad token");
 		expect(sources[1].stale).toBe("Its current text does not load.");
+	});
+});
+
+describe("which files a selected folder holds", () => {
+	it("holds itself, nested files and nothing that only shares its prefix", () => {
+		expect(isInFolder("/p/app", "/p/app")).toBe(true);
+		expect(isInFolder("/p/app", "/p/app/.ods/a.json")).toBe(true);
+		expect(isInFolder("/p/app/", "/p/app/a/b/c.json")).toBe(true);
+		expect(isInFolder("/p/app", "/p/app2/.ods/a.json")).toBe(false);
+		expect(isInFolder("/p/app", "/p/a.json")).toBe(false);
+		expect(isInFolder("/p/app", "/p")).toBe(false);
 	});
 });

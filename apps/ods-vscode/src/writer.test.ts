@@ -640,6 +640,89 @@ describe("G12 (all four holders) a qualified-invalid entry survives an owning-fi
 	);
 });
 
+describe("G12 (a consumption's agreement) a qualified-invalid relationship survives an owning-file write", () => {
+	const POSTED = T.fromB(T.posted);
+	const AGREEMENT = "relationships/ledger/upstream-downstream/claims";
+	const BAD = {
+		"missing-file": `gone.json#/${AGREEMENT}`,
+		"missing-target": "a.json#/relationships/ghost/upstream-downstream/ledger",
+		"wrong-kind": "a.json#/boundedcontexts/ledger",
+		"invalid-path": `a.txt#/${AGREEMENT}`,
+	} as const;
+	const seed =
+		(first: string, second: string) => (texts: Record<string, string>) => {
+			const b = JSON.parse(texts["b.json"]);
+			b.boundedcontexts.claims.aggregates.account.consumes = [
+				{ consumable: { $ref: POST }, relationship: { $ref: first } },
+				{ consumable: { $ref: POSTED }, relationship: { $ref: second } },
+			];
+			texts["b.json"] = `${JSON.stringify(b, null, 2)}\n`;
+		};
+	const touch: Intent = {
+		op: "update",
+		file: "b.json",
+		target: { ref: T.orders.ref, kind: "context" },
+		field: "description",
+		expected: "orders",
+		value: "unrelated",
+	};
+	const causes = Object.keys(BAD) as Array<keyof typeof BAD>;
+
+	it.each(causes)(
+		"%s: each consumption keeps its own ref, only the owner changes, and the diagnostic is still there",
+		async (cause) => {
+			const other = causes[(causes.indexOf(cause) + 1) % causes.length];
+			const p = await project(seed(BAD[cause], BAD[other]));
+			const before = { a: await p.read("a.json"), c: await p.read("c.json") };
+			expect((await applyIntent(p.io, p.files, touch)).ok).toBe(true);
+
+			const b = await json(p, "b.json");
+			expect(
+				b.boundedcontexts.claims.aggregates.account.consumes.map(
+					(it: { relationship: unknown }) => it.relationship,
+				),
+			).toEqual([{ $ref: BAD[cause] }, { $ref: BAD[other] }]);
+			expect(b.boundedcontexts.orders.description).toBe("unrelated");
+			expect(await p.read("a.json")).toBe(before.a);
+			expect(await p.read("c.json")).toBe(before.c);
+
+			const again = assemble(
+				await Promise.all(
+					p.files.map(async (file) => ({ file, text: await p.read(file) })),
+				),
+			);
+			const found = (again.diagnostics.get("b.json") ?? []).filter(
+				(d) =>
+					d.rule === "unresolved-ref" && d.message.includes('"relationship"'),
+			);
+			expect(found).toHaveLength(2);
+			expect(found[0].message).toContain(BAD[cause]);
+			expect(found[1].message).toContain(BAD[other]);
+		},
+	);
+
+	it("is written back again by a second unrelated write: nothing is lost on repeat", async () => {
+		const p = await project(seed(BAD["missing-file"], BAD["wrong-kind"]));
+		await applyIntent(p.io, p.files, touch);
+		const once = await p.read("b.json");
+		await applyIntent(p.io, p.files, {
+			...touch,
+			expected: "unrelated",
+			value: "again",
+		});
+		const twice = JSON.parse(await p.read("b.json"));
+		const consumes = (file: typeof twice) =>
+			file.boundedcontexts.claims.aggregates.account.consumes.map(
+				(it: { relationship: unknown }) => it.relationship,
+			);
+		expect(consumes(twice)).toEqual([
+			{ $ref: BAD["missing-file"] },
+			{ $ref: BAD["wrong-kind"] },
+		]);
+		expect(consumes(JSON.parse(once))).toEqual(consumes(twice));
+	});
+});
+
 describe("G13 a cross-file consumption leaves the provider byte-identical", () => {
 	it("adds the consumption to the consumer's file with a qualified ref and never touches the provider", async () => {
 		const p = await project();

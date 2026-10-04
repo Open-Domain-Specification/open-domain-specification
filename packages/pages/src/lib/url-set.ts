@@ -1,4 +1,5 @@
 import {
+	decodeWirePath,
 	encodeWirePath,
 	parseRef,
 	resolveWirePath,
@@ -127,8 +128,9 @@ export function commonRoot(urls: string[]): string | undefined {
 
 /**
  * The raw set path of `url` under `root`, or why it has none. Each segment of
- * the URL is percent-decoded once, so `my%20team.json` is `my team.json`, and
- * the result must be a canonical set path.
+ * the URL is percent-decoded once by the core wire codec, so `my%20team.json`
+ * is `my team.json` and `a%2Fb.json` has no path, and the result must be a
+ * canonical set path.
  */
 export function setPathUnder(
 	root: string,
@@ -142,12 +144,24 @@ export function setPathUnder(
 	)
 		return { ok: false, detail: `it is not under ${root}` };
 	const relative = target.pathname.slice(base.pathname.length);
-	let raw: string;
-	try {
-		raw = relative.split("/").map(decodeURIComponent).join("/");
-	} catch {
-		return { ok: false, detail: "its path is not valid percent-encoding" };
-	}
+	// A URL may leave sub-delimiters such as `(`, `,` or `+` unescaped; write
+	// them as the codec spells them, then decode with core's own codec, which
+	// refuses a decoded `/`, `\` or control character that `decodeURIComponent`
+	// would turn into a nested path.
+	const wire = relative.replace(
+		/[^A-Za-z0-9\-._~%/]/g,
+		(c) => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0")}`,
+	);
+	const decoded = decodeWirePath(wire);
+	if (!decoded.ok)
+		return {
+			ok: false,
+			detail:
+				decoded.cause === "malformed-percent"
+					? "its path is not valid percent-encoding"
+					: `${decoded.cause}: ${decoded.detail}`,
+		};
+	const raw = decoded.path;
 	const checked = validateSetPath(raw);
 	return checked.ok
 		? { ok: true, path: raw }

@@ -97,6 +97,32 @@ describe("the folder a set of URLs lies under", () => {
 		});
 	});
 
+	it("refuses an encoded separator or control character, and bad UTF-8, with what to do", () => {
+		for (const [name, cause] of [
+			["a%2Fb.json", "forbidden-character"],
+			["a%2fb.json", "forbidden-character"],
+			["a%5Cb.json", "forbidden-character"],
+			["a%00b.json", "forbidden-character"],
+			["a%0Ab.json", "forbidden-character"],
+			["a%C3.json", "invalid-utf8"],
+			["schema.json", "reserved-name"],
+		] as const)
+			expect(setPathUnder(ROOT, `${ROOT}${name}`), name).toMatchObject({
+				ok: false,
+				detail: expect.stringContaining(cause),
+			});
+		expect(setPathUnder(ROOT, `${ROOT}x/a%2Fb.json`)).toMatchObject({
+			ok: false,
+		});
+	});
+
+	it("keeps a valid name that a URL writes with reserved characters unescaped", () => {
+		expect(setPathUnder(ROOT, `${ROOT}a(1),b+c.json`)).toEqual({
+			ok: true,
+			path: "a(1),b+c.json",
+		});
+	});
+
 	it("says why an address is not a path of the folder", () => {
 		expect(setPathUnder(ROOT, "https://h.test/p/other/a.json")).toMatchObject({
 			ok: false,
@@ -124,6 +150,41 @@ describe("the folder a set of URLs lies under", () => {
 });
 
 describe("reading a set from URLs", () => {
+	it("keeps an entry named with an encoded slash distinct from the nested file a ref names", async () => {
+		const h = host({
+			[`${ROOT}a%2Fb.json`]: file("a/b.json"),
+			[`${ROOT}a/b.json`]: { name: "nested" },
+		});
+		const load = await loadFromUrls({
+			entries: [`${ROOT}a%2Fb.json`],
+			fetchFn: h.fetchFn,
+		});
+		// The ref is fetched at its own address, not taken for the %2F file.
+		expect(h.asked).toEqual([`${ROOT}a%2Fb.json`, `${ROOT}a/b.json`]);
+		expect(load.files.map((f) => f.path)).toEqual(["a/b.json"]);
+		expect(load.files[0].schema).toEqual({ name: "nested" });
+		expect(load.failures).toEqual([
+			expect.objectContaining({
+				kind: "invalid-path",
+				url: `${ROOT}a%2Fb.json`,
+				message: expect.stringContaining("forbidden-character"),
+			}),
+		]);
+	});
+
+	it("reads an entry with an encoded slash alone, under a path that does not alias a file", async () => {
+		const h = host({ [`${ROOT}a%2Fb.json`]: { name: "odd" } });
+		const load = await loadFromUrls({
+			entries: [`${ROOT}a%2Fb.json`],
+			fetchFn: h.fetchFn,
+		});
+		expect(load.files).toHaveLength(1);
+		expect(load.files[0]).toMatchObject({
+			path: "entry-0.json",
+			pathProblem: expect.stringContaining("forbidden-character"),
+		});
+	});
+
 	it("reads one file with no ref to another as just that file", async () => {
 		const h = host({ [`${ROOT}a.json`]: { name: "a" } });
 		const load = await loadFromUrls({

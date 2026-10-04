@@ -4,9 +4,9 @@ labels: [core, frontend]
 priority: high
 agent: opus-coordinator
 live: true
-status: Marker corrections accepted; freezing exact landing candidate
+status: Complete correction batch accepted; freezing exact landing candidate
 progress: 85
-updatedAt: 2026-10-04T11:04:11.646799+00:00
+updatedAt: 2026-10-04T12:14:42.304754+00:00
 ---
 # Teams own complete model files
 
@@ -59,3 +59,18 @@ Whole-source eight-lens F is complete. G corrected actual diagnostic location/wo
 ### M9 mandatory precommit corrections accepted — 2026-10-04T11:04:11.646799+00:00
 
 H shared relationship grouping in packages/core/src/relationship.ts:85 preserves662 generated files and162 page rows; core2339/doc106/pages1541 green. I removes duplicated typography in packages/pages/src/lib/organisms/PageHeader.svelte:54 while preserving868 actual browser measurements, with a real failed spacing mutation and13focused browser tests. Both actual canonical foreground Sonnet5.5 end-turns and terminal Opus5.5 checks retained. Numeric score scan now finds0markers. Old regex missed0.55; five-whys/control saved outside repository. Candidate94897c24 was never pushed or gated; final correction freeze and unmodified wholegate are next. Native/current-candidate acceptance, final-model reviews, CI, merge and59closure remain pending. Low-score optional advisories declined; no newtickets or scope.
+
+
+### M9 final quality gate BLOCK — 2026-10-04T11:26:37.108286+00:00
+
+Exact9267c824 passed unmodifiedlocal201s/native34/keyboard32/guard0 but AstraLow finalmodelreview established two real gaps: unresolved qualified consumptionrelationship refs lost by packages/core/src/workspace-from-schema.ts:748 / workspace.ts:2802; specialized wrongkind targets misclassified by ref-kinds.ts:123. ClaudeOpus5.5 approvedwithlimits/sixadvisories; root does not override reproduced defects. Core source completion checklist reopened. Opus/Sonnet K owns fullretention/resolution classes and readonlyadvisory truth/scope triage, no newtickets or additionalfixscope yet. Five-whys saved: happycarrier and fourholdernegative matrices missed ordinarychildoptional failure retention. Exactcompletecandidatechecks/rootreadiness required before any further finalgate; not automaticafterfix. Threeissuesopen; noCI/push/merge/closure.
+
+
+### M9 K scoped core acceptance and owner cadence — 2026-10-04T11:56:54.623082+00:00
+
+TerminalcanonicalOpus/Sonnet K corrected qualified consumption.relationship persistence in packages/core/src/workspace-from-schema.ts:748 and typedwrongkind existence classification in workspace-set.ts:328. Actualcore2902/extension212 green; rootreplayed reviewerrepros0,4qualifiedcauses retained afterreload and4typedkinds wrongkind. No modelgenerated/pin drift. D1local singularagreement remains sameclassgap and rootauthorised focusedK2continuation; approvedURLidentity/staticexport/folderboundary/agreementtruth fixes follow in samebatch. No freeze/wholegate/finalreview/CI/closure betweenphases. Latestownerprohibits mutationtesting scripts/campaigns andnewlong-running suites; futureproof focusedregressions+existingrequiredgates. Completedpriorrawproof retained, noreplay. Fullcompletecandidateacceptance/readiness remainsunproven;3issuesopen.
+
+
+### M9 complete K/K2 correction acceptance — 2026-10-04T12:14:42.304754+00:00
+
+All canonical foregroundSonnet phases and terminalOpus verification finished. Local samefieldretention in packages/core/src/workspace-from-schema.ts:748 completesKclass; URLcodec in packages/pages/src/lib/url-set.ts:147, staticrawartifactintegrity in packages/pages/src/site.ts:103 and selectedfolderbinding in apps/ods-vscode/src/reader.ts:1 corrected; appendonly08/29truth notes and NorthBankcomment preservehistory/pins. Rootfocusedreader54pass; local297/extension104/drift150 sourceproof retained. Scopedcoverage1 is honestlyolduncoveredfetchbranch, not a wholecoveragepass; requiredwholegate next. Originalroot K2pinmap independently matches5records; coor old11:27pinclaim is source-mapmisread, no actualdrift. No mutation/newslow-suite work inK2. Completebatch source acceptedforfreeze, notfinalmodelapproval/delivery. Next exactclean unmodifiedgate/currentnative, thenrootreadiness/finalgates/necessaryCI/merge59close. No newticket/release,3open; M10safeCreateWorkspace integratedauthoring54andparent63last.

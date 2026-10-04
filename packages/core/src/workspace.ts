@@ -153,6 +153,11 @@ export type UnknownField = {
  * relationship or a relation whose end does. Each of those is the pair it
  * joins, so an end that resolves to nothing leaves no object at all.
  *
+ * The miss is recorded where the diagnostic belongs, which is not always the
+ * element that writes the ref: a consumption's `relationship` is reported at
+ * its consumer, so the consumption keeps its own qualified one (see
+ * {@link Consumption.unresolvedWrites}).
+ *
  * A ref of a list comes back at the end of that list rather than where it was
  * written, because a list keeps only what it holds and the position of a link
  * that was never made is not part of the model.
@@ -2726,6 +2731,12 @@ export class Consumption
 	readonly retainedBy: RetainedEntry<WrittenRef>[] = [];
 	/** The agreement this exchange belongs to, where the model has named one. */
 	relationship?: ContextRelationship;
+	/**
+	 * The agreement ref a file wrote that names another file and did not
+	 * resolve, kept beside the field it was written in; see
+	 * {@link UnresolvedWrites}. A ref that names no file is not kept here.
+	 */
+	readonly unresolvedWrites = new UnresolvedWrites();
 	comments: ods.Comment[];
 	disposition?: ods.Disposition;
 
@@ -2801,7 +2812,7 @@ export class Consumption
 					: undefined,
 			relationship: this.relationship
 				? { $ref: refFrom(this, this.relationship) }
-				: undefined,
+				: this.unresolvedWrites.one("relationship"),
 			comments: this.comments.length ? this.comments : undefined,
 			disposition: this.disposition,
 		};

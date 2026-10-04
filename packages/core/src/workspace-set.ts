@@ -23,7 +23,9 @@ import { beginLoading, linkLoadings } from "./workspace-from-schema";
  * What a ref is expected to name: how to find a candidate by pointer in one
  * workspace, and whether the candidate is the kind wanted. Keeping the two
  * apart is what lets a resolution say `missing-target` (nothing there) from
- * `wrong-kind` (something else there).
+ * `wrong-kind` (something else there). A lookup that finds only its own kind
+ * says `undefined` for both, so {@link resolveWritten} asks the file what
+ * else stands at the pointer before it reports nothing.
  */
 export type RefKind<T extends object> = {
 	readonly label: string;
@@ -326,22 +328,38 @@ export function resolveWritten<T extends object>(
 		workspace = found;
 	}
 	const found = kind.lookup(workspace, parsed.pointer);
-	if (found === undefined)
+	if (found !== undefined && kind.is(found))
+		return { ok: true, target: found, workspace };
+	// A kind that is found by a lookup of its own (a relationship, a consumption,
+	// an answer) finds nothing for an element of any other kind, so what stands
+	// at the pointer is asked of the file itself before it is said to be absent.
+	const other = found ?? existingAt(workspace, parsed.pointer);
+	if (other === undefined)
 		return {
 			ok: false,
 			cause: "missing-target",
 			file,
 			detail: `${parsed.pointer} names nothing in ${file}`,
 		};
-	if (!kind.is(found))
-		return {
-			ok: false,
-			cause: "wrong-kind",
-			file,
-			found,
-			detail: `${parsed.pointer} in ${file} is not ${kind.label}`,
-		};
-	return { ok: true, target: found, workspace };
+	return {
+		ok: false,
+		cause: "wrong-kind",
+		file,
+		found: other,
+		detail: `${parsed.pointer} in ${file} is not ${kind.label}`,
+	};
+}
+
+/**
+ * Whatever a file has at a pointer, of any kind: an element it names, an
+ * answer, or one of the two pairings it finds by a ref of their own.
+ */
+function existingAt(workspace: Workspace, pointer: string): object | undefined {
+	return (
+		workspace.getByRef(pointer) ??
+		workspace.findRelationship(pointer) ??
+		workspace.findConsumption(pointer)
+	);
 }
 
 /** The place a workspace loaded alone is judged to sit: the root of nothing. */

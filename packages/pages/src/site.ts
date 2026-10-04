@@ -90,6 +90,8 @@ export async function bootstrapHtml(
 export async function exportSite(input: SiteInput): Promise<SiteResult> {
 	const { outDir, appDir } = input;
 	const pathOf = (s: SiteSource) => s.path ?? s.fileLabel;
+	const describe = (s: SiteSource) =>
+		`${JSON.stringify(s.fileLabel)} (set ${JSON.stringify(s.set)})`;
 	const sources = inFolderOrder(input.sources, pathOf);
 	for (const source of sources) {
 		if (source.set === undefined) continue;
@@ -99,7 +101,30 @@ export async function exportSite(input: SiteInput): Promise<SiteResult> {
 				`${JSON.stringify(pathOf(source))} cannot be a file of an exported set: ${checked.cause} (${checked.detail})`,
 			);
 	}
+	// Two files may not share one copy: compared as written, by the exact joined
+	// path. Refused here, before anything is written or removed.
+	const owners = new Map<string, string>();
+	for (const source of sources) {
+		if (source.set === undefined) continue;
+		const target = path.join(
+			outDir,
+			WORKSPACES_DIR,
+			...pathOf(source).split("/"),
+		);
+		const other = owners.get(target);
+		if (other !== undefined)
+			throw new Error(
+				`${other} and ${describe(source)} would both be copied to ${WORKSPACES_DIR}/${pathOf(source)}. Give the files different paths, or export them separately.`,
+			);
+		owners.set(target, describe(source));
+	}
 	await fs.mkdir(outDir, { recursive: true });
+	// The copies are exactly the current set: the generated folder is replaced,
+	// and nothing else in outDir is touched.
+	await fs.rm(path.join(outDir, WORKSPACES_DIR), {
+		recursive: true,
+		force: true,
+	});
 	await fs.cp(path.join(appDir, "assets"), path.join(outDir, "assets"), {
 		recursive: true,
 	});

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { filesOf, linkedPair } from "./linked-fixture";
+import { deadlineAnchor, processTrigger, REF_KINDS } from "./ref-kinds";
 import { parseConsumptionRef, parseRelationshipRef } from "./reference";
 import type { WorkspaceSchema } from "./schema";
 import {
@@ -12,6 +13,7 @@ import {
 } from "./workspace";
 import {
 	kindOfClass,
+	type RefKind,
 	type Resolution,
 	setKeyOf,
 	WorkspaceSet,
@@ -641,5 +643,151 @@ describe("the unresolved-ref reason names the file that owns the target", () => 
 		const [found] = unresolved(set);
 		expect(found.message).toContain(", which is not a team of this workspace;");
 		expect(found.message).not.toContain("which is in");
+	});
+});
+
+/**
+ * What every exposed kind says of every kind of thing a pointer can name:
+ * nothing there, something else there, and the right thing. A relationship,
+ * a consumption and an answer are found by lookups of their own, which find
+ * nothing for any other element, so the difference between "nothing there"
+ * and "something else there" has to come from somewhere other than that
+ * lookup.
+ */
+describe("every exposed kind tells nothing there from something else there", () => {
+	const { a, b, links, set } = linkedPair();
+	const answer = a.post.returned();
+	const KINDS = Object.keys(REF_KINDS) as Array<keyof typeof REF_KINDS>;
+
+	/** What exists in file A, and the kinds that name it. */
+	const TARGETS: Array<
+		[string, { ref: string }, Array<keyof typeof REF_KINDS>]
+	> = [
+		["a bounded context", a.ledger, ["context", "identityTarget", "element"]],
+		["a team", a.team, ["team", "element"]],
+		["a subdomain", a.sub, ["subdomain", "element"]],
+		["a service", a.payments, ["element"]],
+		["an aggregate", a.account, ["element"]],
+		[
+			"an entity",
+			a.root,
+			[
+				"entity",
+				"relationTarget",
+				"identityTarget",
+				"constrainable",
+				"element",
+			],
+		],
+		[
+			"a value object",
+			a.money,
+			["valueObject", "relationTarget", "constrainable", "element"],
+		],
+		["a schema", a.receipt, ["schema", "identityTarget", "element"]],
+		["an attribute", a.rootId, ["constrainable", "element"]],
+		[
+			"an operation",
+			a.post,
+			[
+				"consumable",
+				"caller",
+				"constrainable",
+				"reactionTrigger",
+				"startingTrigger",
+				"element",
+			],
+		],
+		["a policy", a.react, ["caller", "element"]],
+		["a process", a.settle, ["caller", "element"]],
+		["a deadline", a.late, ["element"]],
+		["an answer", answer, ["answer", "reactionTrigger", "element"]],
+		["a relationship", a.agreement, ["relationship"]],
+		["a consumption", links.consumption, ["consumption"]],
+	];
+	/** The same shape of pointer as each kind of thing, naming nothing. */
+	const GHOSTS: Array<[string, string]> = [
+		["a context", "#/boundedcontexts/ghost"],
+		[
+			"an operation",
+			"#/boundedcontexts/ledger/services/payments/provides/ghost",
+		],
+		["an answer", `${a.post.ref}/returns-ghost`],
+		["a relationship", "#/relationships/ledger/upstream-downstream/ghost"],
+		["a consumption", `${a.account.ref}/consumes/ghost`],
+	];
+
+	describe.each(KINDS)("%s", (name) => {
+		const kind: RefKind<object> = REF_KINDS[name];
+
+		it.each(GHOSTS)(
+			"names nothing at the pointer of %s: missing-target in the file asked",
+			(_, ghost) => {
+				expect(set.resolve(b.ws, `a.json${ghost}`, kind)).toMatchObject({
+					ok: false,
+					cause: "missing-target",
+					file: "a.json",
+				});
+				expect(set.resolve(a.ws, ghost, kind)).toMatchObject({
+					ok: false,
+					cause: "missing-target",
+				});
+			},
+		);
+
+		it.each(TARGETS)(
+			"meets %s: right or wrong kind, found and in its own file",
+			(_, target, accepted) => {
+				const expected = accepted.includes(name);
+				const across = set.resolve(b.ws, `a.json${target.ref}`, kind);
+				const local = set.resolve(a.ws, target.ref, kind);
+				for (const result of [across, local]) {
+					if (expected) {
+						expect(result).toMatchObject({ ok: true });
+						if (result.ok) expect(result.target).toBe(target);
+					} else {
+						expect(result).toMatchObject({ ok: false, cause: "wrong-kind" });
+						if (!result.ok && result.cause === "wrong-kind") {
+							expect(result.found).toBe(target);
+							expect(result.file).toBe("a.json");
+						}
+					}
+				}
+			},
+		);
+	});
+
+	it("takes the specialised kinds at their word: nothing but the thing itself is one", () => {
+		expect(REF_KINDS.relationship.is(a.ledger)).toBe(false);
+		expect(REF_KINDS.relationship.is(a.agreement)).toBe(true);
+		expect(REF_KINDS.consumption.is(a.ledger)).toBe(false);
+		expect(REF_KINDS.consumption.is(links.consumption)).toBe(true);
+		expect(REF_KINDS.answer.is(a.ledger)).toBe(false);
+		expect(REF_KINDS.answer.is(answer)).toBe(true);
+	});
+
+	it("tells the triggers that depend on a process the same way", () => {
+		const own = processTrigger(a.settle);
+		const anchor = deadlineAnchor(a.settle);
+		expect(set.resolve(b.ws, `a.json${a.late.ref}`, own)).toMatchObject({
+			ok: true,
+		});
+		expect(set.resolve(a.ws, `b.json${b.late.ref}`, own)).toMatchObject({
+			ok: false,
+			cause: "wrong-kind",
+		});
+		expect(set.resolve(a.ws, a.late.ref, own)).toMatchObject({ ok: true });
+		expect(set.resolve(a.ws, a.agreement.ref, own)).toMatchObject({
+			ok: false,
+			cause: "wrong-kind",
+		});
+		expect(set.resolve(a.ws, a.agreement.ref, anchor)).toMatchObject({
+			ok: false,
+			cause: "wrong-kind",
+		});
+		expect(set.resolve(a.ws, "#/boundedcontexts/ghost", anchor)).toMatchObject({
+			ok: false,
+			cause: "missing-target",
+		});
 	});
 });

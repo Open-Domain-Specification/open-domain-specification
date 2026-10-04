@@ -1986,5 +1986,75 @@
     "pages_tests": 1541,
     "remaining_markers": 0,
     "state": "Accepted source, finalfreeze/gate/native/reviews/CI/merge pending"
+  },
+  "m9_final_model_gate": {
+    "at": "2026-10-04T11:26:37.108286+00:00",
+    "candidate": "9267c824d2ce54a921a32b004f5355c65139b320",
+    "astra": "BLOCK two confirmeddefectclasses",
+    "claude": "APPROVE withlimits/advisories",
+    "root_disposition": "BLOCK until completeclass correction and renewed fullreadiness",
+    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/final-review-9267c824",
+    "next": "K Opus/Sonnet classcorrection+readonlytriage; noautomaticfinalreview"
+  },
+  "m9_K_scoped_acceptance": {
+    "at": "2026-10-04T11:56:54.623082+00:00",
+    "accepted_scope": "Qualifiedconsumptionrelationship retention B1 and allkindclassificationB2, not fullM9readiness",
+    "coordinator_exit": 0,
+    "coordinator_actual_endturn": "2026-10-04T11:53:08.038Z",
+    "actual_models": [
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "core_worker_actual_endturn": "2026-10-04T11:47:08.377Z",
+    "core_tests": 2902,
+    "extension_tests": 212,
+    "root_key_repros_exit": 0,
+    "qualified_causes_retained": [
+      "missing-file",
+      "missing-target",
+      "wrong-kind",
+      "invalid-path"
+    ],
+    "wrongkind_expected": [
+      "relationship",
+      "consumption",
+      "answer",
+      "team"
+    ],
+    "rootpins_match": true,
+    "model_generated_drift": false,
+    "remaining": "D1localrelationship + approvedreader/artifact/agreement corrections K2 beforewholefreeze/gate/native/readiness",
+    "owner_cadence": "No furthermutation scripts/campaigns ornewslow suites; completedprior evidence retained, futurefocusedtests only"
+  },
+  "verification_cadence_policy": {
+    "owner_instruction": "No mutationtesting scripts/campaigns; no newlong-running test suites",
+    "verification": "Focusedmeaningful regressions andexistingrequiredgates; no optionalbroadreplay",
+    "survives_compaction": true
+  },
+  "m9_K2_complete_source_acceptance": {
+    "at": "2026-10-04T12:14:42.304754+00:00",
+    "coordinator_exit": 0,
+    "actual_models": [
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "worker_actual_endturns": {
+      "local": "2026-10-04T12:00:05.973Z",
+      "readers": "2026-10-04T12:02:30.795Z",
+      "agreement": "2026-10-04T12:05:31.508Z"
+    },
+    "accepted": "All K2 local singularref/URLcodec/staticrawexport/folderboundary/agreement corrections, combined withK acceptedclass",
+    "root_reader_tests": 54,
+    "root_reader_exit": 0,
+    "focused_local_tests": 297,
+    "focused_extension_tests": 104,
+    "validator_drift_tests": 150,
+    "root_supplied_K2_pins_match": true,
+    "pin_disposition": "Coordinator read stale11:27 K pin, not suppliedK2run map. Root independent checkedactualK2suppliedmap before/after and all5match. No unauthorizedrootrecorddrift.",
+    "scope_disposition": "reader.ts/reader.test helper is narrow internal selectedfolderbinding dependency; decision29append is narrowly required samehandclaim boundary. Accepted appropriatechanges, no extra features.",
+    "quality": "F whole8lens plus G/H/I/K/K2 correction8lens complete, no introduced >.5markers; gate unchanged",
+    "coverage_limit": "ScopedK2coverage exited1 on oldurl-set line220 unexercised byfocusedfiles; changedK2branches covered, full existinggate mustprovewholethreshold. Do not callscopedcoverage green.",
+    "cadence": "No newmutation scripts/campaigns orslow suites K2; focusedexistingchecks. Wholeexistinggate/native aftercompletefreeze only.",
+    "remaining": "Clean completecandidate freeze/gate/currentnative/rootwholemodelreadiness/finalreviews/necessaryexactCI/merge/59closure; M10forms/create safety/parentaudit stillrequired"
   }
 }

@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import type {
 	Diagnostic,
 	SetPath,
@@ -106,4 +107,17 @@ export function locationOfRoute(
 	if (members.length === 1) return { file: members[0], ref: route };
 	const named = fileOfRoute(route);
 	return named && members.includes(named.file) ? named : undefined;
+}
+
+/**
+ * Whether `file` is the selected `folder` or lies under it, on a path-segment
+ * boundary: `/p/app2/x` is not in `/p/app`.
+ */
+export function isInFolder(folder: string, file: string): boolean {
+	const relative = path.relative(folder, file);
+	return (
+		relative !== ".." &&
+		!relative.startsWith(`..${path.sep}`) &&
+		!path.isAbsolute(relative)
+	);
 }

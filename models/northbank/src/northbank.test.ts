@@ -281,11 +281,13 @@ describe("NorthBank reference set", () => {
 });
 
 /**
- * The Markdown site is written for one workspace; packages/doc has no
- * set-aware entry point yet. The pages and their links are therefore still
- * checked on the frozen single-workspace fixture, with the assertions the
- * model has always carried, so a regression of the doc generator on this model
- * is caught. The set's own site is a recorded gap, not a flattened stand-in.
+ * This block checks the Markdown pages of the frozen single-workspace
+ * fixture, with the assertions the model has always carried, so a regression
+ * of the standalone doc generator on this model is caught. It does not check
+ * the set's own site. packages/doc does have a set-aware entry point,
+ * `toDocSet`, which generate.ts calls to write the set's docs/ folder, and
+ * `toDocSet` itself is tested in packages/doc (set.test.ts). No assertion in
+ * this file reads the set's generated pages (see DISCOVERY.md).
  */
 describe("NorthBank's pages, on the frozen single workspace", () => {
 	const workspace = loadMonolith();

@@ -105,7 +105,9 @@ not reported as unknown, because it is not dropped.
 The cost decision 29 names is unchanged for everything else. A **local** ref in one of those four lists that names nothing is
 still dropped on a save. An unknown field on an entry that does resolve is still dropped, and
 reported by `unknown-field`. A bad reference on any other element survives the round trip on that
-element.
+element, as the `$ref` alone: a key written beside it is kept only when the ref resolves, so a
+failing `returns` or `schema` keeps its `$ref` but not its `many`, and a failing `rejects` entry
+keeps its `$ref` but not its `many` or `reasons`.
 
 ## Order
 

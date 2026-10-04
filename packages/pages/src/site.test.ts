@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Workspace, WorkspaceSet } from "@open-domain-specification/core";
@@ -175,6 +175,75 @@ describe("static site export of a set", () => {
 			/"..\/escape.json" cannot be a file of an exported set: escapes-root/,
 		);
 		expect(existsSync(join(outDir, "index.html"))).toBe(false);
+	});
+
+	it("leaves exactly the current copies under workspaces/ on a re-export, and touches nothing else in outDir", async () => {
+		const a = side("Team A");
+		const b = side("Team B");
+		const first = WorkspaceSet.fromWorkspaces([
+			["old/gone.json", a.ws],
+			["keep.json", b.ws],
+		]);
+		linkAllCarriers(a, b);
+		const { outDir } = await exported(sourcesOf(first));
+		await writeFile(join(outDir, "user-notes.txt"), "mine", "utf8");
+		await mkdir(join(outDir, "assets-extra"));
+		await writeFile(join(outDir, "assets-extra", "x.txt"), "mine", "utf8");
+		expect(existsSync(join(outDir, "workspaces", "old", "gone.json"))).toBe(
+			true,
+		);
+
+		const c = side("Team A");
+		const d = side("Team B");
+		const second = WorkspaceSet.fromWorkspaces([
+			["renamed/new.json", c.ws],
+			["keep.json", d.ws],
+		]);
+		linkAllCarriers(c, d);
+		const result = await exportSite({
+			appDir: join(__dirname, "../app"),
+			sources: sourcesOf(second),
+			outDir,
+		});
+		expect(existsSync(join(outDir, "workspaces", "old"))).toBe(false);
+		expect(existsSync(join(outDir, "workspaces", "renamed", "new.json"))).toBe(
+			true,
+		);
+		expect(existsSync(join(outDir, "workspaces", "keep.json"))).toBe(true);
+		expect(result.files.map((f) => f.slice(outDir.length + 1))).toEqual([
+			join("workspaces", "keep.json"),
+			join("workspaces", "renamed", "new.json"),
+		]);
+		expect(readFileSync(join(outDir, "user-notes.txt"), "utf8")).toBe("mine");
+		expect(readFileSync(join(outDir, "assets-extra", "x.txt"), "utf8")).toBe(
+			"mine",
+		);
+		expect(readFileSync(join(outDir, "index.html"), "utf8")).toContain(
+			"renamed/new.json",
+		);
+	});
+
+	it("refuses two sources whose copies would land on one file, before any write or removal", async () => {
+		const { outDir } = await exported(sourcesOf());
+		const before = readFileSync(join(outDir, "workspaces", "a.json"), "utf8");
+		const html = readFileSync(join(outDir, "index.html"), "utf8");
+		const [a, b] = sourcesOf();
+		await expect(
+			exportSite({
+				appDir: join(__dirname, "../app"),
+				sources: [
+					{ ...a, set: "one", path: "same.json", fileLabel: "one/same.json" },
+					{ ...b, set: "two", path: "same.json", fileLabel: "two/same.json" },
+				],
+				outDir,
+			}),
+		).rejects.toThrow(/one\/same\.json.*two\/same\.json.*same\.json/s);
+		expect(readFileSync(join(outDir, "workspaces", "a.json"), "utf8")).toBe(
+			before,
+		);
+		expect(existsSync(join(outDir, "workspaces", "b.json"))).toBe(true);
+		expect(existsSync(join(outDir, "workspaces", "same.json"))).toBe(false);
+		expect(readFileSync(join(outDir, "index.html"), "utf8")).toBe(html);
 	});
 
 	it("leaves a workspace opened alone as it was: no set, no path, no copy of its JSON", async () => {

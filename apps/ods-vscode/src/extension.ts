@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { OdsDiagnostics, rangeOfRef } from "./diagnostics";
 import { DetailPanel } from "./pages/panel";
 import { OdsProject, odsFolderOf } from "./project";
-import { exportSources } from "./reader";
+import { exportSources, isInFolder } from "./reader";
 import { showSearch } from "./search";
 import { installSkillCommand, promptWhenSkillStale } from "./skill";
 import { type ModelNode, ModelTree } from "./tree";
@@ -91,7 +91,7 @@ export async function activate(
 			// Every file of a `.ods` folder is exported as a file of that folder's
 			// set (see `exportSources`), so the export of a folder is the folder.
 			const inFolder = project.workspaces.filter((f) =>
-				f.uri.fsPath.startsWith(folder.uri.fsPath),
+				isInFolder(folder.uri.fsPath, f.uri.fsPath),
 			);
 			const sets = new Map<string, typeof inFolder>();
 			for (const f of inFolder) {

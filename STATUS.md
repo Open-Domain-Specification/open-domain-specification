@@ -14,15 +14,13 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-M9 #59 source and integration are accepted for the landing candidate. Core2,339 tests; extension207; pages1,541 at100% coverage and997 files with0 errors/warnings; Graphviz56, Markdown106, skill186, shared28, NorthBank51 and docs28. NorthBank is12 team-owned files with19contexts/34declaredrelationships/37root-map edges and exact3diagnostics. Packaged ESM/CJS independently produce214files/420cross-file links matching the generated site. Frozen original bytes and DISCOVERY history remain intact.
+M9 #59 complete K/K2 correction batch is accepted for freeze. Qualified and local consumption relationship refs survive save/reload, typed missing-target versus wrong-kind is correct, URL segments use core identity rules, static raw export copies are current/collision-safe, and selected folders exclude prefix siblings. Case/NFC, one-core-instance and failed-ref metadata limits are stated truthfully; historical records and all pins remain preserved.
 
-Whole eight-lens quality F and bounded behavior corrections G are complete. Diagnostic ranges resolve alternate valid path spellings at the owning element; cross-file kind wording names the correct file; malformed URL imports return actionable failures; navigation prose states its host scope. No known introduced defects/high-score findings remain. All five generated schema copies are current. Required H/I marker passes are accepted: shared relationship grouping preserves662 generated files and162 page rows, and header typography preserves868 measurements. No clean-code markers remain.
+Root replayed K reviewer reproductions and K2 reader54. Focused K2 local297/extension104/drift150 passed; last full K core2902/extension212 passed. No mutation scripts/campaigns or added slow suites are allowed. Whole F and all scoped correction quality checks are complete, no marker>.5 remains. The old9267 gate/native proof remains historical; current completecandidate needs its own required checks.
 
 ## Next
 
-Freeze the exact complete candidate and run the unmodified clean-head local landing gate, followed serially by actual native and keyboard suites. Then root whole-model readiness and final Astra Low/Claude signoff, necessary exact pre/postCI (publish skipped), identical-tree merge and #59closure. C native34pass/4existingoptional and32keyboard are retained prior-source proof; current-candidate native proof remains required. No release or new tickets.
-
-Aggregated listing order depends on deterministic file order; the DSL-versus-JSON consumption sequence cost is pre-existing at5120fd54, not stale docs or a new graph-order defect. Writer checks remain non-atomic; known native races are stated. Hosts guard malformed shapes; core is a typed loader. Low-score optional refactors are declined.
+Freeze the exact complete source and records, then run unmodified clean-head landing gate followed serially by current native/keyboard proof. Root reassesses the whole model and must be ready/happy before final independent gates; no automatic Astra review after small fixes. Necessary exact pre/postCI, identicaltree merge and59closure follow finalacceptance. Threeissuesremain. No release/newtickets.
 
 ## Later
 
@@ -34,9 +32,15 @@ M8source PR139/140 closed92/93/94 after exact pre/postCI success and identical g
 
 ## Working state
 
-Updated 2026-10-04T11:04:11.646799+00:00. Branch `codex/m9-multifile`, base `5120fd54`; candidate94897c24 plus accepted H/I corrections and current records await final freeze/gate. G root acceptance: `/Users/jonathanturnock/.codex/ods-delivery/milestone-09/G-final-corrections/root-acceptance.json`. Final model reviews, native/current-candidate gates, CI and landing are pending; #59 remains open.
+Updated 2026-10-04T12:14:42.304754+00:00. Branch `codex/m9-multifile`, corrected source follows frozen9267c824 and accepted K/K2; complete batch awaits freeze/gate. Reports `/Users/jonathanturnock/.codex/ods-delivery/milestone-09/K-retention-resolution/root-acceptance.json` and `K2-readers-agreement/root-acceptance.json`. Old finalAstraBLOCK applies9267; no approval for correctedsource until finishedrequiredchecks/readiness/finalgate. Cadence instruction below binding.
+
 
 
 ### M9 complete-source checkpoint — 2026-10-04T09:46:38.004847+00:00
 
 C and D source/integration reports are complete. E2 corrected the normal-generator content agreement tests; root independently reran shared28/28. All five schema copies are generated and current, NorthBank remains12files with exact three diagnostic tuples, and ordinary packaged ESM/CJS produce214files/19contextnodes/37edges/420cross-filelinks. The DSL-versus-JSON consumption sequence cost is pre-existing at5120fd54; the earlier stale-artifact/candidate-order attribution is withdrawn. M9/#59 remains open: whole eight-lens source quality, clean-head landing gate, final whole-model signoff, native acceptance/necessary exact CI and publication are pending. No final Astra review has been requested. #54 real forms and #63 parent audit remain after #59.
+
+
+## Binding owner verification cadence
+
+Do not add mutation-testing scripts, harnesses or campaigns, including evidence/scratch automation. Do not add long-running suites or new slow gates. Use focused meaningful regressions and existing required landing/native gates; defer full existing suites to the complete-batch gate and avoid optional broad repetitions. Latest owner instruction overrides older mutation requests in skills/briefs. This rule must survive compaction and enter every remaining worker brief.

@@ -739,21 +739,24 @@ function addConsumes(
 				keepsRaw(refs.workspace, `${at.ref}/consumes/${index}/by/${position}`);
 			}
 		}
+		// The relationships are loaded before the consumptions for this ref,
+		// since an agreement has to exist before an exchange can say it belongs
+		// to it.
+		const agreementRef = consumption.relationship;
+		const agreement =
+			agreementRef &&
+			refs.attempt(at, "relationship", AN_AGREEMENT, agreementRef, where);
 		const made = consumer.addConsumption(consumable, {
 			...consumption,
 			by,
-			// The relationships are loaded before the consumptions for this
-			// ref, since an agreement has to exist before an exchange can say
-			// it belongs to it.
-			relationship: refs.one(
-				at,
-				"relationship",
-				AN_AGREEMENT,
-				consumption.relationship,
-				where,
-			),
+			relationship: agreement?.ok ? agreement.target : undefined,
 		});
 		made.retainedBy.push(...retainedBy);
+		// The miss is recorded at the consumer, but it is this consumption that
+		// writes the ref, so it keeps it, local or qualified: a consumer may hold
+		// several, each naming a different agreement.
+		if (agreementRef && !agreement?.ok)
+			made.unresolvedWrites.add("relationship", { $ref: agreementRef.$ref });
 	}
 }
 
@@ -1561,6 +1564,11 @@ function addRelationships(
  * are reported and dropped (see {@link UnresolvedWrites}). A `returns` keeps
  * its ref but not its `many`, which says how many of a shape a call comes
  * back with and means nothing until the shape resolves.
+ *
+ * A miss is also recorded at an element that does not write the ref: a
+ * consumption's `relationship` is reported at its consumer, which does not
+ * serialize it. The consumption keeps the unresolved ref itself, local or
+ * qualified, when it is made (see {@link addConsumes}).
  */
 function keepUnresolvedRefs(workspace: Workspace) {
 	for (const written of workspace.unresolved) {
