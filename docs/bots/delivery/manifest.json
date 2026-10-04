@@ -2,17 +2,17 @@
   "goal": "Clear the ODS backlog autonomously",
   "baseline_at": "2026-10-02T21:44:53Z",
   "baseline_open": 54,
-  "current_open": 4,
-  "closed": 50,
-  "closed_implemented": 42,
+  "current_open": 3,
+  "closed": 51,
+  "closed_implemented": 43,
   "closed_not_planned": 8,
   "new": 0,
   "reopened": 0,
   "active_milestone": 8,
-  "integration_batch": "milestone-08-reader-copy",
+  "integration_batch": "milestone-08-closing-records",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "M8 importer delivered; #94 reader and complete quality accepted after bounded stale-field correction; exact clean gate/CI/merge/closure pending",
+  "candidate_state": "M8 delivered and closed; six closing records quality accepted, own clean-head gate/publication pending; M9 contract correction next, source not authorized",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -1469,7 +1469,7 @@
         94
       ],
       "owner": "lead",
-      "state": "active: importer delivered, #94 bounded source phase",
+      "state": "complete: source delivered (PR139 importer, PR140 copy), #92/#93/#94 individually closed; closing records own gate/publication pending",
       "expected_remaining": 3,
       "entry_scope": "Import refinements and editorial slice independently accepted.",
       "exit_acceptance": "Themed native focus target, file name, Problems-style error and exact two copy corrections.",
@@ -1529,11 +1529,148 @@
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/quality/root-acceptance.json"
         },
         "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/publication/closures.json",
-        "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/copy/implementation/root-acceptance.json"
+        "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/copy/implementation/root-acceptance.json",
+        {
+          "at": "2026-10-04T02:50:41Z",
+          "scope": "importer PR139 delivered; #92 and #93 closed individually",
+          "pr": 139,
+          "source": "23c281af97c1be10c829034c84f5595f2f9c89db",
+          "merge": "af913078ad36aec3fc4bbf61721da57fd62c7143",
+          "merged_at": "2026-10-04T02:38:06Z",
+          "gated_tree": "f1991f8f705a8287516cc5d4a3d04e945a68eed7",
+          "merge_tree": "f1991f8f705a8287516cc5d4a3d04e945a68eed7",
+          "tree_equals_gated_candidate": true,
+          "local_gate": {
+            "started": "2026-10-04T02:17:12Z",
+            "finished": "2026-10-04T02:20:22Z",
+            "runtime_seconds": 190,
+            "exit": 0,
+            "pages_unit_passed": 1323,
+            "pages_coverage_percent": 100,
+            "svelte_check": "977 files, 0 errors, 0 warnings",
+            "browser_passed": 689,
+            "existing_optin_capture_skips": 20,
+            "failed": 0,
+            "flaky": 0,
+            "retried": 0
+          },
+          "ci": [
+            {
+              "id": 37170929768,
+              "role": "pre-merge, exact head",
+              "conclusion": "success",
+              "jobs": "test/e2e/real-vscode success; publish skipped"
+            },
+            {
+              "id": 37171695891,
+              "role": "post-merge, exact head af913078",
+              "conclusion": "success",
+              "jobs": "test/e2e/real-vscode success; publish skipped"
+            }
+          ],
+          "closures": [
+            {
+              "number": 92,
+              "state": "CLOSED",
+              "reason": "completed",
+              "closedAt": "2026-10-04T02:50:38Z"
+            },
+            {
+              "number": 93,
+              "state": "CLOSED",
+              "reason": "completed",
+              "closedAt": "2026-10-04T02:50:41Z"
+            }
+          ],
+          "quality": "eight actual Sonnet endturns via Opus, highest 0.3, no introduced blocker",
+          "limits": "No true OS dialog cancel or same-file dedupe claim; 103 unaffected browser checks not rerun after the caption correction (24 affected checks, rerun by root); the 689 browser checks ran at the final gate.",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/importer/publication/closures.json"
+        },
+        {
+          "at": "2026-10-04T03:34:52Z",
+          "scope": "copy PR140 delivered; #94 closed",
+          "pr": 140,
+          "source": "fe7e59e8b29867647b2b6e8f0e1d630a28f51136",
+          "merge": "a7552b961e5421d6c1bb96c5d5ef46381ca08bb7",
+          "merged_at": "2026-10-04T03:25:34Z",
+          "gated_tree": "1b76924e8b816ac6bfa95eb47af550851937c2b2",
+          "merge_tree": "1b76924e8b816ac6bfa95eb47af550851937c2b2",
+          "tree_equals_gated_candidate": true,
+          "local_gate": {
+            "started": "2026-10-04T03:08:12Z",
+            "finished": "2026-10-04T03:11:22Z",
+            "runtime_seconds": 190,
+            "exit": 0,
+            "pages_unit_passed": 1323,
+            "pages_coverage_percent": 100,
+            "svelte_check": "977 files, 0 errors, 0 warnings (raw gate line)",
+            "browser_passed": 689,
+            "existing_optin_capture_skips": 20,
+            "failed": 0,
+            "flaky": 0,
+            "retried": 0
+          },
+          "ci": [
+            {
+              "id": 37173478992,
+              "role": "pre-merge, exact head",
+              "conclusion": "success",
+              "jobs": "test/e2e/real-vscode success; publish skipped"
+            },
+            {
+              "id": 37174063275,
+              "role": "post-merge, exact head a7552b96",
+              "conclusion": "success",
+              "jobs": "test/e2e/real-vscode success; publish skipped"
+            }
+          ],
+          "closure": {
+            "number": 94,
+            "state": "CLOSED",
+            "reason": "completed",
+            "closedAt": "2026-10-04T03:34:52Z"
+          },
+          "quality": "eight actual Sonnet endturns via Opus, highest 0.55 (stale candidate_state record field, corrected by root; remaining highest 0.3)",
+          "limits": "Narrow contents hidden, so no phone contents anchor proof (desktop anchor and H2 focus only); overflow checked without baseline geometry comparison.",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/copy/publication/closures.json"
+        },
+        {
+          "at": "2026-10-04T03:35:46Z",
+          "event": "m8_source_delivered_all_closed",
+          "scope": "milestone 8 source delivery complete; closing records pending their own quality, clean-head gate and publication",
+          "actual_open": [
+            63,
+            59,
+            54
+          ],
+          "actual_remaining": 3,
+          "closed": 51,
+          "closed_implemented": 43,
+          "closed_not_planned": 8,
+          "new": 0,
+          "reopened": 0,
+          "manual_ci_runs": 4,
+          "automatic_ci_runs": 0,
+          "releases": 0,
+          "quota_events": 0,
+          "source_gates": 2,
+          "model_approval": "unchanged: Astra e5cda126, merge 5a624128 (identical tree); no new UI approval, no Astra review claimed",
+          "retrospective": "docs/bots/sprints/2026-10-04-retro-09.md",
+          "closing_records": "pending: own quality, clean-head gate and publication (root)"
+        },
+        {
+          "at": "2026-10-04T03:48:34.280617+00:00",
+          "scope": "six closing records complete quality accepted; own gate/publication pending",
+          "actual_workers": 8,
+          "highest_score": 0.3,
+          "introduced_blockers": 0,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-08/closing-records/quality/root-acceptance.json"
+        }
       ],
       "closed_issues": [
         92,
-        93
+        93,
+        94
       ]
     },
     {
@@ -1543,12 +1680,23 @@
         59
       ],
       "owner": "lead",
-      "state": "waiting",
+      "state": "waiting: not activated; survey facts accepted but the flat design was rejected, bounded contract correction needed before any source",
       "expected_remaining": 2,
       "entry_scope": "Reconcile decision08/current29 and settle identity/linking/diagnostics/persistence/reader packaging before code.",
       "exit_acceptance": "Split substantial reference model equivalent to single-file including pins; missing/ambiguous/cyclic refs, lossless owning-file save and four readers.",
       "investigation_limit": "No modules, forms, independent crossing permissions or new expressiveness.",
-      "evidence": [],
+      "evidence": [
+        {
+          "at": "2026-10-04T03:32:18.713325+00:00",
+          "scope": "read-only foundation survey; root accepts survey facts, not the proposed flat design",
+          "proposal_approved": false,
+          "source_authorized": false,
+          "finding": "A flattened one-workspace fragment proposal conflicts with decision 08's complete linked workspace files and collapses workspace-local identity; two complete files with distinct workspace ids may each own the same local operation ids, which resolve by referencing file and qualifier.",
+          "required_next": "A bounded contract correction: linked complete-workspace design with an explicit finite duplicate-local-id, identity, round-trip, owning-write and four-reader matrix, accepted by root before any source.",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/foundation-survey/root-readiness-finding.json",
+          "limits": "Static inspection only; no builds, tests or hosts; worker time ledger missing, raw tool record archived without invented times."
+        }
+      ],
       "closed_issues": []
     },
     {
@@ -1564,7 +1712,14 @@
       "entry_scope": "Forms consume accepted assembled-workspace resolver; epic #63 last.",
       "exit_acceptance": "Legal target options, stale choice diagnostics, own-file writes preserving unrelated edits and complete authoring journey.",
       "investigation_limit": "No form-specific second resolver or independent model semantics.",
-      "evidence": [],
+      "evidence": [
+        {
+          "at": "2026-10-04T03:35:46Z",
+          "scope": "#54 premise gap noted by root; not activated",
+          "finding": "The current-commands-none survey result is a premise gap, not scope zero or vacuous completion. The next step is an intentional, complete add/update authoring inventory in M10. No card or ticket is opened for it.",
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/foundation-survey/root-readiness-finding.json"
+        }
+      ],
       "closed_issues": []
     }
   ],
@@ -1602,11 +1757,13 @@
   "active_delivery": {
     "milestone": 8,
     "issues": [
+      92,
+      93,
       94
     ],
-    "branch": "codex/m8-copy",
-    "base": "af913078ad36aec3fc4bbf61721da57fd62c7143",
-    "state": "reader and complete quality accepted; clean candidate landing gate next"
+    "branch": "codex/m8-closeout-records",
+    "base": "a7552b961e5421d6c1bb96c5d5ef46381ca08bb7",
+    "state": "M8 source delivered and all three issues closed; six closing records final quality accepted, own clean-head gate/publication pending"
   },
   "previous_delivery": {
     "scope": "M6 merged accepted closeout",

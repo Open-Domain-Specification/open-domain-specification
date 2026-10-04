@@ -10,6 +10,8 @@ Durable restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION
 
 ## Current position — 2026-10-04
 
+**Superseded at 2026-10-04T03:37Z by "Milestone 8 delivery" below: 3 open / 51 closed (43 implemented, 8 not planned, 0 new/reopened); open #63, #59, #54.** The paragraphs below are kept as dated snapshots.
+
 Actual 4 open / 50 closed from 54: 42 implemented, 8 not planned, 0 new/reopened. Open: #94, #63, #59, #54. Milestones 1–7 delivered; exact original model approval (Astra e5cda126, merged 5a624128) unchanged. M5 PR135 merge f2069a34 matches gated f3ff556d tree, pre/postCI 37142462656/37142959185 all 3 jobs green, publish skipped, three individual closures; closing-record head 8606b282 passed its own unchanged gate and is published/remote verified.
 
 M6 #91/#77 is delivered. Original PR136 (merge 5bfdb713, gated b757fd2e) passed the local gate and preCI 37152204246, but postCI 37152866652 failed its `test` job (one new App history-availability unit assertion; browser and native jobs green), so the issues stayed open. Corrective PR137 (one test, two records; gated c83ec6ef, local gate exit 0: 652 browser/20 baseline skips/0 flaky, 1283 pages tests/100% coverage) passed preCI 37154961207 and postCI 37155696421, all 3 jobs each, publish skipped; merge edbbbd7f (2026-10-03T21:36:26Z) has a tree identical to the gated head. #91 closed 21:46:24Z and #77 closed 21:46:28Z individually. Four necessary CI runs, two successful local source gates, no duplicate runs, no release, no quota response. Native 32 keyboard/0 failed/0 skips/checker 0; static 36, history 6, bypass 6; quality highest 0.4. The failure cause is a sufficient deadline-straddle mechanism reproduced under a controlled stall; the actual CI occurrence is unproven. Card186 done; see [retrospective 07](sprints/2026-10-03-retro-07.md).
@@ -29,9 +31,9 @@ M6 #91/#77 is delivered. Original PR136 (merge 5bfdb713, gated b757fd2e) passed 
 | 5. Accessible reading | #78, #79, #83 | 9 | complete: three closures; own-gated closing records8606b282 published |
 | 6. Location and return paths | #91, #77 | 7 | complete: PR137 merged edbbbd7f, two individual closures; closing records ef0a82eb published |
 | 7. Phone reading | #82 | 6 | complete: source delivered; closing records de8354b7 own-gated and published |
-| 8. Import and copy finish | #92, #93, #94 | 3 | active: importer delivered; #94 separate PR reader ready for quality |
-| 9. Team-owned model files | #59 | 2 | waiting |
-| 10. Informed forms and authoring epic | #54, #63 | 0 | waiting |
+| 8. Import and copy finish | #92, #93, #94 | 3 | complete: PR139 and PR140 delivered, three individual closures; closing records pending their own gate and publication |
+| 9. Team-owned model files | #59 | 2 | waiting: not activated; flat design rejected, bounded contract correction needed before source |
+| 10. Informed forms and authoring epic | #54, #63 | 0 | waiting: starts with an intentional complete add/update authoring inventory |
 
 ## Milestone 1 delivery retrospective (2026-10-02)
 
@@ -64,6 +66,16 @@ Open issues went from 7 to 6 with one implemented closure (#82), no new or reope
 ## Milestone 8 activation — 2026-10-04T01:27:12.592019+00:00
 
 M7 closing records `de8354b7ba28c371bdd60242e4473dd404ecbb5c` passed their own unmodified gate (227 s; 1313 pages/100%, 665 browser/20 existing captures/zero failed or flaky) and are published/remote verified. This supersedes the earlier pending checkpoint without rewriting its history. Six open issues remain. M8 begins with importer #92/#93 baseline only; implementation waits for root acceptance of four width/theme cells and finite acceptance matrix. #94 remains a separate copy PR. Opus/Sonnet execute, Luna only on actual quota; root owns goal/acceptance/publication. No source changes yet.
+
+## Milestone 8 delivery (2026-10-04)
+
+Open issues went from 6 to 3 with three implemented closures (#92, #93, #94), no new or reopened issues; cumulatively 51 closed (43 implemented, 8 not planned) from the 54 baseline. Open: #63, #59, #54.
+
+- **Importer, PR139** (#92/#93): source `23c281af`, unmodified gate 190 s (1323 pages/100%, 689 browser, 20 existing opt-in baseline skips, 0 failed/flaky/retried), merge `af913078` with a tree identical to the gated tree `f1991f8f`. Pre/post CI 37170929768/37171695891 succeeded (test/e2e/real-vscode; publish skipped). #92 closed 02:50:38Z and #93 02:50:41Z.
+- **Copy, PR140** (#94): source `fe7e59e8`, unmodified gate 190 s (same counts), merge `a7552b96` with a tree identical to the gated tree `1b76924e`. Pre/post CI 37173478992/37174063275 succeeded; #94 closed 03:34:52Z after the post-merge run.
+- Cost: two source PRs, two source gates, four necessary manual CI runs, no automatic duplicate runs, no release, no quota response, no Astra review. The closing records' own quality, clean-head gate and publication are additional and pending (root). The model approval is unchanged (Astra e5cda126, merge 5a624128); no new UI approval is claimed. Full account and limits: [retrospective 09](sprints/2026-10-04-retro-09.md). Card 188 and card 189 are done.
+
+**Next, with no claim beyond what is recorded.** M9 (#59) is not activated. The read-only survey's facts are accepted, but root rejected the flat one-workspace design: decision 08's linked complete workspace files and the duplicate-local-id identity counterexample require a bounded contract correction, accepted by root, before any source. No M9 design is approved. For #54 the survey's "current commands none" is a premise gap, not scope zero or vacuous completion; M10 starts with an intentional, complete add/update authoring inventory. No card or ticket is opened for either.
 
 ## Historical roadmap and retrospective records
 
