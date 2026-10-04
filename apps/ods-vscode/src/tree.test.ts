@@ -53,7 +53,7 @@ vi.mock("vscode", () => {
 	};
 });
 
-import { type ModelNode, ModelTree } from "./tree";
+import { type ModelNode, ModelTree, targetOfNode } from "./tree";
 
 /** Two team files that both have a `ledger` providing `post`, and a consumer in b that takes a's. */
 function teams() {
@@ -228,5 +228,87 @@ describe("the model tree over a set of files", () => {
 		expect(tree.getTreeItem(root).description).toContain(
 			"last good, current text does not load",
 		);
+	});
+});
+
+describe("the authoring entry points of the tree", () => {
+	const ledgerOf = (t: ReturnType<typeof treeOf>, at = 0) =>
+		child(
+			t.tree,
+			child(t.tree, t.tree.getChildren()[at], "Bounded Contexts"),
+			"Ledger",
+		);
+	const accountOf = (t: ReturnType<typeof treeOf>) =>
+		child(t.tree, child(t.tree, ledgerOf(t), "Aggregates"), "Account");
+	const token = (t: ReturnType<typeof treeOf>, node: ModelNode) =>
+		t.tree.getTreeItem(node).contextValue;
+
+	it("marks elements ods-update, parents ods-add and groups with the family they add, keeping ref and group", () => {
+		const t = treeOf();
+		const root = t.tree.getChildren()[0];
+		expect(token(t, root)).toBe("ref ods-update ods-add");
+		expect(token(t, ledgerOf(t))).toBe("ref ods-update ods-add");
+		expect(token(t, child(t.tree, root, "Domains"))).toBe(
+			"group ods-add:domain",
+		);
+		expect(token(t, child(t.tree, ledgerOf(t), "Aggregates"))).toBe(
+			"group ods-add:aggregate",
+		);
+		expect(
+			token(
+				t,
+				child(
+					t.tree,
+					child(t.tree, child(t.tree, ledgerOf(t), "Services"), "Payments"),
+					"Provides",
+				),
+			),
+		).toBe("group ods-add:consumable");
+		// Every contributed menu keeps matching what it matched before.
+		expect(token(t, ledgerOf(t))).toMatch(/ref/);
+		expect(token(t, child(t.tree, root, "Domains"))).not.toMatch(/ref/);
+	});
+
+	it("gives a link and a row of a file that no longer loads no authoring token", () => {
+		const t = consumesOfB();
+		expect(t.tree.getTreeItem(t.links[0]).contextValue).toBe("ref");
+		const stale = treeOf();
+		(stale.files[0] as { stale?: boolean }).stale = true;
+		stale.tree.refresh();
+		const root = stale.tree.getChildren()[0];
+		expect(stale.tree.getTreeItem(root).contextValue).toBe("ref");
+		expect(
+			stale.tree.getTreeItem(child(stale.tree, root, "Domains")).contextValue,
+		).toBe("group");
+	});
+
+	it("resolves a row to a request target: an element to itself and its file, a group to the nearest element above it and its family", () => {
+		const t = treeOf();
+		const ledger = ledgerOf(t, 1);
+		const update = targetOfNode(ledger, "update");
+		expect(update).toMatchObject({
+			file: "b.json",
+			ref: "#/boundedcontexts/ledger",
+			family: "context",
+		});
+		const add = targetOfNode(ledger, "add");
+		expect(add?.file).toBe("b.json");
+		expect(add?.families).toContain("aggregate");
+		expect(add?.families).toContain("service");
+		const entities = child(t.tree, accountOf(t), "Entities");
+		expect(targetOfNode(entities, "add")).toEqual({
+			file: "a.json",
+			ref: accountOf(t).ref,
+			families: ["entity"],
+		});
+		expect(targetOfNode(entities, "update")).toBeUndefined();
+		const [domains] = [child(t.tree, t.tree.getChildren()[0], "Domains")];
+		expect(targetOfNode(domains, "add")).toMatchObject({
+			ref: "#",
+			families: ["domain"],
+		});
+		const links = consumesOfB().links;
+		expect(targetOfNode(links[0], "update")).toBeUndefined();
+		expect(targetOfNode(links[0], "add")).toBeUndefined();
 	});
 });

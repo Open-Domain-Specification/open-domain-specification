@@ -1,5 +1,6 @@
 import { exportSite } from "@open-domain-specification/pages/site";
 import * as vscode from "vscode";
+import { type AuthoringApi, registerAuthoring } from "./authoring/register";
 import { OdsDiagnostics, rangeOfRef } from "./diagnostics";
 import { DetailPanel } from "./pages/panel";
 import { OdsProject, odsFolderOf } from "./project";
@@ -18,6 +19,7 @@ export type OdsTestApi = {
 	project: OdsProject;
 	panel: DetailPanel;
 	tree: ModelTree;
+	authoring: AuthoringApi;
 };
 
 export async function activate(
@@ -150,19 +152,25 @@ export async function activate(
 				placeHolder: "Catalog, sales and inventory for the pet store",
 			});
 			if (description === undefined) return;
-			const file = await project.create(
+			const created = await project.create(
 				folder,
 				name.trim(),
 				description.trim(),
 			);
-			await vscode.window.showTextDocument(file.uri);
+			if (!created.ok) {
+				vscode.window.showErrorMessage(created.message);
+				return;
+			}
+			await vscode.window.showTextDocument(created.file.uri);
 		}),
 	);
+
+	const authoring = registerAuthoring(context, project);
 
 	await project.reload();
 	void promptWhenSkillStale(context);
 
-	return { project, panel: pages, tree };
+	return { project, panel: pages, tree, authoring };
 }
 
 async function pickFolder(

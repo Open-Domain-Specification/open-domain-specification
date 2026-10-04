@@ -88,3 +88,57 @@ export function teamTexts(): Record<string, string> {
 		);
 	return out;
 }
+
+/**
+ * Two team files for the legality guard. `b.json`'s Claims holds an Account
+ * whose `Total` attribute names `a.json`'s `Money` value object; that is legal
+ * only while `a.json` declares Ledger upstream of Claims with a conformist
+ * downstream role, so removing that relationship from `a.json` makes the SAME,
+ * unchanged ref illegal. `Spare` is a second value object Claims may borrow
+ * only through the same relationship.
+ */
+export function borrowSet() {
+	const a = new Workspace("Team A", { description: "A", version: "1" });
+	const aSub = a
+		.addDomain("Bank", { description: "" })
+		.addSubdomain("Core", { type: "core", description: "" });
+	const ledger = aSub.addBoundedcontext("Ledger", { description: "ledger" });
+	const money = ledger.addValueObject("Money", { description: "" });
+	const spare = ledger.addValueObject("Spare", { description: "" });
+
+	const b = new Workspace("Team B", { description: "B", version: "1" });
+	const bSub = b
+		.addDomain("Retail", { description: "" })
+		.addSubdomain("Shop", { type: "core", description: "" });
+	const claims = bSub.addBoundedcontext("Claims", { description: "claims" });
+	const account = claims.addAggregate("Account", { description: "" });
+	const root = account.addEntity("Account", { description: "", root: true });
+	const total = root.addAttribute("Total", {
+		type: "Money",
+		valueobject: money,
+	});
+	const payload = claims.addSchema("Payload");
+
+	a.addRelationship({
+		type: "upstream-downstream",
+		upstream: ledger,
+		downstream: claims,
+		downstreamRoles: ["conformist"],
+		description: "claims conform to the ledger",
+	});
+
+	const set = WorkspaceSet.fromWorkspaces([
+		["a.json", a],
+		["b.json", b],
+	]);
+	const texts: Record<string, string> = {};
+	for (const [file, schema] of set.toSchemas()) texts[file] = asText(schema);
+	return {
+		texts,
+		claims,
+		total,
+		money: set.refTo(b, money),
+		spare: set.refTo(b, spare),
+		payload: set.refTo(b, payload),
+	};
+}

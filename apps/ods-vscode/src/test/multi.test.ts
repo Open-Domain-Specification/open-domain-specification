@@ -1,11 +1,22 @@
 import * as assert from "node:assert/strict";
-import { existsSync, promises as fs, readFileSync } from "node:fs";
+import {
+	existsSync,
+	promises as fs,
+	mkdtempSync,
+	readdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import * as path from "node:path";
 import type {
 	ProbedElement,
 	WebviewMessage,
 } from "@open-domain-specification/pages";
 import * as vscode from "vscode";
+import type { FormInit, FormToHost } from "../authoring/form-protocol";
+import type { FormSession } from "../authoring/session";
 import type { OdsTestApi } from "../extension";
 import { searchIndex } from "../search";
 import type { ModelNode } from "../tree";
@@ -61,7 +72,36 @@ describe("a folder of files read as one set in a real VS Code", function () {
 	const posted: WebviewMessage[] = [];
 	let subscription: vscode.Disposable;
 
+	/**
+	 * The committed fixture is opened in place, so every byte of its .ods folder
+	 * is taken before any test and put back after (and by the test that writes).
+	 */
+	let odsRoot = "";
+	const fixtureBytes = new Map<string, Buffer>();
+	const walk = (dir: string): string[] =>
+		readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+			e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)],
+		);
+	const restoreFixture = () => {
+		for (const file of walk(odsRoot))
+			if (!fixtureBytes.has(file)) rmSync(file, { force: true });
+		for (const [file, bytes] of fixtureBytes)
+			if (!existsSync(file) || !readFileSync(file).equals(bytes))
+				writeFileSync(file, bytes);
+	};
+	const fixtureIntact = () =>
+		walk(odsRoot).length === fixtureBytes.size &&
+		[...fixtureBytes].every(
+			([file, bytes]) => existsSync(file) && readFileSync(file).equals(bytes),
+		);
+
 	before(async () => {
+		odsRoot = path.join(
+			vscode.workspace.workspaceFolders?.[0].uri.fsPath as string,
+			".ods",
+		);
+		for (const file of walk(odsRoot))
+			fixtureBytes.set(file, readFileSync(file));
 		const extension = vscode.extensions.getExtension<OdsTestApi>(EXTENSION_ID);
 		assert.ok(extension, `extension ${EXTENSION_ID} is not installed`);
 		api = await extension.activate();
@@ -80,6 +120,8 @@ describe("a folder of files read as one set in a real VS Code", function () {
 	after(async () => {
 		subscription.dispose();
 		await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+		restoreFixture();
+		assert.ok(fixtureIntact(), "the committed fixture ends byte-identical");
 	});
 
 	/** Asks the webview until its heading names the page and `ready` holds of what the selectors matched. */
@@ -383,5 +425,142 @@ describe("a folder of files read as one set in a real VS Code", function () {
 		} finally {
 			await fs.rm(outDir, { recursive: true, force: true });
 		}
+	});
+	it("declares a relationship in my team.json through api.authoring, writes only that file, and offers every loaded file as its owner", async () => {
+		await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+		const mine = path.join(odsRoot, "my team.json");
+		const others = FILES.filter((f) => f !== "my team.json").map((f) =>
+			path.join(odsRoot, ...f.split("/")),
+		);
+		const otherBefore = others.map((f) => readFileSync(f));
+		const mineBefore = JSON.parse(readFileSync(mine, "utf8")) as {
+			relationships: unknown[];
+		} & Record<string, unknown>;
+		assert.equal(mineBefore.relationships.length, 0);
+		const panelsBefore = api.authoring.panels.length;
+		const panel = await api.authoring.open({
+			kind: "add",
+			file: "my team.json",
+			parentRef: "#",
+			family: "relationship",
+		});
+		assert.ok(panel, "the relationship form opened");
+		try {
+			assert.equal(api.authoring.panels.length, panelsBefore + 1);
+			const session = (panel as unknown as { session: FormSession }).session;
+			const init: FormInit = session.init();
+			assert.equal(init.owner.file, "my team.json");
+			assert.deepEqual(
+				init.owner.ownerChoices?.map((c) => c.value).sort(),
+				[...FILES].sort(),
+				"every loaded file is offered as the owner",
+			);
+			const choices = init.fields.find((f) => f.name === "upstream")?.choices;
+			const end = (file: string) => {
+				const found = choices?.find((c) => c.file === file);
+				assert.ok(found, `no context offered from ${file}`);
+				return found.value;
+			};
+			const values = Object.fromEntries(
+				init.fields.map((f) => [f.name, f.value]),
+			);
+			const save: FormToHost = {
+				type: "save",
+				requestId: panel.requestId,
+				owner: "my team.json",
+				values: {
+					...values,
+					type: "customer-supplier",
+					upstream: end("a#%.json"),
+					downstream: end("my team.json"),
+					description: "Team Hash supplies the ledger Team Space reads.",
+				},
+			};
+			const replies = await session.handle(save);
+			assert.equal(
+				replies[0]?.type,
+				"saved",
+				`the save was not accepted: ${JSON.stringify(replies)}`,
+			);
+			await until(
+				() =>
+					(
+						JSON.parse(readFileSync(mine, "utf8")) as {
+							relationships: unknown[];
+						}
+					).relationships.length === 1,
+				"the relationship never reached my team.json",
+			);
+			const after = JSON.parse(readFileSync(mine, "utf8")) as {
+				relationships: Array<Record<string, unknown>>;
+			} & Record<string, unknown>;
+			assert.deepEqual(after.relationships, [
+				{
+					type: "customer-supplier",
+					upstream: { $ref: "a%23%25.json#/boundedcontexts/ledger" },
+					downstream: { $ref: "#/boundedcontexts/ledger" },
+					upstreamRoles: [],
+					downstreamRoles: [],
+					description: "Team Hash supplies the ledger Team Space reads.",
+				},
+			]);
+			const { relationships: _a, ...restAfter } = after;
+			const { relationships: _b, ...restBefore } = mineBefore;
+			assert.deepEqual(restAfter, restBefore, "the rest of my team.json");
+			for (const [i, f] of others.entries())
+				assert.ok(
+					readFileSync(f).equals(otherBefore[i]),
+					`${f} must be byte-identical`,
+				);
+		} finally {
+			panel.dispose();
+			restoreFixture();
+		}
+		assert.ok(fixtureIntact(), "the fixture is restored after the write");
+		await until(
+			() => fileOf("my team.json").workspace?.relationships.length === 0,
+			"the project did not reload the restored file",
+		);
+	});
+
+	it("refuses to create a workspace file over a valid or an unloadable target, names the file, and leaves both byte-identical", async () => {
+		const root = mkdtempSync(path.join(tmpdir(), "ods-create-"));
+		try {
+			const ods = path.join(root, ".ods");
+			await fs.mkdir(ods);
+			const valid = JSON.stringify(
+				{ id: "existing_one", name: "Existing One", version: "1" },
+				null,
+				2,
+			);
+			const broken = '{ "name": ';
+			writeFileSync(path.join(ods, "existing_one.json"), valid);
+			writeFileSync(path.join(ods, "broken_one.json"), broken);
+			const folder: vscode.WorkspaceFolder = {
+				uri: vscode.Uri.file(root),
+				name: "temp",
+				index: 9,
+			};
+			const listing = readdirSync(ods).sort();
+			const loaded = api.project.workspaces.length;
+			for (const [name, file, text] of [
+				["Existing One", "existing_one.json", valid],
+				["Broken One", "broken_one.json", broken],
+			] as const) {
+				const refused = await api.project.create(folder, name, "again");
+				assert.equal(refused.ok, false, `${name} must be refused`);
+				if (refused.ok) continue;
+				assert.equal(refused.cause, "exists");
+				assert.ok(refused.message.includes(file), refused.message);
+				assert.match(refused.message, /left untouched/);
+				assert.match(refused.message, /Choose a different workspace name/);
+				assert.equal(readFileSync(path.join(ods, file), "utf8"), text);
+			}
+			assert.deepEqual(readdirSync(ods).sort(), listing, "nothing was created");
+			assert.equal(api.project.workspaces.length, loaded);
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+		assert.ok(fixtureIntact(), "the committed fixture is untouched");
 	});
 });

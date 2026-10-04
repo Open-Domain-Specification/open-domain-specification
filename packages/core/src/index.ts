@@ -4,6 +4,7 @@ export * from "./context-map";
 export * from "./evidence";
 export * from "./flow-map";
 export * from "./identity-crossings";
+export * from "./legal-targets";
 export * from "./namespace";
 export * from "./narrative";
 export * from "./path-codec";

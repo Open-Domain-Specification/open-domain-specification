@@ -94,6 +94,18 @@
 				"title": "Install AI Skill",
 				"category": "ODS",
 				"icon": "$(sparkle)"
+			},
+			{
+				"command": "ods.add",
+				"title": "Add...",
+				"category": "ODS",
+				"icon": "$(add)"
+			},
+			{
+				"command": "ods.update",
+				"title": "Update...",
+				"category": "ODS",
+				"icon": "$(edit)"
 			}
 		],
 		"menus": {
@@ -124,6 +136,16 @@
 					"command": "ods.openPage",
 					"when": "view == odsModel && viewItem =~ /ref/",
 					"group": "inline@0"
+				},
+				{
+					"command": "ods.add",
+					"when": "view == odsModel && viewItem =~ /ods-add/",
+					"group": "1_authoring@1"
+				},
+				{
+					"command": "ods.update",
+					"when": "view == odsModel && viewItem =~ /ods-update/",
+					"group": "1_authoring@2"
 				}
 			],
 			"commandPalette": [

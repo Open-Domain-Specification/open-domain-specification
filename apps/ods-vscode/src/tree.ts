@@ -11,6 +11,12 @@ import {
 } from "@open-domain-specification/core";
 import { healthCountsOf } from "@open-domain-specification/pages";
 import * as vscode from "vscode";
+import {
+	addFamiliesUnder,
+	familyById,
+	familyOfRef,
+} from "./authoring/families";
+import type { FamilyId } from "./authoring/form-protocol";
 import type { OdsDiagnostics } from "./diagnostics";
 import type { OdsProject, WorkspaceFile } from "./project";
 
@@ -58,6 +64,106 @@ export class ModelNode {
 			? `${parent}\u2192${(this.options.linkFile ?? this.file).uri.toString()}${this.options.linkTo}`
 			: parent;
 	}
+}
+
+/** The family a group row lists, by the label `group()` is given; a group is where a new one of that family is added. */
+const GROUP_FAMILY: Record<string, FamilyId> = {
+	Domains: "domain",
+	"Bounded Contexts": "context",
+	Teams: "team",
+	Relationships: "relationship",
+	Aggregates: "aggregate",
+	Services: "service",
+	Invariants: "invariant",
+	"Value Objects": "valueObject",
+	Policies: "policy",
+	Processes: "process",
+	Schemas: "schema",
+	Glossary: "term",
+	Entities: "entity",
+	Provides: "consumable",
+	Consumes: "consumption",
+};
+
+/** The element a new child would be added under: the row itself, or the nearest row above a group that names an element of its own. */
+function parentElementOf(node: ModelNode): ModelNode | undefined {
+	for (
+		let n: ModelNode | undefined = node.ref ? node : node.options.parent;
+		n;
+		n = n.options.parent
+	)
+		if (n.ref && !n.options.linkTo) return n;
+	return undefined;
+}
+
+/**
+ * What the row can author, as context-menu tokens: `ods-update` on an element
+ * whose family has an update form, `ods-add` on an element that can hold a
+ * child family, `ods-add:<family>` on a group whose family may be added under
+ * the element above it. Links, and rows of a file that no longer loads, carry
+ * none (a stale file is shown from its last good load and is never edited).
+ */
+export function authoringTokens(node: ModelNode): string[] {
+	if (node.options.linkTo || node.file.stale) return [];
+	if (node.ref) {
+		const family = familyOfRef(node.ref);
+		if (!family) return [];
+		return [
+			...(familyById(family)?.update ? ["ods-update"] : []),
+			...(addFamiliesUnder(node.ref).length > 0 ? ["ods-add"] : []),
+		];
+	}
+	const family = GROUP_FAMILY[node.label];
+	const parent = parentElementOf(node);
+	return family && parent?.ref && addFamiliesUnder(parent.ref).includes(family)
+		? [`ods-add:${family}`]
+		: [];
+}
+
+/** Where a tree row sends the add and update commands: the parent or element, in the file that holds it. */
+export type NodeTarget = {
+	/** The set path of the file that holds `ref`. */
+	file: string;
+	ref: string;
+	/** Add: the families that can be added there (one for a group row, so it needs no question). */
+	families: FamilyId[];
+	/** Update: the family of the element itself. */
+	family?: FamilyId;
+};
+
+export function targetOfNode(
+	node: ModelNode,
+	mode: "add" | "update",
+): NodeTarget | undefined {
+	const tokens = authoringTokens(node);
+	if (mode === "update") {
+		if (!tokens.includes("ods-update") || !node.ref) return undefined;
+		return {
+			file: node.file.relativePath,
+			ref: node.ref,
+			families: [],
+			family: familyOfRef(node.ref),
+		};
+	}
+	const parent = parentElementOf(node);
+	if (!parent?.ref) return undefined;
+	if (node.ref) {
+		return tokens.includes("ods-add")
+			? {
+					file: node.file.relativePath,
+					ref: node.ref,
+					families: addFamiliesUnder(node.ref),
+				}
+			: undefined;
+	}
+	const group = tokens.find((t) => t.startsWith("ods-add:"));
+	return group
+		? {
+				file: parent.file.relativePath,
+				ref: parent.ref,
+				families: [group.slice("ods-add:".length) as FamilyId],
+			}
+		: undefined;
 }
 
 function group(
@@ -152,7 +258,10 @@ export class ModelTree
 		);
 		item.id = node.key;
 		item.description = node.options.description;
-		item.contextValue = node.ref ? "ref" : "group";
+		item.contextValue = [
+			node.ref ? "ref" : "group",
+			...authoringTokens(node),
+		].join(" ");
 		// A link is judged where the element it names lives.
 		const problems = node.ref
 			? this.diagnostics.forRef(node.options.linkFile ?? node.file, node.ref)

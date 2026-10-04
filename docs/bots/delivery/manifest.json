@@ -12,7 +12,7 @@
   "integration_batch": "milestone-10-informed-authoring",
   "owner": "lead",
   "candidate": "e5cda1260f09b5b69a41b0a4027bd63fd33b1899",
-  "candidate_state": "Historical M1 candidate retained; M9 source delivered and approved in m9_delivery; closing records gate pending, M10 finite implementation next",
+  "candidate_state": "Top-level candidate/approval retain historicalM1; M9 fully delivered and recorded; M10 complete source/native quality ready for exact clean existing landing gates",
   "approval": {
     "reviewer": "OpenAI Astra",
     "model": "gpt-6-astra",
@@ -1778,6 +1778,15 @@
           ],
           "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/root-requirements-matrix.json",
           "records_gate": "pending"
+        },
+        {
+          "at": "2026-10-04T14:08:58.018370+00:00",
+          "scope": "M9 separate records closeout evidence reconciled",
+          "records_head": "eb6707b31b5dabc5754b4e5a1ebb8e59081a88cc",
+          "records_gate": 0,
+          "published_remote_verified": true,
+          "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/records-gate-eb6707b3/result.json",
+          "note": "Earlier pending entry was written before own records gate; retained as historical state."
         }
       ],
       "closed_issues": [
@@ -1792,7 +1801,7 @@
         63
       ],
       "owner": "lead",
-      "state": "active preparation accepted; coding after records publication",
+      "state": "active: complete source/native quality accepted; exact landing gates/CI/merge/closure outstanding",
       "expected_remaining": 0,
       "entry_scope": "Forms consume accepted assembled-workspace resolver; epic #63 last.",
       "exit_acceptance": "Legal target options, stale choice diagnostics, own-file writes preserving unrelated edits and complete authoring journey.",
@@ -1811,6 +1820,67 @@
           "scope": "Realforms legaldropdowns/save/stale; safecreate; parentauditlast",
           "plan": "/Users/jonathanturnock/.codex/ods-delivery/milestone-10/A-inventory/technical-plan-v2.md",
           "additional_guard": "Formerly legal baseline choice becoming illegal during form must be refused even unchanged ref string."
+        },
+        {
+          "at": "2026-10-04T14:08:58.018370+00:00",
+          "event": "M10-C-writer-source-accepted-for-forms",
+          "scope": "Atomic edit/save and supplied precise LegalChecks only; no complete forms/native/issue acceptance",
+          "evidence": [
+            "terminal coordinator0 and actual Opus5.5/Sonnet5.5 end_turn",
+            "102 writer cases actual unmasked exits0; owning types/format/build0",
+            "all17 foundation/root source pins unchanged",
+            "NorthBank same exact diagnostic rules/severities, owner-only save other11bytes preserved; same formerly legal ref refused after foreign relationship removal",
+            "coordinator scoped eight-lens/PANIC and actual interface handoff"
+          ],
+          "binding_forms_obligations": [
+            "Every reference field on saved holder gets checks/providers including unchanged refs",
+            "openedIllegal originates only host open set; grandfather only unrelated edits, never changed ref/governing fields",
+            "Consumable type editable; true keys/relationship identity and consumption consumedref readonly honestly",
+            "Use actual post-state holder facts for root/attribute sibling/relation draft legality"
+          ],
+          "limits": [
+            "existing detect-before-check race across foreign files, no CAS",
+            "no-op emits no writes before guard",
+            "unknown field canonicalization limit retained from M9",
+            "all required full gates/native remain at complete batch"
+          ]
+        },
+        {
+          "at": "2026-10-04T15:12:23.035634+00:00",
+          "event": "M10-host-form-contract-source-accepted-for-real-UI",
+          "scope": "D/D2/D3 actual 39operations20families host descriptors/choices/session/intents only; no complete54/native/landing claim",
+          "evidence": [
+            "D3 terminal0 actualOpus5.5/Sonnet5.5 end_turn",
+            "26authoringtests actualdirectexit0/source types/format0",
+            "D2 core18 and build0; D/C/NorthBank diagnostic preservation cases retained; full unchanged gate later",
+            "All13protectedsource+8rootrecord hashes unchanged D3; only5allowedauthoring files changed",
+            "Both directed/symmetric relationship checks/providers and cross-filequalifiedholder writer proof, preserved baselineinvalid unrelatededit",
+            "Draftpolicy/processtrigger refresh follows pending authoredJSON through existing loader; failures visible/refused and unrelated editing preserved",
+            "DirectdeadlineUPDATE plus19ADD/20UPDATE coverage/schema classifications proved in combined D/D2/D3 cases"
+          ],
+          "decisions": [
+            "Accept scoped fromSchemas spy as a focused error-path test seam, not production mutation/testing campaign.",
+            "No coverage tooling or additional branch permutations needed for UI handoff; meaningfulcases/source path + existingrequired finalgates sufficient.",
+            "E must visibly render disabledReason and keep draft values; all39operation/identity/answers support unchanged."
+          ],
+          "limits": [
+            "No native/UI proof yet",
+            "Full gate/core/modelpins/CI deferred to completebatch",
+            "Draft canonical model reload cost grows with modelsize, not benchmarked; uses existing loader, no newresolver",
+            "Existing canonical unknownfield/drop and detect-before-check prices retained",
+            "Masked iterationpipeline failures retained, not acceptance; finaldirectworker/coordinator results are proof"
+          ]
+        },
+        {
+          "at": "2026-10-04T16:10:17.913482+00:00",
+          "event": "M10-complete-source-native-quality-readiness",
+          "scope": "20families39ops; scopedFactualDOM/native, G8principles/G2 confirmedcorrections; no full54acceptance",
+          "evidence": [
+            "/Users/jonathanturnock/.codex/ods-delivery/milestone-10/F-native-authoring/root-source-acceptance.json",
+            "/Users/jonathanturnock/.codex/ods-delivery/milestone-10/G2-confirmed-corrections/root-source-acceptance.json"
+          ],
+          "next": "Exactcleanunmodifiedgate+existingnative5configs/keyboard/resultguard then necessary prepostCI,sametreemerge,54closure,63auditlast,all10goal audit",
+          "cadence": "No mutation scripts/campaigns/harnesses or addedlong-running suites/slowgates; existingrequiredchecks only"
         }
       ],
       "closed_issues": []
@@ -1853,7 +1923,7 @@
       54,
       63
     ],
-    "state": "Finite authoring inventory and product decisions accepted; source waits closing records publication",
+    "state": "Complete20families39operations source/representativeactualnative/integratedquality accepted; clean candidate gates/CI/merge/closure outstanding",
     "card": "boards/project-backlog/191-informed-authoring-forms.md",
     "sprint": "docs/bots/sprints/2026-10-04-sprint-11.md"
   },
@@ -2085,5 +2155,14 @@
     ],
     "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/root-requirements-matrix.json",
     "records_gate": "pending"
+  },
+  "m9_records_closeout": {
+    "at": "2026-10-04T14:08:58.018370+00:00",
+    "scope": "M9 separate records closeout evidence reconciled",
+    "records_head": "eb6707b31b5dabc5754b4e5a1ebb8e59081a88cc",
+    "records_gate": 0,
+    "published_remote_verified": true,
+    "evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/records-gate-eb6707b3/result.json",
+    "note": "Earlier pending entry was written before own records gate; retained as historical state."
   }
 }

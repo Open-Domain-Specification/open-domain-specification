@@ -2,7 +2,7 @@
 
 ## Goal / health
 
-Clear the guarded backlog: **2 open / 52 closed** from54 (44implemented,8notplanned,zero new/reopened). Open #54,#63. Milestones1–9 source outcomes are delivered; M9 closing records are being gated before publication. No release.
+Clear the guarded backlog: **2 open / 52 closed** from54 (44implemented,8notplanned,zero new/reopened). Open #54,#63. Milestones1–9 and their closing records are delivered. M10 source foundations are accepted for form implementation; full authoring acceptance remains open. No release.
 
 ## Binding delegation policy — 2026-10-03
 
@@ -20,9 +20,9 @@ The first pre-merge package job had a Vitest reporting timeout after all 1,547 p
 
 ## Next
 
-Publish these closing records after their own unmodified gate, then implement #54 against the accepted multifile resolver. The source-backed inventory covers 20 authoring families and 39 add/update operations, plus safe workspace creation. Real extension-owned forms have labelled fields, legal dropdowns, populated updates and explicit Save/Cancel. Two palette commands and context-aware tree entry points keep the command surface small.
+Implement #54 against the accepted multifile resolver. M9 closing records eb6707b3 passed their own unmodified gate and were published with the remote verified. The source-backed inventory covers 20 authoring families and 39 add/update operations, plus safe workspace creation. Real extension-owned forms have labelled fields, legal dropdowns, populated updates and explicit Save/Cancel. Two palette commands and context-aware tree entry points keep the command surface small.
 
-Opus coordinates bounded Sonnet subsets. Safe creation/fresh reads and core legal-choice queries come first, with disjoint ownership. The writer must reject choices that become illegal or stale during a form, while preserving unrelated or deliberately pinned diagnostics. Existing identity keys remain read-only; display names and supported mutable fields are editable. Real native add AND update journeys must interact with the actual form DOM.
+Opus coordinates bounded Sonnet subsets. Safe creation/fresh reads, core legal-choice queries and atomic writer source are accepted for downstream implementation. Focused checks: 17 legal-choice cases, 8 safe-create cases and 102 writer cases; owning types/format/build passed. Real-host evidence remains outstanding. Host form descriptors/session/choices are now accepted for all 39 operations. The final 26 authoring cases pass, including draft-choice refresh, complete relationship checks and deadline update. The real labelled webview and command/tree source are accepted for native verification. A bounded form-script correction preserves newer unfinished drafts and focus across older host refreshes; actual DOM proof remains outstanding. The existing native Add/Update journeys now pass, including unfinished-draft/focus preservation, Cancel/no-write and visible required-field refusal. The multi-file host checks prove all loaded owners, owner-only writes and safe-create refusal. Integrated quality is complete. Confirmed dirty-buffer completion messaging and shared-label corrections passed 18 core-query and 24 session/choice cases plus owning checks; README now matches actual Add/Update, owner and editor-save behavior. Next: existing complete-batch landing gate and all five native configurations plus keyboard/result guard on a clean committed candidate. The writer must reject choices that become illegal or stale during a form, while preserving unrelated or deliberately pinned diagnostics. Existing identity keys remain read-only; display names and supported mutable fields are editable. Real native add AND update journeys must interact with the actual form DOM.
 
 ## Later
 
@@ -30,7 +30,7 @@ Close #54 only after complete acceptance, exact gates and merge verification. Au
 
 ## Working state
 
-Updated 2026-10-04T13:09:55.062277+00:00. M9 source merge `dc040764e4b9565fc023f6725de26c40caf02a8e` is accepted; this records-only change still needs its clean-head gate before publication. Next sprint: `docs/bots/sprints/2026-10-04-sprint-11.md`. Durable acceptance, controls and raw evidence: `/Users/jonathanturnock/.codex/ods-delivery`.
+Updated 2026-10-04T16:10:17.913482+00:00. Branch codex/m10-authoring is based on published eb6707b3. The M10 candidate is local and unpushed; no M10 PR or full landing gate yet. Its exact clean commit and verification evidence are recorded in the durable checkpoint. The next complete batch must pass the unmodified landing gate before push. Next sprint: `docs/bots/sprints/2026-10-04-sprint-11.md`. Durable acceptance, controls and raw evidence: `/Users/jonathanturnock/.codex/ods-delivery`.
 
 ## Binding owner verification cadence
 
