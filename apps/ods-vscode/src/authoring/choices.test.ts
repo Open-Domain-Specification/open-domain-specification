@@ -18,16 +18,39 @@ const petstore = path.resolve(__dirname, "../../../../models/petstore/.ods");
 
 type Plain = { [key: string]: unknown };
 
+type Candidate = {
+	request: UpdateRequest;
+	/** The element's own canonical JSON node (an entity relation's is its row). */
+	node: Plain;
+	/** Where that node sits in petstore.json. */
+	path: (string | number)[];
+};
+
 /** Every element of petstore a form can edit, found from the canonical JSON and the loaded model. */
-async function requests(): Promise<UpdateRequest[]> {
+async function candidates(): Promise<Candidate[]> {
 	const io = diskTextIo(petstore);
 	const fresh = await readFreshSet(io, ["petstore.json"]);
 	const file = "petstore.json";
 	const canonical = fresh.set.toSchemas().get(file) as unknown as Plain;
-	const out: UpdateRequest[] = [
-		{ kind: "update", file, ref: "#", family: "workspace" },
+	const at = (path: (string | number)[]): Plain => {
+		let node: unknown = canonical;
+		for (const step of path) node = (node as Plain)[step];
+		if (!node) throw new Error(`no canonical node at ${path.join("/")}`);
+		return node as Plain;
+	};
+	const out: Candidate[] = [
+		{
+			request: { kind: "update", file, ref: "#", family: "workspace" },
+			node: canonical,
+			path: [],
+		},
 	];
-	const walk = (node: Plain, ref: string, family: FamilyId) => {
+	const walk = (
+		node: Plain,
+		ref: string,
+		family: FamilyId,
+		here: (string | number)[],
+	) => {
 		for (const { property, children } of familyById(family).collections)
 			for (const child of children) {
 				const descriptor = familyById(child);
@@ -35,32 +58,86 @@ async function requests(): Promise<UpdateRequest[]> {
 				const collection = node[property] as Plain | undefined;
 				for (const [key, value] of Object.entries(collection ?? {})) {
 					const childRef = `${ref}/${property}/${encodeRefSegment(key)}`;
-					out.push({ kind: "update", file, ref: childRef, family: child });
-					walk(value as Plain, childRef, child);
+					const path = [...here, property, key];
+					out.push({
+						request: { kind: "update", file, ref: childRef, family: child },
+						node: value as Plain,
+						path,
+					});
+					walk(value as Plain, childRef, child, path);
 					if (child === "entity" || child === "valueObject")
 						for (const [row] of (
 							((value as Plain).relations as unknown[] | undefined) ?? []
 						).entries())
 							out.push({
-								kind: "update",
-								file,
-								ref: childRef,
-								family: "entityRelation",
-								row,
+								request: {
+									kind: "update",
+									file,
+									ref: childRef,
+									family: "entityRelation",
+									row,
+								},
+								node: ((value as Plain).relations as Plain[])[row],
+								path: [...path, "relations", row],
 							});
 				}
 			}
 	};
-	walk(canonical, "#", "workspace");
+	walk(canonical, "#", "workspace", []);
 	const ws = fresh.set.byPath(file);
-	for (const r of ws?.relationships ?? [])
-		out.push({ kind: "update", file, ref: r.ref, family: "relationship" });
-	for (const context of ws?.boundedcontexts.values() ?? [])
-		for (const providers of [context.aggregates, context.services])
-			for (const provider of providers.values())
-				for (const c of provider.consumptions)
-					out.push({ kind: "update", file, ref: c.ref, family: "consumption" });
+	for (const [i, r] of (ws?.relationships ?? []).entries())
+		out.push({
+			request: { kind: "update", file, ref: r.ref, family: "relationship" },
+			node: at(["relationships", i]),
+			path: ["relationships", i],
+		});
+	for (const [ck, context] of ws?.boundedcontexts ?? [])
+		for (const [pk, providers] of [
+			["aggregates", context.aggregates],
+			["services", context.services],
+		] as const)
+			for (const [key, provider] of providers)
+				for (const [i, c] of provider.consumptions.entries()) {
+					const path = ["boundedcontexts", ck, pk, key, "consumes", i];
+					out.push({
+						request: {
+							kind: "update",
+							file,
+							ref: c.ref,
+							family: "consumption",
+						},
+						node: at(path),
+						path,
+					});
+				}
 	return out;
+}
+
+async function requests(): Promise<UpdateRequest[]> {
+	return (await candidates()).map((c) => c.request);
+}
+
+/**
+ * Where `$ref`s sit in an element's own node, child collections that are elements
+ * of their own left out: `p` a direct ref, `p[]` a list of refs, `p.q` / `p[].q` a ref nested in an object or row.
+ */
+function refShape({ request, node }: Candidate): string {
+	const own = new Set(
+		familyById(request.family).collections.map((c) => c.property),
+	);
+	const found = new Set<string>();
+	const look = (value: unknown, where: string) => {
+		if (Array.isArray(value))
+			for (const item of value) look(item, `${where}[]`);
+		else if (value && typeof value === "object") {
+			if (typeof (value as Plain).$ref === "string") found.add(where);
+			else
+				for (const [k, v] of Object.entries(value))
+					look(v, where ? `${where}.${k}` : k);
+		}
+	};
+	for (const [k, v] of Object.entries(node)) if (!own.has(k)) look(v, k);
+	return `${request.family}|${[...found].sort().join(",")}`;
 }
 
 describe("F5 petstore oracle: every ref the model holds is a legal choice", () => {
@@ -124,7 +201,7 @@ async function scratch() {
 }
 
 describe("F6 every operation saves through the real writer", () => {
-	it("edits one field of every petstore element of every family, writing only that field, with every reference still judged and legal", async () => {
+	it("edits one field of one petstore element per family and reference shape through the real writer, and reads each edited field back", async () => {
 		const { dir, port } = await scratch();
 		try {
 			const field = (family: FamilyId) =>
@@ -135,8 +212,53 @@ describe("F6 every operation saves through the real writer", () => {
 						: family === "consumption"
 							? "evidence"
 							: "name";
-			let saved = 0;
-			for (const request of await requests()) {
+			// the first element of each (family, where its refs sit); the deadline family has no petstore element: see session.test.ts "updates a deadline" (line 1167)
+			const all = await candidates();
+			const shapes = all.map(refShape);
+			const sample = all.filter((_, i) => shapes.indexOf(shapes[i]) === i);
+			const sampleShapes = sample.map(refShape);
+			// the sample covers every candidate family and reference shape, with nothing cut
+			expect(all).toHaveLength(229);
+			expect(sample).toHaveLength(29);
+			expect(new Set(sampleShapes)).toEqual(new Set(shapes));
+			expect(new Set(sampleShapes).size).toBe(sample.length);
+			expect([...sampleShapes].sort()).toEqual([
+				"aggregate|",
+				"attribute|",
+				"attribute|identifies",
+				"attribute|valueobject",
+				"consumable|",
+				"consumable|raises[]",
+				"consumable|raises[],schema",
+				"consumable|rejects[],schema",
+				"consumable|returns",
+				"consumable|returns,schema",
+				"consumable|schema",
+				"consumption|by[],consumable",
+				"consumption|consumable",
+				"context|subdomains[],team",
+				"domain|",
+				"entityRelation|target",
+				"entity|",
+				"invariant|constrains[]",
+				"policy|on[],then[]",
+				"process|ends[],on[],starts[],then[]",
+				"relationship|downstream,upstream",
+				"relationship|participants[]",
+				"schema|",
+				"service|",
+				"subdomain|",
+				"team|",
+				"term|embodiedBy",
+				"valueObject|",
+				"workspace|",
+			]);
+			const families = new Set(sample.map((c) => c.request.family));
+			expect(families.size).toBe(19);
+			for (const { id } of FAMILIES)
+				if (id !== "deadline") expect(families.has(id), id).toBe(true);
+			const expected: unknown[] = [];
+			for (const { request } of sample) {
 				const opened = await FormSession.open(port, request);
 				if (!opened.ok) throw new Error(opened.message);
 				const { session } = opened;
@@ -146,6 +268,7 @@ describe("F6 every operation saves through the real writer", () => {
 					name === "evidence"
 						? { comments: [], disposition: "tolerated" }
 						: `${(init.fields.find((f) => f.name === name)?.value as string) || "x"} edited`;
+				expected.push(value);
 				const out = await session.handle({
 					type: "save",
 					requestId: init.requestId,
@@ -157,9 +280,19 @@ describe("F6 every operation saves through the real writer", () => {
 						wrote: expect.stringMatching(/disk|noop/),
 					}),
 				]);
-				saved++;
 			}
-			expect(saved).toBe((await requests()).length);
+			const onDisk = JSON.parse(
+				await fs.readFile(path.join(dir, "petstore.json"), "utf8"),
+			);
+			for (const [i, { request, path: where }] of sample.entries()) {
+				let node = onDisk;
+				for (const step of where) node = node[step];
+				const name = field(request.family);
+				const label = `${request.family} ${request.ref} ${name}`;
+				if (name === "evidence")
+					expect(node.disposition, label).toBe("tolerated");
+				else expect(node[name], label).toBe(expected[i]);
+			}
 			// every family still opens on the edited file: nothing the writer emitted is unreadable
 			const again = await FormSession.open(port, {
 				kind: "update",
