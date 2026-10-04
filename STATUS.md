@@ -14,9 +14,9 @@ Restart authority: `/Users/jonathanturnock/.codex/ods-delivery/EXECUTION-POLICY.
 
 ## Now
 
-M9 #59 source and integration are accepted for the landing candidate. Core2,334 tests; extension207; pages1,541 at100% coverage and997 files with0 errors/warnings; Graphviz56, Markdown106, skill186, shared28, NorthBank51 and docs28. NorthBank is12 team-owned files with19contexts/34declaredrelationships/37root-map edges and exact3diagnostics. Packaged ESM/CJS independently produce214files/420cross-file links matching the generated site. Frozen original bytes and DISCOVERY history remain intact.
+M9 #59 source and integration are accepted for the landing candidate. Core2,339 tests; extension207; pages1,541 at100% coverage and997 files with0 errors/warnings; Graphviz56, Markdown106, skill186, shared28, NorthBank51 and docs28. NorthBank is12 team-owned files with19contexts/34declaredrelationships/37root-map edges and exact3diagnostics. Packaged ESM/CJS independently produce214files/420cross-file links matching the generated site. Frozen original bytes and DISCOVERY history remain intact.
 
-Whole eight-lens quality F and bounded behavior corrections G are complete. Diagnostic ranges resolve alternate valid path spellings at the owning element; cross-file kind wording names the correct file; malformed URL imports return actionable failures; navigation prose states its host scope. No known introduced defects/high-score findings remain. All five generated schema copies are current.
+Whole eight-lens quality F and bounded behavior corrections G are complete. Diagnostic ranges resolve alternate valid path spellings at the owning element; cross-file kind wording names the correct file; malformed URL imports return actionable failures; navigation prose states its host scope. No known introduced defects/high-score findings remain. All five generated schema copies are current. Required H/I marker passes are accepted: shared relationship grouping preserves662 generated files and162 page rows, and header typography preserves868 measurements. No clean-code markers remain.
 
 ## Next
 
@@ -34,7 +34,7 @@ M8source PR139/140 closed92/93/94 after exact pre/postCI success and identical g
 
 ## Working state
 
-Updated 2026-10-04T10:29:33.546860+00:00. Branch `codex/m9-multifile`, base `5120fd54`; complete source and root records await freeze/gate. G root acceptance: `/Users/jonathanturnock/.codex/ods-delivery/milestone-09/G-final-corrections/root-acceptance.json`. Final model reviews, native/current-candidate gates, CI and landing are pending; #59 remains open.
+Updated 2026-10-04T11:04:11.646799+00:00. Branch `codex/m9-multifile`, base `5120fd54`; candidate94897c24 plus accepted H/I corrections and current records await final freeze/gate. G root acceptance: `/Users/jonathanturnock/.codex/ods-delivery/milestone-09/G-final-corrections/root-acceptance.json`. Final model reviews, native/current-candidate gates, CI and landing are pending; #59 remains open.
 
 
 ### M9 complete-source checkpoint — 2026-10-04T09:46:38.004847+00:00

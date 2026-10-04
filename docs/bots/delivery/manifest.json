@@ -1977,5 +1977,14 @@
       54,
       63
     ]
+  },
+  "m9_precommit_corrections": {
+    "at": "2026-10-04T11:04:11.646799+00:00",
+    "H_evidence": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/H-marker",
+    "I_acceptance": "/Users/jonathanturnock/.codex/ods-delivery/milestone-09/I-marker/root-acceptance.json",
+    "core_tests": 2339,
+    "pages_tests": 1541,
+    "remaining_markers": 0,
+    "state": "Accepted source, finalfreeze/gate/native/reviews/CI/merge pending"
   }
 }

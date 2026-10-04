@@ -2,6 +2,7 @@
 import {
 	type BoundedContext,
 	type ContextRelationship,
+	counterpartOf,
 	hasAuthoredDescription,
 	narrativeText,
 	relationshipNarrative,
@@ -14,7 +15,6 @@ import EmptyState from "../atoms/EmptyState.svelte";
 import Keyword from "../atoms/Keyword.svelte";
 import Modal from "../atoms/Modal.svelte";
 import {
-	counterpartOf,
 	type EvidenceRow,
 	hasEvidence,
 	positionGroups,

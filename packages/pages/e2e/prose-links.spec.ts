@@ -1,5 +1,11 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { modelHash, serveModel, servePetstore, viewerAt } from "./helpers";
+import {
+	modelHash,
+	PETSTORE_SCHEMA,
+	serveModel,
+	servePetstore,
+	viewerAt,
+} from "./helpers";
 
 /**
  * A link inside a sentence is told apart from the words around it by more than
@@ -110,4 +116,48 @@ test.describe("standalone links keep their look: no underline at rest", () => {
 		await openNorthbank(page, "");
 		await expectDecorations(page.locator("p.more a").first(), "none");
 	});
+});
+
+test("a description's paragraphs keep their spacing, leading and measure", async ({
+	page,
+}) => {
+	const schema = {
+		...PETSTORE_SCHEMA,
+		description: "First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
+	};
+	await page.route("**/petstore.json", (route) =>
+		route.fulfill({
+			status: 200,
+			headers: {
+				"content-type": "application/json",
+				"access-control-allow-origin": "*",
+			},
+			body: JSON.stringify(schema),
+		}),
+	);
+	await page.goto(viewerAt(""));
+	await page.locator("main h1").waitFor();
+	const spacing = (paragraphs: Locator) =>
+		paragraphs.evaluateAll((els) =>
+			els.map((e) => {
+				const s = getComputedStyle(e);
+				return [s.marginTop, s.marginBottom, s.lineHeight].join(" ");
+			}),
+		);
+	const body = await page.evaluate(
+		() => getComputedStyle(document.body).lineHeight,
+	);
+	// The header keeps 4px over its first paragraph, the page body does not.
+	expect(await spacing(page.locator("main .page-header .md p"))).toEqual([
+		`4px 8px ${body}`,
+		`4px 8px ${body}`,
+		`4px 8px ${body}`,
+	]);
+	const rest = await spacing(page.locator("main .md:not(.page-header .md) p"));
+	expect(rest.length).toBeGreaterThan(0);
+	for (const looks of rest) expect(looks).toBe(`0px 8px ${body}`);
+	const cap = await page
+		.locator("main .page-header .md")
+		.evaluate((el) => getComputedStyle(el).maxWidth);
+	expect(cap).not.toBe("none");
 });
